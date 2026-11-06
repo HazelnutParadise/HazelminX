@@ -1,0 +1,255 @@
+---
+version: alpha
+name: HazelminX
+description: 方向 B「航站」。深暖炭黑為預設、淺色為對等主題，榛果色單一強調，鍵盤優先的三欄控制台。
+colors:
+  primary: "#ECE6DA"
+  secondary: "#A79E8E"
+  tertiary: "#D9A066"
+  neutral: "#161412"
+  panel: "#1D1B18"
+  raised: "#262320"
+  line: "#35312B"
+  faint: "#9A917F"
+  hazel-ink: "#1A1410"
+  status-ok: "#9BD3A4"
+  status-warn: "#F0B35B"
+  status-danger: "#F28B82"
+  status-info: "#8DB4F2"
+  series-1: "#AF711F"
+  series-2: "#5682BB"
+  series-3: "#47AA62"
+  series-4: "#B55B9A"
+  light-primary: "#1B1814"
+  light-secondary: "#5E574C"
+  light-tertiary: "#8F5B23"
+  light-neutral: "#F6F2EA"
+  light-panel: "#FFFDF8"
+  light-raised: "#EFE9DE"
+  light-line: "#D9D1C2"
+  light-faint: "#6B6457"
+  light-hazel-ink: "#FFFFFF"
+  light-status-ok: "#2F6B3C"
+  light-status-warn: "#9A5A0B"
+  light-status-danger: "#B4382E"
+  light-status-info: "#2E5FA8"
+  light-series-1: "#7C4B02"
+  light-series-2: "#2E598F"
+  light-series-3: "#218A45"
+  light-series-4: "#883170"
+typography:
+  h1:
+    fontFamily: Geist
+    fontSize: 20px
+    fontWeight: 600
+    lineHeight: 1.3
+  h2:
+    fontFamily: Geist
+    fontSize: 14px
+    fontWeight: 600
+    lineHeight: 1.4
+  body-md:
+    fontFamily: Geist
+    fontSize: 14px
+    fontWeight: 400
+    lineHeight: 1.5
+  body-sm:
+    fontFamily: Geist
+    fontSize: 12px
+    fontWeight: 400
+    lineHeight: 1.5
+  label-caps:
+    fontFamily: Geist
+    fontSize: 11px
+    fontWeight: 500
+    lineHeight: 1
+    letterSpacing: 0.06em
+  mono:
+    fontFamily: Geist Mono
+    fontSize: 13px
+    fontWeight: 400
+    lineHeight: 1.4
+  figure:
+    fontFamily: Geist
+    fontSize: 28px
+    fontWeight: 600
+    lineHeight: 1.1
+rounded:
+  sm: 4px
+  md: 6px
+  lg: 8px
+spacing:
+  xs: 4px
+  sm: 8px
+  md: 12px
+  lg: 16px
+  xl: 24px
+  xxl: 32px
+components:
+  button-primary:
+    backgroundColor: "{colors.tertiary}"
+    textColor: "{colors.hazel-ink}"
+    rounded: "{rounded.md}"
+    minHeight: 36px
+    padding: 0 12px
+  button-secondary:
+    backgroundColor: "transparent"
+    textColor: "{colors.primary}"
+    borderColor: "{colors.line}"
+    rounded: "{rounded.md}"
+    minHeight: 36px
+    padding: 0 12px
+  button-danger:
+    backgroundColor: "{colors.status-danger}"
+    textColor: "{colors.hazel-ink}"
+    rounded: "{rounded.md}"
+    minHeight: 36px
+    padding: 0 12px
+  panel:
+    backgroundColor: "{colors.panel}"
+    borderColor: "{colors.line}"
+    rounded: "{rounded.lg}"
+    padding: 0
+  card-raised:
+    backgroundColor: "{colors.raised}"
+    borderColor: "{colors.line}"
+    rounded: "{rounded.lg}"
+    padding: 12px
+  table-row:
+    minHeight: 44px
+    padding: 0 14px
+    borderColor: "{colors.line}"
+  nav-item:
+    minHeight: 40px
+    padding: 0 10px
+    rounded: "{rounded.md}"
+  input:
+    backgroundColor: "{colors.raised}"
+    textColor: "{colors.primary}"
+    borderColor: "{colors.line}"
+    rounded: "{rounded.md}"
+    minHeight: 40px
+    padding: 0 10px
+  kbd:
+    fontFamily: Geist Mono
+    fontSize: 11px
+    borderColor: "{colors.line}"
+    rounded: "{rounded.sm}"
+---
+
+## Overview
+
+HazelminX 是自架伺服器的管理中心。讀者是熟 Docker 與 Linux 的個人與小團隊管理員，常在深夜處理故障。介面要先回答「這是什麼、在哪裡、現在怎麼了、接下來能做什麼」（規格第 7 章）。
+
+方向 B「航站」的立意：像機場航管的工作台，密度高但每個元素都承載差異化資訊，沒有裝飾。三欄骨架是這個方向的簽名：左欄導覽（鍵盤可達）、中欄主表與圖表、右欄「需要處理」與「進行中的工作」。視覺母題是「榛果」與「層」：榛果色是唯一的強調色，深淺三層平面（底、面板、浮起）承擔分區，不用陰影。
+
+預設深色，淺色是對等主題而不是反轉；兩種主題都要能認出榛果色。
+
+## Colors
+
+深色是基準，淺色對照。所有文字對比都 ≥ 4.5:1（含 11px 標籤），狀態色不單獨承載意義，一定配文字或形狀。
+
+| 角色 | 深色 | 淺色 | 用途 |
+|---|---|---|---|
+| neutral（底） | `#161412` | `#F6F2EA` | 頁面底；暖炭黑而不是 GitHub 深藍 |
+| panel | `#1D1B18` | `#FFFDF8` | 導覽欄、表格、圖表容器 |
+| raised | `#262320` | `#EFE9DE` | 卡片、列 hover、輸入框 |
+| line | `#35312B` | `#D9D1C2` | 1px 分隔線與邊框；也是圖表格線 |
+| primary（ink） | `#ECE6DA` | `#1B1814` | 主要文字 |
+| secondary（muted） | `#A79E8E` | `#5E574C` | 說明文字、次要欄位（對比 6.5 / 7.0） |
+| faint | `#9A917F` | `#6B6457` | 11–12px 標籤、欄位標題、註腳（對比 ≥ 4.5 於 panel 與 raised） |
+| tertiary（hazel） | `#D9A066` | `#8F5B23` | 唯一強調：主要按鈕、目前導覽、連結 hover、單序列圖表 |
+| hazel-ink | `#1A1410` | `#FFFFFF` | 榛果底上的文字 |
+| status-ok | `#9BD3A4` | `#2F6B3C` | 連線中、成功、校驗通過；配實心圓 |
+| status-warn | `#F0B35B` | `#9A5A0B` | 過期、待批准、即將到期；配空心圓 |
+| status-danger | `#F28B82` | `#B4382E` | 失敗、超過門檻、危險操作；配實心方塊 |
+| status-info | `#8DB4F2` | `#2E5FA8` | 執行中、驗證中、維護中；配實心方塊 |
+
+### 圖表序列色（固定順序，跟著實體不跟著名次）
+
+| 序號 | 深色 | 淺色 | 固定對應 |
+|---|---|---|---|
+| series-1 | `#AF711F` | `#7C4B02` | 第一個節點／邊緣／讀取／進站／1 分鐘負載 |
+| series-2 | `#5682BB` | `#2E598F` | 第二個節點／來源站／寫入／出站／5 分鐘負載 |
+| series-3 | `#47AA62` | `#218A45` | 第三個節點／15 分鐘負載 |
+| series-4 | `#B55B9A` | `#883170` | 第四個節點 |
+
+兩組都用 dataviz 驗證器跑過：明度帶、彩度下限、色弱相鄰差（深色最差 ΔE 11.8、淺色 14.0）、一般視覺相鄰差（20.3 / 20.0）、對平面對比 ≥ 3:1 全部通過。超過四個序列不生新色：折成「其他」或拆小倍數。
+
+### 單色序列（熱格、量表軌道）
+
+榛果色由淺到深。深色主題：`#2A241C` `#4A3A22` `#6E5228` `#9A6F33` `#D9A066`。淺色主題：`#F3E6D3` `#E3C9A4` `#CFA772` `#B38347` `#8F5B23`。最淺一階代表「接近零」，可以貼近平面。
+
+## Typography
+
+- **UI 與標題：Geist**，中文回落 Noto Sans TC → PingFang TC → Microsoft JhengHei。`font-synthesis: none; line-break: strict`。不用襯線，資料層一律無襯線或等寬。
+- **數值、識別碼、時間：Geist Mono**。表格欄位與軸刻度加 `font-variant-numeric: tabular-nums`；stat tile 與英雄數字用預設比例字距，不加 tabular。
+- 層級靠粗細與顏色，不靠放大：h1 20/600 只用於頁面標題；h2 14/600 是區塊標題；正文 14；次要 12；欄位標題 11 大寫、字距 0.06em（只用在表格欄首，一頁不超過這一種大寫標籤）。
+- 中文引號用「」，數字與單位之間半形空格（`11.2 GiB`）。
+
+## Layout
+
+- 三欄：導覽 232px、主欄 `flex: 999 1 560px`、右欄 340px。主欄內距 `18px 24px 40px`，區塊間距 22px。
+- 1100px 以下右欄落到主欄之下；768px 以下導覽改成可換行的橫列，表格隱藏第三到第五欄、圖表一列一張、按鈕換行。
+- 表格列 min-height 44px（觸控目標），欄首 34px；按鈕 36px，列內小按鈕 32px；導覽項 40px。
+- 圖表格：1440 寬一列兩張（每張至少 12 欄中的 4 欄），360 寬一列一張。時間範圍列放在所有圖表之上，一列掃全部。
+- 間距階：4 / 8 / 12 / 16 / 24 / 32。
+
+## Elevation & Depth
+
+沒有陰影。深度只來自三層平面（底 → panel → raised）加 1px `line`。浮層（下拉、確認框）用 raised 底加 1px line，外圍加 `rgba(0,0,0,.45)` 遮罩（淺色 `.25`）。焦點環：2px 榛果色 `outline`，offset 2px，所有可操作元素一致。
+
+## Shapes
+
+- 4px：kbd、chip、量表、長條頂端。
+- 6px：按鈕、導覽項、輸入框。
+- 8px：panel、卡片。
+- 狀態形狀固定：實心圓 = 正常／成功，空心圓 = 過期／待批准，實心方塊 = 執行中／維護中／危險。形狀永遠配文字。
+
+## Components
+
+- **button-primary**：榛果底、hazel-ink 字、600 粗、36px 高、`padding 0 12px`。一個區塊只有一個。
+- **button-secondary**：透明底、1px line、ink 字。
+- **button-danger**：danger 底、hazel-ink 字；只出現在確認框內，而且確認框標題寫出實際節點／磁碟／環境名稱。
+- **panel**：panel 底、1px line、8px 圓角、內容不加 padding，由表頭列（`10px 14px`）與列（`0 14px`）各自負責。
+- **card-raised**：raised 底、1px line、8px 圓角、12px 內距；用在「需要處理」卡片與工作卡片。
+- **table-row**：grid 欄、44px 高、底線 1px、hover raised；第一欄名稱用等寬 500 粗，第二行 12px faint 說明。
+- **stat tile**：標籤 12 muted → 數值 28/600 比例字距 → 變化（有方向的符號與相對期間）→ 12 點 sparkline（faint 線，最新一段榛果色）。
+- **meter**：高 6px、4px 圓角；軌道是序列色最淺階，填充依門檻換色（≥70% warn、≥90% danger），旁邊一定有數字。
+- **sparkline**：高 24px、寬 96px、2px 線，不畫軸；表格一列只有一欄 sparkline。
+- **時間序列圖**：高 180px；格線 1px `line` 實線、4 條；Y 軸刻度 11px faint、靠左；單序列用榛果色，多序列用 series-1..4，固定對應；面積填充 10%；2px 線、圓角接合；部署／重啟事件以 1px 虛直線標記並在頂端寫 commit 短碼。hover 顯示所有序列數值（CSS 十字線）。過期資料尾段改空心點。
+- **長條圖**：寬 ≤ 24px、相鄰 2px 間隙、頂端 4px 圓角、底邊方角。
+- **堆疊面積**：只用於「部分加總等於整體」（記憶體已用／快取／可用），段間 2px 平面色間隙。
+- **狀態時間軸**：高 10px 橫條，每段一個狀態色，段間 2px 間隙；hover 顯示時間與結果。
+- **熱格**：單色序列五階、格間 2px、格內不寫字；旁邊有色階圖例與表格檢視入口。
+- **排行清單**：名稱 + 細長條 + 數值一列，長條用 series-1；只排前十。
+- **四段式訊息**（錯誤、告警、待辦）：標題色帶狀態 → 發生什麼（14/500）→ 影響與證據（12 muted）→ 下一步按鈕。
+- **輸入框**：raised 底、1px line、40px 高；標籤在上、錯誤在下、不用 placeholder 當標籤。
+- **kbd**：Geist Mono 11px、1px line、4px 圓角。
+
+## Data visualization
+
+依 dataviz 技能與 `docs/design/research-dashboards.md`：
+
+- 數字先於圖：單一數值用 stat tile，比例用 meter，整體拆分用細段條，超過七類用表格。
+- 一張圖一個 Y 軸；量級差很多就拆圖或共用索引。
+- 序列顏色固定跟實體，篩選後不重新上色；超過四個序列折成「其他」。
+- 多於一個序列一定有圖例；直接標籤只標端點或極值，不在每個點寫數字。
+- 文字永遠用文字色，序列色只在標記上；深淺兩種主題各自驗證。
+- 時間範圍：即時（5 分）／1 小時／12 小時／24 小時／7 天／30 天，一列、在圖之上、掃全部圖。
+- 部分資料要標：過期尾段、取樣比例、保留期外空白都在圖上寫明，不補假線。
+- 每張圖都有表格檢視入口；tooltip 只是補充。
+- 重新讀取時保留上一次渲染並降低不透明度，不閃骨架。
+
+## Do's and Don'ts
+
+- Do：狀態一定「顏色＋形狀＋文字」。
+- Do：危險操作寫出實際名稱（「將停止 hazel-tw-01 的 shop-api、shop-worker」）。
+- Do：離線與過期分開講，過期標「上次觀測」時間。
+- Do：未知總量就不顯示百分比；不可取消的步驟寫明原因。
+- Do：360px 寬主要操作仍可達，觸控目標 ≥ 44px。
+- Don't：紫色漸層、霓虹光暈、emoji 當 icon、圓角卡片加左色條、裝飾性狀態點、裝飾性 icon。
+- Don't：Inter／Roboto／系統字當標題字；襯線用在資料層。
+- Don't：雙 Y 軸、彩虹序列、圓餅圖比較相近值、每個點都標數字。
+- Don't：編造完美數字（示例資料一律標示「假設」）。
+- Don't：複製 1Panel、Portainer、Zeabur 的品牌素材或版面。

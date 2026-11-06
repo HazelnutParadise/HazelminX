@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<title>HazelminX 部署檢查 · 變更計畫 #418</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+body{margin:0}
+.hb{--bg:#161412;--panel:#1D1B18;--raised:#262320;--line:#35312B;--ink:#ECE6DA;--muted:#A79E8E;--faint:#9A917F;--hazel:#D9A066;--hazelink:#1A1410;--blue:#8DB4F2;--warn:#F0B35B;--danger:#F28B82;--ok:#9BD3A4;--s1:#AF711F;--s2:#5682BB;--s3:#47AA62;--s4:#B55B9A;--q1:#2A241C;--q2:#4A3A22;--q3:#6E5228;--q4:#9A6F33;--q5:#D9A066;--scrim:rgba(0,0,0,.45);font-family:"Geist","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;font-synthesis:none;line-break:strict;color:var(--ink);background:var(--bg);font-size:14px;line-height:1.5;color-scheme:dark}
+.hb.theme-light{--bg:#F6F2EA;--panel:#FFFDF8;--raised:#EFE9DE;--line:#D9D1C2;--ink:#1B1814;--muted:#5E574C;--faint:#6B6457;--hazel:#8F5B23;--hazelink:#FFFFFF;--blue:#2E5FA8;--warn:#9A5A0B;--danger:#B4382E;--ok:#2F6B3C;--s1:#7C4B02;--s2:#2E598F;--s3:#218A45;--s4:#883170;--q1:#F3E6D3;--q2:#E3C9A4;--q3:#CFA772;--q4:#B38347;--q5:#8F5B23;--scrim:rgba(0,0,0,.25);color-scheme:light}
+.hb *{box-sizing:border-box}
+.hb .mono{font-family:"Geist Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+.hb a{color:var(--ink);text-decoration:none}.hb a:hover{color:var(--hazel)}
+.hb button,.hb input,.hb select{font:inherit;color:inherit}
+.hb button{cursor:pointer}
+.hb :is(a,button,input,select,[tabindex]):focus-visible{outline:2px solid var(--hazel);outline-offset:2px}
+.hb h1{margin:0;font-size:20px;font-weight:600;line-height:1.3}
+.hb h2{margin:0;font-size:14px;font-weight:600;line-height:1.4}
+.hb p{margin:0}
+.hb .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:0 12px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--ink);font-size:13px;white-space:nowrap}
+.hb .btn.pri{background:var(--hazel);border-color:var(--hazel);color:var(--hazelink);font-weight:600}
+.hb .btn.dng{background:var(--danger);border-color:var(--danger);color:var(--hazelink);font-weight:600}
+.hb .btn.sm{min-height:32px;padding:0 10px;font-size:12px;color:var(--muted)}
+.hb .btn:active{transform:translateY(1px)}
+.hb .panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.hb .ph{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.hb .ph .sub{font-size:12px;color:var(--muted)}
+.hb .ph .more{margin-left:auto;font-size:13px;color:var(--hazel)}
+.hb .card{background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.hb .row{display:grid;gap:12px;align-items:center;min-height:44px;padding:0 14px;border-bottom:1px solid var(--line)}
+.hb .row:hover{background:var(--raised)}
+.hb .row:last-child{border-bottom:0}
+.hb .hd{font-size:11px;color:var(--faint);letter-spacing:.06em;text-transform:uppercase;min-height:34px;font-weight:500}
+.hb .hd:hover{background:transparent}
+.hb .name{display:flex;flex-direction:column;gap:2px;min-width:0}
+.hb .name .n{font-family:"Geist Mono",ui-monospace,monospace;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb .name .d{font-size:12px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb .st{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.hb .st i{display:inline-block;width:8px;height:8px;flex:none}
+.hb .st.ok{color:var(--ok)}.hb .st.ok i{border-radius:50%;background:var(--ok)}
+.hb .st.warn{color:var(--warn)}.hb .st.warn i{border-radius:50%;border:2px solid var(--warn)}
+.hb .st.dng{color:var(--danger)}.hb .st.dng i{background:var(--danger)}
+.hb .st.info{color:var(--blue)}.hb .st.info i{background:var(--blue)}
+.hb .st.off{color:var(--muted)}.hb .st.off i{border-radius:50%;border:2px solid var(--muted);border-style:dashed}
+.hb .nv{display:flex;align-items:center;gap:10px;min-height:40px;padding:0 10px;border-radius:6px;font-size:14px;color:var(--ink)}
+.hb .nv:hover{background:var(--raised);color:var(--ink)}
+.hb .nv.cur{background:var(--raised);color:var(--hazel);font-weight:600}
+.hb .nv .cnt{margin-left:auto;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px}
+.hb .kbd{font-family:"Geist Mono",ui-monospace,monospace;font-size:11px;color:var(--faint);border:1px solid var(--line);border-radius:4px;padding:1px 5px;margin-left:auto}
+.hb .navgrp{font-size:11px;color:var(--faint);letter-spacing:.06em;padding:6px 10px 0}
+.hb .navcol{display:flex;flex-direction:column;gap:2px}
+.hb .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(170px,100%),1fr));gap:10px}
+.hb .tile{display:flex;flex-direction:column;gap:4px;padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:8px;min-width:0}
+.hb .tile .l{font-size:12px;color:var(--muted)}
+.hb .tile .v{font-size:28px;font-weight:600;line-height:1.1;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.hb .tile .v small{font-size:12px;font-weight:400;color:var(--muted)}
+.hb .tile .dl{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hb .up{color:var(--ok)}.hb .dn{color:var(--danger)}
+.hb .meter{display:flex;align-items:center;gap:8px;min-width:0}
+.hb .meter .tr{flex:1;height:6px;border-radius:4px;background:var(--q2);overflow:hidden;min-width:40px}
+.hb .meter .fl{height:100%;border-radius:4px;background:var(--hazel)}
+.hb .meter .fl.warn{background:var(--warn)}.hb .meter .fl.dng{background:var(--danger)}
+.hb .meter .num{font-family:"Geist Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;font-size:12px;white-space:nowrap}
+.hb .cg{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(440px,100%),1fr));gap:12px}
+.hb .chart{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;min-width:0}
+.hb .chart .ph{padding:8px 12px}
+.hb .chart .unit{font-size:12px;color:var(--faint)}
+.hb .chart .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-left:auto}
+.hb .legend i{display:inline-block;width:12px;height:2px;vertical-align:middle;margin-right:5px;border-radius:1px}
+.hb .legend i.rect{height:8px;border-radius:2px}
+.hb .chart .body{padding:6px 10px 8px}
+.hb .foot{display:flex;gap:10px;flex-wrap:wrap;padding:6px 12px 8px;font-size:12px;color:var(--faint);border-top:1px solid var(--line)}
+.hb .chart .foot a{color:var(--hazel)}
+.hb svg.ch{display:block;width:100%;height:auto;font-family:"Geist Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.hb svg.ch text{font-size:11px;fill:var(--faint)}
+.hb .grid{stroke:var(--line);stroke-width:1}
+.hb .hit .xh,.hb .hit .tip{opacity:0;transition:opacity .08s}
+.hb .hit:hover .xh,.hb .hit:hover .tip,.hb .hit:focus-within .xh,.hb .hit:focus-within .tip{opacity:1}
+.hb .tip rect{fill:var(--raised);stroke:var(--line)}
+.hb .tip text{fill:var(--ink)}
+.hb .tip text.k{fill:var(--muted)}
+.hb .ch-m{display:none}
+.hb .ranks{display:flex;flex-direction:column;gap:6px;padding:10px 14px}
+.hb .rank{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,2fr) auto;gap:10px;align-items:center;font-size:13px;min-height:28px}
+.hb .rank .bar{height:8px;border-radius:4px;background:var(--q2);overflow:hidden}
+.hb .rank .bar i{display:block;height:100%;border-radius:4px;background:var(--s1)}
+.hb .timeline{display:flex;gap:2px;height:10px}
+.hb .timeline i{flex:1;border-radius:2px;background:var(--ok)}
+.hb .timeline i.f{background:var(--danger)}.hb .timeline i.r{background:var(--warn)}.hb .timeline i.p{background:var(--blue)}.hb .timeline i.e{background:var(--q2)}
+.hb .seg{display:flex;gap:2px;height:8px;border-radius:4px;overflow:hidden}
+.hb .seg i{display:block;height:100%}
+.hb .steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+.hb .step{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+.hb .step b{display:block;height:6px;border-radius:3px;background:var(--q2)}
+.hb .step.done b{background:var(--ok)}.hb .step.cur b{background:var(--blue)}.hb .step.wait b{background:var(--warn)}.hb .step.fail b{background:var(--danger)}
+.hb .step.cur{color:var(--ink)}
+.hb .heat{display:grid;gap:2px}
+.hb .heat i{display:block;aspect-ratio:1.6;border-radius:2px;min-height:14px}
+.hb .heat .lab{font-size:12px;color:var(--muted);display:block;line-height:22px;font-family:"Geist Mono",ui-monospace,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb .range{display:flex;gap:4px;flex-wrap:wrap}
+.hb .range .btn{min-height:32px;padding:0 10px;font-size:12px;color:var(--muted)}
+.hb .range .btn.on{background:var(--raised);color:var(--hazel);border-color:var(--line);font-weight:600}
+.hb .field{display:flex;flex-direction:column;gap:6px}
+.hb .field label{font-size:12px;color:var(--muted)}
+.hb .inp{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 10px;background:var(--raised);border:1px solid var(--line);border-radius:6px;color:var(--ink);width:100%}
+.hb .inp.err{border-color:var(--danger)}
+.hb .help{font-size:12px;color:var(--faint)}
+.hb .errt{font-size:12px;color:var(--danger)}
+.hb .skel{background:var(--raised);border-radius:4px;position:relative;overflow:hidden}
+.hb .skel::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent)}
+@media (prefers-reduced-motion:no-preference){.hb .skel::after{animation:hx-sh 1.4s infinite}}
+@keyframes hx-sh{to{transform:translateX(100%)}}
+.hb .dim{opacity:.45}
+.hb .banner{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:var(--raised);font-size:13px}
+.hb .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);padding:0 14px}
+.hb .tab{min-height:40px;display:inline-flex;align-items:center;padding:0 10px;border-bottom:2px solid transparent;color:var(--muted);font-size:13px;background:transparent;border-top:0;border-left:0;border-right:0}
+.hb .tab.on{color:var(--hazel);border-bottom-color:var(--hazel);font-weight:600}
+.hb .diff{overflow-x:auto;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;display:flex;flex-direction:column}
+.hb .diff div{display:grid;grid-template-columns:36px 36px 1fr;gap:0;padding:0 14px;white-space:pre}
+.hb .diff .ln{color:var(--faint);text-align:right;padding-right:10px}
+.hb .diff .add{background:color-mix(in oklab,var(--ok) 14%,transparent)}
+.hb .diff .del{background:color-mix(in oklab,var(--danger) 14%,transparent)}
+.hb .diff .hot{outline:1px solid var(--danger);outline-offset:-1px}
+.hb .check{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:10px;align-items:start;padding:10px 14px;border-bottom:1px solid var(--line);font-size:13px}
+.hb .check:last-child{border-bottom:0}
+.hb .check .mk{width:16px;height:16px;border-radius:50%;margin-top:2px}
+.hb .check .mk.ok{background:var(--ok)}.hb .check .mk.warn{border:3px solid var(--warn)}.hb .check .mk.dng{background:var(--danger);border-radius:2px}
+.hb .check .ev{font-size:12px;color:var(--muted);font-family:"Geist Mono",ui-monospace,monospace}
+.hb .modal{background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:10px;max-width:520px}
+.hb .scrim{background:var(--scrim);padding:24px;display:flex;justify-content:center}
+.hb .list{display:flex;flex-direction:column;gap:8px}
+.hb .job{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border:1px solid var(--line);border-radius:8px}
+.hb .job .t{display:flex;justify-content:space-between;gap:8px}
+.hb .job .s{font-size:12px;color:var(--muted)}
+.hb .prog{height:4px;background:var(--q2);border-radius:2px;overflow:hidden}
+.hb .prog i{display:block;height:100%;background:var(--blue)}
+.hb .prog.pulse i{width:30%;background:repeating-linear-gradient(90deg,var(--blue) 0 8px,transparent 8px 12px)}
+.hb .note{font-size:12px;color:var(--faint)}
+.hb .wrap{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.hb .scroll{overflow-x:auto}
+.hb .aside{width:340px;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:18px;padding:18px 16px 24px}
+.hb .main{flex:999 1 560px;min-width:0;display:flex;flex-direction:column;gap:22px;padding:18px 24px 40px}
+.hb .side{width:232px;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:14px;padding:14px 10px 20px}
+.hb .nrow{grid-template-columns:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) 110px minmax(0,.8fr)}
+.hb .prow{grid-template-columns:minmax(0,1.2fr) minmax(0,1.5fr) minmax(0,.5fr) minmax(0,.6fr) minmax(0,1fr) minmax(0,1.1fr)}
+.hb .srow{grid-template-columns:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) 110px minmax(0,.7fr)}
+.hb .crow{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,.4fr) minmax(0,.7fr)}
+.hb .drow{grid-template-columns:minmax(0,.8fr) minmax(0,1.6fr) minmax(0,.6fr) minmax(0,1.4fr) minmax(0,.8fr)}
+.hb .dprow{grid-template-columns:minmax(0,.5fr) minmax(0,1.6fr) minmax(0,.7fr) minmax(0,.7fr) minmax(0,1.4fr)}
+.hb .hrow{grid-template-columns:minmax(0,1.6fr) minmax(0,.8fr) minmax(0,.7fr) minmax(0,1.4fr)}
+.hb .rrow{grid-template-columns:24px minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,.5fr) minmax(0,.6fr)}
+@media (max-width:1100px){.hb .aside{width:100%;border-left:0;border-top:1px solid var(--line)}}
+@media (max-width:767px){
+ .hb .side{width:100%;border-right:0;border-bottom:1px solid var(--line);padding-bottom:10px}
+ .hb .navcol{flex-direction:row;flex-wrap:wrap}.hb .side .nv{flex:none;white-space:nowrap}.hb .side .navcol:not(:first-of-type){flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px}.hb .navgrp{display:none}.hb .side .nv{min-height:44px}
+ .hb .main{padding:14px 16px 32px;gap:16px}.hb .aside{padding:14px 16px 24px}
+ .hb .c3,.hb .c4,.hb .c5,.hb .kbd{display:none}
+ .hb .ch-d{display:none}.hb .ch-m{display:block}
+ .hb .heat i{min-height:18px}
+ .hb .steps{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .hb .btn{min-height:44px}.hb .btn.sm{min-height:40px}.hb .range .btn{min-height:40px}
+ .hb .nrow{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,.9fr)}
+ .hb .prow{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}
+ .hb .srow{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,.8fr)}
+ .hb .crow{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}
+ .hb .drow{grid-template-columns:minmax(0,.9fr) minmax(0,1.2fr) minmax(0,1.3fr)}
+ .hb .dprow{grid-template-columns:minmax(0,.5fr) minmax(0,1.4fr) minmax(0,1.3fr)}
+ .hb .hrow{grid-template-columns:minmax(0,1.4fr) minmax(0,.7fr) minmax(0,1.2fr)}
+ .hb .rrow{grid-template-columns:24px minmax(0,1.6fr) minmax(0,.8fr)}
+ .hb .tile .v{font-size:24px}
+}
+</style>
+</helmet>
+<div class="hb theme-{{theme}}" style="min-height: 100vh; display: flex; flex-wrap: wrap; align-items: stretch">
+  <nav class="side" aria-label="主導覽">
+    <div style="display: flex; align-items: center; gap: 10px; padding: 4px 10px 10px; border-bottom: 1px solid var(--line)">
+      <span aria-hidden="true" style="width: 22px; height: 22px; border-radius: 50%; background: var(--hazel); display: inline-block; box-shadow: inset 0 0 0 5px var(--panel), inset 0 0 0 7px var(--hazel)"></span>
+      <span style="font-weight: 600; font-size: 15px">HazelminX</span>
+      <span class="mono" style="font-size: 11px; color: var(--faint); margin-left: auto">tw-01</span>
+    </div>
+    <button type="button" class="inp" style="color: var(--muted); text-align: left"><span>搜尋或下指令</span><span class="kbd">⌘K</span></button>
+    <div class="navcol"><a class="nv" href="Overview.dc.html">總覽<span class="kbd">G O</span></a><a class="nv cur" href="WorkCenter.dc.html">工作中心<span class="cnt" style="color: var(--hazel)">3</span></a><a class="nv" href="Overview.dc.html#attention">需要處理<span class="cnt" style="color: var(--warn)">3</span></a></div>
+    <div class="navgrp">基礎設施</div><div class="navcol"><a class="nv" href="NodeDetail.dc.html">主機與節點</a><a class="nv" href="Containers.dc.html">Docker／Podman</a><a class="nv" href="#k8s">Kubernetes</a><a class="nv" href="#storage">儲存</a><a class="nv" href="#files">檔案</a></div><div class="navgrp">應用</div><div class="navcol"><a class="nv" href="Projects.dc.html">專案與服務</a><a class="nv" href="#store">應用商店</a><a class="nv" href="#db">資料庫</a><a class="nv" href="#ai">AI</a><a class="nv" href="#backup">備份與還原</a><a class="nv" href="#cron">計畫任務</a></div><div class="navgrp">入口與安全</div><div class="navcol"><a class="nv" href="#web">網站與入口</a><a class="nv" href="#api">API 代理</a><a class="nv" href="#security">安全防護</a><a class="nv" href="#analytics">流量分析</a><a class="nv" href="#events">事件與告警</a><a class="nv" href="#iam">身分與存取</a><a class="nv" href="#settings">平台設定</a></div>
+    <div style="margin-top: auto; display: flex; align-items: center; gap: 8px; padding: 8px 10px 0; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted)">
+      <span>tim · 擁有者</span>
+      <button type="button" class="btn sm" aria-label="切換淺色或深色" style="margin-left: auto; min-width: 44px">{{themeLabel}}</button>
+    </div>
+  </nav><main class="main">
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px">
+      <div class="name"><a href="WorkCenter.dc.html" class="note">工作中心 / 等待批准 /</a><h1>變更計畫 #418 · shop production</h1></div>
+      <span class="st warn"><i aria-hidden="true"></i>等待批准 · 44 分</span>
+      <div class="wrap" style="margin-left: auto"><button type="button" class="btn">拒絕</button><button type="button" class="btn pri">批准並部署…</button></div>
+    </div>
+    <div class="panel"><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr)); gap: 10px 16px; padding: 12px 14px; font-size: 13px">
+      <span class="" style="display:flex;flex-direction:column;gap:2px"><span class="note">變更</span><span>a3f9c1e → 9b3e7f1 · 3 個 commit · 由 ava@hazelnut 推送</span></span><span class="" style="display:flex;flex-direction:column;gap:2px"><span class="note">目標</span><span>hazel-tw-01 · production</span></span><span class="" style="display:flex;flex-direction:column;gap:2px"><span class="note">受影響服務</span><span>shop-api、shop-worker（重建）· shop-db、shop-redis 不動</span></span><span class="" style="display:flex;flex-direction:column;gap:2px"><span class="note">預估中斷</span><span>0 秒（滾動更新）· 失敗自動回滾到 a3f9c1e</span></span><span class="" style="display:flex;flex-direction:column;gap:2px"><span class="note">資料影響</span><span>無 migration · 磁碟區不變</span></span>
+    </div></div>
+    <section class="panel" aria-labelledby="h-chk">
+      <div class="ph"><h2 id="h-chk">預檢 · 1 高風險、1 警告、6 通過</h2><span class="sub">完成於 02:58:41 · 18 秒</span></div>
+      <div class="check"><span class="mk dng" aria-hidden="true"></span><span><strong>高風險：新增 root 檔案系統掛載</strong><br><span class="ev">compose.yaml:41 · shop-worker · volumes: /:/host:ro</span><br><span class="note">影響：容器可讀整台主機的檔案，含其他專案的資料與機密參照。即使唯讀也超出 shop-worker 原本的範圍。</span></span><span class="note">需要擁有者批准</span></div>
+      <div class="check"><span class="mk warn" aria-hidden="true"></span><span><strong>警告：映像標籤由 commit 短碼改成 latest</strong><br><span class="ev">compose.yaml:12 · shop-api · image: …/shop-api:latest</span><br><span class="note">影響：回滾時無法確定回到哪個版本。建議保留短碼標籤。</span></span><span class="note">可批准</span></div>
+      <div class="check"><span class="mk ok" aria-hidden="true"></span><span>映像可拉取（ghcr.io 認證有效）<br><span class="ev">shop-api:9b3e7f1 · 212 MB · shop-worker:9b3e7f1 · 198 MB</span></span><span class="note">通過</span></div>
+      <div class="check"><span class="mk ok" aria-hidden="true"></span><span>Port 無衝突<br><span class="ev">8080 → 僅內部，由 Zentinel 轉發 443</span></span><span class="note">通過</span></div>
+      <div class="check"><span class="mk ok" aria-hidden="true"></span><span>必要環境變數齊全<br><span class="ev">DATABASE_URL、REDIS_URL、STRIPE_KEY（機密參照 sec_01h…）</span></span><span class="note">通過</span></div>
+      <div class="check"><span class="mk ok" aria-hidden="true"></span><span>磁碟空間足夠<br><span class="ev">hazel-tw-01 /mnt/data 剩 519 GiB，需要 0.5 GiB</span></span><span class="note">通過</span></div>
+      <div class="check"><span class="mk ok" aria-hidden="true"></span><span>健康檢查已定義<br><span class="ev">shop-api GET /healthz · 10 秒 ×3</span></span><span class="note">通過</span></div>
+      <div class="check"><span class="mk ok" aria-hidden="true"></span><span>無資料庫 migration<br><span class="ev">未偵測到 migrations/ 變更</span></span><span class="note">通過</span></div>
+    </section>
+    <section class="panel" aria-labelledby="h-diff">
+      <div class="ph"><h2 id="h-diff">compose.yaml 差異</h2><span class="sub">a3f9c1e → 9b3e7f1 · +4 −1</span><a class="more" href="https://github.com/hazelnut/shop/compare/a3f9c1e...9b3e7f1">GitHub 上檢視 ↗</a></div>
+      <div class="diff" style="padding: 8px 0">
+        <div><span class="ln">10</span><span class="ln">10</span><span>  shop-api:</span></div>
+        <div class="del"><span class="ln">11</span><span class="ln"></span><span>-   image: ghcr.io/hazelnut/shop-api:a3f9c1e</span></div>
+        <div class="add"><span class="ln"></span><span class="ln">11</span><span>+   image: ghcr.io/hazelnut/shop-api:latest</span></div>
+        <div><span class="ln">12</span><span class="ln">12</span><span>    healthcheck:</span></div>
+        <div><span class="ln">…</span><span class="ln">…</span><span></span></div>
+        <div><span class="ln">38</span><span class="ln">38</span><span>  shop-worker:</span></div>
+        <div><span class="ln">39</span><span class="ln">39</span><span>    image: ghcr.io/hazelnut/shop-worker:9b3e7f1</span></div>
+        <div class="add"><span class="ln"></span><span class="ln">40</span><span>+   volumes:</span></div>
+        <div class="add hot"><span class="ln"></span><span class="ln">41</span><span>+     - /:/host:ro</span></div>
+        <div class="add"><span class="ln"></span><span class="ln">42</span><span>+     - shop-tmp:/tmp</span></div>
+      </div>
+    </section></main></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"light":{"editor":"boolean","default":false,"section":"主題"},"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const light = this.props.light ?? false;
+    return { theme: light ? 'light' : 'dark', themeLabel: light ? '深色' : '淺色' };
+  }
+}
+</script>
+</body>
+</html>
