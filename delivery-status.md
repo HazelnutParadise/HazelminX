@@ -22,10 +22,10 @@ M0 基礎與設計：規格已整併、票務已切好、GitHub issue 已開；�
 | M5 | 多節點、叢集、遷移與發布 | — | not_started | G-01～G-14 門檻 |
 
 ## Current Blockers
-None。
+- 票 002 等待選定設計方向（A 星圖／B 航站／C 榛果，或混合），選定前不寫 `DESIGN.md`。
 
 ## Next Verifiable Output
-`DESIGN.md` 與主要畫面原型（總覽、節點、專案／服務、工作中心、GitHub 來源選擇器、部署檢查、錯誤與空狀態、360px 手機版）通過 `DESIGN-REVIEW.md` 審查。
+選定方向後的 `DESIGN.md`（Google DESIGN.md 格式）與其餘主要畫面原型（節點詳情、專案／服務、工作中心、GitHub 來源選擇器、部署檢查、錯誤與空狀態）通過 `DESIGN-REVIEW.md` 審查。三個方向的總覽頁原型已在 PR #102。
 
 ## Next Ticket
 002 設計系統與 UI/UX 原型（進行中）。003、004、092 已有骨架草稿 PR，待補完驗收條件；007 等 003 與 004 合併後開工。
@@ -39,12 +39,14 @@ None。
 | 可信 IP 與 WAF 以 Zentinel agent filter 實作；核心 `waf.mode` 不用 | Zentinel 研究：核心 WAF 未接線、只有 X-Forwarded-For 處理 | 2026-11-06 | 064、065 |
 | TCP/UDP 代理另選元件 | Zentinel 無 L4 代理 | 2026-11-06 | 060 |
 | Windows 節點票標 `scope:pending-approval` | 08.7 為建議範圍 | 2026-11-06 | 093 |
+| 設計先出三個方向（風格輪盤、現實標竿、最佳設計師）再選定，不先寫 DESIGN.md | design-studio 的「看得見才能選」原則 | 2026-11-07 | 002、005 |
 
 ## Source Links
 - 架構決策：`ENG.md`
 - 規格：`docs/spec/HazelminX_Spec_v1.1_zh-TW.md`
 - 票務：`docs/tickets/README.md`、GitHub issues #1–#98（milestone M0–M5）
-- 草稿 PR：#99（092 基線盤點）、#100（003 Core 骨架）、#101（004 Agent 骨架）；002 設計於 `ticket/002-design-system`
+- 草稿 PR：#99（092 基線盤點）、#100（003 Core 骨架）、#101（004 Agent 骨架）、#102（002 設計方向）
+- 設計畫布：<https://claude.ai/artifact/NBXgFGYEiZVnKLraoa7Nt8>（三個方向，私人）
 - 研究：`docs/research/`
 - 工作規則：`AGENTS.md`
 
