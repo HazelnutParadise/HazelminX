@@ -1,0 +1,39 @@
+[Unit]
+Description=HazelminX host agent
+Documentation=https://github.com/HazelnutParadise/HazelminX
+# Network and time may not be ready yet; the agent retries with backoff
+# instead of trusting these targets alone (spec 8.3).
+After=network-online.target time-sync.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=hazelminx-agent
+Group=hazelminx-agent
+ExecStart=/usr/local/bin/hazelminx-agent run
+Restart=on-failure
+RestartSec=5s
+StartLimitIntervalSec=120
+StartLimitBurst=5
+Environment=HAZELMINX_AGENT_CONFIG=/etc/hazelminx/agent.toml
+StateDirectory=hazelminx/agent
+StateDirectoryMode=0700
+ConfigurationDirectory=hazelminx
+LogsDirectory=hazelminx
+# Low-privilege by design: anything needing root goes through hazelminx-privileged (ticket 012).
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+SystemCallArchitectures=native
+ReadWritePaths=/var/lib/hazelminx/agent /var/log/hazelminx
+
+[Install]
+WantedBy=multi-user.target

@@ -4,7 +4,7 @@
 **User Story:** 管理員可以把主機納入管理  
 **Milestone:** M0 基礎與設計  
 **Blocked by:** [001 維護者可以在單一 repo 取得規格、架構決策、票務與工作規則](001-repo-scaffold.md)  
-**Status:** ready  
+**Status:** in_progress  
 **規格章節:** 31｜整體架構：每一部分負責什麼、32｜節點通訊、信任與高權限操作、38｜效能、資源與可觀測品質要求  
 **Issue:** [#4](https://github.com/HazelnutParadise/hazelminx/issues/4)  
 
