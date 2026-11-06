@@ -4,7 +4,7 @@
 **User Story:** 維護者可以接手專案  
 **Milestone:** M0 基礎與設計  
 **Blocked by:** [001 維護者可以在單一 repo 取得規格、架構決策、票務與工作規則](001-repo-scaffold.md)  
-**Status:** ready  
+**Status:** in_progress  
 **規格章節:** 31｜整體架構：每一部分負責什麼、35｜平台資料儲存、機密與復原包  
 **Issue:** [#3](https://github.com/HazelnutParadise/hazelminx/issues/3)  
 
