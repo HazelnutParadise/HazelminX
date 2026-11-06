@@ -1,0 +1,25 @@
+# 055 — 管理員可以從介面安裝原生 Zentinel，Core 重啟不影響既有網站，救援入口不依賴它
+
+**Epic:** 網站入口（`epic:web`）  
+**User Story:** 使用者可以對外發布網站  
+**Milestone:** M3 網站入口與安全防護  
+**Blocked by:** [021 維運者可以搜尋、安裝、更新、移除套件並套用安全更新](021-packages-and-updates.md), [012 維運者可以執行需要高權限的固定動作，而 Agent 主程序維持低權限](012-privileged-executor.md), [016 管理員可以預覽並批准高風險變更計畫，內容改變時原批准失效](016-change-plans.md)  
+**Status:** blocked  
+**規格章節:** 19｜網站、Zentinel、網域與 HTTPS、31｜整體架構：每一部分負責什麼  
+**Issue:** [#55](https://github.com/HazelnutParadise/hazelminx/issues/55)  
+
+## What it delivers
+
+固定已驗證版本與規則包、80／443 衝突預檢、systemd 服務、KDL 設定產生與驗證（不把 ${VAR} 原樣送入）、候選設定原子切換、實際請求驗證、獨立管理入口。
+
+## Acceptance criteria
+
+- [ ] **WEB-001** 管理員可以從介面安裝原生 Zentinel。 — 完成條件：固定已驗證版本，檢查 80／443、權限、設定、依賴與啟動；實際請求成功才顯示完成。[S24](#source-S24)
+- [ ] **ARC-002** 網站訪客可以在 Core 重新啟動時繼續使用已運行服務。 — 完成條件：路由、TLS 與已核准安全政策保留；測試期間不因 Core 重啟而中止一般流量。
+- [ ] **ARC-007** 管理員可以透過獨立救援入口修復網站入口。 — 完成條件：Zentinel 停止時仍有已驗證的管理通道；救援入口不等於公開無密碼介面。
+- [ ] Zentinel 停止時仍有已驗證的管理通道
+- [ ] 測試期間 Core 重啟不中止一般流量
+
+## Delivery record
+
+需求 ID → 變更 → 測試環境 → 正常與失敗案例 → 證據 → 未驗證部分，依規格第 46.4 節填寫於 PR。

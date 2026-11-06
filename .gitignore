@@ -1,0 +1,38 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Go
+core/bin/
+core/dist/
+core/**/*.test
+core/coverage.out
+
+# Rust
+agent/target/
+**/*.rs.bk
+
+# Web
+web/node_modules/
+web/dist/
+web/.vite/
+web/coverage/
+node_modules/
+
+# Local data and secrets
+*.env
+!*.env.example
+*.local
+data/
+*.db
+*.sqlite
+*.pem
+*.key
+
+# Build artifacts
+dist/
+build/
+release/

@@ -1,0 +1,29 @@
+# 039 — 管理員可以看到 Docker、Podman、K3s 各自狀態並在頁面一鍵安裝 Docker
+
+**Epic:** 容器引擎（`epic:containers`）  
+**User Story:** 管理員可以管理容器引擎  
+**Milestone:** M2 容器、Compose 與 GitHub  
+**Blocked by:** [019 管理員可以用一次性註冊碼加入節點，並看到離線、過期、維護與撤銷狀態](019-node-enrollment.md), [016 管理員可以預覽並批准高風險變更計畫，內容改變時原批准失效](016-change-plans.md), [012 維運者可以執行需要高權限的固定動作，而 Agent 主程序維持低權限](012-privileged-executor.md)  
+**Status:** blocked  
+**規格章節:** 09｜節點加入、自動偵測與多節點、39｜跨功能流程：從按鈕到真正完成  
+**Issue:** [#39](https://github.com/HazelnutParadise/hazelminx/issues/39)  
+
+## What it delivers
+
+引擎偵測（未安裝／已停止／不相容／無權限分開）、rootless Podman 多使用者環境辨識、39.2 的安裝計畫與批准、安裝後驗證（Engine、Compose、Buildx、Socket 權限）。
+
+## Acceptance criteria
+
+- [ ] **NOD-003** 管理員可以看到各引擎的安裝、執行、版本與可管理能力。 — 完成條件：分開顯示 Docker、Podman、Kubernetes／K3s、Swarm 與相關 runtime，不重複計數同一工作負載。
+- [ ] **NOD-004** 管理員可以管理不同 Linux 使用者的 rootless Podman 環境。 — 完成條件：明示擁有者與 socket；甲使用者容器不誤顯示為乙使用者資源。[S17](#source-S17)
+- [ ] **INS-008** 管理員可以在 Docker、Podman 或 K8s 頁面安裝缺少的元件。 — 完成條件：顯示未安裝、已停止、不相容與無權限的不同狀態；不把全部問題當成沒安裝。
+- [ ] 已有 K3s 的 containerd 不自動移除
+- [ ] 失敗時不自動關閉防火牆、停掉另一個引擎或把 Socket 改成所有人可寫
+
+## Acceptance tests（第 42 章）
+
+- **T-051** 同主機有 Docker、rootful 與兩個 rootless Podman。 → 分開辨識四個環境與使用者，不混淆容器。
+
+## Delivery record
+
+需求 ID → 變更 → 測試環境 → 正常與失敗案例 → 證據 → 未驗證部分，依規格第 46.4 節填寫於 PR。
