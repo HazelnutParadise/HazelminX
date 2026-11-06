@@ -4,7 +4,7 @@
 **User Story:** 驗收者可以證明功能沒有遺漏  
 **Milestone:** M0 基礎與設計  
 **Blocked by:** [001 維護者可以在單一 repo 取得規格、架構決策、票務與工作規則](001-repo-scaffold.md)  
-**Status:** ready  
+**Status:** in_progress  
 **規格章節:** 06｜1Panel 功能保留與相容基準  
 **Issue:** [#91](https://github.com/HazelnutParadise/hazelminx/issues/91)  
 

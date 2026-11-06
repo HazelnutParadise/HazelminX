@@ -24,7 +24,7 @@
    "acceptance_tests": [
     "T-117"
    ],
-   "status": "ready",
+   "status": "in_progress",
    "issue": 2
   },
   {
@@ -38,7 +38,7 @@
    ],
    "requirements": [],
    "acceptance_tests": [],
-   "status": "ready",
+   "status": "in_progress",
    "issue": 3
   },
   {
@@ -52,7 +52,7 @@
    ],
    "requirements": [],
    "acceptance_tests": [],
-   "status": "ready",
+   "status": "in_progress",
    "issue": 4
   },
   {
@@ -2108,7 +2108,7 @@
    "acceptance_tests": [
     "T-121"
    ],
-   "status": "ready",
+   "status": "in_progress",
    "issue": 91
   },
   {

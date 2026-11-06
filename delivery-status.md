@@ -9,7 +9,7 @@ M0 基礎與設計：規格已整併、票務已切好、GitHub issue 已開；�
 ## Active Workstreams
 - 設計系統與原型（票 002）→ `DESIGN.md`、`docs/design/`、`DESIGN-REVIEW.md`。
 - 1Panel 功能基線盤點（票 092）→ `docs/baseline/`。
-- 參考專案研究收尾 → `docs/research/`（1Panel 後端／前端、Komodo Periphery、Portainer Git Stack、Beszel 報告待補）。
+- Core／Agent 骨架補完（票 003、004，PR #100、#101）與基線對照表填寫（票 092，PR #99）。
 
 ## Milestones
 | id | target | owner | status | verification_signal |
@@ -28,7 +28,7 @@ None。
 `DESIGN.md` 與主要畫面原型（總覽、節點、專案／服務、工作中心、GitHub 來源選擇器、部署檢查、錯誤與空狀態、360px 手機版）通過 `DESIGN-REVIEW.md` 審查。
 
 ## Next Ticket
-002 設計系統與 UI/UX 原型。可平行：003 Core 骨架、007 Core↔Agent 協定、092 基線盤點。
+002 設計系統與 UI/UX 原型（進行中）。003、004、092 已有骨架草稿 PR，待補完驗收條件；007 等 003 與 004 合併後開工。
 
 ## Decision Log
 | decision | rationale | timestamp | impacted_ticket_ids |
@@ -44,6 +44,7 @@ None。
 - 架構決策：`ENG.md`
 - 規格：`docs/spec/HazelminX_Spec_v1.1_zh-TW.md`
 - 票務：`docs/tickets/README.md`、GitHub issues #1–#98（milestone M0–M5）
+- 草稿 PR：#99（092 基線盤點）、#100（003 Core 骨架）、#101（004 Agent 骨架）；002 設計於 `ticket/002-design-system`
 - 研究：`docs/research/`
 - 工作規則：`AGENTS.md`
 
@@ -51,3 +52,4 @@ None。
 - 所有產品測試均未執行；規格裡的「必須」都是要求。
 - 參考專案原始碼放在本機暫存目錄，不進 repo；研究報告是線索，實作前以固定 commit 重新核對。
 - Vite+ 的 `vp` 尚未安裝在開發機；票 005 開工時先裝全域 CLI（`curl -fsSL https://vite.plus | bash`）。
+- 在 `/Volumes/SSD` 上 `cargo build` 需設 `CARGO_TARGET_DIR` 到支援檔案鎖的磁碟（project memory 有紀錄）。

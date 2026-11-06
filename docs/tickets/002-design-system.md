@@ -4,7 +4,7 @@
 **User Story:** 使用者可以在一致的介面完成日常管理  
 **Milestone:** M0 基礎與設計  
 **Blocked by:** 無  
-**Status:** ready  
+**Status:** in_progress  
 **規格章節:** 07｜介面與操作體驗  
 **Issue:** [#2](https://github.com/HazelnutParadise/hazelminx/issues/2)  
 
