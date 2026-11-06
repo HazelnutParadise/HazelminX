@@ -22,10 +22,10 @@ M0 基礎與設計：規格已整併、票務已切好、GitHub issue 已開；�
 | M5 | 多節點、叢集、遷移與發布 | — | not_started | G-01～G-14 門檻 |
 
 ## Current Blockers
-- 票 002 等待選定設計方向（A 星圖／B 航站／C 榛果，或混合），選定前不寫 `DESIGN.md`。
+None。
 
 ## Next Verifiable Output
-選定方向後的 `DESIGN.md`（Google DESIGN.md 格式）與其餘主要畫面原型（節點詳情、專案／服務、工作中心、GitHub 來源選擇器、部署檢查、錯誤與空狀態）通過 `DESIGN-REVIEW.md` 審查。三個方向的總覽頁原型已在 PR #102。
+PR #102（票 002：`DESIGN.md`、12 個畫板、`DESIGN-REVIEW.md`）合併；接著票 005 前端基礎依 `DESIGN.md` token 建立 `web/` 骨架，並把總覽頁的圖表元件做成真的。
 
 ## Next Ticket
 002 設計系統與 UI/UX 原型（進行中）。003、004、092 已有骨架草稿 PR，待補完驗收條件；007 等 003 與 004 合併後開工。
@@ -40,13 +40,15 @@ M0 基礎與設計：規格已整併、票務已切好、GitHub issue 已開；�
 | TCP/UDP 代理另選元件 | Zentinel 無 L4 代理 | 2026-11-06 | 060 |
 | Windows 節點票標 `scope:pending-approval` | 08.7 為建議範圍 | 2026-11-06 | 093 |
 | 設計先出三個方向（風格輪盤、現實標竿、最佳設計師）再選定，不先寫 DESIGN.md | design-studio 的「看得見才能選」原則 | 2026-11-07 | 002、005 |
+| 選定方向 B「航站」；圖表加量，依現代控制台做法（表內量表、兩欄時間圖格、部署標記線、狀態時間軸、熱格、最熱排行） | 使用者選擇與要求（2026-11-07） | 2026-11-07 | 002、005、017 |
+| 圖表序列色固定四色，深淺兩組通過 dataviz 色弱驗證；小字灰調深到 ≥ 4.5:1 | 可及性硬性限制 | 2026-11-07 | 002、005 |
 
 ## Source Links
 - 架構決策：`ENG.md`
 - 規格：`docs/spec/HazelminX_Spec_v1.1_zh-TW.md`
 - 票務：`docs/tickets/README.md`、GitHub issues #1–#98（milestone M0–M5）
 - 草稿 PR：#99（092 基線盤點）、#100（003 Core 骨架）、#101（004 Agent 骨架）、#102（002 設計方向）
-- 設計畫布：<https://claude.ai/artifact/NBXgFGYEiZVnKLraoa7Nt8>（三個方向，私人）
+- 設計畫布：<https://claude.ai/artifact/NBXgFGYEiZVnKLraoa7Nt8>（第一頁三個方向、第二頁方向 B 定稿 12 畫板，私人）
 - 研究：`docs/research/`
 - 工作規則：`AGENTS.md`
 
