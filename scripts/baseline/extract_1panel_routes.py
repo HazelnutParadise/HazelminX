@@ -95,8 +95,8 @@ def main():
     meta = {"source": "1Panel-dev/1Panel", "tag": "v2.4.1", "commit": head, "generator": "scripts/baseline/extract_1panel_routes.py"}
     json.dump({"meta": meta, "routes": api}, open(os.path.join(out, "1panel-v2.4.1-api-routes.json"), "w"), ensure_ascii=False, indent=1)
     json.dump({"meta": meta, "routes": fe}, open(os.path.join(out, "1panel-v2.4.1-frontend-routes.json"), "w"), ensure_ascii=False, indent=1)
-    with open(os.path.join(out, "1panel-v2.4.1-baseline.csv"), "w", newline="") as f:
-        w = csv.writer(f)
+    with open(os.path.join(out, "1panel-v2.4.1-baseline.csv"), "w", newline="") as f:  # noqa: E501
+        w = csv.writer(f, lineterminator="\n")
         w.writerow(["kind", "process_or_file", "method", "path", "handler_or_component", "hidden",
                     "hazelminx_ticket", "hazelminx_status", "evidence"])
         for r in api:
