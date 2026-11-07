@@ -1,4 +1,4 @@
--- 0002: IAM foundation (ticket 009, spec chapter 5): local accounts, role
+-- 0003: IAM foundation (ticket 009, spec chapter 5): local accounts, role
 -- assignments with resource scopes, login sessions and the audit ledger.
 -- Times are UTC RFC 3339 text. Password hashes are argon2id; session tokens
 -- are stored only as SHA-256 so a database read cannot replay a login.

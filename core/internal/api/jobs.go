@@ -67,7 +67,7 @@ func (h *jobsHandler) fail(c *gin.Context, err error, requestID string) {
 	default:
 		e.Code, e.Retryable = "INTERNAL", true
 	}
-	c.JSON(status, e)
+	writeError(c, status, e)
 }
 
 func (h *jobsHandler) list(c *gin.Context) {
@@ -76,7 +76,7 @@ func (h *jobsHandler) list(c *gin.Context) {
 		for _, s := range strings.Split(v, ",") {
 			st := jobs.State(strings.TrimSpace(s))
 			if !st.Valid() {
-				c.JSON(http.StatusBadRequest, apiError{Code: "INVALID_REQUEST", Message: "unknown state " + string(st)})
+				writeError(c, http.StatusBadRequest, apiError{Code: "INVALID_REQUEST", Message: "unknown state " + string(st)})
 				return
 			}
 			opts.States = append(opts.States, st)
@@ -85,7 +85,7 @@ func (h *jobsHandler) list(c *gin.Context) {
 	if v := c.Query("limit"); v != "" {
 		n, err := strconv.Atoi(v)
 		if err != nil || n <= 0 {
-			c.JSON(http.StatusBadRequest, apiError{Code: "INVALID_REQUEST", Message: "limit must be a positive integer"})
+			writeError(c, http.StatusBadRequest, apiError{Code: "INVALID_REQUEST", Message: "limit must be a positive integer"})
 			return
 		}
 		opts.Limit = n
@@ -106,7 +106,7 @@ func (h *jobsHandler) submit(c *gin.Context) {
 	dec := json.NewDecoder(http.MaxBytesReader(c.Writer, c.Request.Body, maxSubmitBody))
 	dec.DisallowUnknownFields() // an unknown field is never dropped silently (spec 34.3)
 	if err := dec.Decode(&req); err != nil {
-		c.JSON(http.StatusBadRequest, apiError{Code: "INVALID_REQUEST", Message: "body must be a JSON submit request: " + err.Error()})
+		writeError(c, http.StatusBadRequest, apiError{Code: "INVALID_REQUEST", Message: "body must be a JSON submit request: " + err.Error()})
 		return
 	}
 	job, dedup, err := h.engine.Submit(c.Request.Context(), req)
@@ -132,7 +132,7 @@ func (h *jobsHandler) events(c *gin.Context) {
 	if v := c.Query("after"); v != "" {
 		n, err := strconv.ParseInt(v, 10, 64)
 		if err != nil || n < 0 {
-			c.JSON(http.StatusBadRequest, apiError{Code: "INVALID_REQUEST", Message: "after must be a non-negative integer"})
+			writeError(c, http.StatusBadRequest, apiError{Code: "INVALID_REQUEST", Message: "after must be a non-negative integer"})
 			return
 		}
 		after = n
@@ -141,7 +141,7 @@ func (h *jobsHandler) events(c *gin.Context) {
 	if v := c.Query("limit"); v != "" {
 		n, err := strconv.Atoi(v)
 		if err != nil || n <= 0 {
-			c.JSON(http.StatusBadRequest, apiError{Code: "INVALID_REQUEST", Message: "limit must be a positive integer"})
+			writeError(c, http.StatusBadRequest, apiError{Code: "INVALID_REQUEST", Message: "limit must be a positive integer"})
 			return
 		}
 		limit = n

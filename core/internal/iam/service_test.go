@@ -207,7 +207,7 @@ func TestUsersRolesAndAudit(t *testing.T) {
 	owner := setupOwner(t, svc)
 	ctx := context.Background()
 	ownerP, _ := svc.principal(ctx, owner.ID)
-	src := Source{IP: "10.0.0.1", RequestID: "req-1"}
+	src := Source{IP: "10.0.0.1", TraceID: "trace-1"}
 
 	bob, err := svc.CreateUser(ctx, ownerP, CreateUserInput{Username: "bob", DisplayName: "Bob", Password: "bob-password-123"}, src)
 	if err != nil {
@@ -254,7 +254,7 @@ func TestUsersRolesAndAudit(t *testing.T) {
 		switch ev.Action {
 		case "user.create":
 			sawCreate = true
-			if ev.ActorID != owner.ID || ev.ResourceID != bob.ID || ev.RequestID != "req-1" || ev.SourceIP != "10.0.0.1" {
+			if ev.ActorID != owner.ID || ev.ResourceID != bob.ID || ev.TraceID != "trace-1" || ev.SourceIP != "10.0.0.1" {
 				t.Fatalf("user.create event incomplete: %+v", ev)
 			}
 			if ev.After["password"] != "***" || ev.After["username"] != "bob" {

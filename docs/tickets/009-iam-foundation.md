@@ -15,7 +15,7 @@
 ## Acceptance criteria
 
 - [x] **IAM-001** 擁有者可以建立帳號、角色與資源範圍，權限預設拒絕。 — 完成條件：對未授權節點手動呼叫 API 也遭拒絕，不只隱藏按鈕。 — 證據：`core/internal/iam/authz.go` 的 `Authorize` 無任何指派即拒絕（`TestDefaultDeny`、`TestScopeIsolation`）；`POST /users`、`POST /users/{id}/roles` 由唯讀帳號直接呼叫回 `403` 且資料未建立（`TestT013ReadOnlyAccountCannotChange`）。
-- [x] **IAM-006** 稽核者可以查誰在何時改了什麼。 — 完成條件：同一操作能連回變更前後摘要、工作編號、節點與結果，機密保持遮罩。 — 證據：`audit_events` 有 actor、before/after、jobId、nodeId、result、requestId、sourceIp（`0003_iam.sql`）；`user.create` 事件 `after.password` 為 `***`（`TestUsersRolesAndAudit`、`TestAuditLedgerLinksChangeAndMasksSecrets`）；其他套件以 `Service.Record` 寫入工作事件。
+- [x] **IAM-006** 稽核者可以查誰在何時改了什麼。 — 完成條件：同一操作能連回變更前後摘要、工作編號、節點與結果，機密保持遮罩。 — 證據：`audit_events` 有 actor、before/after、jobId、nodeId、result、traceId、sourceIp（`0003_iam.sql`，`0005_audit_trace_id.sql` 把欄位改名為 `trace_id`）；`user.create` 事件 `after.password` 為 `***`（`TestUsersRolesAndAudit`、`TestAuditLedgerLinksChangeAndMasksSecrets`）；其他套件以 `Service.Record` 寫入工作事件。
 - [x] **IAM-012** 系統可以限制登入與復原碼嘗試。 — 完成條件：不洩漏帳號存在與否；按帳號與可信來源限制，不能讓攻擊者簡單永久鎖死所有管理員。 — 證據：`core/internal/iam/limiter.go`；帳號冷卻上限 15 分鐘、可信來源不受帳號冷卻影響、來源噴灑另行封鎖（`TestAccountCoolDownIsBoundedAndNotPermanent`、`TestTrustedSourceBypassesAccountCoolDown`、`TestLoginThrottleBoundedAndTrustedSource`）。復原碼（票 014）共用 `Service.Limiter()`。
 - [x] 專案 A 使用者猜專案 B 的資源 ID 時，查詢、下載、搜尋與事件串流都不洩漏 — 證據：`RequireScoped` 對「存在但不可見」與「不存在」回同一份 `404` 內容；稽核搜尋以範圍過濾回空頁（`TestT014GuessedResourceIDsDoNotLeak`）。事件串流端點本身屬票 008／010，這裡驗證的是它們將套用的同一中介層。
 - [x] 不洩漏帳號存在與否；限制不能讓攻擊者永久鎖死所有管理員 — 證據：未知帳號與密碼錯誤回同一份 `401` 內容且做同樣的雜湊運算（`TestLoginErrorsDoNotRevealAccounts`、`TestLoginDoesNotRevealAccounts`）；未知帳號套同一節流（`TestLoginThrottleBoundedAndTrustedSource`）。

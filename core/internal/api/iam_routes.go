@@ -18,7 +18,7 @@ const (
 	SessionCookie = "hazelminx_session"
 	CSRFCookie    = "hazelminx_csrf"
 	CSRFHeader    = "X-CSRF-Token"
-	RequestIDHdr  = "X-Request-ID"
+	TraceIDHdr    = "X-Trace-ID"
 )
 
 const principalKey = "hazelminx.principal"
@@ -42,12 +42,12 @@ func (s *Server) MountIAM(svc *iam.Service, opts IAMOptions) {
 	s.iam = svc
 	_ = s.engine.SetTrustedProxies(opts.TrustedProxies)
 
-	pub := s.engine.Group("/management/v1", requestID())
+	pub := s.engine.Group("/management/v1", traceID())
 	pub.GET("/setup", s.setupStatus)
 	pub.POST("/setup", s.setupOwner)
 	pub.POST("/auth/login", s.login)
 
-	s.protected = s.engine.Group("/management/v1", requestID(), s.requireSession(opts.Tokens), s.csrf())
+	s.protected = s.engine.Group("/management/v1", traceID(), s.requireSession(opts.Tokens), s.csrf())
 	p := s.protected
 	p.GET("/auth/session", s.whoami)
 	p.POST("/auth/logout", s.logout)
@@ -90,7 +90,8 @@ func Principal(c *gin.Context) *iam.Principal {
 type apiError struct {
 	Code             string   `json:"code"`
 	Message          string   `json:"message"`
-	RequestID        string   `json:"requestId,omitempty"`
+	RequestID        string   `json:"requestId,omitempty"` // operation request identifier (spec 33)
+	TraceID          string   `json:"traceId,omitempty"`   // this HTTP call, also in X-Trace-ID
 	JobID            string   `json:"jobId,omitempty"`
 	Retryable        bool     `json:"retryable"`
 	RetryAfter       int      `json:"retryAfterSeconds,omitempty"`
@@ -98,7 +99,13 @@ type apiError struct {
 }
 
 func fail(c *gin.Context, status int, code, msg string) {
-	c.AbortWithStatusJSON(status, apiError{Code: code, Message: msg, RequestID: c.GetString(RequestIDHdr)})
+	c.AbortWithStatusJSON(status, apiError{Code: code, Message: msg, TraceID: c.GetString(TraceIDHdr)})
+}
+
+// writeError sends an error body stamped with the call's trace id.
+func writeError(c *gin.Context, status int, e apiError) {
+	e.TraceID = c.GetString(TraceIDHdr)
+	c.JSON(status, e)
 }
 
 // notFound is the single answer for "does not exist" and "you may not know
@@ -128,20 +135,23 @@ func failErr(c *gin.Context, err error) {
 
 // ---- middlewares ----------------------------------------------------------
 
-func requestID() gin.HandlerFunc {
+// traceID gives every call a trace identifier (client-supplied or generated)
+// that errors and audit events carry as traceId. It is unrelated to the
+// requestId that names an operation for deduplication.
+func traceID() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.GetHeader(RequestIDHdr)
+		id := c.GetHeader(TraceIDHdr)
 		if id == "" || len(id) > 128 {
 			id = uuid.NewString()
 		}
-		c.Set(RequestIDHdr, id)
-		c.Header(RequestIDHdr, id)
+		c.Set(TraceIDHdr, id)
+		c.Header(TraceIDHdr, id)
 		c.Next()
 	}
 }
 
 func source(c *gin.Context) iam.Source {
-	return iam.Source{IP: c.ClientIP(), UserAgent: c.Request.UserAgent(), RequestID: c.GetString(RequestIDHdr)}
+	return iam.Source{IP: c.ClientIP(), UserAgent: c.Request.UserAgent(), TraceID: c.GetString(TraceIDHdr)}
 }
 
 // requireSession authenticates by cookie, or by bearer token when a
@@ -306,7 +316,7 @@ func (s *Server) login(c *gin.Context) {
 		secs := int(retry.Seconds()) + 1
 		c.Header("Retry-After", strconv.Itoa(secs))
 		c.AbortWithStatusJSON(http.StatusTooManyRequests, apiError{Code: "TOO_MANY_ATTEMPTS", Message: "too many attempts; try again later",
-			RequestID: c.GetString(RequestIDHdr), Retryable: true, RetryAfter: secs})
+			TraceID: c.GetString(TraceIDHdr), Retryable: true, RetryAfter: secs})
 		return
 	}
 	if errors.Is(err, iam.ErrInvalidCredentials) {

@@ -1,4 +1,4 @@
--- 0002: secret references and master-key generations (spec 34.1 機密參照, 35.2; ticket 011).
+-- 0004: secret references and master-key generations (spec 34.1 機密參照, 35.2; ticket 011).
 -- Key material never lives in this database: master_keys records generations only,
 -- the bytes stay in the keyring file beside the database (see internal/secrets).
 

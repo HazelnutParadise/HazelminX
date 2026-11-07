@@ -134,7 +134,7 @@ func (s *Service) CompleteSetup(ctx context.Context, code, username, password st
 	s.setupMu.Unlock()
 	if !validCode {
 		s.limiter.Failure(setupKey, src.IP)
-		s.record(ctx, s.db, AuditEvent{Action: "setup.owner", Scope: Global, Result: ResultFailed, Message: "invalid or expired setup code", RequestID: src.RequestID, SourceIP: src.IP})
+		s.record(ctx, s.db, AuditEvent{Action: "setup.owner", Scope: Global, Result: ResultFailed, Message: "invalid or expired setup code", TraceID: src.TraceID, SourceIP: src.IP})
 		return nil, ErrSetupCode
 	}
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -158,7 +158,7 @@ func (s *Service) CompleteSetup(ctx context.Context, code, username, password st
 	}
 	if err := s.record(ctx, tx, AuditEvent{ActorID: u.ID, ActorName: u.Username, Action: "setup.owner", Scope: Global,
 		ResourceKind: "user", ResourceID: u.ID, Result: ResultOK, After: map[string]any{"username": u.Username, "role": RoleOwner},
-		RequestID: src.RequestID, SourceIP: src.IP}); err != nil {
+		TraceID: src.TraceID, SourceIP: src.IP}); err != nil {
 		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -202,7 +202,7 @@ func (s *Service) Login(ctx context.Context, username, password string, src Sour
 	if u == nil || !match || u.Status != StatusActive {
 		s.limiter.Failure(username, src.IP)
 		s.record(ctx, s.db, AuditEvent{Action: "login", Scope: Global, Result: ResultFailed, Message: "invalid credentials",
-			After: map[string]any{"username": username}, RequestID: src.RequestID, SourceIP: src.IP})
+			After: map[string]any{"username": username}, TraceID: src.TraceID, SourceIP: src.IP})
 		return nil, nil, 0, ErrInvalidCredentials
 	}
 
@@ -236,7 +236,7 @@ func (s *Service) openSession(ctx context.Context, u *User, src Source) (*Sessio
 		return nil, err
 	}
 	if err := s.record(ctx, tx, AuditEvent{ActorID: u.ID, ActorName: u.Username, Action: "login", Scope: Global,
-		ResourceKind: "session", ResourceID: sess.ID, Result: ResultOK, RequestID: src.RequestID, SourceIP: src.IP}); err != nil {
+		ResourceKind: "session", ResourceID: sess.ID, Result: ResultOK, TraceID: src.TraceID, SourceIP: src.IP}); err != nil {
 		return nil, err
 	}
 	return sess, tx.Commit()
@@ -296,7 +296,7 @@ func (s *Service) Logout(ctx context.Context, p *Principal, src Source) error {
 		return err
 	}
 	if err := s.record(ctx, tx, AuditEvent{ActorID: p.User.ID, ActorName: p.User.Username, Action: "logout", Scope: Global,
-		ResourceKind: "session", ResourceID: p.SessionID, Result: ResultOK, RequestID: src.RequestID, SourceIP: src.IP}); err != nil {
+		ResourceKind: "session", ResourceID: p.SessionID, Result: ResultOK, TraceID: src.TraceID, SourceIP: src.IP}); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -346,8 +346,8 @@ func (s *Service) CreateUser(ctx context.Context, actor *Principal, in CreateUse
 	}
 	if err := s.record(ctx, tx, AuditEvent{ActorID: actor.User.ID, ActorName: actor.User.Username, Action: "user.create", Scope: Global,
 		ResourceKind: "user", ResourceID: u.ID, Result: ResultOK,
-		After:     map[string]any{"username": u.Username, "displayName": u.DisplayName, "status": u.Status, "password": in.Password},
-		RequestID: src.RequestID, SourceIP: src.IP}); err != nil {
+		After:   map[string]any{"username": u.Username, "displayName": u.DisplayName, "status": u.Status, "password": in.Password},
+		TraceID: src.TraceID, SourceIP: src.IP}); err != nil {
 		return nil, err
 	}
 	return u, tx.Commit()
@@ -410,7 +410,7 @@ func (s *Service) AssignRole(ctx context.Context, actor *Principal, userID strin
 	}
 	if err := s.record(ctx, tx, AuditEvent{ActorID: actor.User.ID, ActorName: actor.User.Username, Action: "role.assign", Scope: scope,
 		ResourceKind: "user", ResourceID: userID, Result: ResultOK,
-		After: map[string]any{"username": target.Username, "role": role, "scope": scope}, RequestID: src.RequestID, SourceIP: src.IP}); err != nil {
+		After: map[string]any{"username": target.Username, "role": role, "scope": scope}, TraceID: src.TraceID, SourceIP: src.IP}); err != nil {
 		return nil, err
 	}
 	return as, tx.Commit()
@@ -457,7 +457,7 @@ func (s *Service) RevokeRole(ctx context.Context, actor *Principal, assignmentID
 	}
 	if err := s.record(ctx, tx, AuditEvent{ActorID: actor.User.ID, ActorName: actor.User.Username, Action: "role.revoke", Scope: as.Scope,
 		ResourceKind: "user", ResourceID: as.UserID, Result: ResultOK,
-		Before: map[string]any{"role": as.Role, "scope": as.Scope}, RequestID: src.RequestID, SourceIP: src.IP}); err != nil {
+		Before: map[string]any{"role": as.Role, "scope": as.Scope}, TraceID: src.TraceID, SourceIP: src.IP}); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -599,7 +599,7 @@ func (s *Service) Record(ctx context.Context, ev AuditEvent) error {
 
 // RecordDenied writes the audit row for a refused call (403/404).
 func (s *Service) RecordDenied(ctx context.Context, p *Principal, a Action, on Scope, src Source) {
-	ev := AuditEvent{Action: "authz.deny", Scope: on, Result: ResultDenied, Message: string(a), RequestID: src.RequestID, SourceIP: src.IP}
+	ev := AuditEvent{Action: "authz.deny", Scope: on, Result: ResultDenied, Message: string(a), TraceID: src.TraceID, SourceIP: src.IP}
 	if p != nil {
 		ev.ActorID, ev.ActorName = p.User.ID, p.User.Username
 	}
@@ -631,10 +631,10 @@ func (s *Service) record(ctx context.Context, ex execer, ev AuditEvent) error {
 	if ev.ActorID != "" {
 		actor = ev.ActorID
 	}
-	_, err = ex.ExecContext(ctx, `INSERT INTO audit_events(id,at,actor_id,actor_name,action,scope_kind,scope_id,resource_kind,resource_id,job_id,node_id,result,message,before_json,after_json,request_id,source_ip)
+	_, err = ex.ExecContext(ctx, `INSERT INTO audit_events(id,at,actor_id,actor_name,action,scope_kind,scope_id,resource_kind,resource_id,job_id,node_id,result,message,before_json,after_json,trace_id,source_ip)
 		VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		ev.ID, ts(ev.At), actor, ev.ActorName, ev.Action, string(ev.Scope.Kind), ev.Scope.ID, ev.ResourceKind, ev.ResourceID, ev.JobID, ev.NodeID,
-		ev.Result, ev.Message, before, after, ev.RequestID, ev.SourceIP)
+		ev.Result, ev.Message, before, after, ev.TraceID, ev.SourceIP)
 	return err
 }
 
@@ -676,7 +676,7 @@ func (s *Service) ListAudit(ctx context.Context, actor *Principal, f AuditFilter
 		args = append(args, f.ResourceID)
 	}
 	args = append(args, f.Limit)
-	rows, err := s.db.QueryContext(ctx, `SELECT seq,id,at,coalesce(actor_id,''),actor_name,action,scope_kind,scope_id,resource_kind,resource_id,job_id,node_id,result,message,before_json,after_json,request_id,source_ip
+	rows, err := s.db.QueryContext(ctx, `SELECT seq,id,at,coalesce(actor_id,''),actor_name,action,scope_kind,scope_id,resource_kind,resource_id,job_id,node_id,result,message,before_json,after_json,trace_id,source_ip
 		FROM audit_events WHERE `+strings.Join(where, " AND ")+` ORDER BY seq LIMIT ?`, args...)
 	if err != nil {
 		return nil, err
@@ -688,7 +688,7 @@ func (s *Service) ListAudit(ctx context.Context, actor *Principal, f AuditFilter
 		var at, kind string
 		var before, after *string
 		if err := rows.Scan(&ev.Seq, &ev.ID, &at, &ev.ActorID, &ev.ActorName, &ev.Action, &kind, &ev.Scope.ID, &ev.ResourceKind, &ev.ResourceID,
-			&ev.JobID, &ev.NodeID, &ev.Result, &ev.Message, &before, &after, &ev.RequestID, &ev.SourceIP); err != nil {
+			&ev.JobID, &ev.NodeID, &ev.Result, &ev.Message, &before, &after, &ev.TraceID, &ev.SourceIP); err != nil {
 			return nil, err
 		}
 		ev.At, ev.Scope.Kind, ev.Before, ev.After = pt(at), ScopeKind(kind), unmarshalSummary(before), unmarshalSummary(after)

@@ -154,7 +154,9 @@ type TokenAuthenticator interface {
 type Source struct {
 	IP        string
 	UserAgent string
-	RequestID string
+	// TraceID identifies one HTTP call (X-Trace-ID). It is not the
+	// operation request identifier that deduplicates jobs.
+	TraceID string
 }
 
 // Errors returned by the service. Handlers map them to status codes; the
