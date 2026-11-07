@@ -50,7 +50,9 @@ body{{margin:0}}
 .hb .foot a,.hb .note a,.hb a.note{{min-height:28px;display:inline-flex;align-items:center}}
 .hb .inp input,.hb .inp select{{min-height:30px}}
 .hb .card{{background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:8px}}
-.hb .row{{display:grid;gap:12px;align-items:center;min-height:44px;padding:0 16px;border-bottom:1px solid var(--line)}}
+.hb .row{{display:grid;grid-template-columns:var(--t);gap:12px;align-items:center;min-height:44px;padding:0 16px;border-bottom:1px solid var(--line)}}
+.hb .row.batch{{grid-template-columns:28px var(--t)}}
+.hb .row .ck{{justify-self:start}}
 .hb a.row{{cursor:pointer}}
 .hb .row:hover{{background:var(--raised)}}
 .hb .row:last-child{{border-bottom:0}}
@@ -59,7 +61,7 @@ body{{margin:0}}
 .hb .name{{display:flex;flex-direction:column;gap:2px;min-width:0}}
 .hb .name .n{{font-family:"Geist Mono",ui-monospace,monospace;font-weight:500;overflow-wrap:anywhere;line-height:1.3}}
 .hb .name .d{{font-size:12px;color:var(--faint);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;overflow-wrap:anywhere}}
-.hb .st{{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:12px;font-weight:500;padding:2px 8px 2px 7px;border-radius:999px;background:color-mix(in srgb,currentColor 13%,transparent)}}
+.hb .st{{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;font-size:12px;font-weight:500;padding:2px 8px 2px 7px;border-radius:999px;background:color-mix(in srgb,currentColor 13%,transparent)}}
 .hb .lg .st,.hb .mx .st{{padding:1px 7px 1px 6px}}
 .hb.theme-light .st{{background:var(--raised);box-shadow:inset 0 0 0 1px color-mix(in srgb,currentColor 35%,transparent)}}
 .hb .st i{{display:inline-block;width:8px;height:8px;flex:none}}
@@ -159,7 +161,9 @@ body{{margin:0}}
 .hb .pstage+.pstage::before{{content:"";position:absolute;left:-12px;top:50%;width:6px;height:6px;border-top:2px solid var(--faint);border-right:2px solid var(--faint);transform:translateY(-50%) rotate(45deg)}}
 .hb .pstage .t{{color:var(--ink);font-weight:500;display:flex;align-items:center;gap:6px}}
 .hb .pstage.done{{border-color:var(--ok)}}.hb .pstage.cur{{border-color:var(--blue);background:var(--raised)}}.hb .pstage.fail{{border-color:var(--danger)}}.hb .pstage.wait{{border-color:var(--warn)}}
-.hb svg.topo{{display:block;width:100%;height:auto;font-family:"Geist","Noto Sans TC",sans-serif}}
+.hb .topow{{overflow:auto;max-width:100%}}
+.hb svg.topo{{display:block;font-family:"Geist","Noto Sans TC",sans-serif}}
+.hb svg.topo a:hover .box{{stroke:var(--hazel)}}
 .hb svg.topo text{{font-size:12px;fill:var(--ink)}}
 .hb svg.topo text.sub{{font-size:11px;fill:var(--faint);font-family:"Geist Mono",ui-monospace,monospace}}
 .hb svg.topo text.col{{font-size:11px;fill:var(--faint);letter-spacing:.06em;text-transform:uppercase}}
@@ -172,14 +176,50 @@ body{{margin:0}}
 .hb .mx{{display:grid;gap:2px;font-size:12px}}
 .hb .mx .c{{min-height:32px;display:flex;align-items:center;justify-content:center;gap:4px;background:var(--raised);border-radius:4px;padding:0 6px;text-align:center}}
 .hb .mx .c.empty{{background:transparent;border:1px dashed var(--line);color:var(--faint)}}
-.hb .mx .rl{{display:flex;align-items:center;font-family:"Geist Mono",ui-monospace,monospace;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:32px}}
+.hb .mx .rl{{display:flex;align-items:center;white-space:normal;overflow-wrap:anywhere;font-family:"Geist Mono",ui-monospace,monospace;color:var(--muted);min-height:32px;line-height:1.3}}
 .hb .mx .cl{{display:flex;align-items:flex-end;justify-content:center;font-size:11px;color:var(--faint);padding-bottom:4px;text-align:center}}
 .hb .tree{{font-family:"Geist Mono",ui-monospace,monospace;font-size:13px}}
 .hb .tree ul{{list-style:none;margin:0;padding-left:16px;border-left:1px solid var(--line)}}
 .hb .tree>ul{{padding-left:0;border-left:0}}
 .hb .tree li{{display:flex;align-items:center;gap:8px;min-height:30px}}
 .hb .tree li .sz{{margin-left:auto;color:var(--faint);font-size:12px}}
-.hb .tree li.on{{color:var(--hazel)}}
+.hb .tree li.on,.hb .tree summary.on{{color:var(--hazel)}}
+.hb .tree summary{{display:flex;align-items:center;gap:6px;min-height:30px;cursor:pointer;list-style:none;padding:0 6px;border-radius:4px}}
+.hb .tree summary::-webkit-details-marker{{display:none}}
+.hb .tree summary:hover,.hb .tree li.leaf:hover{{background:var(--raised)}}
+.hb .tree summary svg:first-child{{transition:transform .12s;color:var(--faint)}}
+.hb .tree details[open]>summary svg:first-child{{transform:rotate(90deg)}}
+.hb .tree li.leaf{{padding:0 6px;border-radius:4px;gap:6px}}
+.hb .tree .pad{{width:14px;flex:none}}
+.hb .tree .tn{{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+.hb .tree svg{{flex:none;color:var(--muted)}}
+.hb .fm{{display:grid;gap:0;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;min-height:420px}}
+.hb .fm>*{{min-width:0}}
+.hb .fm .pane{{border-right:1px solid var(--line);display:flex;flex-direction:column}}
+.hb .fm .pane:last-child{{border-right:0}}
+.hb .fm .pt{{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 12px;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted)}}
+.hb .toolbar{{display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:6px 10px;background:var(--panel);border:1px solid var(--line);border-radius:8px}}
+.hb .toolbar .ib{{min-height:34px;gap:6px;padding:0 10px}}
+.hb .toolbar .ib[aria-disabled=true]{{opacity:.45}}
+.hb .toolbar .sep{{width:1px;height:20px;background:var(--line);margin:0 4px}}
+.hb .crumbs{{display:flex;align-items:center;gap:2px;flex-wrap:wrap;font-family:"Geist Mono",ui-monospace,monospace;font-size:13px}}
+.hb .crumbs a{{padding:4px 6px;border-radius:4px;color:var(--muted)}}
+.hb .crumbs a:hover{{background:var(--raised);color:var(--ink)}}
+.hb .crumbs a:last-child{{color:var(--ink);font-weight:500}}
+.hb .crumbs .sep{{color:var(--faint)}}
+.hb .frow{{--t:28px minmax(0,2fr) 90px 110px 100px}}
+.hb .fm{{grid-template-columns:240px minmax(0,1fr) 280px}}
+.hb .frow.sel{{background:color-mix(in srgb,var(--hazel) 12%,transparent)}}
+.hb .ck{{display:inline-flex;align-items:center;justify-content:center;width:28px;min-height:28px}}
+.hb .ck input{{width:16px;height:16px;accent-color:var(--hazel);margin:0}}
+.hb .hd .sortable{{display:inline-flex;align-items:center;gap:4px;cursor:pointer}}
+.hb .hd .sortable svg{{color:var(--faint);opacity:.5}}
+.hb .hd .sortable.on svg{{color:var(--hazel);opacity:1}}
+.hb .pager{{display:flex;align-items:center;gap:8px;padding:8px 16px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}}
+.hb .pager .ib{{min-height:32px;min-width:32px}}
+.hb .pager .pg{{margin-left:auto;display:flex;align-items:center;gap:4px}}
+.hb .dl{{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 12px;font-size:13px;padding:10px 12px}}
+.hb .dl dt{{color:var(--muted);font-size:12px;white-space:nowrap}}.hb .dl dd{{margin:0;overflow-wrap:anywhere}}
 .hb .appcard{{display:flex;gap:10px;padding:12px;background:var(--raised);border:1px solid var(--line);border-radius:8px;min-width:0;color:var(--ink);align-items:flex-start}}
 .hb .appcard .ic{{width:40px;height:40px;border-radius:8px;background:var(--q2);display:flex;align-items:center;justify-content:center;font-family:"Geist Mono",ui-monospace,monospace;font-weight:700;color:var(--ink);flex:none}}
 .hb .appcard .bd{{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}}
@@ -262,26 +302,31 @@ body{{margin:0}}
 .hb .acts{{display:inline-flex;gap:2px;justify-content:flex-end}}
 .hb .acts .ib{{min-width:32px;min-height:32px;padding:0}}
 .hb .phead{{display:flex;flex-wrap:wrap;align-items:center;gap:12px;min-height:40px}}
-.hb .nrow{{grid-template-columns:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) 110px minmax(0,.8fr)}}
-.hb .prow{{grid-template-columns:minmax(0,1.2fr) minmax(0,1.5fr) minmax(0,.5fr) minmax(0,.6fr) minmax(0,1fr) minmax(0,1.1fr)}}
-.hb .srow{{grid-template-columns:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) 110px minmax(0,.7fr)}}
-.hb .crow{{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,.4fr) minmax(0,.7fr) 130px}}
-.hb .row.cols-3{{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr)}}
-.hb .row.cols-4{{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}}
-.hb .row.cols-5{{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}}
-.hb .row.cols-6{{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}}
-.hb .row.acts-end{{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.2fr) 130px}}
+.hb .nrow{{--t:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) 110px minmax(0,.8fr)}}
+.hb .prow{{--t:minmax(0,1.2fr) minmax(0,1.5fr) minmax(0,.5fr) minmax(0,.6fr) minmax(0,1fr) minmax(0,1.1fr)}}
+.hb .srow{{--t:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) 110px minmax(0,.7fr)}}
+.hb .crow{{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,.4fr) minmax(0,.7fr) 130px}}
+.hb .row.cols-3{{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr)}}
+.hb .row.cols-4{{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}}
+.hb .row.cols-5{{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}}
+.hb .row.cols-6{{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}}
+.hb .row.acts-end{{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.2fr) 130px}}
 .hb .rank{{grid-template-columns:minmax(0,1.7fr) minmax(0,2fr) auto}}
 .hb .rank .mono,.hb .flowlist .mono{{white-space:normal!important;overflow-wrap:anywhere;line-height:1.3}}
 .hb .mxw,.hb .heatw{{overflow-x:auto}}
+.hb .meter .tr{{min-width:24px}}.hb .meter .num{{flex:none}}
+.hb .pipe{{padding-bottom:4px}}
 .hb .row > span:last-child:has(> .btn),.hb .row > .acts{{justify-self:end}}
-.hb .drow{{grid-template-columns:minmax(0,.8fr) minmax(0,1.6fr) minmax(0,.6fr) minmax(0,1.4fr) minmax(0,.8fr)}}
-.hb .gprow{{grid-template-columns:minmax(0,1.4fr) minmax(0,.9fr) minmax(0,.5fr) minmax(0,1.2fr)}}
-.hb .garow{{grid-template-columns:minmax(0,.8fr) minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,1.4fr)}}
-.hb .dprow{{grid-template-columns:minmax(0,.5fr) minmax(0,1.6fr) minmax(0,.7fr) minmax(0,.7fr) minmax(0,1.4fr)}}
-.hb .hrow{{grid-template-columns:minmax(0,1.6fr) minmax(0,.8fr) minmax(0,.7fr) minmax(0,1.4fr)}}
-.hb .rrow{{grid-template-columns:24px minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,.5fr) minmax(0,.6fr)}}
-@media (max-width:1100px){{.hb .aside{{width:100%;border-left:0;border-top:1px solid var(--line)}}}}
+.hb .drow{{--t:minmax(0,.8fr) minmax(0,1.6fr) minmax(0,.6fr) minmax(0,1.4fr) minmax(0,.8fr)}}
+.hb .gprow{{--t:minmax(0,1.4fr) minmax(0,.9fr) minmax(0,.5fr) minmax(0,1.2fr)}}
+.hb .garow{{--t:minmax(0,.8fr) minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,1.4fr)}}
+.hb .dprow{{--t:minmax(0,.5fr) minmax(0,1.6fr) minmax(0,.7fr) minmax(0,.7fr) minmax(0,1.4fr)}}
+.hb .hrow{{--t:minmax(0,1.6fr) minmax(0,.8fr) minmax(0,.7fr) minmax(0,1.4fr)}}
+.hb .rrow{{--t:24px minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,.5fr) minmax(0,.6fr)}}
+@media (max-width:1280px){{.hb .frow{{--t:28px minmax(0,2fr) 90px 100px}}.hb .frow>:nth-child(4){{display:none}}}}
+@media (max-width:1024px){{.hb .c5{{display:none}}.hb .crow{{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.5fr) minmax(0,.9fr) minmax(0,.9fr) 100px}}.hb .acts .ib:nth-child(n+3){{display:none}}}}
+@media (max-width:900px){{.hb .top{{flex-wrap:wrap;padding:8px 12px;gap:8px;min-height:0}}.hb .crumb{{display:none}}.hb .top .search{{order:3;flex:1 1 100%;max-width:none;margin:0}}.hb .obs{{display:none}}.hb .ib.user span{{display:none}}.hb .side{{width:100%;border-right:0;border-bottom:1px solid var(--line);flex-direction:row;flex-wrap:nowrap;overflow-x:auto;gap:4px;padding:8px 12px}}.hb .navgrp{{display:none}}.hb .navcol{{flex-direction:row;flex:none;gap:4px}}.hb .side .nv{{width:auto;min-width:44px;justify-content:center;min-height:36px;padding:0 10px;white-space:nowrap;font-size:13px}}.hb .side .nv .cnt{{margin-left:4px}}.hb .side .coll{{display:none}}.hb .nv svg{{display:none}}.hb .brand{{width:auto;border:0;padding:0 12px}}}}
+@media (max-width:1100px){{.hb .aside{{width:100%;border-left:0;border-top:1px solid var(--line)}}.hb .fm{{grid-template-columns:220px minmax(0,1fr)}}.hb .fm .pane.detp{{grid-column:1/-1;border-top:1px solid var(--line)}}}}
 @media (max-width:767px){{
  .hb .side{{width:100%;border-right:0;border-bottom:1px solid var(--line);flex-direction:row;flex-wrap:nowrap;overflow-x:auto;gap:4px;padding:8px 12px}}
  .hb .navgrp{{display:none}}.hb .navcol{{flex-direction:row;flex:none;gap:4px}}.hb .side .nv{{width:auto;min-width:44px;justify-content:center;min-height:36px;padding:0 10px;white-space:nowrap;font-size:13px}}.hb .side .nv .cnt{{margin-left:4px}}
@@ -289,25 +334,27 @@ body{{margin:0}}
  .hb .c3,.hb .c4,.hb .c5,.hb .kbd{{display:none}}
  .hb .top{{flex-wrap:wrap;padding:8px 12px;gap:8px;min-height:0}}.hb .top .search{{min-height:44px}}.hb .brand{{width:auto;border:0;padding:0}}.hb .crumb{{display:none}}.hb .top .search{{order:3;flex:1 1 100%;max-width:none;margin:0}}.hb .obs{{display:none}}.hb .ib.user span{{display:none}}
  .hb .side .coll{{display:none}}.hb .nv svg{{display:none}}
- .hb .row[class*="cols-"],.hb .row.acts-end{{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) auto}}
+ .hb .row[class*="cols-"],.hb .row.acts-end{{--t:minmax(0,1.4fr) minmax(0,1fr) auto}}
  .hb .acts .ib:nth-child(n+3){{display:none}}
  .hb .rank{{grid-template-columns:minmax(0,1fr) auto;row-gap:4px}}.hb .rank .bar{{grid-column:1/-1}}
  .hb .mx{{min-width:620px}}.hb .heat{{min-width:720px}}
+ .hb .fm{{grid-template-columns:minmax(0,1fr)}}.hb .fm .pane{{border-right:0;border-bottom:1px solid var(--line)}}.hb .fm .pane.treep{{max-height:260px;overflow:auto}}
+ .hb .frow{{--t:28px minmax(0,1fr) 70px 60px}}.hb .frow>:nth-child(n+5){{display:none}}
  .hb .mx .rl{{white-space:normal}}
  .hb .ch-d{{display:none}}.hb .ch-m{{display:block}}
  .hb .heat i{{min-height:18px}}
  .hb .steps{{grid-template-columns:repeat(2,minmax(0,1fr))}}
  .hb .btn,.hb .btn.sm,.hb .range .btn,.hb .scope .btn,.hb .ib,.hb .acts .ib,.hb .tab,.hb .side .nv,.hb .ph .more,.hb .foot a,.hb a.note,.hb .brand,.hb .inp{{min-height:44px}}.hb .inp input,.hb .inp select{{min-height:40px}}.hb .ib,.hb .acts .ib{{min-width:44px}}
- .hb .nrow{{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,.9fr)}}
- .hb .prow{{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}}
- .hb .srow{{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,.8fr)}}
- .hb .crow{{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}}
- .hb .drow{{grid-template-columns:minmax(0,.9fr) minmax(0,1.2fr) minmax(0,1.3fr)}}
- .hb .gprow{{grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr) minmax(0,1fr)}}
- .hb .garow{{grid-template-columns:minmax(0,.8fr) minmax(0,1.4fr) minmax(0,1.2fr)}}
- .hb .dprow{{grid-template-columns:minmax(0,.5fr) minmax(0,1.4fr) minmax(0,1.3fr)}}
- .hb .hrow{{grid-template-columns:minmax(0,1.4fr) minmax(0,.7fr) minmax(0,1.2fr)}}
- .hb .rrow{{grid-template-columns:24px minmax(0,1.6fr) minmax(0,.8fr)}}
+ .hb .nrow{{--t:minmax(0,1.5fr) minmax(0,1fr) minmax(0,.9fr)}}
+ .hb .prow{{--t:minmax(0,1fr) minmax(0,1.3fr)}}
+ .hb .srow{{--t:minmax(0,1.4fr) minmax(0,1fr) minmax(0,.8fr)}}
+ .hb .crow{{--t:minmax(0,1.4fr) minmax(0,1fr)}}
+ .hb .drow{{--t:minmax(0,.9fr) minmax(0,1.2fr) minmax(0,1.3fr)}}
+ .hb .gprow{{--t:minmax(0,1.2fr) minmax(0,.8fr) minmax(0,1fr)}}
+ .hb .garow{{--t:minmax(0,.8fr) minmax(0,1.4fr) minmax(0,1.2fr)}}
+ .hb .dprow{{--t:minmax(0,.5fr) minmax(0,1.4fr) minmax(0,1.3fr)}}
+ .hb .hrow{{--t:minmax(0,1.4fr) minmax(0,.7fr) minmax(0,1.2fr)}}
+ .hb .rrow{{--t:24px minmax(0,1.6fr) minmax(0,.8fr)}}
  .hb .tile .v{{font-size:24px}}
  .hb .rings svg{{width:52px;height:52px}}
  .hb .hcell{{width:36px;height:36px}}
@@ -351,6 +398,24 @@ ICONS = {
  "restart": '<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/>',
  "more": '<circle cx="6" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18" cy="12" r="1.2"/>',
  "stop": '<rect x="6" y="6" width="12" height="12" rx="1.5"/>',
+ "chev": '<path d="m9 6 6 6-6 6"/>',
+ "folder": '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>',
+ "file": '<path d="M6 3h8l4 4v14H6V3z"/><path d="M14 3v4h4"/>',
+ "sort": '<path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/>',
+ "up": '<path d="m6 15 6-6 6 6"/>',
+ "down": '<path d="m6 9 6 6 6-6"/>',
+ "upload": '<path d="M12 16V5"/><path d="m7 10 5-5 5 5"/><path d="M4 19h16"/>',
+ "download": '<path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M4 19h16"/>',
+ "newfolder": '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/><path d="M12 10v6M9 13h6"/>',
+ "rename": '<path d="M4 20h4l10-10-4-4L4 16v4z"/>',
+ "move": '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>',
+ "copy": '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',
+ "zip": '<path d="M6 3h8l4 4v14H6V3z"/><path d="M10 7h2M10 10h2M10 13h2M10 16h2"/>',
+ "trash": '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+ "share": '<circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8 11 8-5M8 13l8 5"/>',
+ "grid": '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+ "list": '<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/>',
+ "eye": '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
 }
 
 
@@ -361,7 +426,7 @@ def icon(name: str, size: int = 16) -> str:
 
 def actions(keys: list) -> str:
     """列尾快速動作：icon 按鈕，aria-label 是文字。keys 例 ["log","term","restart","more"]"""
-    lab = {"log": "日誌", "term": "終端機", "restart": "重啟", "more": "更多", "stop": "停止"}
+    lab = {"log": "日誌", "term": "終端機", "restart": "重啟", "more": "更多", "stop": "停止", "download": "下載", "rename": "重新命名", "share": "分享", "trash": "刪除", "copy": "複製", "move": "搬移"}
     return '<span class="acts">' + "".join(f'<button type="button" class="ib" aria-label="{lab[k]}" title="{lab[k]}">{icon(k)}</button>' for k in keys) + "</span>"
 
 
@@ -658,7 +723,7 @@ def heatgrid(rows: list[str], cols: list[str], values: list[list[float]], vmax: 
     for r, row in zip(rows, values):
         cells.append(f'<span class="lab">{r}</span>' + "".join(
             f'<i style="background: {q[min(4, int(v / vmax * 4.999))]}" title="{r} {cols[j]} {v:.0f}%"></i>' for j, v in enumerate(row)))
-    return (f'<div class="heatw"><div class="heat" style="grid-template-columns: minmax(80px, 1.2fr) repeat({ncol}, minmax(0, 1fr))" role="img" '
+    return (f'<div class="heatw"><div class="heat" style="grid-template-columns: minmax(120px, 1.4fr) repeat({ncol}, minmax(0, 1fr))" role="img" '
             f'aria-label="容器 × 小時 CPU 熱格，{len(rows)} 個容器、{ncol} 小時">' + "".join(cells) + "</div></div>")
 
 
@@ -754,18 +819,32 @@ def pipeline(stages: list) -> str:
     return f'<div class="pipe">{chips}</div>'
 
 
-def topology(columns: list, links: list, w: int = 1140, box_w: int = 164, box_h: int = 44, gap: int = 14) -> str:
-    """拓撲圖：columns [(title, [(id, label, sub, state ok|warn|danger|dim)])]；links [(src, dst, weight 0–1, state)]。
-    欄等距排列，節點垂直置中，連線為三次曲線，粗細依 weight。"""
-    ncol = len(columns)
-    rows = max(len(c[1]) for c in columns)
-    h = 30 + rows * (box_h + gap)
-    xs = [20 + i * (w - 40 - box_w) / (ncol - 1) for i in range(ncol)] if ncol > 1 else [20]
+def topology(columns: list, links: list, w: int = 0, box_w: int = 176, box_h: int = 44, gap: int = 12, col_gap: int = 88, max_rows: int = 6) -> str:
+    """拓撲圖，固定像素尺寸（不隨容器縮放，窄就捲動）。columns [(title, [(id, label, sub, state)])]；links [(src, dst, weight, state)]。
+    一欄超過 max_rows 個節點時只畫前 max_rows-1 個，其餘折成「＋N」，連到它們的線改接到折疊框。"""
+    cols = []
+    redirect = {}
+    for title, nodes in columns:
+        if len(nodes) > max_rows:
+            shown = nodes[: max_rows - 1]
+            rest = nodes[max_rows - 1:]
+            more_id = f"more-{len(cols)}"
+            for nid, *_ in rest:
+                redirect[nid] = more_id
+            shown = shown + [(more_id, f"＋{len(rest)} 個", "點開看全部", "dim")]
+            cols.append((title, shown, len(nodes)))
+        else:
+            cols.append((title, nodes, len(nodes)))
+    ncol = len(cols)
+    rows = max(len(c[1]) for c in cols)
+    W = 24 * 2 + ncol * box_w + (ncol - 1) * col_gap
+    H = 30 + rows * (box_h + gap)
+    xs = [24 + i * (box_w + col_gap) for i in range(ncol)]
     pos = {}
-    out = [f'<svg class="topo" viewBox="0 0 {w} {h}" role="img" aria-label="拓撲：{"→".join(c[0] for c in columns)}">']
-    for ci, (title, nodes) in enumerate(columns):
+    out = [f'<svg class="topo" width="{W}" height="{H}" viewBox="0 0 {W} {H}" role="img" aria-label="拓撲：{"→".join(c[0] for c in cols)}">']
+    for ci, (title, nodes, total) in enumerate(cols):
         x = xs[ci]
-        out.append(f'<text class="col" x="{x:.0f}" y="14">{title}</text>')
+        out.append(f'<text class="col" x="{x:.0f}" y="14">{title} · {total}</text>')
         total_h = len(nodes) * box_h + (len(nodes) - 1) * gap
         y0 = 30 + (rows * (box_h + gap) - gap - total_h) / 2
         for ni, (nid, label, sub, st) in enumerate(nodes):
@@ -776,18 +855,27 @@ def topology(columns: list, links: list, w: int = 1140, box_w: int = 164, box_h:
                      "danger": f'<rect x="{x+8}" y="{y+box_h/2-4}" width="8" height="8" fill="var(--danger)"/>',
                      "info": f'<rect x="{x+8}" y="{y+box_h/2-4}" width="8" height="8" fill="var(--blue)"/>',
                      "dim": f'<circle cx="{x+12}" cy="{y+box_h/2}" r="4" fill="none" stroke="var(--faint)" stroke-width="1.5"/>'}[st]
-            out.append(f'<rect class="box {st if st in ("danger","warn") else ""}" x="{x}" y="{y:.1f}" width="{box_w}" height="{box_h}" rx="6"/>{shape}'
-                       f'<text x="{x+22}" y="{y+18:.1f}">{label}</text><text class="sub" x="{x+22}" y="{y+33:.1f}">{sub}</text>')
+            label = label if len(label) <= 18 else label[:17] + "…"
+            sub = sub if len(sub) <= 22 else sub[:21] + "…"
+            out.append(f'<a href="#{nid}"><rect class="box {st if st in ("danger","warn") else ""}" x="{x}" y="{y:.1f}" width="{box_w}" height="{box_h}" rx="6"/>{shape}'
+                       f'<text x="{x+22}" y="{y+18:.1f}">{label}</text><text class="sub" x="{x+22}" y="{y+33:.1f}">{sub}</text></a>')
     lk = []
+    agg = {}
     for src, dst, wgt, st in links:
+        s2, d2 = redirect.get(src, src), redirect.get(dst, dst)
+        if (s2, d2) in agg:
+            agg[(s2, d2)][0] += wgt
+        else:
+            agg[(s2, d2)] = [wgt, st]
+    for (src, dst), (wgt, st) in agg.items():
         (x1, y1), (x2, y2) = pos[src], pos[dst]
         ax, ay = x1 + box_w, y1 + box_h / 2
         bx, by = x2, y2 + box_h / 2
         mx = (ax + bx) / 2
-        lk.append(f'<path class="lnk {st}" stroke-width="{1.5 + wgt * 6:.1f}" d="M{ax:.0f},{ay:.1f} C{mx:.0f},{ay:.1f} {mx:.0f},{by:.1f} {bx:.0f},{by:.1f}"/>')
+        lk.append(f'<path class="lnk {st}" stroke-width="{1.5 + min(1.0, wgt) * 6:.1f}" d="M{ax:.0f},{ay:.1f} C{mx:.0f},{ay:.1f} {mx:.0f},{by:.1f} {bx:.0f},{by:.1f}"/>')
     out.insert(1, "".join(lk))
     out.append("</svg>")
-    return "".join(out)
+    return '<div class="topow">' + "".join(out) + "</div>"
 
 
 def flowlist(links: list) -> str:
@@ -811,18 +899,30 @@ def matrix(rows: list, cols: list, cells: list, first_col: str = "minmax(110px,1
     return f'<div class="mxw"><div class="mx" style="grid-template-columns:{first_col} repeat({len(cols)},minmax(0,1fr))">' + "".join(out) + "</div></div>"
 
 
-def tree(items: list) -> str:
-    """items: [(depth, name, size_text, on)]"""
+def tree(items: list, open_depth: int = 1) -> str:
+    """檔案樹：items [(depth, name, size_text, on)]。有子項的資料夾用 <details>，可收合；選中路徑與淺層預設展開。"""
+    n = len(items)
+    on_idx = next((i for i, it in enumerate(items) if it[3]), -1)
+    ancestors = set()
+    if on_idx >= 0:
+        d = items[on_idx][0]
+        for i in range(on_idx - 1, -1, -1):
+            if items[i][0] < d:
+                ancestors.add(i); d = items[i][0]
     out = ['<div class="tree"><ul>']
-    depth = 0
-    for d, name, sz, on in items:
-        while depth < d:
-            out.append("<ul>"); depth += 1
-        while depth > d:
-            out.append("</ul>"); depth -= 1
-        out.append(f'<li class="{"on" if on else ""}"><span>{name}</span><span class="sz">{sz}</span></li>')
-    while depth > 0:
-        out.append("</ul>"); depth -= 1
+    stack = []  # open details/ul pairs
+    for i, (depth, name, sz, on) in enumerate(items):
+        has_kids = i + 1 < n and items[i + 1][0] > depth
+        while stack and stack[-1] >= depth:
+            out.append("</ul></details></li>"); stack.pop()
+        if has_kids:
+            is_open = depth <= open_depth or on or i in ancestors
+            out.append(f'<li><details{" open" if is_open else ""}><summary class="{"on" if on else ""}">{icon("chev", 14)}{icon("folder", 16)}<span class="tn">{name}</span><span class="sz">{sz}</span></summary><ul>')
+            stack.append(depth)
+        else:
+            out.append(f'<li class="leaf {"on" if on else ""}"><span class="pad"></span>{icon("folder" if name.endswith("/") else "file", 16)}<span class="tn">{name}</span><span class="sz">{sz}</span></li>')
+    while stack:
+        out.append("</ul></details></li>"); stack.pop()
     out.append("</ul></div>")
     return "".join(out)
 

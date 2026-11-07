@@ -7,6 +7,10 @@
 | `design-brief.md` | 三個方向的共同輸入：產品、讀者、核心資訊、主導覽、情感基調、硬性限制、示例資料（假設） |
 | `research-dashboards.md` | 現代 dashboard 與控制台的圖表做法調查（Beszel、Coolify、Railway、Netdata、Grafana、Datadog 等）與各畫面的圖表配置決定 |
 | `directions/` | 第一輪三個方向的總覽頁（A 星圖、B 航站、C 榛果）。已選定 B |
+| `coverage-matrix.md` | 1Panel（108 路由、793 API）、Portainer、Webmin 功能 → 畫板的覆蓋矩陣與缺口 |
+| `coverage-1panel-frontend.csv` | 108 條 1Panel 前端路由的逐條對照 |
+| `edge-cases.md` | 16 個邊界情境與畫面規則 |
+| `component-mapping.md` | 元件庫決定（Cloudflare Kumo）、token 對映、畫板元件 → Kumo |
 | `ux-evaluation.md` | UX 評估方法清單（專家審查、量測、真人測試）、門檻與改前改後數字、畫面文字來源規則 |
 | `ux-walkthrough.md` | 認知走查（六個任務）與啟發式掃描，以及市面面板版面慣例對照 |
 | `gap-analysis.md` | 規格 vs 畫面、參考專案 vs 我們的缺口盤點，與「圖形為主」第二輪的改動清單 |
@@ -47,6 +51,8 @@
 | IAM | 使用者、角色×資源、Token、工作階段、稽核 | 二次驗證狀態、角色矩陣、Token 效期橫條、稽核時間軸 |
 | Settings | 基本、入口與 HTTPS、通知、更新、快照、整合與遙測 | 設定卡、更新流程段、元件版本表、整合矩陣 |
 | Logs | 日誌量、journald 檢視器、稽核、SSH 登入、網站存取 | 四序列長條、終端式檢視器、回應碼段條 |
+| AppInstall | 用 1Panel 市集格式（data.yml formFields）安裝一個應用 | 參數表單、資源與網路、compose 原始檔、安裝前檢查流程段 |
+| EdgeCases | 12 個意料外情境的畫面 | 虛擬捲動表、超長名稱、衝突 banner、403、半完成流程段、時鐘偏差、續傳、磁碟滿、部分失敗、未知版本、被引用、多分頁 |
 | M-Overview／M-WorkCenter／M-DeployConfirm | 360px 手機版 | 同上，單欄 |
 
 ## 重建與驗證

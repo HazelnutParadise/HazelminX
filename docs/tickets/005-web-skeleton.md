@@ -10,13 +10,15 @@
 
 ## What it delivers
 
-web/ 使用 React、TypeScript 與 Vite+：路由殼層、設計 token、zh-TW／en 的 i18n、淺深色、API client 產生器、vitest 與 vp check；建置產物可被 Core 嵌入。
+web/ 使用 React、TypeScript 與 Vite+：元件庫 Cloudflare Kumo（`@cloudflare/kumo`）＋ `theme-hazelminx.css` 覆蓋語意 token（`docs/design/component-mapping.md`）、路由殼層、設計 token、zh-TW／en 的 i18n、淺深色、API client 產生器、vitest 與 vp check；建置產物可被 Core 嵌入。
 
 ## Acceptance criteria
 
 - [ ] **UI-001** 使用者可以切換繁體中文、英文、淺色與深色模式。 — 完成條件：系統選單、錯誤與日期顯示一致；第三方原始訊息保留原文及白話摘要。
 - [ ] 第三方原始訊息保留原文並附白話摘要的呈現元件存在
 - [ ] 日期以使用者時區顯示，儲存值為 UTC RFC 3339
+- [ ] Kumo 套上 HazelminX 主題後，`docs/design/tools/` 的對比、觸控目標、可及名稱掃描在殼層頁面全部通過
+- [ ] 側欄圖示改用 Phosphor Icons，對照表記在 web/ 的 README
 
 ## Acceptance tests（第 42 章）
 

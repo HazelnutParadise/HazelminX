@@ -34,7 +34,9 @@ body{margin:0}
 .hb .foot a,.hb .note a,.hb a.note{min-height:28px;display:inline-flex;align-items:center}
 .hb .inp input,.hb .inp select{min-height:30px}
 .hb .card{background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:8px}
-.hb .row{display:grid;gap:12px;align-items:center;min-height:44px;padding:0 16px;border-bottom:1px solid var(--line)}
+.hb .row{display:grid;grid-template-columns:var(--t);gap:12px;align-items:center;min-height:44px;padding:0 16px;border-bottom:1px solid var(--line)}
+.hb .row.batch{grid-template-columns:28px var(--t)}
+.hb .row .ck{justify-self:start}
 .hb a.row{cursor:pointer}
 .hb .row:hover{background:var(--raised)}
 .hb .row:last-child{border-bottom:0}
@@ -43,7 +45,7 @@ body{margin:0}
 .hb .name{display:flex;flex-direction:column;gap:2px;min-width:0}
 .hb .name .n{font-family:"Geist Mono",ui-monospace,monospace;font-weight:500;overflow-wrap:anywhere;line-height:1.3}
 .hb .name .d{font-size:12px;color:var(--faint);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;overflow-wrap:anywhere}
-.hb .st{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:12px;font-weight:500;padding:2px 8px 2px 7px;border-radius:999px;background:color-mix(in srgb,currentColor 13%,transparent)}
+.hb .st{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;font-size:12px;font-weight:500;padding:2px 8px 2px 7px;border-radius:999px;background:color-mix(in srgb,currentColor 13%,transparent)}
 .hb .lg .st,.hb .mx .st{padding:1px 7px 1px 6px}
 .hb.theme-light .st{background:var(--raised);box-shadow:inset 0 0 0 1px color-mix(in srgb,currentColor 35%,transparent)}
 .hb .st i{display:inline-block;width:8px;height:8px;flex:none}
@@ -143,7 +145,9 @@ body{margin:0}
 .hb .pstage+.pstage::before{content:"";position:absolute;left:-12px;top:50%;width:6px;height:6px;border-top:2px solid var(--faint);border-right:2px solid var(--faint);transform:translateY(-50%) rotate(45deg)}
 .hb .pstage .t{color:var(--ink);font-weight:500;display:flex;align-items:center;gap:6px}
 .hb .pstage.done{border-color:var(--ok)}.hb .pstage.cur{border-color:var(--blue);background:var(--raised)}.hb .pstage.fail{border-color:var(--danger)}.hb .pstage.wait{border-color:var(--warn)}
-.hb svg.topo{display:block;width:100%;height:auto;font-family:"Geist","Noto Sans TC",sans-serif}
+.hb .topow{overflow:auto;max-width:100%}
+.hb svg.topo{display:block;font-family:"Geist","Noto Sans TC",sans-serif}
+.hb svg.topo a:hover .box{stroke:var(--hazel)}
 .hb svg.topo text{font-size:12px;fill:var(--ink)}
 .hb svg.topo text.sub{font-size:11px;fill:var(--faint);font-family:"Geist Mono",ui-monospace,monospace}
 .hb svg.topo text.col{font-size:11px;fill:var(--faint);letter-spacing:.06em;text-transform:uppercase}
@@ -156,14 +160,50 @@ body{margin:0}
 .hb .mx{display:grid;gap:2px;font-size:12px}
 .hb .mx .c{min-height:32px;display:flex;align-items:center;justify-content:center;gap:4px;background:var(--raised);border-radius:4px;padding:0 6px;text-align:center}
 .hb .mx .c.empty{background:transparent;border:1px dashed var(--line);color:var(--faint)}
-.hb .mx .rl{display:flex;align-items:center;font-family:"Geist Mono",ui-monospace,monospace;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:32px}
+.hb .mx .rl{display:flex;align-items:center;white-space:normal;overflow-wrap:anywhere;font-family:"Geist Mono",ui-monospace,monospace;color:var(--muted);min-height:32px;line-height:1.3}
 .hb .mx .cl{display:flex;align-items:flex-end;justify-content:center;font-size:11px;color:var(--faint);padding-bottom:4px;text-align:center}
 .hb .tree{font-family:"Geist Mono",ui-monospace,monospace;font-size:13px}
 .hb .tree ul{list-style:none;margin:0;padding-left:16px;border-left:1px solid var(--line)}
 .hb .tree>ul{padding-left:0;border-left:0}
 .hb .tree li{display:flex;align-items:center;gap:8px;min-height:30px}
 .hb .tree li .sz{margin-left:auto;color:var(--faint);font-size:12px}
-.hb .tree li.on{color:var(--hazel)}
+.hb .tree li.on,.hb .tree summary.on{color:var(--hazel)}
+.hb .tree summary{display:flex;align-items:center;gap:6px;min-height:30px;cursor:pointer;list-style:none;padding:0 6px;border-radius:4px}
+.hb .tree summary::-webkit-details-marker{display:none}
+.hb .tree summary:hover,.hb .tree li.leaf:hover{background:var(--raised)}
+.hb .tree summary svg:first-child{transition:transform .12s;color:var(--faint)}
+.hb .tree details[open]>summary svg:first-child{transform:rotate(90deg)}
+.hb .tree li.leaf{padding:0 6px;border-radius:4px;gap:6px}
+.hb .tree .pad{width:14px;flex:none}
+.hb .tree .tn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hb .tree svg{flex:none;color:var(--muted)}
+.hb .fm{display:grid;gap:0;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;min-height:420px}
+.hb .fm>*{min-width:0}
+.hb .fm .pane{border-right:1px solid var(--line);display:flex;flex-direction:column}
+.hb .fm .pane:last-child{border-right:0}
+.hb .fm .pt{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 12px;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted)}
+.hb .toolbar{display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:6px 10px;background:var(--panel);border:1px solid var(--line);border-radius:8px}
+.hb .toolbar .ib{min-height:34px;gap:6px;padding:0 10px}
+.hb .toolbar .ib[aria-disabled=true]{opacity:.45}
+.hb .toolbar .sep{width:1px;height:20px;background:var(--line);margin:0 4px}
+.hb .crumbs{display:flex;align-items:center;gap:2px;flex-wrap:wrap;font-family:"Geist Mono",ui-monospace,monospace;font-size:13px}
+.hb .crumbs a{padding:4px 6px;border-radius:4px;color:var(--muted)}
+.hb .crumbs a:hover{background:var(--raised);color:var(--ink)}
+.hb .crumbs a:last-child{color:var(--ink);font-weight:500}
+.hb .crumbs .sep{color:var(--faint)}
+.hb .frow{--t:28px minmax(0,2fr) 90px 110px 100px}
+.hb .fm{grid-template-columns:240px minmax(0,1fr) 280px}
+.hb .frow.sel{background:color-mix(in srgb,var(--hazel) 12%,transparent)}
+.hb .ck{display:inline-flex;align-items:center;justify-content:center;width:28px;min-height:28px}
+.hb .ck input{width:16px;height:16px;accent-color:var(--hazel);margin:0}
+.hb .hd .sortable{display:inline-flex;align-items:center;gap:4px;cursor:pointer}
+.hb .hd .sortable svg{color:var(--faint);opacity:.5}
+.hb .hd .sortable.on svg{color:var(--hazel);opacity:1}
+.hb .pager{display:flex;align-items:center;gap:8px;padding:8px 16px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.hb .pager .ib{min-height:32px;min-width:32px}
+.hb .pager .pg{margin-left:auto;display:flex;align-items:center;gap:4px}
+.hb .dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 12px;font-size:13px;padding:10px 12px}
+.hb .dl dt{color:var(--muted);font-size:12px;white-space:nowrap}.hb .dl dd{margin:0;overflow-wrap:anywhere}
 .hb .appcard{display:flex;gap:10px;padding:12px;background:var(--raised);border:1px solid var(--line);border-radius:8px;min-width:0;color:var(--ink);align-items:flex-start}
 .hb .appcard .ic{width:40px;height:40px;border-radius:8px;background:var(--q2);display:flex;align-items:center;justify-content:center;font-family:"Geist Mono",ui-monospace,monospace;font-weight:700;color:var(--ink);flex:none}
 .hb .appcard .bd{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
@@ -246,26 +286,31 @@ body{margin:0}
 .hb .acts{display:inline-flex;gap:2px;justify-content:flex-end}
 .hb .acts .ib{min-width:32px;min-height:32px;padding:0}
 .hb .phead{display:flex;flex-wrap:wrap;align-items:center;gap:12px;min-height:40px}
-.hb .nrow{grid-template-columns:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) 110px minmax(0,.8fr)}
-.hb .prow{grid-template-columns:minmax(0,1.2fr) minmax(0,1.5fr) minmax(0,.5fr) minmax(0,.6fr) minmax(0,1fr) minmax(0,1.1fr)}
-.hb .srow{grid-template-columns:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) 110px minmax(0,.7fr)}
-.hb .crow{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,.4fr) minmax(0,.7fr) 130px}
-.hb .row.cols-3{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr)}
-.hb .row.cols-4{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}
-.hb .row.cols-5{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}
-.hb .row.cols-6{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}
-.hb .row.acts-end{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.2fr) 130px}
+.hb .nrow{--t:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) 110px minmax(0,.8fr)}
+.hb .prow{--t:minmax(0,1.2fr) minmax(0,1.5fr) minmax(0,.5fr) minmax(0,.6fr) minmax(0,1fr) minmax(0,1.1fr)}
+.hb .srow{--t:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) 110px minmax(0,.7fr)}
+.hb .crow{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,.4fr) minmax(0,.7fr) 130px}
+.hb .row.cols-3{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr)}
+.hb .row.cols-4{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}
+.hb .row.cols-5{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}
+.hb .row.cols-6{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}
+.hb .row.acts-end{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.2fr) 130px}
 .hb .rank{grid-template-columns:minmax(0,1.7fr) minmax(0,2fr) auto}
 .hb .rank .mono,.hb .flowlist .mono{white-space:normal!important;overflow-wrap:anywhere;line-height:1.3}
 .hb .mxw,.hb .heatw{overflow-x:auto}
+.hb .meter .tr{min-width:24px}.hb .meter .num{flex:none}
+.hb .pipe{padding-bottom:4px}
 .hb .row > span:last-child:has(> .btn),.hb .row > .acts{justify-self:end}
-.hb .drow{grid-template-columns:minmax(0,.8fr) minmax(0,1.6fr) minmax(0,.6fr) minmax(0,1.4fr) minmax(0,.8fr)}
-.hb .gprow{grid-template-columns:minmax(0,1.4fr) minmax(0,.9fr) minmax(0,.5fr) minmax(0,1.2fr)}
-.hb .garow{grid-template-columns:minmax(0,.8fr) minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,1.4fr)}
-.hb .dprow{grid-template-columns:minmax(0,.5fr) minmax(0,1.6fr) minmax(0,.7fr) minmax(0,.7fr) minmax(0,1.4fr)}
-.hb .hrow{grid-template-columns:minmax(0,1.6fr) minmax(0,.8fr) minmax(0,.7fr) minmax(0,1.4fr)}
-.hb .rrow{grid-template-columns:24px minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,.5fr) minmax(0,.6fr)}
-@media (max-width:1100px){.hb .aside{width:100%;border-left:0;border-top:1px solid var(--line)}}
+.hb .drow{--t:minmax(0,.8fr) minmax(0,1.6fr) minmax(0,.6fr) minmax(0,1.4fr) minmax(0,.8fr)}
+.hb .gprow{--t:minmax(0,1.4fr) minmax(0,.9fr) minmax(0,.5fr) minmax(0,1.2fr)}
+.hb .garow{--t:minmax(0,.8fr) minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,1.4fr)}
+.hb .dprow{--t:minmax(0,.5fr) minmax(0,1.6fr) minmax(0,.7fr) minmax(0,.7fr) minmax(0,1.4fr)}
+.hb .hrow{--t:minmax(0,1.6fr) minmax(0,.8fr) minmax(0,.7fr) minmax(0,1.4fr)}
+.hb .rrow{--t:24px minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,.5fr) minmax(0,.6fr)}
+@media (max-width:1280px){.hb .frow{--t:28px minmax(0,2fr) 90px 100px}.hb .frow>:nth-child(4){display:none}}
+@media (max-width:1024px){.hb .c5{display:none}.hb .crow{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.5fr) minmax(0,.9fr) minmax(0,.9fr) 100px}.hb .acts .ib:nth-child(n+3){display:none}}
+@media (max-width:900px){.hb .top{flex-wrap:wrap;padding:8px 12px;gap:8px;min-height:0}.hb .crumb{display:none}.hb .top .search{order:3;flex:1 1 100%;max-width:none;margin:0}.hb .obs{display:none}.hb .ib.user span{display:none}.hb .side{width:100%;border-right:0;border-bottom:1px solid var(--line);flex-direction:row;flex-wrap:nowrap;overflow-x:auto;gap:4px;padding:8px 12px}.hb .navgrp{display:none}.hb .navcol{flex-direction:row;flex:none;gap:4px}.hb .side .nv{width:auto;min-width:44px;justify-content:center;min-height:36px;padding:0 10px;white-space:nowrap;font-size:13px}.hb .side .nv .cnt{margin-left:4px}.hb .side .coll{display:none}.hb .nv svg{display:none}.hb .brand{width:auto;border:0;padding:0 12px}}
+@media (max-width:1100px){.hb .aside{width:100%;border-left:0;border-top:1px solid var(--line)}.hb .fm{grid-template-columns:220px minmax(0,1fr)}.hb .fm .pane.detp{grid-column:1/-1;border-top:1px solid var(--line)}}
 @media (max-width:767px){
  .hb .side{width:100%;border-right:0;border-bottom:1px solid var(--line);flex-direction:row;flex-wrap:nowrap;overflow-x:auto;gap:4px;padding:8px 12px}
  .hb .navgrp{display:none}.hb .navcol{flex-direction:row;flex:none;gap:4px}.hb .side .nv{width:auto;min-width:44px;justify-content:center;min-height:36px;padding:0 10px;white-space:nowrap;font-size:13px}.hb .side .nv .cnt{margin-left:4px}
@@ -273,25 +318,27 @@ body{margin:0}
  .hb .c3,.hb .c4,.hb .c5,.hb .kbd{display:none}
  .hb .top{flex-wrap:wrap;padding:8px 12px;gap:8px;min-height:0}.hb .top .search{min-height:44px}.hb .brand{width:auto;border:0;padding:0}.hb .crumb{display:none}.hb .top .search{order:3;flex:1 1 100%;max-width:none;margin:0}.hb .obs{display:none}.hb .ib.user span{display:none}
  .hb .side .coll{display:none}.hb .nv svg{display:none}
- .hb .row[class*="cols-"],.hb .row.acts-end{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) auto}
+ .hb .row[class*="cols-"],.hb .row.acts-end{--t:minmax(0,1.4fr) minmax(0,1fr) auto}
  .hb .acts .ib:nth-child(n+3){display:none}
  .hb .rank{grid-template-columns:minmax(0,1fr) auto;row-gap:4px}.hb .rank .bar{grid-column:1/-1}
  .hb .mx{min-width:620px}.hb .heat{min-width:720px}
+ .hb .fm{grid-template-columns:minmax(0,1fr)}.hb .fm .pane{border-right:0;border-bottom:1px solid var(--line)}.hb .fm .pane.treep{max-height:260px;overflow:auto}
+ .hb .frow{--t:28px minmax(0,1fr) 70px 60px}.hb .frow>:nth-child(n+5){display:none}
  .hb .mx .rl{white-space:normal}
  .hb .ch-d{display:none}.hb .ch-m{display:block}
  .hb .heat i{min-height:18px}
  .hb .steps{grid-template-columns:repeat(2,minmax(0,1fr))}
  .hb .btn,.hb .btn.sm,.hb .range .btn,.hb .scope .btn,.hb .ib,.hb .acts .ib,.hb .tab,.hb .side .nv,.hb .ph .more,.hb .foot a,.hb a.note,.hb .brand,.hb .inp{min-height:44px}.hb .inp input,.hb .inp select{min-height:40px}.hb .ib,.hb .acts .ib{min-width:44px}
- .hb .nrow{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,.9fr)}
- .hb .prow{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}
- .hb .srow{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,.8fr)}
- .hb .crow{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}
- .hb .drow{grid-template-columns:minmax(0,.9fr) minmax(0,1.2fr) minmax(0,1.3fr)}
- .hb .gprow{grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr) minmax(0,1fr)}
- .hb .garow{grid-template-columns:minmax(0,.8fr) minmax(0,1.4fr) minmax(0,1.2fr)}
- .hb .dprow{grid-template-columns:minmax(0,.5fr) minmax(0,1.4fr) minmax(0,1.3fr)}
- .hb .hrow{grid-template-columns:minmax(0,1.4fr) minmax(0,.7fr) minmax(0,1.2fr)}
- .hb .rrow{grid-template-columns:24px minmax(0,1.6fr) minmax(0,.8fr)}
+ .hb .nrow{--t:minmax(0,1.5fr) minmax(0,1fr) minmax(0,.9fr)}
+ .hb .prow{--t:minmax(0,1fr) minmax(0,1.3fr)}
+ .hb .srow{--t:minmax(0,1.4fr) minmax(0,1fr) minmax(0,.8fr)}
+ .hb .crow{--t:minmax(0,1.4fr) minmax(0,1fr)}
+ .hb .drow{--t:minmax(0,.9fr) minmax(0,1.2fr) minmax(0,1.3fr)}
+ .hb .gprow{--t:minmax(0,1.2fr) minmax(0,.8fr) minmax(0,1fr)}
+ .hb .garow{--t:minmax(0,.8fr) minmax(0,1.4fr) minmax(0,1.2fr)}
+ .hb .dprow{--t:minmax(0,.5fr) minmax(0,1.4fr) minmax(0,1.3fr)}
+ .hb .hrow{--t:minmax(0,1.4fr) minmax(0,.7fr) minmax(0,1.2fr)}
+ .hb .rrow{--t:24px minmax(0,1.6fr) minmax(0,.8fr)}
  .hb .tile .v{font-size:24px}
  .hb .rings svg{width:52px;height:52px}
  .hb .hcell{width:36px;height:36px}
@@ -326,11 +373,11 @@ body{margin:0}
     </div><div class="scope" role="group" aria-label="範圍"><span class="lbl">範圍</span><button type="button" class="btn on" aria-pressed="true">全部節點<span class=mono>3 環境</span></button><button type="button" class="btn" aria-pressed="false">hazel-tw-01<span class=mono>shop production</span></button><button type="button" class="btn" aria-pressed="false">hazel-jp-02<span class=mono>wiki</span></button><button type="button" class="btn" aria-pressed="false">lab-mini<span class=mono>shop staging</span></button></div><div class="panel"><div class="tabs" role="tablist"><button type="button" class="tab on" role="tab" aria-selected="true">shop · production</button><button type="button" class="tab" role="tab" aria-selected="false">shop · staging</button><button type="button" class="tab" role="tab" aria-selected="false">wiki · production</button></div><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr)); gap: 10px 16px; padding: 12px 14px; font-size: 13px"><span class="" style="display:flex;flex-direction:column;gap:2px"><span class="note">來源</span><span>github.com/hazelnut/shop · main</span></span><span class="" style="display:flex;flex-direction:column;gap:2px"><span class="note">最近部署</span><span>a3f9c1e · 02:57 · 成功 · Webhook</span></span><span class="" style="display:flex;flex-direction:column;gap:2px"><span class="note">節點</span><span>hazel-tw-01</span></span><span class="" style="display:flex;flex-direction:column;gap:2px"><span class="note">入口</span><span>shop.example.tw · 憑證 11 天後到期</span></span><span class="" style="display:flex;flex-direction:column;gap:2px"><span class="note">自動部署</span><span>已暫停：變更計畫 #418 待批准</span></span></div></div>
     <section class="panel" aria-labelledby="h-stopo">
       <div class="ph"><h2 id="h-stopo">shop · production · 拓撲</h2><a class="more" href="#compose">原始 Compose →</a></div>
-      <div style="padding: 10px 14px 6px"><div class="ch-d"><svg class="topo" viewBox="0 0 1140 146" role="img" aria-label="拓撲：入口→服務→資料→儲存"><path class="lnk " stroke-width="6.9" d="M190,81.0 C260,81.0 260,52.0 330,52.0"/><path class="lnk " stroke-width="5.1" d="M500,52.0 C570,52.0 570,52.0 640,52.0"/><path class="lnk " stroke-width="3.9" d="M500,52.0 C570,52.0 570,110.0 640,110.0"/><path class="lnk " stroke-width="3.3" d="M500,110.0 C570,110.0 570,52.0 640,52.0"/><path class="lnk " stroke-width="3.3" d="M500,110.0 C570,110.0 570,110.0 640,110.0"/><path class="lnk " stroke-width="5.1" d="M810,52.0 C880,52.0 880,52.0 950,52.0"/><path class="lnk dim" stroke-width="3.3" d="M1120,52.0 C1035,52.0 1035,110.0 950,110.0"/><text class="col" x="20" y="14">入口</text><rect class="box warn" x="20.0" y="59.0" width="170" height="44" rx="6"/><circle cx="32.0" cy="81.0" r="4" fill="var(--panel)" stroke="var(--warn)" stroke-width="2"/><text x="42.0" y="77.0">shop.example.tw</text><text class="sub" x="42.0" y="92.0">Zentinel · 憑證 11 天</text><text class="col" x="330" y="14">服務</text><rect class="box " x="330.0" y="30.0" width="170" height="44" rx="6"/><circle cx="342.0" cy="52.0" r="4" fill="var(--ok)"/><text x="352.0" y="48.0">shop-api</text><text class="sub" x="352.0" y="63.0">8080 · 2 副本</text><rect class="box " x="330.0" y="88.0" width="170" height="44" rx="6"/><circle cx="342.0" cy="110.0" r="4" fill="var(--ok)"/><text x="352.0" y="106.0">shop-worker</text><text class="sub" x="352.0" y="121.0">無對外 Port</text><text class="col" x="640" y="14">資料</text><rect class="box " x="640.0" y="30.0" width="170" height="44" rx="6"/><circle cx="652.0" cy="52.0" r="4" fill="var(--ok)"/><text x="662.0" y="48.0">shop-db</text><text class="sub" x="662.0" y="63.0">postgres 16.4 · 1.29G</text><rect class="box " x="640.0" y="88.0" width="170" height="44" rx="6"/><rect x="648.0" y="106.0" width="8" height="8" fill="var(--blue)"/><text x="662.0" y="106.0">shop-redis</text><text class="sub" x="662.0" y="121.0">重啟中 · 第 1 次</text><text class="col" x="950" y="14">儲存</text><rect class="box " x="950.0" y="30.0" width="170" height="44" rx="6"/><circle cx="962.0" cy="52.0" r="4" fill="var(--ok)"/><text x="972.0" y="48.0">shop-db-data</text><text class="sub" x="972.0" y="63.0">/mnt/data · 84G</text><rect class="box " x="950.0" y="88.0" width="170" height="44" rx="6"/><circle cx="962.0" cy="110.0" r="4" fill="var(--ok)"/><text x="972.0" y="106.0">每日備份 → S3</text><text class="sub" x="972.0" y="121.0">03:00 · 成功</text></svg></div><div class="ch-m"><div class="flowlist"><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop.example.tw</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-api</span><span class="note">Zentinel</span></div><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-api</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-db</span><span class="note">postgres</span></div><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-api</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-redis</span><span class="note">重啟中</span></div><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-worker</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-db</span><span class="note"></span></div><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-db</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-db-data</span><span class="note">84G</span></div><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-db-data</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">每日備份 → S3</span><span class="note">03:00</span></div></div></div></div>
+      <div style="padding: 10px 14px 6px"><div class="ch-d"><div class="topow"><svg class="topo" width="1016" height="142" viewBox="0 0 1016 142" role="img" aria-label="拓撲：入口→服務→資料→儲存"><path class="lnk " stroke-width="6.9" d="M200,80.0 C244,80.0 244,52.0 288,52.0"/><path class="lnk " stroke-width="5.1" d="M464,52.0 C508,52.0 508,52.0 552,52.0"/><path class="lnk " stroke-width="3.9" d="M464,52.0 C508,52.0 508,108.0 552,108.0"/><path class="lnk " stroke-width="3.3" d="M464,108.0 C508,108.0 508,52.0 552,52.0"/><path class="lnk " stroke-width="3.3" d="M464,108.0 C508,108.0 508,108.0 552,108.0"/><path class="lnk " stroke-width="5.1" d="M728,52.0 C772,52.0 772,52.0 816,52.0"/><path class="lnk dim" stroke-width="3.3" d="M992,52.0 C904,52.0 904,108.0 816,108.0"/><text class="col" x="24" y="14">入口 · 1</text><a href="#dom"><rect class="box warn" x="24" y="58.0" width="176" height="44" rx="6"/><circle cx="36" cy="80.0" r="4" fill="var(--panel)" stroke="var(--warn)" stroke-width="2"/><text x="46" y="76.0">shop.example.tw</text><text class="sub" x="46" y="91.0">Zentinel · 憑證 11 天</text></a><text class="col" x="288" y="14">服務 · 2</text><a href="#api"><rect class="box " x="288" y="30.0" width="176" height="44" rx="6"/><circle cx="300" cy="52.0" r="4" fill="var(--ok)"/><text x="310" y="48.0">shop-api</text><text class="sub" x="310" y="63.0">8080 · 2 副本</text></a><a href="#wrk"><rect class="box " x="288" y="86.0" width="176" height="44" rx="6"/><circle cx="300" cy="108.0" r="4" fill="var(--ok)"/><text x="310" y="104.0">shop-worker</text><text class="sub" x="310" y="119.0">無對外 Port</text></a><text class="col" x="552" y="14">資料 · 2</text><a href="#db"><rect class="box " x="552" y="30.0" width="176" height="44" rx="6"/><circle cx="564" cy="52.0" r="4" fill="var(--ok)"/><text x="574" y="48.0">shop-db</text><text class="sub" x="574" y="63.0">postgres 16.4 · 1.29G</text></a><a href="#rd"><rect class="box " x="552" y="86.0" width="176" height="44" rx="6"/><rect x="560" y="104.0" width="8" height="8" fill="var(--blue)"/><text x="574" y="104.0">shop-redis</text><text class="sub" x="574" y="119.0">重啟中 · 第 1 次</text></a><text class="col" x="816" y="14">儲存 · 2</text><a href="#vol"><rect class="box " x="816" y="30.0" width="176" height="44" rx="6"/><circle cx="828" cy="52.0" r="4" fill="var(--ok)"/><text x="838" y="48.0">shop-db-data</text><text class="sub" x="838" y="63.0">/mnt/data · 84G</text></a><a href="#bk"><rect class="box " x="816" y="86.0" width="176" height="44" rx="6"/><circle cx="828" cy="108.0" r="4" fill="var(--ok)"/><text x="838" y="104.0">每日備份 → S3</text><text class="sub" x="838" y="119.0">03:00 · 成功</text></a></svg></div></div><div class="ch-m"><div class="flowlist"><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop.example.tw</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-api</span><span class="note">Zentinel</span></div><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-api</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-db</span><span class="note">postgres</span></div><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-api</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-redis</span><span class="note">重啟中</span></div><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-worker</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-db</span><span class="note"></span></div><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-db</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-db-data</span><span class="note">84G</span></div><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-db-data</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">每日備份 → S3</span><span class="note">03:00</span></div></div></div></div>
     </section>
     <section class="panel" aria-labelledby="h-svc">
       <div class="ph"><h2 id="h-svc">服務 · 4</h2></div>
-      <div class="row hd srow"><span>服務</span><span>狀態</span><span class="c3">節點 · Port</span><span class="c4">CPU</span><span class="c4">記憶體</span><span class="c5">請求 1 小時</span><span>請求／秒</span></div>
+      <div class="row hd srow"><span class=""><span class="sortable on">服務 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg></span></span><span class=""><span class="sortable">狀態 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span><span class="c3"><span class="sortable">節點 · Port <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span><span class="c4"><span class="sortable">CPU <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span><span class="c4"><span class="sortable">記憶體 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span><span class="c5">請求 1 小時</span><span class="">請求／秒</span></div>
       <a class="row srow" href="Containers.dc.html"><span class="name"><span class="n">shop-api</span><span class="d">ghcr.io/hazelnut/shop-api:a3f9c1e</span></span><span><span class="st ok"><i aria-hidden="true"></i>健康 2／2</span></span><span class="mono c3">tw-01<br><span class="note">8080 → 內部</span></span><span class="c4"><span class="meter" role="meter" aria-valuenow="21" aria-valuemin="0" aria-valuemax="100" aria-label="21%"><span class="tr" aria-hidden="true"><span class="fl" style="width: 21%"></span></span><span class="num">21%</span></span></span><span class="c4"><span class="meter" role="meter" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" aria-label="812/2048M"><span class="tr" aria-hidden="true"><span class="fl" style="width: 40%"></span></span><span class="num">812/2048M</span></span></span><span class="c5"><svg class="sp" width="96" height="24" viewBox="0 0 96 24" aria-hidden="true" style="display:block;max-width:100%"><path d="M1.0,22.0 L9.5,18.3 L18.1,15.0 L26.6,11.4 L35.2,10.5 L43.7,6.1 L52.3,4.1 L60.8,2.0 L69.4,5.0 L77.9,10.1" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><path d="M77.9,10.1 L86.5,14.2 L95.0,15.7" fill="none" stroke="var(--hazel)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="95.0" cy="15.7" r="3" fill="var(--hazel)"/></svg></span><span class="mono">38.2<br><span class="note" style="color:var(--faint)">錯誤 0.14%</span></span></a>
       <a class="row srow" href="Containers.dc.html"><span class="name"><span class="n">shop-worker</span><span class="d">ghcr.io/hazelnut/shop-worker:a3f9c1e</span></span><span><span class="st ok"><i aria-hidden="true"></i>健康</span></span><span class="mono c3">tw-01<br><span class="note">無對外 Port</span></span><span class="c4"><span class="meter" role="meter" aria-valuenow="9" aria-valuemin="0" aria-valuemax="100" aria-label="9%"><span class="tr" aria-hidden="true"><span class="fl" style="width: 9%"></span></span><span class="num">9%</span></span></span><span class="c4"><span class="meter" role="meter" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" aria-label="410/1024M"><span class="tr" aria-hidden="true"><span class="fl" style="width: 40%"></span></span><span class="num">410/1024M</span></span></span><span class="c5"><svg class="sp" width="96" height="24" viewBox="0 0 96 24" aria-hidden="true" style="display:block;max-width:100%"><path d="M1.0,22.0 L9.5,14.6 L18.1,13.3 L26.6,10.5 L35.2,7.7 L43.7,3.7 L52.3,3.9 L60.8,14.9 L69.4,8.3 L77.9,2.8" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><path d="M77.9,2.8 L86.5,2.8 L95.0,2.0" fill="none" stroke="var(--hazel)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="95.0" cy="2.0" r="3" fill="var(--hazel)"/></svg></span><span class="mono">—<br><span class="note" style="color:var(--faint)">錯誤 0.00%</span></span></a>
       <a class="row srow" href="Containers.dc.html"><span class="name"><span class="n">shop-db</span><span class="d">postgres:16.4</span></span><span><span class="st ok"><i aria-hidden="true"></i>健康</span></span><span class="mono c3">tw-01<br><span class="note">5432 → 僅內部</span></span><span class="c4"><span class="meter" role="meter" aria-valuenow="3" aria-valuemin="0" aria-valuemax="100" aria-label="3%"><span class="tr" aria-hidden="true"><span class="fl" style="width: 3%"></span></span><span class="num">3%</span></span></span><span class="c4"><span class="meter" role="meter" aria-valuenow="31" aria-valuemin="0" aria-valuemax="100" aria-label="1290/4096M"><span class="tr" aria-hidden="true"><span class="fl" style="width: 31%"></span></span><span class="num">1290/4096M</span></span></span><span class="c5"><svg class="sp" width="96" height="24" viewBox="0 0 96 24" aria-hidden="true" style="display:block;max-width:100%"><path d="M1.0,2.0 L9.5,9.5 L18.1,5.4 L26.6,9.7 L35.2,17.0 L43.7,21.1 L52.3,17.1 L60.8,22.0 L69.4,17.9 L77.9,9.7" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><path d="M77.9,9.7 L86.5,9.8 L95.0,11.8" fill="none" stroke="var(--hazel)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="95.0" cy="11.8" r="3" fill="var(--hazel)"/></svg></span><span class="mono">—<br><span class="note" style="color:var(--faint)">錯誤 0.00%</span></span></a>
@@ -339,7 +386,7 @@ body{margin:0}
     <section class="panel" aria-labelledby="h-dep">
       <div class="ph"><h2 id="h-dep">部署歷史 · 近 24 次</h2><div class="legend" style="margin-left:0"><span><i class="rect" style="background: var(--ok)"></i>成功</span><span><i class="rect" style="background: var(--danger)"></i>失敗</span><span><i class="rect" style="background: var(--warn)"></i>回滾</span><span><i class="rect" style="background: var(--blue)"></i>進行中</span></div><a class="more" href="WorkCenter.dc.html">工作中心 →</a></div>
       <div style="padding: 12px 14px; display: flex; flex-direction: column; gap: 8px"><div class="timeline" role="img" aria-label="部署歷史：22 成功、1 失敗、1 回滾"><i class="" title="#380"></i><i class="" title="#381"></i><i class="" title="#382"></i><i class="" title="#383"></i><i class="" title="#384"></i><i class="" title="#385"></i><i class="" title="#386"></i><i class="" title="#387"></i><i class="f" title="#388"></i><i class="" title="#389"></i><i class="" title="#390"></i><i class="" title="#391"></i><i class="" title="#392"></i><i class="" title="#393"></i><i class="" title="#394"></i><i class="" title="#395"></i><i class="" title="#396"></i><i class="" title="#397"></i><i class="" title="#398"></i><i class="" title="#399"></i><i class="" title="#400"></i><i class="" title="#401"></i><i class="r" title="#402"></i><i class="" title="#403"></i></div><div class="note" style="display:flex;justify-content:space-between"><span>#380 · 10 月 21 日</span><span>#403 · a3f9c1e · 02:57 今天</span></div></div>
-      <div class="row hd dprow"><span>部署</span><span>commit</span><span class="c3">觸發</span><span class="c4">時長</span><span>結果</span></div>
+      <div class="row hd dprow"><span class=""><span class="sortable on">部署 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg></span></span><span class=""><span class="sortable">commit <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span><span class="c3"><span class="sortable">觸發 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span><span class="c4"><span class="sortable">時長 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span><span class=""><span class="sortable">結果 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span></div>
       <div class="row dprow"><span>#403</span><span class="mono">a3f9c1e 修正結帳逾時</span><span class="c3">Webhook</span><span class="mono c4">1 分 48 秒</span><span><span class="st ok"><i aria-hidden="true"></i>成功</span> <span class="note">02:57</span></span></div>
       <div class="row dprow"><span>#402</span><span class="mono">88b1d02 升級 redis 7.4</span><span class="c3">手動 · tim</span><span class="mono c4">3 分 12 秒</span><span><span class="st warn"><i aria-hidden="true"></i>回滾</span> <button type="button" class="btn sm">回到這版</button></span></div>
       <div class="row dprow"><span>#401</span><span class="mono">4e7a9c0 新增 webhook 重試</span><span class="c3">Webhook</span><span class="mono c4">1 分 51 秒</span><span><span class="st ok"><i aria-hidden="true"></i>成功</span> <span class="note">昨天 18:02</span></span></div>

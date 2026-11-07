@@ -34,7 +34,9 @@ body{margin:0}
 .hb .foot a,.hb .note a,.hb a.note{min-height:28px;display:inline-flex;align-items:center}
 .hb .inp input,.hb .inp select{min-height:30px}
 .hb .card{background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:8px}
-.hb .row{display:grid;gap:12px;align-items:center;min-height:44px;padding:0 16px;border-bottom:1px solid var(--line)}
+.hb .row{display:grid;grid-template-columns:var(--t);gap:12px;align-items:center;min-height:44px;padding:0 16px;border-bottom:1px solid var(--line)}
+.hb .row.batch{grid-template-columns:28px var(--t)}
+.hb .row .ck{justify-self:start}
 .hb a.row{cursor:pointer}
 .hb .row:hover{background:var(--raised)}
 .hb .row:last-child{border-bottom:0}
@@ -43,7 +45,7 @@ body{margin:0}
 .hb .name{display:flex;flex-direction:column;gap:2px;min-width:0}
 .hb .name .n{font-family:"Geist Mono",ui-monospace,monospace;font-weight:500;overflow-wrap:anywhere;line-height:1.3}
 .hb .name .d{font-size:12px;color:var(--faint);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;overflow-wrap:anywhere}
-.hb .st{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:12px;font-weight:500;padding:2px 8px 2px 7px;border-radius:999px;background:color-mix(in srgb,currentColor 13%,transparent)}
+.hb .st{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;font-size:12px;font-weight:500;padding:2px 8px 2px 7px;border-radius:999px;background:color-mix(in srgb,currentColor 13%,transparent)}
 .hb .lg .st,.hb .mx .st{padding:1px 7px 1px 6px}
 .hb.theme-light .st{background:var(--raised);box-shadow:inset 0 0 0 1px color-mix(in srgb,currentColor 35%,transparent)}
 .hb .st i{display:inline-block;width:8px;height:8px;flex:none}
@@ -143,7 +145,9 @@ body{margin:0}
 .hb .pstage+.pstage::before{content:"";position:absolute;left:-12px;top:50%;width:6px;height:6px;border-top:2px solid var(--faint);border-right:2px solid var(--faint);transform:translateY(-50%) rotate(45deg)}
 .hb .pstage .t{color:var(--ink);font-weight:500;display:flex;align-items:center;gap:6px}
 .hb .pstage.done{border-color:var(--ok)}.hb .pstage.cur{border-color:var(--blue);background:var(--raised)}.hb .pstage.fail{border-color:var(--danger)}.hb .pstage.wait{border-color:var(--warn)}
-.hb svg.topo{display:block;width:100%;height:auto;font-family:"Geist","Noto Sans TC",sans-serif}
+.hb .topow{overflow:auto;max-width:100%}
+.hb svg.topo{display:block;font-family:"Geist","Noto Sans TC",sans-serif}
+.hb svg.topo a:hover .box{stroke:var(--hazel)}
 .hb svg.topo text{font-size:12px;fill:var(--ink)}
 .hb svg.topo text.sub{font-size:11px;fill:var(--faint);font-family:"Geist Mono",ui-monospace,monospace}
 .hb svg.topo text.col{font-size:11px;fill:var(--faint);letter-spacing:.06em;text-transform:uppercase}
@@ -156,14 +160,50 @@ body{margin:0}
 .hb .mx{display:grid;gap:2px;font-size:12px}
 .hb .mx .c{min-height:32px;display:flex;align-items:center;justify-content:center;gap:4px;background:var(--raised);border-radius:4px;padding:0 6px;text-align:center}
 .hb .mx .c.empty{background:transparent;border:1px dashed var(--line);color:var(--faint)}
-.hb .mx .rl{display:flex;align-items:center;font-family:"Geist Mono",ui-monospace,monospace;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:32px}
+.hb .mx .rl{display:flex;align-items:center;white-space:normal;overflow-wrap:anywhere;font-family:"Geist Mono",ui-monospace,monospace;color:var(--muted);min-height:32px;line-height:1.3}
 .hb .mx .cl{display:flex;align-items:flex-end;justify-content:center;font-size:11px;color:var(--faint);padding-bottom:4px;text-align:center}
 .hb .tree{font-family:"Geist Mono",ui-monospace,monospace;font-size:13px}
 .hb .tree ul{list-style:none;margin:0;padding-left:16px;border-left:1px solid var(--line)}
 .hb .tree>ul{padding-left:0;border-left:0}
 .hb .tree li{display:flex;align-items:center;gap:8px;min-height:30px}
 .hb .tree li .sz{margin-left:auto;color:var(--faint);font-size:12px}
-.hb .tree li.on{color:var(--hazel)}
+.hb .tree li.on,.hb .tree summary.on{color:var(--hazel)}
+.hb .tree summary{display:flex;align-items:center;gap:6px;min-height:30px;cursor:pointer;list-style:none;padding:0 6px;border-radius:4px}
+.hb .tree summary::-webkit-details-marker{display:none}
+.hb .tree summary:hover,.hb .tree li.leaf:hover{background:var(--raised)}
+.hb .tree summary svg:first-child{transition:transform .12s;color:var(--faint)}
+.hb .tree details[open]>summary svg:first-child{transform:rotate(90deg)}
+.hb .tree li.leaf{padding:0 6px;border-radius:4px;gap:6px}
+.hb .tree .pad{width:14px;flex:none}
+.hb .tree .tn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hb .tree svg{flex:none;color:var(--muted)}
+.hb .fm{display:grid;gap:0;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;min-height:420px}
+.hb .fm>*{min-width:0}
+.hb .fm .pane{border-right:1px solid var(--line);display:flex;flex-direction:column}
+.hb .fm .pane:last-child{border-right:0}
+.hb .fm .pt{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 12px;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted)}
+.hb .toolbar{display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:6px 10px;background:var(--panel);border:1px solid var(--line);border-radius:8px}
+.hb .toolbar .ib{min-height:34px;gap:6px;padding:0 10px}
+.hb .toolbar .ib[aria-disabled=true]{opacity:.45}
+.hb .toolbar .sep{width:1px;height:20px;background:var(--line);margin:0 4px}
+.hb .crumbs{display:flex;align-items:center;gap:2px;flex-wrap:wrap;font-family:"Geist Mono",ui-monospace,monospace;font-size:13px}
+.hb .crumbs a{padding:4px 6px;border-radius:4px;color:var(--muted)}
+.hb .crumbs a:hover{background:var(--raised);color:var(--ink)}
+.hb .crumbs a:last-child{color:var(--ink);font-weight:500}
+.hb .crumbs .sep{color:var(--faint)}
+.hb .frow{--t:28px minmax(0,2fr) 90px 110px 100px}
+.hb .fm{grid-template-columns:240px minmax(0,1fr) 280px}
+.hb .frow.sel{background:color-mix(in srgb,var(--hazel) 12%,transparent)}
+.hb .ck{display:inline-flex;align-items:center;justify-content:center;width:28px;min-height:28px}
+.hb .ck input{width:16px;height:16px;accent-color:var(--hazel);margin:0}
+.hb .hd .sortable{display:inline-flex;align-items:center;gap:4px;cursor:pointer}
+.hb .hd .sortable svg{color:var(--faint);opacity:.5}
+.hb .hd .sortable.on svg{color:var(--hazel);opacity:1}
+.hb .pager{display:flex;align-items:center;gap:8px;padding:8px 16px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.hb .pager .ib{min-height:32px;min-width:32px}
+.hb .pager .pg{margin-left:auto;display:flex;align-items:center;gap:4px}
+.hb .dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 12px;font-size:13px;padding:10px 12px}
+.hb .dl dt{color:var(--muted);font-size:12px;white-space:nowrap}.hb .dl dd{margin:0;overflow-wrap:anywhere}
 .hb .appcard{display:flex;gap:10px;padding:12px;background:var(--raised);border:1px solid var(--line);border-radius:8px;min-width:0;color:var(--ink);align-items:flex-start}
 .hb .appcard .ic{width:40px;height:40px;border-radius:8px;background:var(--q2);display:flex;align-items:center;justify-content:center;font-family:"Geist Mono",ui-monospace,monospace;font-weight:700;color:var(--ink);flex:none}
 .hb .appcard .bd{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
@@ -246,26 +286,31 @@ body{margin:0}
 .hb .acts{display:inline-flex;gap:2px;justify-content:flex-end}
 .hb .acts .ib{min-width:32px;min-height:32px;padding:0}
 .hb .phead{display:flex;flex-wrap:wrap;align-items:center;gap:12px;min-height:40px}
-.hb .nrow{grid-template-columns:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) 110px minmax(0,.8fr)}
-.hb .prow{grid-template-columns:minmax(0,1.2fr) minmax(0,1.5fr) minmax(0,.5fr) minmax(0,.6fr) minmax(0,1fr) minmax(0,1.1fr)}
-.hb .srow{grid-template-columns:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) 110px minmax(0,.7fr)}
-.hb .crow{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,.4fr) minmax(0,.7fr) 130px}
-.hb .row.cols-3{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr)}
-.hb .row.cols-4{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}
-.hb .row.cols-5{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}
-.hb .row.cols-6{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}
-.hb .row.acts-end{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.2fr) 130px}
+.hb .nrow{--t:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) 110px minmax(0,.8fr)}
+.hb .prow{--t:minmax(0,1.2fr) minmax(0,1.5fr) minmax(0,.5fr) minmax(0,.6fr) minmax(0,1fr) minmax(0,1.1fr)}
+.hb .srow{--t:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) 110px minmax(0,.7fr)}
+.hb .crow{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,.4fr) minmax(0,.7fr) 130px}
+.hb .row.cols-3{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr)}
+.hb .row.cols-4{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}
+.hb .row.cols-5{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}
+.hb .row.cols-6{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}
+.hb .row.acts-end{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.2fr) 130px}
 .hb .rank{grid-template-columns:minmax(0,1.7fr) minmax(0,2fr) auto}
 .hb .rank .mono,.hb .flowlist .mono{white-space:normal!important;overflow-wrap:anywhere;line-height:1.3}
 .hb .mxw,.hb .heatw{overflow-x:auto}
+.hb .meter .tr{min-width:24px}.hb .meter .num{flex:none}
+.hb .pipe{padding-bottom:4px}
 .hb .row > span:last-child:has(> .btn),.hb .row > .acts{justify-self:end}
-.hb .drow{grid-template-columns:minmax(0,.8fr) minmax(0,1.6fr) minmax(0,.6fr) minmax(0,1.4fr) minmax(0,.8fr)}
-.hb .gprow{grid-template-columns:minmax(0,1.4fr) minmax(0,.9fr) minmax(0,.5fr) minmax(0,1.2fr)}
-.hb .garow{grid-template-columns:minmax(0,.8fr) minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,1.4fr)}
-.hb .dprow{grid-template-columns:minmax(0,.5fr) minmax(0,1.6fr) minmax(0,.7fr) minmax(0,.7fr) minmax(0,1.4fr)}
-.hb .hrow{grid-template-columns:minmax(0,1.6fr) minmax(0,.8fr) minmax(0,.7fr) minmax(0,1.4fr)}
-.hb .rrow{grid-template-columns:24px minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,.5fr) minmax(0,.6fr)}
-@media (max-width:1100px){.hb .aside{width:100%;border-left:0;border-top:1px solid var(--line)}}
+.hb .drow{--t:minmax(0,.8fr) minmax(0,1.6fr) minmax(0,.6fr) minmax(0,1.4fr) minmax(0,.8fr)}
+.hb .gprow{--t:minmax(0,1.4fr) minmax(0,.9fr) minmax(0,.5fr) minmax(0,1.2fr)}
+.hb .garow{--t:minmax(0,.8fr) minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,1.4fr)}
+.hb .dprow{--t:minmax(0,.5fr) minmax(0,1.6fr) minmax(0,.7fr) minmax(0,.7fr) minmax(0,1.4fr)}
+.hb .hrow{--t:minmax(0,1.6fr) minmax(0,.8fr) minmax(0,.7fr) minmax(0,1.4fr)}
+.hb .rrow{--t:24px minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,.5fr) minmax(0,.6fr)}
+@media (max-width:1280px){.hb .frow{--t:28px minmax(0,2fr) 90px 100px}.hb .frow>:nth-child(4){display:none}}
+@media (max-width:1024px){.hb .c5{display:none}.hb .crow{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.5fr) minmax(0,.9fr) minmax(0,.9fr) 100px}.hb .acts .ib:nth-child(n+3){display:none}}
+@media (max-width:900px){.hb .top{flex-wrap:wrap;padding:8px 12px;gap:8px;min-height:0}.hb .crumb{display:none}.hb .top .search{order:3;flex:1 1 100%;max-width:none;margin:0}.hb .obs{display:none}.hb .ib.user span{display:none}.hb .side{width:100%;border-right:0;border-bottom:1px solid var(--line);flex-direction:row;flex-wrap:nowrap;overflow-x:auto;gap:4px;padding:8px 12px}.hb .navgrp{display:none}.hb .navcol{flex-direction:row;flex:none;gap:4px}.hb .side .nv{width:auto;min-width:44px;justify-content:center;min-height:36px;padding:0 10px;white-space:nowrap;font-size:13px}.hb .side .nv .cnt{margin-left:4px}.hb .side .coll{display:none}.hb .nv svg{display:none}.hb .brand{width:auto;border:0;padding:0 12px}}
+@media (max-width:1100px){.hb .aside{width:100%;border-left:0;border-top:1px solid var(--line)}.hb .fm{grid-template-columns:220px minmax(0,1fr)}.hb .fm .pane.detp{grid-column:1/-1;border-top:1px solid var(--line)}}
 @media (max-width:767px){
  .hb .side{width:100%;border-right:0;border-bottom:1px solid var(--line);flex-direction:row;flex-wrap:nowrap;overflow-x:auto;gap:4px;padding:8px 12px}
  .hb .navgrp{display:none}.hb .navcol{flex-direction:row;flex:none;gap:4px}.hb .side .nv{width:auto;min-width:44px;justify-content:center;min-height:36px;padding:0 10px;white-space:nowrap;font-size:13px}.hb .side .nv .cnt{margin-left:4px}
@@ -273,25 +318,27 @@ body{margin:0}
  .hb .c3,.hb .c4,.hb .c5,.hb .kbd{display:none}
  .hb .top{flex-wrap:wrap;padding:8px 12px;gap:8px;min-height:0}.hb .top .search{min-height:44px}.hb .brand{width:auto;border:0;padding:0}.hb .crumb{display:none}.hb .top .search{order:3;flex:1 1 100%;max-width:none;margin:0}.hb .obs{display:none}.hb .ib.user span{display:none}
  .hb .side .coll{display:none}.hb .nv svg{display:none}
- .hb .row[class*="cols-"],.hb .row.acts-end{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) auto}
+ .hb .row[class*="cols-"],.hb .row.acts-end{--t:minmax(0,1.4fr) minmax(0,1fr) auto}
  .hb .acts .ib:nth-child(n+3){display:none}
  .hb .rank{grid-template-columns:minmax(0,1fr) auto;row-gap:4px}.hb .rank .bar{grid-column:1/-1}
  .hb .mx{min-width:620px}.hb .heat{min-width:720px}
+ .hb .fm{grid-template-columns:minmax(0,1fr)}.hb .fm .pane{border-right:0;border-bottom:1px solid var(--line)}.hb .fm .pane.treep{max-height:260px;overflow:auto}
+ .hb .frow{--t:28px minmax(0,1fr) 70px 60px}.hb .frow>:nth-child(n+5){display:none}
  .hb .mx .rl{white-space:normal}
  .hb .ch-d{display:none}.hb .ch-m{display:block}
  .hb .heat i{min-height:18px}
  .hb .steps{grid-template-columns:repeat(2,minmax(0,1fr))}
  .hb .btn,.hb .btn.sm,.hb .range .btn,.hb .scope .btn,.hb .ib,.hb .acts .ib,.hb .tab,.hb .side .nv,.hb .ph .more,.hb .foot a,.hb a.note,.hb .brand,.hb .inp{min-height:44px}.hb .inp input,.hb .inp select{min-height:40px}.hb .ib,.hb .acts .ib{min-width:44px}
- .hb .nrow{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,.9fr)}
- .hb .prow{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}
- .hb .srow{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,.8fr)}
- .hb .crow{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}
- .hb .drow{grid-template-columns:minmax(0,.9fr) minmax(0,1.2fr) minmax(0,1.3fr)}
- .hb .gprow{grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr) minmax(0,1fr)}
- .hb .garow{grid-template-columns:minmax(0,.8fr) minmax(0,1.4fr) minmax(0,1.2fr)}
- .hb .dprow{grid-template-columns:minmax(0,.5fr) minmax(0,1.4fr) minmax(0,1.3fr)}
- .hb .hrow{grid-template-columns:minmax(0,1.4fr) minmax(0,.7fr) minmax(0,1.2fr)}
- .hb .rrow{grid-template-columns:24px minmax(0,1.6fr) minmax(0,.8fr)}
+ .hb .nrow{--t:minmax(0,1.5fr) minmax(0,1fr) minmax(0,.9fr)}
+ .hb .prow{--t:minmax(0,1fr) minmax(0,1.3fr)}
+ .hb .srow{--t:minmax(0,1.4fr) minmax(0,1fr) minmax(0,.8fr)}
+ .hb .crow{--t:minmax(0,1.4fr) minmax(0,1fr)}
+ .hb .drow{--t:minmax(0,.9fr) minmax(0,1.2fr) minmax(0,1.3fr)}
+ .hb .gprow{--t:minmax(0,1.2fr) minmax(0,.8fr) minmax(0,1fr)}
+ .hb .garow{--t:minmax(0,.8fr) minmax(0,1.4fr) minmax(0,1.2fr)}
+ .hb .dprow{--t:minmax(0,.5fr) minmax(0,1.4fr) minmax(0,1.3fr)}
+ .hb .hrow{--t:minmax(0,1.4fr) minmax(0,.7fr) minmax(0,1.2fr)}
+ .hb .rrow{--t:24px minmax(0,1.6fr) minmax(0,.8fr)}
  .hb .tile .v{font-size:24px}
  .hb .rings svg{width:52px;height:52px}
  .hb .hcell{width:36px;height:36px}
@@ -338,7 +385,7 @@ body{margin:0}
     </section>
     <section class="panel" aria-labelledby="h-upg">
       <div class="ph"><h2 id="h-upg">可升級 · 3</h2></div>
-      <div class="row hd cols-6"><span>應用</span><span>版本</span><span class="c3">範本變更</span><span class="c4">映像</span><span class="c4">風險</span><span></span></div>
+      <div class="row hd cols-6"><span class=""><span class="sortable on">應用 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg></span></span><span class=""><span class="sortable">版本 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span><span class="c3"><span class="sortable">範本變更 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span><span class="c4"><span class="sortable">映像 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span><span class="c4"><span class="sortable">風險 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span><span class=""></span></div>
       <a class="row  cols-6" href="#u1"><span class="name"><span class="n">Ollama</span><span class="d">tw-01</span></span><span class="mono">0.5.7 → 0.6.1</span><span class="c3 note">+2 行：GPU device reservation 寫法改變</span><span class="c4 mono">ollama/ollama:0.6.1</span><span class="c4"><span class="st warn"><i aria-hidden="true"></i>需重建容器</span></span><span><button type="button" class="btn sm">看差異</button></span></a>
       <a class="row  cols-6" href="#u2"><span class="name"><span class="n">Redis</span><span class="d">tw-01</span></span><span class="mono">7.2 → 7.4</span><span class="c3 note">無範本變更</span><span class="c4 mono">redis:7.4.1</span><span class="c4"><span class="st ok"><i aria-hidden="true"></i>滾動</span></span><span><button type="button" class="btn sm">看差異</button></span></a>
       <a class="row  cols-6" href="#u3"><span class="name"><span class="n">mail-relay</span><span class="d">tw-01</span></span><span class="mono">1.2 → 1.3</span><span class="c3 note">+1 環境變數（預設值）</span><span class="c4 mono">hazelnut/mail-relay:1.3</span><span class="c4"><span class="st ok"><i aria-hidden="true"></i>滾動</span></span><span><button type="button" class="btn sm">看差異</button></span></a>
@@ -348,7 +395,7 @@ body{margin:0}
       <div class="ph"><h2 id="h-all">全部應用 · 212</h2><div class="wrap" style="margin-left:auto"><span class="chip on">全部</span><span class="chip">網站 48</span><span class="chip">資料庫 21</span><span class="chip">AI 17</span><span class="chip">工具 63</span><span class="chip">儲存 19</span><span class="chip">其他 44</span></div></div>
       <div class="wrap" style="padding:10px 14px 0"><label class="inp" style="flex:1;min-width:220px"><span class="note">搜尋</span><input placeholder="名稱、標籤、說明" style="background:transparent;border:0;flex:1;min-width:0"></label><span class="chip">只看支援 arm64</span><span class="chip">只看 Podman 可用</span><span class="chip">無已知漏洞</span></div>
       <div class="fleet">
-        <a class="appcard" href="#c"><span class="ic" aria-hidden="true">Nc</span><span class="bd"><span class="n">Nextcloud</span><span class="d">儲存 · 需要 PostgreSQL／Redis，可重用現有</span><span class="wrap"><span class=chip>Docker</span><span class=chip>Podman</span><span class=chip>amd64</span><span class=chip>arm64</span></span><span class="d">31.0.2 · AGPL · 漏洞 0 已知</span></span></a>
+        <a class="appcard" href="AppInstall.dc.html"><span class="ic" aria-hidden="true">Nc</span><span class="bd"><span class="n">Nextcloud</span><span class="d">儲存 · 需要 PostgreSQL／Redis，可重用現有</span><span class="wrap"><span class=chip>Docker</span><span class=chip>Podman</span><span class=chip>amd64</span><span class=chip>arm64</span></span><span class="d">31.0.2 · AGPL · 漏洞 0 已知</span></span></a>
         <a class="appcard" href="#c"><span class="ic" aria-hidden="true">Gt</span><span class="bd"><span class="n">Gitea</span><span class="d">開發 · </span><span class="wrap"><span class=chip>Docker</span><span class=chip>Podman</span><span class=chip>K3s</span><span class=chip>amd64</span><span class=chip>arm64</span></span><span class="d">1.23.1 · MIT · 漏洞 0 已知</span></span></a>
         <a class="appcard" href="#c"><span class="ic" aria-hidden="true">Im</span><span class="bd"><span class="n">Immich</span><span class="d">媒體 · 需要 GPU 才能硬體轉碼</span><span class="wrap"><span class=chip>Docker</span><span class=chip>amd64</span></span><span class="d">1.123 · AGPL · 1 中風險（CVE-2026-…）</span></span></a>
         <a class="appcard" href="#c"><span class="ic" aria-hidden="true">Mn</span><span class="bd"><span class="n">Minio</span><span class="d">儲存 · 授權變更提醒：請讀來源說明</span><span class="wrap"><span class=chip>Docker</span><span class=chip>Podman</span><span class=chip>amd64</span><span class=chip>arm64</span></span><span class="d">2026-10 · AGPL</span></span></a>
@@ -358,7 +405,7 @@ body{margin:0}
     </section><div class="cg">
     <section class="panel" aria-labelledby="h-src">
       <div class="ph"><h2 id="h-src">來源</h2></div>
-      <div class="row hd cols-5"><span>來源</span><span>狀態</span><span class="c3">應用數</span><span class="c4">上次同步</span><span class="c4">簽章</span></div>
+      <div class="row hd cols-5"><span class=""><span class="sortable on">來源 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg></span></span><span class=""><span class="sortable">狀態 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span><span class="c3"><span class="sortable">應用數 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span><span class="c4"><span class="sortable">上次同步 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span><span class="c4"><span class="sortable">簽章 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span></div>
       <div class="row  cols-5"><span class="name"><span class="n">1Panel 官方商店</span><span class="d">apps.fit2cloud.com</span></span><span><span class="st ok"><i aria-hidden="true"></i>正常</span></span><span class="mono c3">198</span><span class="mono c4">03:30</span><span class="c4"><span class="st ok"><i aria-hidden="true"></i>有效</span></span></div>
       <div class="row  cols-5"><span class="name"><span class="n">hazelnut 私有來源</span><span class="d">git.example.tw/apps</span></span><span><span class="st warn"><i aria-hidden="true"></i>同步失敗 2 次</span></span><span class="mono c3">11</span><span class="mono c4">昨天 21:00</span><span class="c4"><span class="st ok"><i aria-hidden="true"></i>有效</span></span></div>
       <div class="row  cols-5"><span class="name"><span class="n">本機範本</span><span class="d">/mnt/data/hazelminx/templates</span></span><span><span class="st ok"><i aria-hidden="true"></i>正常</span></span><span class="mono c3">3</span><span class="mono c4">—</span><span class="c4 note">不適用</span></div>

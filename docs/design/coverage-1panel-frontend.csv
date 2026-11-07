@@ -1,0 +1,109 @@
+path,name,component,hidden,hazelminx_board
+/,Home-Menu,,False,Overview
+/,home,@/views/home/index.vue,False,Overview
+/login,login,@/views/login/index.vue,False,未畫（登入頁）
+/enterprise/license-required,EnterpriseLicenseRequired,@/views/setting/license-required/index.vue,False,Overview
+/s/:code,file-share,@/views/share/index.vue,False,Overview
+/:code?,entrance,@/views/login/index.vue,False,Overview
+/:pathMatch(.*),404,,False,Overview
+/ai,AI-Menu,,False,AI
+/ai/agents/agent,Agents,@/views/ai/agents/agent/index.vue,False,AI
+/ai/model/account,AIModel,@/views/ai/model/index.vue,False,AI
+/ai/model/local,LocalModel,@/views/ai/model/index.vue,True,AI
+/ai/mcp,MCPServer,@/views/ai/mcp/server/index.vue,False,AI
+/ai/gpu/current,GPU,@/views/ai/gpu/current/index.vue,False,NodeDetail（GPU）
+/ai/gpu/history,GPUHistory,@/views/ai/gpu/history/index.vue,True,NodeDetail（GPU）
+/apps,App-Menu,,False,AppStore、AppInstall
+/apps,App,@/views/app-store/index.vue,False,AppStore、AppInstall
+all,AppAll,@/views/app-store/apps/index.vue,True,AppStore
+installed,AppInstalled,@/views/app-store/installed/index.vue,True,AppStore
+upgrade,AppUpgrade,@/views/app-store/installed/index.vue,True,AppStore
+setting,AppStoreSetting,@/views/app-store/setting/index.vue,True,AppStore
+/containers,Container-Menu,,False,Containers
+/containers,Container,@/views/container/index.vue,False,Containers
+dashboard,ContainerDashboard,@/views/container/dashboard/index.vue,True,Containers
+container,ContainerItem,@/views/container/container/index.vue,True,Containers
+container/operate,ContainerCreate,@/views/container/container/operate/index.vue,True,Containers
+image,Image,@/views/container/image/index.vue,True,Containers
+network,Network,@/views/container/network/index.vue,True,Containers
+volume,Volume,@/views/container/volume/index.vue,True,Containers
+repo,Repo,@/views/container/repo/index.vue,True,Containers
+compose,Compose,@/views/container/compose/index.vue,True,Containers
+template,ComposeTemplate,@/views/container/template/index.vue,True,Containers
+setting,ContainerSetting,@/views/container/setting/index.vue,True,Containers
+/cronjobs,Cronjob-Menu,,False,Cron
+/cronjobs,Cronjob,@/views/cronjob/index.vue,False,Cron
+cronjob,CronjobItem,@/views/cronjob/cronjob/index.vue,True,Cron
+cronjob/operate,CronjobOperate,@/views/cronjob/cronjob/operate/index.vue,True,Cron
+library,Library,@/views/cronjob/library/index.vue,True,Cron
+/databases,Database-Menu,,False,Database
+/databases,Database,@/views/database/index.vue,False,Database
+mysql,MySQL,@/views/database/mysql/index.vue,True,Database
+mysql/setting/:type/:database,MySQL-Setting,@/views/database/mysql/setting/index.vue,True,Database
+mysql/remote,MySQL-Remote,@/views/database/mysql/remote/index.vue,True,Database
+postgresql,PostgreSQL,@/views/database/postgresql/index.vue,True,Database
+postgresql/remote,PostgreSQL-Remote,@/views/database/postgresql/remote/index.vue,True,Database
+postgresql/setting/:type/:database,PostgreSQL-Setting,@/views/database/postgresql/setting/index.vue,True,Database
+redis,Redis,@/views/database/redis/index.vue,True,Database
+redis/remote,Redis-Remote,@/views/database/redis/remote/index.vue,True,Database
+mongodb,MongoDB,@/views/database/mongodb/index.vue,True,Database
+mongodb/remote,MongoDB-Remote,@/views/database/mongodb/remote/index.vue,True,Database
+/error,,,False,Overview
+404,404,@/components/error-message/404.vue,True,未畫：錯誤頁（States 有樣式）
+/hosts,System-Menu,,False,Nodes
+/hosts/files,File,@/views/host/file-management/index.vue,False,Files
+/hosts/monitor/monitor,Monitorx,@/views/host/monitor/monitor/index.vue,False,NodeDetail
+/hosts/monitor/export,HostMonitorExport,@/views/host/monitor/export/index.vue,True,NodeDetail
+/hosts/monitor/setting,HostMonitorSetting,@/views/host/monitor/setting/index.vue,True,NodeDetail
+/hosts/firewall/rules,FirewallPort,@/views/host/firewall/rule/index.vue,False,Nodes（Port 矩陣）、Security
+/hosts/firewall/docker,FirewallDockerGuard,@/views/host/firewall/docker/index.vue,True,Nodes（Port 矩陣）、Security
+/hosts/firewall/forward,FirewallForward,@/views/host/firewall/forward/index.vue,True,Nodes（Port 矩陣）、Security
+/hosts/firewall/setting,FirewallSetting,@/views/host/firewall/setting/index.vue,True,Nodes（Port 矩陣）、Security
+/hosts/disk,Disk,@/views/host/disk-management/disk/index.vue,False,Storage、System
+/hosts/process/process,Process,@/views/host/process/process/index.vue,False,Nodes（程序排行）
+/hosts/process/network,ProcessNetwork,@/views/host/process/network/index.vue,True,Nodes（程序排行）
+/hosts/ssh/ssh,SSH,@/views/host/ssh/ssh/index.vue,False,Nodes（SSH 矩陣）、System
+/hosts/ssh/log,SSHLog,@/views/host/ssh/log/index.vue,True,Nodes（SSH 矩陣）、System
+/hosts/ssh/session,SSHSession,@/views/host/ssh/session/index.vue,True,Nodes（SSH 矩陣）、System
+/logs,Log-Menu,,False,Logs
+/logs,Log,@/views/log/index.vue,False,Logs
+operation,OperationLog,@/views/log/operation/index.vue,True,Logs
+login,LoginLog,@/views/log/login/index.vue,True,Logs
+website,WebsiteLog,@/views/log/website/index.vue,True,Websites
+system,SystemLog,@/views/log/system/index.vue,True,Logs
+host,HostSystemLog,@/views/log/host-system/index.vue,True,Logs
+ssh,SSHLog2,@/views/host/ssh/log/log.vue,True,Nodes、System
+task,Task,@/views/log/task/index.vue,True,Logs
+/settings,Setting-Menu,,False,Settings、IAM、Events、Storage
+/settings,Setting,@/views/setting/index.vue,False,Settings、IAM、Events、Storage
+apikeys,APIKeys,@/views/setting/api-keys/index.vue,True,Settings、IAM
+panel,Panel,@/views/setting/panel/index.vue,True,Settings、IAM
+alert,Alert,@/views/setting/alert/index.vue,True,Settings、IAM
+backupaccount,BackupAccount,@/views/setting/backup-account/index.vue,True,Settings、IAM
+license,License,@/views/setting/license/index.vue,True,Settings、IAM
+about,About,@/views/setting/about/index.vue,True,Settings、IAM
+safe,Safe,@/views/setting/safe/index.vue,True,Settings、IAM
+snapshot,Snapshot,@/views/setting/snapshot/index.vue,True,Settings、IAM
+expired,Expired,@/views/setting/expired.vue,True,Settings、IAM
+/terminal,Terminal-Menu,,False,Terminal
+/terminal,Terminal,@/views/terminal/index.vue,False,Terminal
+/toolbox,Toolbox-Menu,,False,Nodes（主機工具卡）、System
+/toolbox,Toolbox,@/views/toolbox/index.vue,False,Nodes（主機工具卡）、System
+device,Device,@/views/toolbox/device/index.vue,True,Nodes、System
+supervisor,Supervisor,@/views/toolbox/supervisor/index.vue,True,Nodes、System
+clam,Clam,@/views/toolbox/clam/index.vue,True,Nodes、System
+clam/setting,Clam-Setting,@/views/toolbox/clam/setting/index.vue,True,Nodes、System
+ftp,FTP,@/views/toolbox/ftp/index.vue,True,Nodes、System
+fail2ban,Fail2ban,@/views/toolbox/fail2ban/index.vue,True,Nodes、System
+clean,Clean,@/views/toolbox/clean/index.vue,True,Nodes、System
+/websites,Website-Menu,,False,Websites
+/websites,Website,@/views/website/website/index.vue,False,Websites
+/websites/:id/config/:tab,WebsiteConfig,@/views/website/website/config/index.vue,True,Websites
+/websites/ssl,SSL,@/views/website/ssl/index.vue,False,Websites（憑證橫條；CA／ACME／DNS 帳號表未畫）
+/websites/templates,WebsiteTemplate,@/views/website/template/index.vue,False,Websites（範本卡）
+/websites/runtimes/php,PHP,@/views/website/runtime/php/index.vue,False,Websites（運作環境卡；PHP 擴充與 Supervisor 細部未畫）
+/websites/runtimes/node,node,@/views/website/runtime/node/index.vue,True,Websites（運作環境卡；PHP 擴充與 Supervisor 細部未畫）
+/websites/runtimes/java,java,@/views/website/runtime/java/index.vue,True,Websites（運作環境卡；PHP 擴充與 Supervisor 細部未畫）
+/websites/runtimes/go,go,@/views/website/runtime/go/index.vue,True,Websites（運作環境卡；PHP 擴充與 Supervisor 細部未畫）
+/websites/runtimes/python,python,@/views/website/runtime/python/index.vue,True,Websites（運作環境卡；PHP 擴充與 Supervisor 細部未畫）
+/websites/runtimes/dotnet,dotNet,@/views/website/runtime/dotnet/index.vue,True,Websites（運作環境卡；PHP 擴充與 Supervisor 細部未畫）

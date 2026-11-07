@@ -34,7 +34,9 @@ body{margin:0}
 .hb .foot a,.hb .note a,.hb a.note{min-height:28px;display:inline-flex;align-items:center}
 .hb .inp input,.hb .inp select{min-height:30px}
 .hb .card{background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:8px}
-.hb .row{display:grid;gap:12px;align-items:center;min-height:44px;padding:0 16px;border-bottom:1px solid var(--line)}
+.hb .row{display:grid;grid-template-columns:var(--t);gap:12px;align-items:center;min-height:44px;padding:0 16px;border-bottom:1px solid var(--line)}
+.hb .row.batch{grid-template-columns:28px var(--t)}
+.hb .row .ck{justify-self:start}
 .hb a.row{cursor:pointer}
 .hb .row:hover{background:var(--raised)}
 .hb .row:last-child{border-bottom:0}
@@ -43,7 +45,7 @@ body{margin:0}
 .hb .name{display:flex;flex-direction:column;gap:2px;min-width:0}
 .hb .name .n{font-family:"Geist Mono",ui-monospace,monospace;font-weight:500;overflow-wrap:anywhere;line-height:1.3}
 .hb .name .d{font-size:12px;color:var(--faint);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;overflow-wrap:anywhere}
-.hb .st{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:12px;font-weight:500;padding:2px 8px 2px 7px;border-radius:999px;background:color-mix(in srgb,currentColor 13%,transparent)}
+.hb .st{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;font-size:12px;font-weight:500;padding:2px 8px 2px 7px;border-radius:999px;background:color-mix(in srgb,currentColor 13%,transparent)}
 .hb .lg .st,.hb .mx .st{padding:1px 7px 1px 6px}
 .hb.theme-light .st{background:var(--raised);box-shadow:inset 0 0 0 1px color-mix(in srgb,currentColor 35%,transparent)}
 .hb .st i{display:inline-block;width:8px;height:8px;flex:none}
@@ -143,7 +145,9 @@ body{margin:0}
 .hb .pstage+.pstage::before{content:"";position:absolute;left:-12px;top:50%;width:6px;height:6px;border-top:2px solid var(--faint);border-right:2px solid var(--faint);transform:translateY(-50%) rotate(45deg)}
 .hb .pstage .t{color:var(--ink);font-weight:500;display:flex;align-items:center;gap:6px}
 .hb .pstage.done{border-color:var(--ok)}.hb .pstage.cur{border-color:var(--blue);background:var(--raised)}.hb .pstage.fail{border-color:var(--danger)}.hb .pstage.wait{border-color:var(--warn)}
-.hb svg.topo{display:block;width:100%;height:auto;font-family:"Geist","Noto Sans TC",sans-serif}
+.hb .topow{overflow:auto;max-width:100%}
+.hb svg.topo{display:block;font-family:"Geist","Noto Sans TC",sans-serif}
+.hb svg.topo a:hover .box{stroke:var(--hazel)}
 .hb svg.topo text{font-size:12px;fill:var(--ink)}
 .hb svg.topo text.sub{font-size:11px;fill:var(--faint);font-family:"Geist Mono",ui-monospace,monospace}
 .hb svg.topo text.col{font-size:11px;fill:var(--faint);letter-spacing:.06em;text-transform:uppercase}
@@ -156,14 +160,50 @@ body{margin:0}
 .hb .mx{display:grid;gap:2px;font-size:12px}
 .hb .mx .c{min-height:32px;display:flex;align-items:center;justify-content:center;gap:4px;background:var(--raised);border-radius:4px;padding:0 6px;text-align:center}
 .hb .mx .c.empty{background:transparent;border:1px dashed var(--line);color:var(--faint)}
-.hb .mx .rl{display:flex;align-items:center;font-family:"Geist Mono",ui-monospace,monospace;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:32px}
+.hb .mx .rl{display:flex;align-items:center;white-space:normal;overflow-wrap:anywhere;font-family:"Geist Mono",ui-monospace,monospace;color:var(--muted);min-height:32px;line-height:1.3}
 .hb .mx .cl{display:flex;align-items:flex-end;justify-content:center;font-size:11px;color:var(--faint);padding-bottom:4px;text-align:center}
 .hb .tree{font-family:"Geist Mono",ui-monospace,monospace;font-size:13px}
 .hb .tree ul{list-style:none;margin:0;padding-left:16px;border-left:1px solid var(--line)}
 .hb .tree>ul{padding-left:0;border-left:0}
 .hb .tree li{display:flex;align-items:center;gap:8px;min-height:30px}
 .hb .tree li .sz{margin-left:auto;color:var(--faint);font-size:12px}
-.hb .tree li.on{color:var(--hazel)}
+.hb .tree li.on,.hb .tree summary.on{color:var(--hazel)}
+.hb .tree summary{display:flex;align-items:center;gap:6px;min-height:30px;cursor:pointer;list-style:none;padding:0 6px;border-radius:4px}
+.hb .tree summary::-webkit-details-marker{display:none}
+.hb .tree summary:hover,.hb .tree li.leaf:hover{background:var(--raised)}
+.hb .tree summary svg:first-child{transition:transform .12s;color:var(--faint)}
+.hb .tree details[open]>summary svg:first-child{transform:rotate(90deg)}
+.hb .tree li.leaf{padding:0 6px;border-radius:4px;gap:6px}
+.hb .tree .pad{width:14px;flex:none}
+.hb .tree .tn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hb .tree svg{flex:none;color:var(--muted)}
+.hb .fm{display:grid;gap:0;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;min-height:420px}
+.hb .fm>*{min-width:0}
+.hb .fm .pane{border-right:1px solid var(--line);display:flex;flex-direction:column}
+.hb .fm .pane:last-child{border-right:0}
+.hb .fm .pt{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 12px;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted)}
+.hb .toolbar{display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:6px 10px;background:var(--panel);border:1px solid var(--line);border-radius:8px}
+.hb .toolbar .ib{min-height:34px;gap:6px;padding:0 10px}
+.hb .toolbar .ib[aria-disabled=true]{opacity:.45}
+.hb .toolbar .sep{width:1px;height:20px;background:var(--line);margin:0 4px}
+.hb .crumbs{display:flex;align-items:center;gap:2px;flex-wrap:wrap;font-family:"Geist Mono",ui-monospace,monospace;font-size:13px}
+.hb .crumbs a{padding:4px 6px;border-radius:4px;color:var(--muted)}
+.hb .crumbs a:hover{background:var(--raised);color:var(--ink)}
+.hb .crumbs a:last-child{color:var(--ink);font-weight:500}
+.hb .crumbs .sep{color:var(--faint)}
+.hb .frow{--t:28px minmax(0,2fr) 90px 110px 100px}
+.hb .fm{grid-template-columns:240px minmax(0,1fr) 280px}
+.hb .frow.sel{background:color-mix(in srgb,var(--hazel) 12%,transparent)}
+.hb .ck{display:inline-flex;align-items:center;justify-content:center;width:28px;min-height:28px}
+.hb .ck input{width:16px;height:16px;accent-color:var(--hazel);margin:0}
+.hb .hd .sortable{display:inline-flex;align-items:center;gap:4px;cursor:pointer}
+.hb .hd .sortable svg{color:var(--faint);opacity:.5}
+.hb .hd .sortable.on svg{color:var(--hazel);opacity:1}
+.hb .pager{display:flex;align-items:center;gap:8px;padding:8px 16px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.hb .pager .ib{min-height:32px;min-width:32px}
+.hb .pager .pg{margin-left:auto;display:flex;align-items:center;gap:4px}
+.hb .dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 12px;font-size:13px;padding:10px 12px}
+.hb .dl dt{color:var(--muted);font-size:12px;white-space:nowrap}.hb .dl dd{margin:0;overflow-wrap:anywhere}
 .hb .appcard{display:flex;gap:10px;padding:12px;background:var(--raised);border:1px solid var(--line);border-radius:8px;min-width:0;color:var(--ink);align-items:flex-start}
 .hb .appcard .ic{width:40px;height:40px;border-radius:8px;background:var(--q2);display:flex;align-items:center;justify-content:center;font-family:"Geist Mono",ui-monospace,monospace;font-weight:700;color:var(--ink);flex:none}
 .hb .appcard .bd{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
@@ -246,26 +286,31 @@ body{margin:0}
 .hb .acts{display:inline-flex;gap:2px;justify-content:flex-end}
 .hb .acts .ib{min-width:32px;min-height:32px;padding:0}
 .hb .phead{display:flex;flex-wrap:wrap;align-items:center;gap:12px;min-height:40px}
-.hb .nrow{grid-template-columns:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) 110px minmax(0,.8fr)}
-.hb .prow{grid-template-columns:minmax(0,1.2fr) minmax(0,1.5fr) minmax(0,.5fr) minmax(0,.6fr) minmax(0,1fr) minmax(0,1.1fr)}
-.hb .srow{grid-template-columns:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) 110px minmax(0,.7fr)}
-.hb .crow{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,.4fr) minmax(0,.7fr) 130px}
-.hb .row.cols-3{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr)}
-.hb .row.cols-4{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}
-.hb .row.cols-5{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}
-.hb .row.cols-6{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}
-.hb .row.acts-end{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.2fr) 130px}
+.hb .nrow{--t:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) 110px minmax(0,.8fr)}
+.hb .prow{--t:minmax(0,1.2fr) minmax(0,1.5fr) minmax(0,.5fr) minmax(0,.6fr) minmax(0,1fr) minmax(0,1.1fr)}
+.hb .srow{--t:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) 110px minmax(0,.7fr)}
+.hb .crow{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,.4fr) minmax(0,.7fr) 130px}
+.hb .row.cols-3{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr)}
+.hb .row.cols-4{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}
+.hb .row.cols-5{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}
+.hb .row.cols-6{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}
+.hb .row.acts-end{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.2fr) 130px}
 .hb .rank{grid-template-columns:minmax(0,1.7fr) minmax(0,2fr) auto}
 .hb .rank .mono,.hb .flowlist .mono{white-space:normal!important;overflow-wrap:anywhere;line-height:1.3}
 .hb .mxw,.hb .heatw{overflow-x:auto}
+.hb .meter .tr{min-width:24px}.hb .meter .num{flex:none}
+.hb .pipe{padding-bottom:4px}
 .hb .row > span:last-child:has(> .btn),.hb .row > .acts{justify-self:end}
-.hb .drow{grid-template-columns:minmax(0,.8fr) minmax(0,1.6fr) minmax(0,.6fr) minmax(0,1.4fr) minmax(0,.8fr)}
-.hb .gprow{grid-template-columns:minmax(0,1.4fr) minmax(0,.9fr) minmax(0,.5fr) minmax(0,1.2fr)}
-.hb .garow{grid-template-columns:minmax(0,.8fr) minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,1.4fr)}
-.hb .dprow{grid-template-columns:minmax(0,.5fr) minmax(0,1.6fr) minmax(0,.7fr) minmax(0,.7fr) minmax(0,1.4fr)}
-.hb .hrow{grid-template-columns:minmax(0,1.6fr) minmax(0,.8fr) minmax(0,.7fr) minmax(0,1.4fr)}
-.hb .rrow{grid-template-columns:24px minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,.5fr) minmax(0,.6fr)}
-@media (max-width:1100px){.hb .aside{width:100%;border-left:0;border-top:1px solid var(--line)}}
+.hb .drow{--t:minmax(0,.8fr) minmax(0,1.6fr) minmax(0,.6fr) minmax(0,1.4fr) minmax(0,.8fr)}
+.hb .gprow{--t:minmax(0,1.4fr) minmax(0,.9fr) minmax(0,.5fr) minmax(0,1.2fr)}
+.hb .garow{--t:minmax(0,.8fr) minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,1.4fr)}
+.hb .dprow{--t:minmax(0,.5fr) minmax(0,1.6fr) minmax(0,.7fr) minmax(0,.7fr) minmax(0,1.4fr)}
+.hb .hrow{--t:minmax(0,1.6fr) minmax(0,.8fr) minmax(0,.7fr) minmax(0,1.4fr)}
+.hb .rrow{--t:24px minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,.5fr) minmax(0,.6fr)}
+@media (max-width:1280px){.hb .frow{--t:28px minmax(0,2fr) 90px 100px}.hb .frow>:nth-child(4){display:none}}
+@media (max-width:1024px){.hb .c5{display:none}.hb .crow{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.5fr) minmax(0,.9fr) minmax(0,.9fr) 100px}.hb .acts .ib:nth-child(n+3){display:none}}
+@media (max-width:900px){.hb .top{flex-wrap:wrap;padding:8px 12px;gap:8px;min-height:0}.hb .crumb{display:none}.hb .top .search{order:3;flex:1 1 100%;max-width:none;margin:0}.hb .obs{display:none}.hb .ib.user span{display:none}.hb .side{width:100%;border-right:0;border-bottom:1px solid var(--line);flex-direction:row;flex-wrap:nowrap;overflow-x:auto;gap:4px;padding:8px 12px}.hb .navgrp{display:none}.hb .navcol{flex-direction:row;flex:none;gap:4px}.hb .side .nv{width:auto;min-width:44px;justify-content:center;min-height:36px;padding:0 10px;white-space:nowrap;font-size:13px}.hb .side .nv .cnt{margin-left:4px}.hb .side .coll{display:none}.hb .nv svg{display:none}.hb .brand{width:auto;border:0;padding:0 12px}}
+@media (max-width:1100px){.hb .aside{width:100%;border-left:0;border-top:1px solid var(--line)}.hb .fm{grid-template-columns:220px minmax(0,1fr)}.hb .fm .pane.detp{grid-column:1/-1;border-top:1px solid var(--line)}}
 @media (max-width:767px){
  .hb .side{width:100%;border-right:0;border-bottom:1px solid var(--line);flex-direction:row;flex-wrap:nowrap;overflow-x:auto;gap:4px;padding:8px 12px}
  .hb .navgrp{display:none}.hb .navcol{flex-direction:row;flex:none;gap:4px}.hb .side .nv{width:auto;min-width:44px;justify-content:center;min-height:36px;padding:0 10px;white-space:nowrap;font-size:13px}.hb .side .nv .cnt{margin-left:4px}
@@ -273,25 +318,27 @@ body{margin:0}
  .hb .c3,.hb .c4,.hb .c5,.hb .kbd{display:none}
  .hb .top{flex-wrap:wrap;padding:8px 12px;gap:8px;min-height:0}.hb .top .search{min-height:44px}.hb .brand{width:auto;border:0;padding:0}.hb .crumb{display:none}.hb .top .search{order:3;flex:1 1 100%;max-width:none;margin:0}.hb .obs{display:none}.hb .ib.user span{display:none}
  .hb .side .coll{display:none}.hb .nv svg{display:none}
- .hb .row[class*="cols-"],.hb .row.acts-end{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) auto}
+ .hb .row[class*="cols-"],.hb .row.acts-end{--t:minmax(0,1.4fr) minmax(0,1fr) auto}
  .hb .acts .ib:nth-child(n+3){display:none}
  .hb .rank{grid-template-columns:minmax(0,1fr) auto;row-gap:4px}.hb .rank .bar{grid-column:1/-1}
  .hb .mx{min-width:620px}.hb .heat{min-width:720px}
+ .hb .fm{grid-template-columns:minmax(0,1fr)}.hb .fm .pane{border-right:0;border-bottom:1px solid var(--line)}.hb .fm .pane.treep{max-height:260px;overflow:auto}
+ .hb .frow{--t:28px minmax(0,1fr) 70px 60px}.hb .frow>:nth-child(n+5){display:none}
  .hb .mx .rl{white-space:normal}
  .hb .ch-d{display:none}.hb .ch-m{display:block}
  .hb .heat i{min-height:18px}
  .hb .steps{grid-template-columns:repeat(2,minmax(0,1fr))}
  .hb .btn,.hb .btn.sm,.hb .range .btn,.hb .scope .btn,.hb .ib,.hb .acts .ib,.hb .tab,.hb .side .nv,.hb .ph .more,.hb .foot a,.hb a.note,.hb .brand,.hb .inp{min-height:44px}.hb .inp input,.hb .inp select{min-height:40px}.hb .ib,.hb .acts .ib{min-width:44px}
- .hb .nrow{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,.9fr)}
- .hb .prow{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}
- .hb .srow{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,.8fr)}
- .hb .crow{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}
- .hb .drow{grid-template-columns:minmax(0,.9fr) minmax(0,1.2fr) minmax(0,1.3fr)}
- .hb .gprow{grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr) minmax(0,1fr)}
- .hb .garow{grid-template-columns:minmax(0,.8fr) minmax(0,1.4fr) minmax(0,1.2fr)}
- .hb .dprow{grid-template-columns:minmax(0,.5fr) minmax(0,1.4fr) minmax(0,1.3fr)}
- .hb .hrow{grid-template-columns:minmax(0,1.4fr) minmax(0,.7fr) minmax(0,1.2fr)}
- .hb .rrow{grid-template-columns:24px minmax(0,1.6fr) minmax(0,.8fr)}
+ .hb .nrow{--t:minmax(0,1.5fr) minmax(0,1fr) minmax(0,.9fr)}
+ .hb .prow{--t:minmax(0,1fr) minmax(0,1.3fr)}
+ .hb .srow{--t:minmax(0,1.4fr) minmax(0,1fr) minmax(0,.8fr)}
+ .hb .crow{--t:minmax(0,1.4fr) minmax(0,1fr)}
+ .hb .drow{--t:minmax(0,.9fr) minmax(0,1.2fr) minmax(0,1.3fr)}
+ .hb .gprow{--t:minmax(0,1.2fr) minmax(0,.8fr) minmax(0,1fr)}
+ .hb .garow{--t:minmax(0,.8fr) minmax(0,1.4fr) minmax(0,1.2fr)}
+ .hb .dprow{--t:minmax(0,.5fr) minmax(0,1.4fr) minmax(0,1.3fr)}
+ .hb .hrow{--t:minmax(0,1.4fr) minmax(0,.7fr) minmax(0,1.2fr)}
+ .hb .rrow{--t:24px minmax(0,1.6fr) minmax(0,.8fr)}
  .hb .tile .v{font-size:24px}
  .hb .rings svg{width:52px;height:52px}
  .hb .hcell{width:36px;height:36px}
@@ -324,14 +371,14 @@ body{margin:0}
       <h1>身分與存取</h1>
       <div class="wrap" style="margin-left: auto"><button type="button" class="btn pri">新增使用者</button><button type="button" class="btn">新增角色</button><button type="button" class="btn">發 API Token</button><button type="button" class="btn">外部登入</button></div>
     </div><div class="tiles"><div class="tile"><span class="l">使用者</span><span class="v">5</span><span class="dl"><span class="">4 啟用 · 1 停權</span></span></div><div class="tile"><span class="l">二次驗證</span><span class="v">3<small>/4 已啟用</small></span><span class="dl"><span class="dn">analyst 未設 · 高權限帳號必須</span></span></div><div class="tile"><span class="l">工作階段</span><span class="v">7</span><span class="dl"><span class="">tim 3 · deploy-bot 2 · 其他 2</span></span></div><div class="tile"><span class="l">待批准</span><span class="v">1</span><span class="dl"><span class="">變更計畫 #418 · 等了 44 分</span></span></div></div>
-    <section class="panel" aria-labelledby="h-usr">
+    <section class="panel" aria-labelledby="h-usr" data-sort="0:asc" data-batch>
       <div class="ph"><h2 id="h-usr">使用者 · 5</h2></div>
-      <div class="row hd cols-5"><span>使用者</span><span>狀態</span><span class="c3">二次驗證</span><span class="c4">工作階段</span><span class="c4">最後登入</span></div>
-      <a class="row  cols-5" href="#u"><span class="name"><span class="n">tim</span><span class="d">擁有者 · 本機救援帳號</span></span><span><span class="st ok"><i aria-hidden="true"></i>啟用</span></span><span class="c3"><span class="st ok"><i aria-hidden="true"></i>TOTP ＋ Passkey ＋ 復原碼</span></span><span class="mono c4">3</span><span class="mono c4">03:38 · 203.0.113.7</span></a>
-      <a class="row  cols-5" href="#u"><span class="name"><span class="n">deploy-bot</span><span class="d">部署者 · shop、wiki</span></span><span><span class="st ok"><i aria-hidden="true"></i>啟用</span></span><span class="c3"><span class="st info"><i aria-hidden="true"></i>服務帳號 · Token</span></span><span class="mono c4">2</span><span class="mono c4">02:57 · Webhook</span></a>
-      <a class="row  cols-5" href="#u"><span class="name"><span class="n">ops-ann</span><span class="d">維運者 · 全部節點</span></span><span><span class="st ok"><i aria-hidden="true"></i>啟用</span></span><span class="c3"><span class="st ok"><i aria-hidden="true"></i>TOTP</span></span><span class="mono c4">1</span><span class="mono c4">昨天 22:10 · OIDC</span></a>
-      <a class="row  cols-5" href="#u"><span class="name"><span class="n">analyst</span><span class="d">唯讀 · shop_analytics</span></span><span><span class="st ok"><i aria-hidden="true"></i>啟用</span></span><span class="c3"><span class="st warn"><i aria-hidden="true"></i>未設定 · 7 天內必須</span></span><span class="mono c4">1</span><span class="mono c4">3 天前</span></a>
-      <a class="row  cols-5" href="#u"><span class="name"><span class="n">old-contractor</span><span class="d">—</span></span><span><span class="st dng"><i aria-hidden="true"></i>停權 · Token 已撤</span></span><span class="c3"><span class="st info"><i aria-hidden="true"></i>—</span></span><span class="mono c4">0</span><span class="mono c4">9 月 2 日</span></a>
+      <div class="row hd cols-5 batch"><span class="ck"><input type="checkbox" aria-label="全選"></span><span class=""><span class="sortable on">使用者 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg></span></span><span class=""><span class="sortable">狀態 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span><span class="c3"><span class="sortable">二次驗證 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span><span class="c4"><span class="sortable">工作階段 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span><span class="c4"><span class="sortable">最後登入 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span></div>
+      <a class="row  cols-5 batch" href="#u"><span class="ck"><input type="checkbox" aria-label="選取"></span><span class="name"><span class="n">tim</span><span class="d">擁有者 · 本機救援帳號</span></span><span><span class="st ok"><i aria-hidden="true"></i>啟用</span></span><span class="c3"><span class="st ok"><i aria-hidden="true"></i>TOTP ＋ Passkey ＋ 復原碼</span></span><span class="mono c4">3</span><span class="mono c4">03:38 · 203.0.113.7</span></a>
+      <a class="row  cols-5 batch" href="#u"><span class="ck"><input type="checkbox" aria-label="選取"></span><span class="name"><span class="n">deploy-bot</span><span class="d">部署者 · shop、wiki</span></span><span><span class="st ok"><i aria-hidden="true"></i>啟用</span></span><span class="c3"><span class="st info"><i aria-hidden="true"></i>服務帳號 · Token</span></span><span class="mono c4">2</span><span class="mono c4">02:57 · Webhook</span></a>
+      <a class="row  cols-5 batch" href="#u"><span class="ck"><input type="checkbox" aria-label="選取"></span><span class="name"><span class="n">ops-ann</span><span class="d">維運者 · 全部節點</span></span><span><span class="st ok"><i aria-hidden="true"></i>啟用</span></span><span class="c3"><span class="st ok"><i aria-hidden="true"></i>TOTP</span></span><span class="mono c4">1</span><span class="mono c4">昨天 22:10 · OIDC</span></a>
+      <a class="row  cols-5 batch" href="#u"><span class="ck"><input type="checkbox" aria-label="選取"></span><span class="name"><span class="n">analyst</span><span class="d">唯讀 · shop_analytics</span></span><span><span class="st ok"><i aria-hidden="true"></i>啟用</span></span><span class="c3"><span class="st warn"><i aria-hidden="true"></i>未設定 · 7 天內必須</span></span><span class="mono c4">1</span><span class="mono c4">3 天前</span></a>
+      <a class="row  cols-5 batch" href="#u"><span class="ck"><input type="checkbox" aria-label="選取"></span><span class="name"><span class="n">old-contractor</span><span class="d">—</span></span><span><span class="st dng"><i aria-hidden="true"></i>停權 · Token 已撤</span></span><span class="c3"><span class="st info"><i aria-hidden="true"></i>—</span></span><span class="mono c4">0</span><span class="mono c4">9 月 2 日</span></a>
     </section>
     <section class="panel" aria-labelledby="h-roles">
       <div class="ph"><h2 id="h-roles">角色 × 資源範圍</h2></div>
@@ -344,7 +391,7 @@ body{margin:0}
     </section>
     <section class="panel" aria-labelledby="h-ss">
       <div class="ph"><h2 id="h-ss">目前工作階段 · 7</h2></div>
-      <div class="row hd cols-6"><span>使用者</span><span>來源</span><span class="c3">裝置</span><span class="c4">登入</span><span class="c4">到期</span><span></span></div>
+      <div class="row hd cols-6"><span class=""><span class="sortable on">使用者 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg></span></span><span class=""><span class="sortable">來源 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span><span class="c3"><span class="sortable">裝置 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span><span class="c4"><span class="sortable">登入 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span><span class="c4"><span class="sortable">到期 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span><span class=""></span></div>
       <div class="row  cols-6"><span class="name"><span class="n">tim</span><span class="d">這個瀏覽器</span></span><span class="mono">203.0.113.7 · 辦公室</span><span class="c3 note">macOS · Safari</span><span class="mono c4">03:38</span><span class="mono c4">8 小時</span><span><button type="button" class="btn sm" disabled aria-disabled="true" style="opacity:.6">目前</button></span></div>
       <div class="row  cols-6"><span class="name"><span class="n">tim</span><span class="d">CLI</span></span><span class="mono">203.0.113.7</span><span class="c3 note">hazelminx-cli 0.1</span><span class="mono c4">03:30</span><span class="mono c4">Token</span><span><button type="button" class="btn sm">撤銷</button></span></div>
       <div class="row  cols-6"><span class="name"><span class="n">tim</span><span class="d">手機</span></span><span class="mono">198.51.100.4 · 4G</span><span class="c3 note">iOS · Safari</span><span class="mono c4">昨天 23:10</span><span class="mono c4">5 小時</span><span><button type="button" class="btn sm">撤銷</button></span></div>
@@ -354,7 +401,7 @@ body{margin:0}
       <div class="ph"><h2 id="h-aud">稽核 · 24 小時</h2><a class="more" href="Logs.dc.html">全部日誌 →</a></div>
       <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px"><div class="timeline" role="img" aria-label="部署歷史：24 成功、0 失敗、0 回滾"><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i></div>
       <div class="note" style="display:flex;justify-content:space-between"><span>昨天 03:42</span><span>現在 · 41 筆</span></div></div>
-      <div class="row hd cols-5"><span>時間</span><span>誰</span><span class="c3">做了什麼</span><span class="c4">對象</span><span class="c4">結果</span></div>
+      <div class="row hd cols-5"><span class=""><span class="sortable on">時間 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg></span></span><span class=""><span class="sortable">誰 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span><span class="c3"><span class="sortable">做了什麼 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span><span class="c4"><span class="sortable">對象 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span><span class="c4"><span class="sortable">結果 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span></div>
       <div class="row  cols-5"><span class="mono">03:38:50</span><span>tim</span><span class="c3 note">觸發套件更新 openssl</span><span class="mono c4">hazel-jp-02 · 工作 #512</span><span class="c4"><span class="st warn"><i aria-hidden="true"></i>狀態不明</span></span></div>
       <div class="row  cols-5"><span class="mono">03:10:12</span><span>tim</span><span class="c3 note">修改 inventory 3 列（前後摘要可看）</span><span class="mono c4">shop-db</span><span class="c4"><span class="st ok"><i aria-hidden="true"></i>成功</span></span></div>
       <div class="row  cols-5"><span class="mono">02:58:30</span><span>系統</span><span class="c3 note">暫停自動部署，建立變更計畫 #418</span><span class="mono c4">shop production</span><span class="c4"><span class="st warn"><i aria-hidden="true"></i>待批准</span></span></div>
