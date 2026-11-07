@@ -40,6 +40,7 @@ type Server struct {
 
 	iam       *iam.Service     // set by MountIAM
 	protected *gin.RouterGroup // authenticated /management/v1 group
+	origin    string           // configured public origin for passkeys; "" derives it per request
 }
 
 // New builds the router. ui may be nil when no interface is embedded.

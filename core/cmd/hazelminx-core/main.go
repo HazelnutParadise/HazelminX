@@ -61,12 +61,12 @@ func run(args []string) error {
 	engine.Start(ctx)
 	defer engine.Stop()
 
-	identity, err := iam.New(st.DB, iam.Config{})
+	identity, err := iam.New(st.DB, iam.Config{Secrets: sec})
 	if err != nil {
 		return err
 	}
 	router := api.New(st, web.FS())
-	router.MountIAM(identity, api.IAMOptions{})
+	router.MountIAM(identity, api.IAMOptions{PublicOrigin: cfg.PublicOrigin})
 	// Jobs mount on the authenticated group, so MountIAM must run first.
 	router.RegisterJobs(engine)
 	if err := announceSetup(ctx, identity, os.Stdout); err != nil {

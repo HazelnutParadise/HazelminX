@@ -71,11 +71,8 @@ func newJobsHarness(t *testing.T) (http.Handler, *jobs.Engine, *blockingHandler,
 	}
 	e.Start(ctx)
 	t.Cleanup(func() { cancel(); e.Stop(); st.Close() })
-	hs := &harness{t: t, clock: time.Date(2026, 11, 7, 0, 0, 0, 0, time.UTC)}
-	svc, err := iam.New(st.DB, iam.Config{PasswordParams: iam.TestPasswordParams, Now: func() time.Time { return hs.clock }})
-	if err != nil {
-		t.Fatal(err)
-	}
+	hs := &harness{t: t, clock: time.Date(2026, 11, 7, 0, 0, 0, 0, time.UTC), totp: map[string]*totpDevice{}}
+	svc := newIAMService(t, st, hs)
 	s := New(st, nil)
 	s.MountIAM(svc, IAMOptions{})
 	s.RegisterJobs(e)

@@ -33,6 +33,11 @@ type IAMOptions struct {
 	// deriving the client IP for throttling and audit. Empty trusts nobody,
 	// so a direct client cannot forge its source (ticket 065 wires Zentinel).
 	TrustedProxies []string
+	// PublicOrigin is the management address users open, e.g.
+	// "https://panel.example.com". Passkeys are bound to its host name. Empty
+	// derives the origin from each request (scheme and Host header); the
+	// browser still enforces that a passkey only works on its own domain.
+	PublicOrigin string
 }
 
 // MountIAM installs authentication, CSRF and authorization on /management/v1
@@ -40,14 +45,17 @@ type IAMOptions struct {
 // afterwards inherit the session requirement.
 func (s *Server) MountIAM(svc *iam.Service, opts IAMOptions) {
 	s.iam = svc
+	s.origin = strings.TrimSuffix(opts.PublicOrigin, "/")
 	_ = s.engine.SetTrustedProxies(opts.TrustedProxies)
 
 	pub := s.engine.Group("/management/v1", traceID())
 	pub.GET("/setup", s.setupStatus)
 	pub.POST("/setup", s.setupOwner)
 	pub.POST("/auth/login", s.login)
+	pub.POST("/auth/login/second-factor", s.loginSecondFactor)
+	pub.POST("/auth/login/passkey-options", s.loginPasskeyOptions)
 
-	s.protected = s.engine.Group("/management/v1", traceID(), s.requireSession(opts.Tokens), s.csrf())
+	s.protected = s.engine.Group("/management/v1", traceID(), s.requireSession(opts.Tokens), s.csrf(), s.enrollmentGate())
 	p := s.protected
 	p.GET("/auth/session", s.whoami)
 	p.POST("/auth/logout", s.logout)
@@ -58,10 +66,11 @@ func (s *Server) MountIAM(svc *iam.Service, opts IAMOptions) {
 	p.POST("/users/:id/roles", s.assignRole)
 	p.DELETE("/users/:id/roles/:assignmentId", s.revokeRole)
 	p.GET("/audit-events", s.listAudit)
+	s.mountSecondFactors(p)
 
 	s.addOperation("GET", "/management/v1/setup", "whether the first owner still has to be created")
 	s.addOperation("POST", "/management/v1/setup", "create the first owner with the one-time setup code")
-	s.addOperation("POST", "/management/v1/auth/login", "password login; sets the session cookie")
+	s.addOperation("POST", "/management/v1/auth/login", "password login; sets the session cookie, or returns a second-factor challenge")
 	s.addOperation("POST", "/management/v1/auth/logout", "revoke the current session")
 	s.addOperation("GET", "/management/v1/auth/session", "current user and role assignments")
 	s.addOperation("GET", "/management/v1/roles", "role presets and the actions they grant")
@@ -128,6 +137,22 @@ func failErr(c *gin.Context, err error) {
 		fail(c, http.StatusForbidden, "SETUP_CODE_INVALID", "setup code is invalid or expired")
 	case errors.Is(err, iam.ErrThrottled):
 		fail(c, http.StatusTooManyRequests, "TOO_MANY_ATTEMPTS", "too many attempts; try again later")
+	case errors.Is(err, iam.ErrInvalidCredentials):
+		fail(c, http.StatusUnauthorized, "INVALID_CREDENTIALS", "username or password is incorrect")
+	case errors.Is(err, iam.ErrChallengeInvalid):
+		fail(c, http.StatusUnauthorized, "LOGIN_CHALLENGE_INVALID", "the sign-in step expired or was already used; sign in again")
+	case errors.Is(err, iam.ErrSecondFactor):
+		fail(c, http.StatusUnauthorized, "SECOND_FACTOR_INVALID", "the verification code, recovery code or passkey was not accepted")
+	case errors.Is(err, iam.ErrEnrollmentRequired):
+		c.AbortWithStatusJSON(http.StatusForbidden, apiError{Code: "SECOND_FACTOR_ENROLLMENT_REQUIRED", TraceID: c.GetString(TraceIDHdr),
+			Message: "this account must add an authenticator app or passkey before doing anything else", SuggestedActions: []string{"enroll-second-factor"}})
+	case errors.Is(err, iam.ErrReauthRequired):
+		c.AbortWithStatusJSON(http.StatusForbidden, apiError{Code: "REAUTHENTICATION_REQUIRED", TraceID: c.GetString(TraceIDHdr),
+			Message: "confirm your password and second factor again before changing sign-in methods", SuggestedActions: []string{"reauthenticate"}})
+	case errors.Is(err, iam.ErrLastFactor):
+		fail(c, http.StatusConflict, "LAST_SECOND_FACTOR", "this account must keep at least one authenticator app or passkey; add another one first")
+	case errors.Is(err, iam.ErrUnavailable):
+		fail(c, http.StatusConflict, "NOT_AVAILABLE", strings.TrimPrefix(err.Error(), "iam: not available: "))
 	default:
 		fail(c, http.StatusInternalServerError, "INTERNAL", "internal error")
 	}
@@ -292,12 +317,28 @@ func (s *Server) setupOwner(c *gin.Context) {
 		fail(c, http.StatusBadRequest, "VALIDATION_FAILED", "body must be JSON with setupCode, username and password")
 		return
 	}
-	u, err := s.iam.CompleteSetup(c.Request.Context(), in.SetupCode, in.Username, in.Password, source(c))
+	res, err := s.iam.CompleteSetup(c.Request.Context(), in.SetupCode, in.Username, in.Password, source(c))
 	if err != nil {
 		failErr(c, err)
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"user": u})
+	// The new owner is signed in; the session is held to second-factor
+	// enrolment until they add one (Setup board: account → 2FA → codes).
+	s.signedIn(c, http.StatusCreated, res)
+}
+
+// signedIn sets the session cookies and answers with the signed-in body.
+func (s *Server) signedIn(c *gin.Context, status int, res *iam.LoginResult) {
+	setSessionCookies(c, res.Session)
+	c.JSON(status, gin.H{"step": "signed-in", "user": res.User, "csrfToken": res.Session.CSRFToken,
+		"expiresAt": res.Session.ExpiresAt.UTC().Format(time.RFC3339), "secondFactorEnrollmentRequired": res.EnrollmentRequired})
+}
+
+func throttled(c *gin.Context, retry time.Duration) {
+	secs := int(retry.Seconds()) + 1
+	c.Header("Retry-After", strconv.Itoa(secs))
+	c.AbortWithStatusJSON(http.StatusTooManyRequests, apiError{Code: "TOO_MANY_ATTEMPTS", Message: "too many attempts; try again later",
+		TraceID: c.GetString(TraceIDHdr), Retryable: true, RetryAfter: secs})
 }
 
 type loginRequest struct {
@@ -311,24 +352,24 @@ func (s *Server) login(c *gin.Context) {
 		fail(c, http.StatusBadRequest, "VALIDATION_FAILED", "body must be JSON with username and password")
 		return
 	}
-	sess, u, retry, err := s.iam.Login(c.Request.Context(), in.Username, in.Password, source(c))
+	src := source(c)
+	src.RPID = s.relyingParty(c).ID
+	res, err := s.iam.Login(c.Request.Context(), in.Username, in.Password, src)
 	if errors.Is(err, iam.ErrThrottled) {
-		secs := int(retry.Seconds()) + 1
-		c.Header("Retry-After", strconv.Itoa(secs))
-		c.AbortWithStatusJSON(http.StatusTooManyRequests, apiError{Code: "TOO_MANY_ATTEMPTS", Message: "too many attempts; try again later",
-			TraceID: c.GetString(TraceIDHdr), Retryable: true, RetryAfter: secs})
-		return
-	}
-	if errors.Is(err, iam.ErrInvalidCredentials) {
-		fail(c, http.StatusUnauthorized, "INVALID_CREDENTIALS", "username or password is incorrect")
+		throttled(c, res.RetryAfter)
 		return
 	}
 	if err != nil {
 		failErr(c, err)
 		return
 	}
-	setSessionCookies(c, sess)
-	c.JSON(http.StatusOK, gin.H{"user": u, "csrfToken": sess.CSRFToken, "expiresAt": sess.ExpiresAt.UTC().Format(time.RFC3339)})
+	if res.Challenge != nil {
+		// Password accepted; no cookie until the second factor is.
+		c.JSON(http.StatusOK, gin.H{"step": "second-factor", "challengeToken": res.Challenge.Token, "methods": res.Challenge.Methods,
+			"expiresAt": res.Challenge.ExpiresAt.UTC().Format(time.RFC3339)})
+		return
+	}
+	s.signedIn(c, http.StatusOK, res)
 }
 
 func (s *Server) logout(c *gin.Context) {
@@ -342,7 +383,7 @@ func (s *Server) logout(c *gin.Context) {
 
 func (s *Server) whoami(c *gin.Context) {
 	p := Principal(c)
-	out := gin.H{"kind": p.Kind, "user": p.User, "assignments": p.Assignments}
+	out := gin.H{"kind": p.Kind, "user": p.User, "assignments": p.Assignments, "secondFactorEnrollmentRequired": p.EnrollmentRequired}
 	if v, ok := c.Get(sessionKey); ok {
 		out["session"] = v.(*iam.Session)
 		out["csrfToken"] = v.(*iam.Session).CSRFToken
@@ -461,7 +502,9 @@ func secureRequest(c *gin.Context) bool {
 
 func setSessionCookies(c *gin.Context, sess *iam.Session) {
 	secure := secureRequest(c)
-	maxAge := int(time.Until(sess.ExpiresAt).Seconds())
+	// The lifetime comes from the session itself, not the wall clock, so it
+	// agrees with the service clock (tests inject one).
+	maxAge := int(sess.ExpiresAt.Sub(sess.LastSeenAt).Seconds())
 	http.SetCookie(c.Writer, &http.Cookie{Name: SessionCookie, Value: sess.Token, Path: "/", HttpOnly: true, Secure: secure, SameSite: http.SameSiteStrictMode, MaxAge: maxAge})
 	http.SetCookie(c.Writer, &http.Cookie{Name: CSRFCookie, Value: sess.CSRFToken, Path: "/", HttpOnly: false, Secure: secure, SameSite: http.SameSiteStrictMode, MaxAge: maxAge})
 }

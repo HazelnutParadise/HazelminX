@@ -3,9 +3,9 @@
 // login sessions, default-deny authorization, the audit ledger and login
 // attempt limiting.
 //
-// Scope of this ticket: password login and sessions only. TOTP, Passkey and
-// recovery codes are ticket 014; API Tokens are ticket 015 and only the
-// TokenAuthenticator seam exists here.
+// Second factors (TOTP, passkeys, recovery codes), session lists and the
+// per-user idle timeout are ticket 014 (mfa.go, passkey.go, sessions.go).
+// API Tokens are ticket 015 and only the TokenAuthenticator seam exists here.
 //
 // Rules the rest of core relies on:
 //   - Authorize answers deny unless a role assignment explicitly grants the
@@ -133,6 +133,8 @@ type Session struct {
 	CreatedAt  time.Time `json:"createdAt"`
 	LastSeenAt time.Time `json:"lastSeenAt"`
 	ExpiresAt  time.Time `json:"expiresAt"`
+	// SecondFactor is the method that completed the login ("" for none).
+	SecondFactor string `json:"secondFactor"`
 }
 
 // Principal is who is acting: a user with their assignments, resolved once
@@ -142,6 +144,10 @@ type Principal struct {
 	User        User         `json:"user"`
 	Assignments []Assignment `json:"assignments"`
 	SessionID   string       `json:"sessionId,omitempty"`
+	// EnrollmentRequired is set for a session of an account that must use a
+	// second factor (RequiresSecondFactor) but has none yet; the API layer
+	// then only lets it reach the enrolment routes.
+	EnrollmentRequired bool `json:"secondFactorEnrollmentRequired"`
 }
 
 // TokenAuthenticator is the seam for ticket 015. Nil means tokens are not
@@ -157,6 +163,9 @@ type Source struct {
 	// TraceID identifies one HTTP call (X-Trace-ID). It is not the
 	// operation request identifier that deduplicates jobs.
 	TraceID string
+	// RPID is the domain the browser is using, so a login challenge only
+	// offers passkeys that can work there. Empty means "unknown".
+	RPID string
 }
 
 // Errors returned by the service. Handlers map them to status codes; the
