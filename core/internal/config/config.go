@@ -72,5 +72,11 @@ func (c Config) DatabasePath() string {
 	return filepath.Join(c.DataDir, "core.db")
 }
 
+// MasterKeyPath is the master key file inside DataDir. It sits beside, not
+// inside, the database (spec 35.2) and marks the directory as installed.
+func (c Config) MasterKeyPath() string {
+	return filepath.Join(c.DataDir, "master.key")
+}
+
 // EnvGetter adapts os.Getenv for Load.
 func EnvGetter() func(string) string { return os.Getenv }

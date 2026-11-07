@@ -16,6 +16,7 @@ import (
 
 	"github.com/HazelnutParadise/hazelminx/core/internal/api"
 	"github.com/HazelnutParadise/hazelminx/core/internal/config"
+	"github.com/HazelnutParadise/hazelminx/core/internal/secrets"
 	"github.com/HazelnutParadise/hazelminx/core/internal/store"
 	"github.com/HazelnutParadise/hazelminx/core/web"
 )
@@ -36,17 +37,15 @@ func run(args []string) error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	st, err := store.Open(ctx, cfg.DatabasePath())
+	st, kr, sec, err := openPlatformData(ctx, cfg)
 	if err != nil {
-		if errors.Is(err, store.ErrNewerSchema) {
-			// REL-006 / T-009: never open or recreate newer data; leave it untouched.
-			return fmt.Errorf("refusing to start: %w (restore a matching backup or upgrade hazelminx-core)", err)
-		}
 		return err
 	}
 	defer st.Close()
+	defer kr.Close()
 	v, _ := st.SchemaVersion(ctx)
 	slog.Info("store ready", "path", st.Path(), "schemaVersion", v)
+	slog.Info("secrets ready", "keyring", kr.Path(), "activeKey", sec.ActiveKeyID())
 
 	srv := &http.Server{
 		Handler:           api.New(st, web.FS()).Handler(),
@@ -73,6 +72,45 @@ func run(args []string) error {
 		}
 		return err
 	}
+}
+
+// openPlatformData opens the database and the master key file, in that order
+// of trust: an existing key file proves this directory was installed, so a
+// missing or damaged database is a recovery situation and never replaced by a
+// blank one (DAT-002, T-012). Secrets are checked against the key file before
+// anything is served, so a key generation lost since the last backup is found
+// now rather than at restore time (DAT-004).
+func openPlatformData(ctx context.Context, cfg config.Config) (*store.Store, *secrets.Keyring, *secrets.Service, error) {
+	dbPath, keyPath := cfg.DatabasePath(), cfg.MasterKeyPath()
+	var st *store.Store
+	var err error
+	if secrets.KeyringExists(keyPath) {
+		st, err = store.OpenExisting(ctx, dbPath)
+	} else {
+		st, err = store.Open(ctx, dbPath)
+	}
+	if err != nil {
+		switch {
+		case errors.Is(err, store.ErrNewerSchema):
+			// REL-006 / T-009: never open or recreate newer data; leave it untouched.
+			return nil, nil, nil, fmt.Errorf("refusing to start: %w (restore a matching backup or upgrade hazelminx-core)", err)
+		case errors.Is(err, store.ErrCorrupt), errors.Is(err, store.ErrMissing):
+			return nil, nil, nil, fmt.Errorf("refusing to start, recovery needed: %w (no blank database was created; restore %s from a backup or use the rescue tool)", err, dbPath)
+		}
+		return nil, nil, nil, err
+	}
+	kr, err := secrets.LoadOrCreateKeyring(keyPath)
+	if err != nil {
+		st.Close()
+		return nil, nil, nil, fmt.Errorf("refusing to start: %w", err)
+	}
+	sec, err := secrets.Open(ctx, st, kr)
+	if err != nil {
+		st.Close()
+		kr.Close()
+		return nil, nil, nil, fmt.Errorf("refusing to start, recovery needed: %w", err)
+	}
+	return st, kr, sec, nil
 }
 
 func setupLogging(format string) {

@@ -30,6 +30,15 @@ var migrationFS embed.FS
 // ErrNewerSchema is returned when the database was written by a newer core.
 var ErrNewerSchema = errors.New("store: database schema is newer than this binary supports")
 
+// ErrCorrupt is returned when the file exists but is not a healthy SQLite
+// database. The file is left untouched; nothing is recreated (DAT-002, T-012).
+var ErrCorrupt = errors.New("store: database is damaged")
+
+// ErrMissing is returned by OpenExisting when the database file is absent on an
+// installation that already has one (DAT-002, T-012): a blank database must not
+// be created in its place.
+var ErrMissing = errors.New("store: database file is missing")
+
 // Store wraps the platform database.
 type Store struct {
 	DB   *sql.DB
@@ -42,13 +51,24 @@ func Open(ctx context.Context, path string) (*Store, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return nil, fmt.Errorf("store: create data dir: %w", err)
 	}
-	dsn := "file:" + path + "?_pragma=journal_mode(WAL)&_pragma=foreign_keys(ON)&_pragma=busy_timeout(5000)&_pragma=synchronous(NORMAL)"
+	// Create the file 0600 before SQLite touches it: the -wal and -shm files
+	// inherit the main file's mode, and the WAL holds whole pages of data.
+	if f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0o600); err != nil {
+		return nil, fmt.Errorf("store: create database file: %w", err)
+	} else {
+		f.Close()
+	}
+	dsn := "file:" + path + "?_pragma=journal_mode(WAL)&_pragma=foreign_keys(ON)&_pragma=busy_timeout(5000)&_pragma=synchronous(FULL)"
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("store: open: %w", err)
 	}
 	db.SetMaxOpenConns(1) // SQLite writer; readers can be added later with a second pool.
 	s := &Store{DB: db, path: path}
+	if err := s.verifyIntegrity(ctx); err != nil {
+		db.Close()
+		return nil, err
+	}
 	if err := s.migrate(ctx); err != nil {
 		db.Close()
 		return nil, err
@@ -58,6 +78,47 @@ func Open(ctx context.Context, path string) (*Store, error) {
 		return nil, fmt.Errorf("store: chmod: %w", err)
 	}
 	return s, nil
+}
+
+// OpenExisting is Open for a data directory that is known to hold a database
+// already (for example because the master key file exists): a missing file is
+// ErrMissing, never a fresh database.
+func OpenExisting(ctx context.Context, path string) (*Store, error) {
+	if _, err := os.Stat(path); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, fmt.Errorf("%w: %s", ErrMissing, path)
+		}
+		return nil, fmt.Errorf("store: stat: %w", err)
+	}
+	return Open(ctx, path)
+}
+
+// verifyIntegrity refuses a damaged file before any migration could touch it.
+// An unreadable header surfaces from the driver as "file is not a database";
+// page-level damage surfaces from quick_check.
+func (s *Store) verifyIntegrity(ctx context.Context) error {
+	rows, err := s.DB.QueryContext(ctx, `PRAGMA quick_check`)
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrCorrupt, err)
+	}
+	defer rows.Close()
+	var problems []string
+	for rows.Next() {
+		var line string
+		if err := rows.Scan(&line); err != nil {
+			return fmt.Errorf("%w: %v", ErrCorrupt, err)
+		}
+		if line != "ok" {
+			problems = append(problems, line)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("%w: %v", ErrCorrupt, err)
+	}
+	if len(problems) > 0 {
+		return fmt.Errorf("%w: quick_check: %s", ErrCorrupt, strings.Join(problems, "; "))
+	}
+	return nil
 }
 
 // Close closes the database.
