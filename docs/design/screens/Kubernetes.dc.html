@@ -30,7 +30,9 @@ body{margin:0}
 .hb .panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .hb .ph{display:flex;align-items:center;gap:10px;min-height:46px;padding:8px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .hb .ph .sub{font-size:12px;color:var(--muted)}
-.hb .ph .more{margin-left:auto;font-size:13px;color:var(--hazel)}
+.hb .ph .more{margin-left:auto;font-size:13px;color:var(--hazel);min-height:32px;min-width:44px;padding:0 4px;display:inline-flex;align-items:center;justify-content:flex-end}
+.hb .foot a,.hb .note a,.hb a.note{min-height:28px;display:inline-flex;align-items:center}
+.hb .inp input,.hb .inp select{min-height:30px}
 .hb .card{background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:8px}
 .hb .row{display:grid;gap:12px;align-items:center;min-height:44px;padding:0 16px;border-bottom:1px solid var(--line)}
 .hb a.row{cursor:pointer}
@@ -43,6 +45,7 @@ body{margin:0}
 .hb .name .d{font-size:12px;color:var(--faint);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;overflow-wrap:anywhere}
 .hb .st{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:12px;font-weight:500;padding:2px 8px 2px 7px;border-radius:999px;background:color-mix(in srgb,currentColor 13%,transparent)}
 .hb .lg .st,.hb .mx .st{padding:1px 7px 1px 6px}
+.hb.theme-light .st{background:var(--raised);box-shadow:inset 0 0 0 1px color-mix(in srgb,currentColor 35%,transparent)}
 .hb .st i{display:inline-block;width:8px;height:8px;flex:none}
 .hb .st.ok{color:var(--ok)}.hb .st.ok i{border-radius:50%;background:var(--ok)}
 .hb .st.warn{color:var(--warn)}.hb .st.warn i{border-radius:50%;border:2px solid var(--warn)}
@@ -162,13 +165,14 @@ body{margin:0}
 .hb .tree li .sz{margin-left:auto;color:var(--faint);font-size:12px}
 .hb .tree li.on{color:var(--hazel)}
 .hb .appcard{display:flex;gap:10px;padding:12px;background:var(--raised);border:1px solid var(--line);border-radius:8px;min-width:0;color:var(--ink);align-items:flex-start}
-.hb .appcard .ic{width:40px;height:40px;border-radius:8px;background:var(--q2);display:flex;align-items:center;justify-content:center;font-family:"Geist Mono",ui-monospace,monospace;font-weight:600;color:var(--hazel);flex:none}
+.hb .appcard .ic{width:40px;height:40px;border-radius:8px;background:var(--q2);display:flex;align-items:center;justify-content:center;font-family:"Geist Mono",ui-monospace,monospace;font-weight:700;color:var(--ink);flex:none}
 .hb .appcard .bd{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
 .hb .appcard .bd .n{font-weight:500}
 .hb .appcard .bd .d{font-size:12px;color:var(--faint)}
 .hb .chip{display:inline-flex;align-items:center;min-height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line);font-size:11px;color:var(--muted);background:transparent}
 .hb .chip.on{color:var(--hazel);border-color:var(--hazel)}
-.hb .term{background:var(--neutral,#0f0e0c);border:1px solid var(--line);border-radius:8px;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;padding:10px 12px;color:var(--ink);white-space:pre;overflow:auto;min-height:220px}
+.hb .term,.hb .diff{--ink:#ECE6DA;--muted:#A79E8E;--faint:#9A917F;--panel:#14120F;--line:#35312B;--ok:#9BD3A4;--warn:#F0B35B;--danger:#F28B82;--blue:#8DB4F2}
+.hb .term{background:#14120F;border:1px solid var(--line);border-radius:8px;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;padding:10px 12px;color:var(--ink);white-space:pre;overflow:auto;min-height:220px}
 .hb .lg{display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted);margin-left:auto}
 .hb .lg span{display:inline-flex;align-items:center;gap:5px}
 .hb .lg i.sw{display:inline-block;width:12px;height:8px;border-radius:2px}
@@ -197,7 +201,7 @@ body{margin:0}
 .hb .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);padding:0 14px}
 .hb .tab{min-height:40px;display:inline-flex;align-items:center;padding:0 10px;border-bottom:2px solid transparent;color:var(--muted);font-size:13px;background:transparent;border-top:0;border-left:0;border-right:0}
 .hb .tab.on{color:var(--hazel);border-bottom-color:var(--hazel);font-weight:600}
-.hb .diff{overflow-x:auto;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;display:flex;flex-direction:column}
+.hb .diff{background:#14120F;color:var(--ink);overflow-x:auto;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;display:flex;flex-direction:column}
 .hb .diff div{display:grid;grid-template-columns:36px 36px 1fr;gap:0;padding:0 14px;white-space:pre}
 .hb .diff .ln{color:var(--faint);text-align:right;padding-right:10px}
 .hb .diff .add{background:color-mix(in oklab,var(--ok) 14%,transparent)}
@@ -264,10 +268,10 @@ body{margin:0}
 @media (max-width:1100px){.hb .aside{width:100%;border-left:0;border-top:1px solid var(--line)}}
 @media (max-width:767px){
  .hb .side{width:100%;border-right:0;border-bottom:1px solid var(--line);flex-direction:row;flex-wrap:nowrap;overflow-x:auto;gap:4px;padding:8px 12px}
- .hb .navgrp{display:none}.hb .navcol{flex-direction:row;flex:none;gap:4px}.hb .side .nv{width:auto;min-height:36px;padding:0 10px;white-space:nowrap;font-size:13px}.hb .side .nv .cnt{margin-left:4px}
+ .hb .navgrp{display:none}.hb .navcol{flex-direction:row;flex:none;gap:4px}.hb .side .nv{width:auto;min-width:44px;justify-content:center;min-height:36px;padding:0 10px;white-space:nowrap;font-size:13px}.hb .side .nv .cnt{margin-left:4px}
  .hb .main{padding:14px 16px 32px;gap:16px}.hb .aside{padding:14px 16px 24px}
  .hb .c3,.hb .c4,.hb .c5,.hb .kbd{display:none}
- .hb .top{flex-wrap:wrap;padding:8px 12px;gap:8px;min-height:0}.hb .brand{width:auto;border:0;padding:0}.hb .crumb{display:none}.hb .top .search{order:3;flex:1 1 100%;max-width:none;margin:0}.hb .obs{display:none}.hb .ib.user span{display:none}
+ .hb .top{flex-wrap:wrap;padding:8px 12px;gap:8px;min-height:0}.hb .top .search{min-height:44px}.hb .brand{width:auto;border:0;padding:0}.hb .crumb{display:none}.hb .top .search{order:3;flex:1 1 100%;max-width:none;margin:0}.hb .obs{display:none}.hb .ib.user span{display:none}
  .hb .side .coll{display:none}.hb .nv svg{display:none}
  .hb .row[class*="cols-"],.hb .row.acts-end{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) auto}
  .hb .acts .ib:nth-child(n+3){display:none}
@@ -277,7 +281,7 @@ body{margin:0}
  .hb .ch-d{display:none}.hb .ch-m{display:block}
  .hb .heat i{min-height:18px}
  .hb .steps{grid-template-columns:repeat(2,minmax(0,1fr))}
- .hb .btn{min-height:44px}.hb .btn.sm{min-height:40px}.hb .range .btn{min-height:40px}
+ .hb .btn,.hb .btn.sm,.hb .range .btn,.hb .scope .btn,.hb .ib,.hb .acts .ib,.hb .tab,.hb .side .nv,.hb .ph .more,.hb .foot a,.hb a.note,.hb .brand,.hb .inp{min-height:44px}.hb .inp input,.hb .inp select{min-height:40px}.hb .ib,.hb .acts .ib{min-width:44px}
  .hb .nrow{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,.9fr)}
  .hb .prow{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}
  .hb .srow{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,.8fr)}
@@ -321,7 +325,7 @@ body{margin:0}
       <div class="wrap" style="margin-left: auto"><button type="button" class="btn pri">部署工作負載</button><button type="button" class="btn">安裝 Helm Chart</button><button type="button" class="btn">YAML 匯入</button><button type="button" class="btn">加入節點</button></div>
     </div><div class="scope" role="group" aria-label="叢集"><span class="lbl">叢集</span><button type="button" class="btn on" aria-pressed="true">lab-k3s<span class=mono>K3s · lab-mini ＋ lab-pi-01</span></button><button type="button" class="btn" aria-pressed="false">＋ 連接既有叢集</button><button type="button" class="btn" aria-pressed="false">＋ 用 K3s 建叢集</button></div><div class="tiles"><div class="tile"><span class="l">叢集</span><span class="v">lab-k3s</span><span class="dl"><span class="">K3s 1.31.2 · 1 控制 · 1 工作 · 單控制節點（非 HA）</span></span></div><div class="tile"><span class="l">工作負載</span><span class="v">9</span><span class="dl"><span class="dn">8 就緒 · 1 CrashLoop</span></span></div><div class="tile"><span class="l">Pod</span><span class="v">23<small>/24 就緒</small></span><span class="dl"><span class="dn">1 Pending：節點資源不足</span></span><svg class="sp" width="120" height="26" viewBox="0 0 120 26" aria-hidden="true" style="display:block;max-width:100%"><path d="M1.0,24.0 L11.7,24.0 L22.5,13.0 L33.2,13.0 L43.9,2.0 L54.6,2.0 L65.4,2.0 L76.1,13.0 L86.8,13.0 L97.5,13.0" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><path d="M97.5,13.0 L108.3,13.0 L119.0,13.0" fill="none" stroke="var(--hazel)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="119.0" cy="13.0" r="3" fill="var(--hazel)"/></svg></div><div class="tile"><span class="l">PVC</span><span class="v">6</span><span class="dl"><span class="">已綁定 6 · local-path 5 · nfs 1</span></span></div></div>
     <section class="panel" aria-labelledby="h-kt">
-      <div class="ph"><h2 id="h-kt">叢集怎麼接</h2></div>
+      <div class="ph"><h2 id="h-kt">叢集拓撲</h2></div>
       <div style="padding:10px 14px 6px"><div class="ch-d"><svg class="topo" viewBox="0 0 1140 204" role="img" aria-label="拓撲：入口→Namespace→節點"><path class="lnk " stroke-width="6.9" d="M220,81.0 C120,81.0 120,139.0 20,139.0"/><path class="lnk " stroke-width="5.7" d="M220,139.0 C345,139.0 345,52.0 470,52.0"/><path class="lnk " stroke-width="2.7" d="M220,139.0 C345,139.0 345,110.0 470,110.0"/><path class="lnk danger" stroke-width="2.1" d="M220,139.0 C345,139.0 345,168.0 470,168.0"/><path class="lnk " stroke-width="5.7" d="M670,52.0 C795,52.0 795,81.0 920,81.0"/><path class="lnk " stroke-width="2.7" d="M670,110.0 C795,110.0 795,81.0 920,81.0"/><path class="lnk danger" stroke-width="2.1" d="M670,168.0 C795,168.0 795,81.0 920,81.0"/><path class="lnk dim" stroke-width="1.8" d="M670,52.0 C795,52.0 795,139.0 920,139.0"/><text class="col" x="20" y="14">入口</text><rect class="box " x="20.0" y="59.0" width="200" height="44" rx="6"/><circle cx="32.0" cy="81.0" r="4" fill="var(--ok)"/><text x="42.0" y="77.0">Zentinel @ hazel-tw-01</text><text class="sub" x="42.0" y="92.0">80／443 → Traefik</text><rect class="box " x="20.0" y="117.0" width="200" height="44" rx="6"/><circle cx="32.0" cy="139.0" r="4" fill="var(--ok)"/><text x="42.0" y="135.0">Traefik（K3s 內建）</text><text class="sub" x="42.0" y="150.0">Ingress · 2 規則</text><text class="col" x="470" y="14">Namespace</text><rect class="box " x="470.0" y="30.0" width="200" height="44" rx="6"/><circle cx="482.0" cy="52.0" r="4" fill="var(--ok)"/><text x="492.0" y="48.0">wiki</text><text class="sub" x="492.0" y="63.0">4 工作負載</text><rect class="box " x="470.0" y="88.0" width="200" height="44" rx="6"/><circle cx="482.0" cy="110.0" r="4" fill="var(--ok)"/><text x="492.0" y="106.0">monitoring</text><text class="sub" x="492.0" y="121.0">3 工作負載</text><rect class="box danger" x="470.0" y="146.0" width="200" height="44" rx="6"/><rect x="478.0" y="164.0" width="8" height="8" fill="var(--danger)"/><text x="492.0" y="164.0">shop-stg</text><text class="sub" x="492.0" y="179.0">1 CrashLoop</text><text class="col" x="920" y="14">節點</text><rect class="box warn" x="920.0" y="59.0" width="200" height="44" rx="6"/><circle cx="932.0" cy="81.0" r="4" fill="var(--panel)" stroke="var(--warn)" stroke-width="2"/><text x="942.0" y="77.0">lab-mini（控制＋工作）</text><text class="sub" x="942.0" y="92.0">4 核 · 8 GiB · 23 Pod</text><rect class="box danger" x="920.0" y="117.0" width="200" height="44" rx="6"/><rect x="928.0" y="135.0" width="8" height="8" fill="var(--danger)"/><text x="942.0" y="135.0">lab-pi-01（工作）</text><text class="sub" x="942.0" y="150.0">4 核 · 4 GiB · 0 Pod · NotReady</text></svg></div><div class="ch-m"><div class="flowlist"><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Zentinel</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Traefik</span><span class="note">80/443</span></div><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Traefik</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">wiki</span><span class="note">4 工作負載</span></div><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Traefik</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-stg</span><span class="note">CrashLoop</span></div><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">wiki</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">lab-mini</span><span class="note">23 Pod</span></div><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">lab-pi-01</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">NotReady</span><span class="note">0 Pod</span></div></div></div></div>
     </section><div class="cg">
     <section class="panel" aria-labelledby="h-rsv">
@@ -336,8 +340,8 @@ body{margin:0}
     <section class="panel" aria-labelledby="h-kpv">
       <div class="ph"><h2 id="h-kpv">儲存類別與 PVC</h2></div>
       <div style="padding:12px 14px;display:flex;flex-direction:column;gap:10px">
-        <div><span class="note">local-path（lab-mini /mnt/data）· 118 GiB</span><span class="tall" aria-hidden="true"><i style="width:35.6%;background:var(--q5)" title="wiki-db 42G">42G</i><i style="width:6.8%;background:var(--q4)" title="wiki-media 8G"></i><i style="width:2.5%;background:var(--q3)" title="prometheus 3G"></i><i style="width:55.1%;background:var(--q1);color:var(--muted)" title="可用 65G">65G</i></span></div>
-        <div><span class="note">nfs（hazel-tw-01 /mnt/data/nfs）· 200 GiB</span><span class="tall" aria-hidden="true"><i style="width:9.5%;background:var(--q5)" title="wiki-backup 19G">19G</i><i style="width:90.5%;background:var(--q1);color:var(--muted)" title="可用 181G">181G</i></span></div>
+        <div><span class="note">local-path（lab-mini /mnt/data）· 118 GiB</span><span class="tall" aria-hidden="true"><i style="width:35.6%;background:var(--q5);color:var(--hazelink)" title="wiki-db 42G">42G</i><i style="width:6.8%;background:var(--q4);color:var(--hazelink)" title="wiki-media 8G"></i><i style="width:2.5%;background:var(--q3);color:var(--ink)" title="prometheus 3G"></i><i style="width:55.1%;background:var(--q1);color:var(--muted)" title="可用 65G">65G</i></span></div>
+        <div><span class="note">nfs（hazel-tw-01 /mnt/data/nfs）· 200 GiB</span><span class="tall" aria-hidden="true"><i style="width:9.5%;background:var(--q5);color:var(--hazelink)" title="wiki-backup 19G">19G</i><i style="width:90.5%;background:var(--q1);color:var(--muted)" title="可用 181G">181G</i></span></div>
         <div class="note">RWO 5 · RWX 1 · 快照：local-path 不支援，nfs 由節點端快照代替</div>
       </div>
     </section></div>

@@ -30,7 +30,9 @@ body{margin:0}
 .hb .panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .hb .ph{display:flex;align-items:center;gap:10px;min-height:46px;padding:8px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .hb .ph .sub{font-size:12px;color:var(--muted)}
-.hb .ph .more{margin-left:auto;font-size:13px;color:var(--hazel)}
+.hb .ph .more{margin-left:auto;font-size:13px;color:var(--hazel);min-height:32px;min-width:44px;padding:0 4px;display:inline-flex;align-items:center;justify-content:flex-end}
+.hb .foot a,.hb .note a,.hb a.note{min-height:28px;display:inline-flex;align-items:center}
+.hb .inp input,.hb .inp select{min-height:30px}
 .hb .card{background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:8px}
 .hb .row{display:grid;gap:12px;align-items:center;min-height:44px;padding:0 16px;border-bottom:1px solid var(--line)}
 .hb a.row{cursor:pointer}
@@ -43,6 +45,7 @@ body{margin:0}
 .hb .name .d{font-size:12px;color:var(--faint);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;overflow-wrap:anywhere}
 .hb .st{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:12px;font-weight:500;padding:2px 8px 2px 7px;border-radius:999px;background:color-mix(in srgb,currentColor 13%,transparent)}
 .hb .lg .st,.hb .mx .st{padding:1px 7px 1px 6px}
+.hb.theme-light .st{background:var(--raised);box-shadow:inset 0 0 0 1px color-mix(in srgb,currentColor 35%,transparent)}
 .hb .st i{display:inline-block;width:8px;height:8px;flex:none}
 .hb .st.ok{color:var(--ok)}.hb .st.ok i{border-radius:50%;background:var(--ok)}
 .hb .st.warn{color:var(--warn)}.hb .st.warn i{border-radius:50%;border:2px solid var(--warn)}
@@ -162,13 +165,14 @@ body{margin:0}
 .hb .tree li .sz{margin-left:auto;color:var(--faint);font-size:12px}
 .hb .tree li.on{color:var(--hazel)}
 .hb .appcard{display:flex;gap:10px;padding:12px;background:var(--raised);border:1px solid var(--line);border-radius:8px;min-width:0;color:var(--ink);align-items:flex-start}
-.hb .appcard .ic{width:40px;height:40px;border-radius:8px;background:var(--q2);display:flex;align-items:center;justify-content:center;font-family:"Geist Mono",ui-monospace,monospace;font-weight:600;color:var(--hazel);flex:none}
+.hb .appcard .ic{width:40px;height:40px;border-radius:8px;background:var(--q2);display:flex;align-items:center;justify-content:center;font-family:"Geist Mono",ui-monospace,monospace;font-weight:700;color:var(--ink);flex:none}
 .hb .appcard .bd{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
 .hb .appcard .bd .n{font-weight:500}
 .hb .appcard .bd .d{font-size:12px;color:var(--faint)}
 .hb .chip{display:inline-flex;align-items:center;min-height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line);font-size:11px;color:var(--muted);background:transparent}
 .hb .chip.on{color:var(--hazel);border-color:var(--hazel)}
-.hb .term{background:var(--neutral,#0f0e0c);border:1px solid var(--line);border-radius:8px;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;padding:10px 12px;color:var(--ink);white-space:pre;overflow:auto;min-height:220px}
+.hb .term,.hb .diff{--ink:#ECE6DA;--muted:#A79E8E;--faint:#9A917F;--panel:#14120F;--line:#35312B;--ok:#9BD3A4;--warn:#F0B35B;--danger:#F28B82;--blue:#8DB4F2}
+.hb .term{background:#14120F;border:1px solid var(--line);border-radius:8px;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;padding:10px 12px;color:var(--ink);white-space:pre;overflow:auto;min-height:220px}
 .hb .lg{display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted);margin-left:auto}
 .hb .lg span{display:inline-flex;align-items:center;gap:5px}
 .hb .lg i.sw{display:inline-block;width:12px;height:8px;border-radius:2px}
@@ -197,7 +201,7 @@ body{margin:0}
 .hb .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);padding:0 14px}
 .hb .tab{min-height:40px;display:inline-flex;align-items:center;padding:0 10px;border-bottom:2px solid transparent;color:var(--muted);font-size:13px;background:transparent;border-top:0;border-left:0;border-right:0}
 .hb .tab.on{color:var(--hazel);border-bottom-color:var(--hazel);font-weight:600}
-.hb .diff{overflow-x:auto;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;display:flex;flex-direction:column}
+.hb .diff{background:#14120F;color:var(--ink);overflow-x:auto;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;display:flex;flex-direction:column}
 .hb .diff div{display:grid;grid-template-columns:36px 36px 1fr;gap:0;padding:0 14px;white-space:pre}
 .hb .diff .ln{color:var(--faint);text-align:right;padding-right:10px}
 .hb .diff .add{background:color-mix(in oklab,var(--ok) 14%,transparent)}
@@ -264,10 +268,10 @@ body{margin:0}
 @media (max-width:1100px){.hb .aside{width:100%;border-left:0;border-top:1px solid var(--line)}}
 @media (max-width:767px){
  .hb .side{width:100%;border-right:0;border-bottom:1px solid var(--line);flex-direction:row;flex-wrap:nowrap;overflow-x:auto;gap:4px;padding:8px 12px}
- .hb .navgrp{display:none}.hb .navcol{flex-direction:row;flex:none;gap:4px}.hb .side .nv{width:auto;min-height:36px;padding:0 10px;white-space:nowrap;font-size:13px}.hb .side .nv .cnt{margin-left:4px}
+ .hb .navgrp{display:none}.hb .navcol{flex-direction:row;flex:none;gap:4px}.hb .side .nv{width:auto;min-width:44px;justify-content:center;min-height:36px;padding:0 10px;white-space:nowrap;font-size:13px}.hb .side .nv .cnt{margin-left:4px}
  .hb .main{padding:14px 16px 32px;gap:16px}.hb .aside{padding:14px 16px 24px}
  .hb .c3,.hb .c4,.hb .c5,.hb .kbd{display:none}
- .hb .top{flex-wrap:wrap;padding:8px 12px;gap:8px;min-height:0}.hb .brand{width:auto;border:0;padding:0}.hb .crumb{display:none}.hb .top .search{order:3;flex:1 1 100%;max-width:none;margin:0}.hb .obs{display:none}.hb .ib.user span{display:none}
+ .hb .top{flex-wrap:wrap;padding:8px 12px;gap:8px;min-height:0}.hb .top .search{min-height:44px}.hb .brand{width:auto;border:0;padding:0}.hb .crumb{display:none}.hb .top .search{order:3;flex:1 1 100%;max-width:none;margin:0}.hb .obs{display:none}.hb .ib.user span{display:none}
  .hb .side .coll{display:none}.hb .nv svg{display:none}
  .hb .row[class*="cols-"],.hb .row.acts-end{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) auto}
  .hb .acts .ib:nth-child(n+3){display:none}
@@ -277,7 +281,7 @@ body{margin:0}
  .hb .ch-d{display:none}.hb .ch-m{display:block}
  .hb .heat i{min-height:18px}
  .hb .steps{grid-template-columns:repeat(2,minmax(0,1fr))}
- .hb .btn{min-height:44px}.hb .btn.sm{min-height:40px}.hb .range .btn{min-height:40px}
+ .hb .btn,.hb .btn.sm,.hb .range .btn,.hb .scope .btn,.hb .ib,.hb .acts .ib,.hb .tab,.hb .side .nv,.hb .ph .more,.hb .foot a,.hb a.note,.hb .brand,.hb .inp{min-height:44px}.hb .inp input,.hb .inp select{min-height:40px}.hb .ib,.hb .acts .ib{min-width:44px}
  .hb .nrow{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,.9fr)}
  .hb .prow{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}
  .hb .srow{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,.8fr)}
@@ -321,7 +325,7 @@ body{margin:0}
       <div class="wrap" style="margin-left: auto"><button type="button" class="btn pri">部署最新 commit</button><button type="button" class="btn">新增專案</button><button type="button" class="btn">從 GitHub 匯入</button></div>
     </div><div class="scope" role="group" aria-label="範圍"><span class="lbl">範圍</span><button type="button" class="btn on" aria-pressed="true">全部節點<span class=mono>3 環境</span></button><button type="button" class="btn" aria-pressed="false">hazel-tw-01<span class=mono>shop production</span></button><button type="button" class="btn" aria-pressed="false">hazel-jp-02<span class=mono>wiki</span></button><button type="button" class="btn" aria-pressed="false">lab-mini<span class=mono>shop staging</span></button></div><div class="panel"><div class="tabs" role="tablist"><button type="button" class="tab on" role="tab" aria-selected="true">shop · production</button><button type="button" class="tab" role="tab" aria-selected="false">shop · staging</button><button type="button" class="tab" role="tab" aria-selected="false">wiki · production</button></div><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr)); gap: 10px 16px; padding: 12px 14px; font-size: 13px"><span class="" style="display:flex;flex-direction:column;gap:2px"><span class="note">來源</span><span>github.com/hazelnut/shop · main</span></span><span class="" style="display:flex;flex-direction:column;gap:2px"><span class="note">最近部署</span><span>a3f9c1e · 02:57 · 成功 · Webhook</span></span><span class="" style="display:flex;flex-direction:column;gap:2px"><span class="note">節點</span><span>hazel-tw-01</span></span><span class="" style="display:flex;flex-direction:column;gap:2px"><span class="note">入口</span><span>shop.example.tw · 憑證 11 天後到期</span></span><span class="" style="display:flex;flex-direction:column;gap:2px"><span class="note">自動部署</span><span>已暫停：變更計畫 #418 待批准</span></span></div></div>
     <section class="panel" aria-labelledby="h-stopo">
-      <div class="ph"><h2 id="h-stopo">shop · production 的結構</h2><a class="more" href="#compose">原始 Compose →</a></div>
+      <div class="ph"><h2 id="h-stopo">shop · production · 拓撲</h2><a class="more" href="#compose">原始 Compose →</a></div>
       <div style="padding: 10px 14px 6px"><div class="ch-d"><svg class="topo" viewBox="0 0 1140 146" role="img" aria-label="拓撲：入口→服務→資料→儲存"><path class="lnk " stroke-width="6.9" d="M190,81.0 C260,81.0 260,52.0 330,52.0"/><path class="lnk " stroke-width="5.1" d="M500,52.0 C570,52.0 570,52.0 640,52.0"/><path class="lnk " stroke-width="3.9" d="M500,52.0 C570,52.0 570,110.0 640,110.0"/><path class="lnk " stroke-width="3.3" d="M500,110.0 C570,110.0 570,52.0 640,52.0"/><path class="lnk " stroke-width="3.3" d="M500,110.0 C570,110.0 570,110.0 640,110.0"/><path class="lnk " stroke-width="5.1" d="M810,52.0 C880,52.0 880,52.0 950,52.0"/><path class="lnk dim" stroke-width="3.3" d="M1120,52.0 C1035,52.0 1035,110.0 950,110.0"/><text class="col" x="20" y="14">入口</text><rect class="box warn" x="20.0" y="59.0" width="170" height="44" rx="6"/><circle cx="32.0" cy="81.0" r="4" fill="var(--panel)" stroke="var(--warn)" stroke-width="2"/><text x="42.0" y="77.0">shop.example.tw</text><text class="sub" x="42.0" y="92.0">Zentinel · 憑證 11 天</text><text class="col" x="330" y="14">服務</text><rect class="box " x="330.0" y="30.0" width="170" height="44" rx="6"/><circle cx="342.0" cy="52.0" r="4" fill="var(--ok)"/><text x="352.0" y="48.0">shop-api</text><text class="sub" x="352.0" y="63.0">8080 · 2 副本</text><rect class="box " x="330.0" y="88.0" width="170" height="44" rx="6"/><circle cx="342.0" cy="110.0" r="4" fill="var(--ok)"/><text x="352.0" y="106.0">shop-worker</text><text class="sub" x="352.0" y="121.0">無對外 Port</text><text class="col" x="640" y="14">資料</text><rect class="box " x="640.0" y="30.0" width="170" height="44" rx="6"/><circle cx="652.0" cy="52.0" r="4" fill="var(--ok)"/><text x="662.0" y="48.0">shop-db</text><text class="sub" x="662.0" y="63.0">postgres 16.4 · 1.29G</text><rect class="box " x="640.0" y="88.0" width="170" height="44" rx="6"/><rect x="648.0" y="106.0" width="8" height="8" fill="var(--blue)"/><text x="662.0" y="106.0">shop-redis</text><text class="sub" x="662.0" y="121.0">重啟中 · 第 1 次</text><text class="col" x="950" y="14">儲存</text><rect class="box " x="950.0" y="30.0" width="170" height="44" rx="6"/><circle cx="962.0" cy="52.0" r="4" fill="var(--ok)"/><text x="972.0" y="48.0">shop-db-data</text><text class="sub" x="972.0" y="63.0">/mnt/data · 84G</text><rect class="box " x="950.0" y="88.0" width="170" height="44" rx="6"/><circle cx="962.0" cy="110.0" r="4" fill="var(--ok)"/><text x="972.0" y="106.0">每日備份 → S3</text><text class="sub" x="972.0" y="121.0">03:00 · 成功</text></svg></div><div class="ch-m"><div class="flowlist"><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop.example.tw</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-api</span><span class="note">Zentinel</span></div><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-api</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-db</span><span class="note">postgres</span></div><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-api</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-redis</span><span class="note">重啟中</span></div><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-worker</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-db</span><span class="note"></span></div><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-db</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-db-data</span><span class="note">84G</span></div><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-db-data</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">每日備份 → S3</span><span class="note">03:00</span></div></div></div></div>
     </section>
     <section class="panel" aria-labelledby="h-svc">

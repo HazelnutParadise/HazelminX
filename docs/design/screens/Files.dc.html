@@ -30,7 +30,9 @@ body{margin:0}
 .hb .panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .hb .ph{display:flex;align-items:center;gap:10px;min-height:46px;padding:8px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .hb .ph .sub{font-size:12px;color:var(--muted)}
-.hb .ph .more{margin-left:auto;font-size:13px;color:var(--hazel)}
+.hb .ph .more{margin-left:auto;font-size:13px;color:var(--hazel);min-height:32px;min-width:44px;padding:0 4px;display:inline-flex;align-items:center;justify-content:flex-end}
+.hb .foot a,.hb .note a,.hb a.note{min-height:28px;display:inline-flex;align-items:center}
+.hb .inp input,.hb .inp select{min-height:30px}
 .hb .card{background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:8px}
 .hb .row{display:grid;gap:12px;align-items:center;min-height:44px;padding:0 16px;border-bottom:1px solid var(--line)}
 .hb a.row{cursor:pointer}
@@ -43,6 +45,7 @@ body{margin:0}
 .hb .name .d{font-size:12px;color:var(--faint);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;overflow-wrap:anywhere}
 .hb .st{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:12px;font-weight:500;padding:2px 8px 2px 7px;border-radius:999px;background:color-mix(in srgb,currentColor 13%,transparent)}
 .hb .lg .st,.hb .mx .st{padding:1px 7px 1px 6px}
+.hb.theme-light .st{background:var(--raised);box-shadow:inset 0 0 0 1px color-mix(in srgb,currentColor 35%,transparent)}
 .hb .st i{display:inline-block;width:8px;height:8px;flex:none}
 .hb .st.ok{color:var(--ok)}.hb .st.ok i{border-radius:50%;background:var(--ok)}
 .hb .st.warn{color:var(--warn)}.hb .st.warn i{border-radius:50%;border:2px solid var(--warn)}
@@ -162,13 +165,14 @@ body{margin:0}
 .hb .tree li .sz{margin-left:auto;color:var(--faint);font-size:12px}
 .hb .tree li.on{color:var(--hazel)}
 .hb .appcard{display:flex;gap:10px;padding:12px;background:var(--raised);border:1px solid var(--line);border-radius:8px;min-width:0;color:var(--ink);align-items:flex-start}
-.hb .appcard .ic{width:40px;height:40px;border-radius:8px;background:var(--q2);display:flex;align-items:center;justify-content:center;font-family:"Geist Mono",ui-monospace,monospace;font-weight:600;color:var(--hazel);flex:none}
+.hb .appcard .ic{width:40px;height:40px;border-radius:8px;background:var(--q2);display:flex;align-items:center;justify-content:center;font-family:"Geist Mono",ui-monospace,monospace;font-weight:700;color:var(--ink);flex:none}
 .hb .appcard .bd{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
 .hb .appcard .bd .n{font-weight:500}
 .hb .appcard .bd .d{font-size:12px;color:var(--faint)}
 .hb .chip{display:inline-flex;align-items:center;min-height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line);font-size:11px;color:var(--muted);background:transparent}
 .hb .chip.on{color:var(--hazel);border-color:var(--hazel)}
-.hb .term{background:var(--neutral,#0f0e0c);border:1px solid var(--line);border-radius:8px;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;padding:10px 12px;color:var(--ink);white-space:pre;overflow:auto;min-height:220px}
+.hb .term,.hb .diff{--ink:#ECE6DA;--muted:#A79E8E;--faint:#9A917F;--panel:#14120F;--line:#35312B;--ok:#9BD3A4;--warn:#F0B35B;--danger:#F28B82;--blue:#8DB4F2}
+.hb .term{background:#14120F;border:1px solid var(--line);border-radius:8px;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;padding:10px 12px;color:var(--ink);white-space:pre;overflow:auto;min-height:220px}
 .hb .lg{display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted);margin-left:auto}
 .hb .lg span{display:inline-flex;align-items:center;gap:5px}
 .hb .lg i.sw{display:inline-block;width:12px;height:8px;border-radius:2px}
@@ -197,7 +201,7 @@ body{margin:0}
 .hb .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);padding:0 14px}
 .hb .tab{min-height:40px;display:inline-flex;align-items:center;padding:0 10px;border-bottom:2px solid transparent;color:var(--muted);font-size:13px;background:transparent;border-top:0;border-left:0;border-right:0}
 .hb .tab.on{color:var(--hazel);border-bottom-color:var(--hazel);font-weight:600}
-.hb .diff{overflow-x:auto;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;display:flex;flex-direction:column}
+.hb .diff{background:#14120F;color:var(--ink);overflow-x:auto;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;display:flex;flex-direction:column}
 .hb .diff div{display:grid;grid-template-columns:36px 36px 1fr;gap:0;padding:0 14px;white-space:pre}
 .hb .diff .ln{color:var(--faint);text-align:right;padding-right:10px}
 .hb .diff .add{background:color-mix(in oklab,var(--ok) 14%,transparent)}
@@ -264,10 +268,10 @@ body{margin:0}
 @media (max-width:1100px){.hb .aside{width:100%;border-left:0;border-top:1px solid var(--line)}}
 @media (max-width:767px){
  .hb .side{width:100%;border-right:0;border-bottom:1px solid var(--line);flex-direction:row;flex-wrap:nowrap;overflow-x:auto;gap:4px;padding:8px 12px}
- .hb .navgrp{display:none}.hb .navcol{flex-direction:row;flex:none;gap:4px}.hb .side .nv{width:auto;min-height:36px;padding:0 10px;white-space:nowrap;font-size:13px}.hb .side .nv .cnt{margin-left:4px}
+ .hb .navgrp{display:none}.hb .navcol{flex-direction:row;flex:none;gap:4px}.hb .side .nv{width:auto;min-width:44px;justify-content:center;min-height:36px;padding:0 10px;white-space:nowrap;font-size:13px}.hb .side .nv .cnt{margin-left:4px}
  .hb .main{padding:14px 16px 32px;gap:16px}.hb .aside{padding:14px 16px 24px}
  .hb .c3,.hb .c4,.hb .c5,.hb .kbd{display:none}
- .hb .top{flex-wrap:wrap;padding:8px 12px;gap:8px;min-height:0}.hb .brand{width:auto;border:0;padding:0}.hb .crumb{display:none}.hb .top .search{order:3;flex:1 1 100%;max-width:none;margin:0}.hb .obs{display:none}.hb .ib.user span{display:none}
+ .hb .top{flex-wrap:wrap;padding:8px 12px;gap:8px;min-height:0}.hb .top .search{min-height:44px}.hb .brand{width:auto;border:0;padding:0}.hb .crumb{display:none}.hb .top .search{order:3;flex:1 1 100%;max-width:none;margin:0}.hb .obs{display:none}.hb .ib.user span{display:none}
  .hb .side .coll{display:none}.hb .nv svg{display:none}
  .hb .row[class*="cols-"],.hb .row.acts-end{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) auto}
  .hb .acts .ib:nth-child(n+3){display:none}
@@ -277,7 +281,7 @@ body{margin:0}
  .hb .ch-d{display:none}.hb .ch-m{display:block}
  .hb .heat i{min-height:18px}
  .hb .steps{grid-template-columns:repeat(2,minmax(0,1fr))}
- .hb .btn{min-height:44px}.hb .btn.sm{min-height:40px}.hb .range .btn{min-height:40px}
+ .hb .btn,.hb .btn.sm,.hb .range .btn,.hb .scope .btn,.hb .ib,.hb .acts .ib,.hb .tab,.hb .side .nv,.hb .ph .more,.hb .foot a,.hb a.note,.hb .brand,.hb .inp{min-height:44px}.hb .inp input,.hb .inp select{min-height:40px}.hb .ib,.hb .acts .ib{min-width:44px}
  .hb .nrow{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,.9fr)}
  .hb .prow{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}
  .hb .srow{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,.8fr)}
@@ -323,7 +327,7 @@ body{margin:0}
     <section class="panel" aria-labelledby="h-fl">
       <div class="ph"><h2 id="h-fl">wiki · 5 項</h2><div class="wrap" style="margin-left:auto"><span class="chip">依名稱</span><span class="chip on">依大小</span><span class="chip">依時間</span></div></div>
       <div class="row hd cols-5"><span>名稱</span><span>大小</span><span class="c3">擁有者</span><span class="c4">權限</span><span class="c4">修改</span></div>
-      <a class="row  cols-5" href="#f"><span class="name"><span class="n">data/</span><span class="d">目錄 · 容器 wiki-db 掛載 /var/lib/postgresql · 容器寫入中，別手動改</span></span><span class="mono">41 GiB</span><span class="mono c3">999:999</span><span class="mono c4">drwx------</span><span class="mono c4">2 分前</span></a>
+      <a class="row  cols-5" href="#f"><span class="name"><span class="n">data/</span><span class="d">目錄 · 容器 wiki-db 掛載 /var/lib/postgresql · 容器掛載中</span></span><span class="mono">41 GiB</span><span class="mono c3">999:999</span><span class="mono c4">drwx------</span><span class="mono c4">2 分前</span></a>
       <a class="row  cols-5" href="#f"><span class="name"><span class="n">uploads/</span><span class="d">目錄 · 容器 wiki-app 掛載 /app/uploads · 分享連結 1 條 · 7 天後到期</span></span><span class="mono">7.2 GiB</span><span class="mono c3">1000:1000</span><span class="mono c4">drwxr-x---</span><span class="mono c4">昨天</span></a>
       <a class="row  cols-5" href="#f"><span class="name"><span class="n">config/</span><span class="d">目錄</span></span><span class="mono">2.1 MiB</span><span class="mono c3">root:root</span><span class="mono c4">drwxr-x---</span><span class="mono c4">10 月 30 日</span></a>
       <a class="row  cols-5" href="#f"><span class="name"><span class="n">compose.yaml</span><span class="d">文字 · 歷史 9 版 · 來自 GitHub a3f9c1e</span></span><span class="mono">3.4 KiB</span><span class="mono c3">root:root</span><span class="mono c4">-rw-r-----</span><span class="mono c4">10 月 30 日</span></a>

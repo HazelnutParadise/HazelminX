@@ -30,7 +30,9 @@ body{margin:0}
 .hb .panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .hb .ph{display:flex;align-items:center;gap:10px;min-height:46px;padding:8px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .hb .ph .sub{font-size:12px;color:var(--muted)}
-.hb .ph .more{margin-left:auto;font-size:13px;color:var(--hazel)}
+.hb .ph .more{margin-left:auto;font-size:13px;color:var(--hazel);min-height:32px;min-width:44px;padding:0 4px;display:inline-flex;align-items:center;justify-content:flex-end}
+.hb .foot a,.hb .note a,.hb a.note{min-height:28px;display:inline-flex;align-items:center}
+.hb .inp input,.hb .inp select{min-height:30px}
 .hb .card{background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:8px}
 .hb .row{display:grid;gap:12px;align-items:center;min-height:44px;padding:0 16px;border-bottom:1px solid var(--line)}
 .hb a.row{cursor:pointer}
@@ -43,6 +45,7 @@ body{margin:0}
 .hb .name .d{font-size:12px;color:var(--faint);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;overflow-wrap:anywhere}
 .hb .st{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:12px;font-weight:500;padding:2px 8px 2px 7px;border-radius:999px;background:color-mix(in srgb,currentColor 13%,transparent)}
 .hb .lg .st,.hb .mx .st{padding:1px 7px 1px 6px}
+.hb.theme-light .st{background:var(--raised);box-shadow:inset 0 0 0 1px color-mix(in srgb,currentColor 35%,transparent)}
 .hb .st i{display:inline-block;width:8px;height:8px;flex:none}
 .hb .st.ok{color:var(--ok)}.hb .st.ok i{border-radius:50%;background:var(--ok)}
 .hb .st.warn{color:var(--warn)}.hb .st.warn i{border-radius:50%;border:2px solid var(--warn)}
@@ -162,13 +165,14 @@ body{margin:0}
 .hb .tree li .sz{margin-left:auto;color:var(--faint);font-size:12px}
 .hb .tree li.on{color:var(--hazel)}
 .hb .appcard{display:flex;gap:10px;padding:12px;background:var(--raised);border:1px solid var(--line);border-radius:8px;min-width:0;color:var(--ink);align-items:flex-start}
-.hb .appcard .ic{width:40px;height:40px;border-radius:8px;background:var(--q2);display:flex;align-items:center;justify-content:center;font-family:"Geist Mono",ui-monospace,monospace;font-weight:600;color:var(--hazel);flex:none}
+.hb .appcard .ic{width:40px;height:40px;border-radius:8px;background:var(--q2);display:flex;align-items:center;justify-content:center;font-family:"Geist Mono",ui-monospace,monospace;font-weight:700;color:var(--ink);flex:none}
 .hb .appcard .bd{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
 .hb .appcard .bd .n{font-weight:500}
 .hb .appcard .bd .d{font-size:12px;color:var(--faint)}
 .hb .chip{display:inline-flex;align-items:center;min-height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line);font-size:11px;color:var(--muted);background:transparent}
 .hb .chip.on{color:var(--hazel);border-color:var(--hazel)}
-.hb .term{background:var(--neutral,#0f0e0c);border:1px solid var(--line);border-radius:8px;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;padding:10px 12px;color:var(--ink);white-space:pre;overflow:auto;min-height:220px}
+.hb .term,.hb .diff{--ink:#ECE6DA;--muted:#A79E8E;--faint:#9A917F;--panel:#14120F;--line:#35312B;--ok:#9BD3A4;--warn:#F0B35B;--danger:#F28B82;--blue:#8DB4F2}
+.hb .term{background:#14120F;border:1px solid var(--line);border-radius:8px;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;padding:10px 12px;color:var(--ink);white-space:pre;overflow:auto;min-height:220px}
 .hb .lg{display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted);margin-left:auto}
 .hb .lg span{display:inline-flex;align-items:center;gap:5px}
 .hb .lg i.sw{display:inline-block;width:12px;height:8px;border-radius:2px}
@@ -197,7 +201,7 @@ body{margin:0}
 .hb .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);padding:0 14px}
 .hb .tab{min-height:40px;display:inline-flex;align-items:center;padding:0 10px;border-bottom:2px solid transparent;color:var(--muted);font-size:13px;background:transparent;border-top:0;border-left:0;border-right:0}
 .hb .tab.on{color:var(--hazel);border-bottom-color:var(--hazel);font-weight:600}
-.hb .diff{overflow-x:auto;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;display:flex;flex-direction:column}
+.hb .diff{background:#14120F;color:var(--ink);overflow-x:auto;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;display:flex;flex-direction:column}
 .hb .diff div{display:grid;grid-template-columns:36px 36px 1fr;gap:0;padding:0 14px;white-space:pre}
 .hb .diff .ln{color:var(--faint);text-align:right;padding-right:10px}
 .hb .diff .add{background:color-mix(in oklab,var(--ok) 14%,transparent)}
@@ -264,10 +268,10 @@ body{margin:0}
 @media (max-width:1100px){.hb .aside{width:100%;border-left:0;border-top:1px solid var(--line)}}
 @media (max-width:767px){
  .hb .side{width:100%;border-right:0;border-bottom:1px solid var(--line);flex-direction:row;flex-wrap:nowrap;overflow-x:auto;gap:4px;padding:8px 12px}
- .hb .navgrp{display:none}.hb .navcol{flex-direction:row;flex:none;gap:4px}.hb .side .nv{width:auto;min-height:36px;padding:0 10px;white-space:nowrap;font-size:13px}.hb .side .nv .cnt{margin-left:4px}
+ .hb .navgrp{display:none}.hb .navcol{flex-direction:row;flex:none;gap:4px}.hb .side .nv{width:auto;min-width:44px;justify-content:center;min-height:36px;padding:0 10px;white-space:nowrap;font-size:13px}.hb .side .nv .cnt{margin-left:4px}
  .hb .main{padding:14px 16px 32px;gap:16px}.hb .aside{padding:14px 16px 24px}
  .hb .c3,.hb .c4,.hb .c5,.hb .kbd{display:none}
- .hb .top{flex-wrap:wrap;padding:8px 12px;gap:8px;min-height:0}.hb .brand{width:auto;border:0;padding:0}.hb .crumb{display:none}.hb .top .search{order:3;flex:1 1 100%;max-width:none;margin:0}.hb .obs{display:none}.hb .ib.user span{display:none}
+ .hb .top{flex-wrap:wrap;padding:8px 12px;gap:8px;min-height:0}.hb .top .search{min-height:44px}.hb .brand{width:auto;border:0;padding:0}.hb .crumb{display:none}.hb .top .search{order:3;flex:1 1 100%;max-width:none;margin:0}.hb .obs{display:none}.hb .ib.user span{display:none}
  .hb .side .coll{display:none}.hb .nv svg{display:none}
  .hb .row[class*="cols-"],.hb .row.acts-end{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) auto}
  .hb .acts .ib:nth-child(n+3){display:none}
@@ -277,7 +281,7 @@ body{margin:0}
  .hb .ch-d{display:none}.hb .ch-m{display:block}
  .hb .heat i{min-height:18px}
  .hb .steps{grid-template-columns:repeat(2,minmax(0,1fr))}
- .hb .btn{min-height:44px}.hb .btn.sm{min-height:40px}.hb .range .btn{min-height:40px}
+ .hb .btn,.hb .btn.sm,.hb .range .btn,.hb .scope .btn,.hb .ib,.hb .acts .ib,.hb .tab,.hb .side .nv,.hb .ph .more,.hb .foot a,.hb a.note,.hb .brand,.hb .inp{min-height:44px}.hb .inp input,.hb .inp select{min-height:40px}.hb .ib,.hb .acts .ib{min-width:44px}
  .hb .nrow{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,.9fr)}
  .hb .prow{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}
  .hb .srow{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,.8fr)}
@@ -324,20 +328,20 @@ body{margin:0}
       <div class="ph"><h2 id="h-repo">倉庫 · hazelnut（12）</h2><a class="more" href="https://github.com/apps/hazelminx">管理授權 ↗</a></div>
       <div style="padding: 10px 14px"><label class="inp"><span class="note">搜尋</span><input value="shop" style="background:transparent;border:0;flex:1;min-width:0" aria-label="搜尋倉庫"></label></div>
       <div class="row hd rrow"><span></span><span>倉庫</span><span class="c3">偵測</span><span class="c4">預設分支</span><span>更新</span></div>
-      <label class="row rrow" style="cursor:pointer;background: var(--raised)"><input type="radio" name="repo" checked style="width:18px;height:18px;accent-color: var(--hazel)"><span class="name"><span class="n">hazelnut/shop</span><span class="d">電商主站 · 私有 · 4 個 compose 服務</span></span><span class="c3"><span class="st ok"><i aria-hidden="true"></i>有 compose.yaml</span></span><span class="mono c4">main</span><span class="mono note">2 小時前</span></label>
-      <label class="row rrow" style="cursor:pointer;"><input type="radio" name="repo"  style="width:18px;height:18px;accent-color: var(--hazel)"><span class="name"><span class="n">hazelnut/shop-mobile-api</span><span class="d">行動 API · 私有</span></span><span class="c3"><span class="st ok"><i aria-hidden="true"></i>有 compose.yaml</span></span><span class="mono c4">main</span><span class="mono note">3 天前</span></label>
-      <label class="row rrow" style="cursor:pointer;"><input type="radio" name="repo"  style="width:18px;height:18px;accent-color: var(--hazel)"><span class="name"><span class="n">hazelnut/shop-legacy</span><span class="d">舊版 PHP · 封存</span></span><span class="c3"><span class="st off"><i aria-hidden="true"></i>未偵測到 compose</span></span><span class="mono c4">master</span><span class="mono note">1 年前</span></label>
+      <label class="row rrow" style="cursor:pointer;background: var(--raised)"><input type="radio" name="repo" aria-label="選擇此 Repo" checked style="width:18px;height:18px;accent-color: var(--hazel)"><span class="name"><span class="n">hazelnut/shop</span><span class="d">電商主站 · 私有 · 4 個 compose 服務</span></span><span class="c3"><span class="st ok"><i aria-hidden="true"></i>有 compose.yaml</span></span><span class="mono c4">main</span><span class="mono note">2 小時前</span></label>
+      <label class="row rrow" style="cursor:pointer;"><input type="radio" name="repo" aria-label="選擇此 Repo"  style="width:18px;height:18px;accent-color: var(--hazel)"><span class="name"><span class="n">hazelnut/shop-mobile-api</span><span class="d">行動 API · 私有</span></span><span class="c3"><span class="st ok"><i aria-hidden="true"></i>有 compose.yaml</span></span><span class="mono c4">main</span><span class="mono note">3 天前</span></label>
+      <label class="row rrow" style="cursor:pointer;"><input type="radio" name="repo" aria-label="選擇此 Repo"  style="width:18px;height:18px;accent-color: var(--hazel)"><span class="name"><span class="n">hazelnut/shop-legacy</span><span class="d">舊版 PHP · 封存</span></span><span class="c3"><span class="st off"><i aria-hidden="true"></i>未偵測到 compose</span></span><span class="mono c4">master</span><span class="mono note">1 年前</span></label>
       
     </section>
     <section class="panel" aria-labelledby="h-br">
       <div class="ph"><h2 id="h-br">hazelnut/shop</h2><span class="sub">分支、路徑與觸發</span></div>
       <div style="padding: 12px 14px; display: flex; flex-direction: column; gap: 14px">
         <div class="field"><label for="br">分支或標籤</label><div class="inp"><span class="mono">main</span><span class="note" style="margin-left:auto">最新 9b3e7f1 · 38 分鐘前</span></div><span class="help">之後每次推送到這個分支都會建立變更計畫；高風險變更先暫停等批准。</span></div>
-        <div class="field"><label for="path">compose 檔路徑</label><div class="inp"><span class="mono">deploy/compose.yaml</span><span class="st ok"><i aria-hidden="true"></i>已找到</span></div><span class="help">也偵測到 <span class="mono">compose.override.yaml</span>，部署時不會套用，需要的話在下一步勾選。</span></div>
-        <div class="field"><label>觸發方式</label><div class="wrap"><label class="btn" style="gap:8px"><input type="radio" name="trig" checked style="accent-color: var(--hazel)">Webhook（推送即部署）</label><label class="btn" style="gap:8px"><input type="radio" name="trig" style="accent-color: var(--hazel)">定期檢查（每 5 分鐘）</label><label class="btn" style="gap:8px"><input type="radio" name="trig" style="accent-color: var(--hazel)">只手動</label></div><span class="help">Webhook 會在 GitHub 上建立；沒有公開入口時自動改用定期檢查。</span></div>
+        <div class="field"><label for="path">compose 檔路徑</label><div class="inp"><span class="mono">deploy/compose.yaml</span><span class="st ok"><i aria-hidden="true"></i>已找到</span></div><span class="help">也偵測到 <span class="mono">compose.override.yaml</span>，部署時不套用。</span></div>
+        <div class="field"><label>觸發方式</label><div class="wrap"><label class="btn" style="gap:8px"><input type="radio" name="trig" aria-label="觸發方式" checked style="accent-color: var(--hazel)">Webhook（推送即部署）</label><label class="btn" style="gap:8px"><input type="radio" name="trig" aria-label="觸發方式" style="accent-color: var(--hazel)">定期檢查（每 5 分鐘）</label><label class="btn" style="gap:8px"><input type="radio" name="trig" aria-label="觸發方式" style="accent-color: var(--hazel)">只手動</label></div><span class="help">Webhook 會在 GitHub 上建立；沒有公開入口時自動改用定期檢查。</span></div>
         <div class="field"><label for="env">目標環境與節點</label><div class="wrap"><div class="inp" style="width:auto;min-width:160px"><span>production</span></div><div class="inp" style="width:auto;min-width:200px"><span class="mono">hazel-tw-01</span><span class="note" style="margin-left:auto">412 GiB 可用</span></div></div><span class="errt">hazel-jp-02 不可選：狀態過期且資料碟 93%。</span></div>
       </div>
-      <div class="ph" style="border-top: 1px solid var(--line); border-bottom: 0"><span class="note">下一步會讀取 compose 檔，列出服務、Port、磁碟區與需要的環境變數，不會建立任何東西。</span><div class="wrap" style="margin-left:auto"><a class="btn" href="Projects.dc.html">上一步</a><a class="btn pri" href="DeployCheck.dc.html">偵測與設定 →</a></div></div>
+      <div class="ph" style="border-top: 1px solid var(--line); border-bottom: 0"><span class="note">讀取 compose 檔 → 列出服務、Port、Volume → 建立部署工作</span><div class="wrap" style="margin-left:auto"><a class="btn" href="Projects.dc.html">上一步</a><a class="btn pri" href="DeployCheck.dc.html">偵測與設定 →</a></div></div>
     </section></div></main></div></div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"light":{"editor":"boolean","default":false,"section":"主題"},"$preview":{"width":1440,"height":1100}}'>
