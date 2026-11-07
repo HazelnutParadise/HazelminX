@@ -49,4 +49,4 @@
 
 ## Follow-ups
 
-- 第一次正式發版前，把 `core/internal/store/migrations/` 的所有 migration 合併成單一個 `0001` 檔，`store` 的連號檢查與 schema 版本相關測試一起更新。已經有使用者安裝的版本發出去之後，就不能再這樣合併。
+- 第一次正式發版前，把 `core/internal/store/migrations/` 的所有 migration 合併成單一個 `0001` 檔，直接建出最終形狀，拿掉重工（例如先建欄位再改名、先加再刪的步驟，像 0005 把 0003 的 `request_id` 改成 `trace_id`，合併後直接建 `trace_id`）。`store` 的連號檢查與 schema 版本相關測試一起更新。驗證方式：用舊的整串 migration 與新的 `0001` 各建一個全新資料庫，比對 schema（表、欄位、索引、觸發器）必須完全相同。發版前開發與測試用的資料庫一律重建，不做升級。已經有使用者安裝的版本發出去之後，就不能再這樣合併，之後只能新增 migration。這條是 migration 不可變原則在首次發版前的唯一例外。
