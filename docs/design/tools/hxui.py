@@ -78,6 +78,7 @@ body{{margin:0}}
 .hb .nv.cur{{background:var(--raised);color:var(--hazel);font-weight:600}}
 .hb .nv .cnt{{margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:0 7px 0 6px;border-radius:999px;font-family:"Geist Mono",ui-monospace,monospace;font-size:11px;line-height:18px;color:var(--blue);background:color-mix(in srgb,var(--blue) 15%,transparent)}}
 .hb .nv .cnt.dng{{color:var(--danger);background:color-mix(in srgb,var(--danger) 15%,transparent)}}
+.hb .scrim{{position:fixed;inset:0;z-index:30;padding:72px 16px;background:color-mix(in srgb,#000 45%,transparent);display:flex;justify-content:center;align-items:flex-start}}.hb .cmdp{{width:100%;max-width:640px;background:var(--raised);border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 48px rgb(0 0 0/.4);overflow:hidden}}.hb .cmdq{{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}}.hb .cmdl{{max-height:520px;overflow:auto;padding:4px 0}}.hb .cmdi{{display:flex;align-items:center;gap:10px;min-height:44px;padding:6px 12px;margin:0 6px;border-radius:6px}}.hb .cmdi:hover,.hb .cmdi.on{{background:var(--panel)}}.hb .cmdi .ic{{color:var(--muted);display:inline-flex}}.hb .cmdi .kbd{{margin-left:auto}}.hb .edwrap{{display:grid;grid-template-columns:minmax(0,2fr) minmax(300px,1fr);gap:16px;align-items:start}}@media (max-width:1100px){{.hb .edwrap{{grid-template-columns:1fr}}}}.hb .editor{{font-size:12.5px;line-height:1.75;padding:8px 0;overflow-x:auto;background:#14120F;border-radius:8px;color:#EDE6DC}}.hb .editor .ln{{display:flex;padding-right:14px;white-space:pre}}.hb .editor .no{{width:44px;flex:none;text-align:right;padding-right:14px;color:#8A8278;user-select:none}}.hb .editor .ln.dng{{background:color-mix(in srgb,var(--danger) 18%,transparent);box-shadow:inset 3px 0 var(--danger)}}.hb .editor .ln.warn{{background:color-mix(in srgb,var(--warn) 14%,transparent);box-shadow:inset 3px 0 var(--warn)}}.hb .side.mini{{width:56px;padding:12px 8px}}.hb .side.mini .nv span,.hb .side.mini .navgrp{{display:none}}.hb .side.mini .nv{{justify-content:center;padding:0;position:relative}}.hb .side.mini .nv .cnt{{display:inline-flex;position:absolute;top:0;right:-2px;padding:0 4px;font-size:10px;line-height:15px}}.hb .side.mini .nv .cnt .spin{{display:none}}.hb .top .brand.mini{{width:56px;padding:0 17px}}.hb .top .brand.mini span:not(.logo){{display:none}}
 .hb .grp{{display:flex;align-items:baseline;gap:10px;margin:10px 0 -4px;font-size:15px;font-weight:600}}.hb .grp .note{{font-weight:400}}
 .hb .spin{{width:8px;height:8px;border-radius:50%;border:1.5px solid currentColor;border-top-color:transparent;flex:none}}
 @media (prefers-reduced-motion:no-preference){{.hb .spin{{animation:hx-spin 1s linear infinite}}}}
@@ -246,7 +247,7 @@ body{{margin:0}}
 .hb .chip{{display:inline-flex;align-items:center;min-height:22px;padding:0 8px;border-radius:999px;border:1px solid var(--line);font-size:11px;font-weight:500;color:var(--muted);background:transparent}}
 .hb .chip.on{{color:var(--hazel);border-color:var(--hazel)}}
 .hb .term,.hb .diff{{--ink:#ECE6DA;--muted:#A79E8E;--faint:#9A917F;--panel:#14120F;--line:#35312B;--ok:#9BD3A4;--warn:#F0B35B;--danger:#F28B82;--blue:#8DB4F2}}
-.hb .term{{background:#14120F;border:1px solid var(--line);border-radius:8px;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;padding:10px 12px;color:var(--ink);white-space:pre;overflow:auto;min-height:220px}}
+.hb .term{{background:#14120F;border:1px solid var(--line);border-radius:8px;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;padding:10px 12px;color:var(--ink);white-space:pre;overflow:auto}}
 .hb .lg{{display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted);margin-left:auto}}
 .hb .lg span{{display:inline-flex;align-items:center;gap:5px}}
 .hb .lg i.sw{{display:inline-block;width:12px;height:8px;border-radius:2px}}
@@ -343,6 +344,7 @@ body{{margin:0}}
 .hb .rrow{{--t:24px minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,.5fr) minmax(0,.6fr)}}
 @media (max-width:1280px){{.hb .frow{{--t:28px minmax(0,2fr) 90px 100px}}.hb .frow>:nth-child(4){{display:none}}}}
 @media (max-width:1024px){{.hb .c5{{display:none}}.hb .crow{{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.5fr) minmax(0,.9fr) minmax(0,.9fr) 100px}}.hb .acts .ib:nth-child(n+3){{display:none}}}}
+@media (max-width:900px){{.hb .side{{order:-2}}.hb .aside{{order:-1;width:100%;border-left:0;border-bottom:1px solid var(--line)}}}}
 @media (max-width:900px){{.hb .top{{flex-wrap:wrap;padding:8px 12px;gap:8px;min-height:0}}.hb .crumb{{display:none}}.hb .top .search{{order:3;flex:1 1 100%;max-width:none;margin:0}}.hb .obs{{display:none}}.hb .ib.user span{{display:none}}.hb .side{{width:100%;border-right:0;border-bottom:1px solid var(--line);flex-direction:row;flex-wrap:nowrap;overflow-x:auto;gap:4px;padding:8px 12px}}.hb .navgrp{{display:none}}.hb .navcol{{flex-direction:row;flex:none;gap:4px}}.hb .side .nv{{width:auto;min-width:44px;justify-content:center;min-height:36px;padding:0 10px;white-space:nowrap;font-size:13px}}.hb .side .nv .cnt{{margin-left:4px}}.hb .side .coll{{display:none}}.hb .nv svg{{display:none}}.hb .brand{{width:auto;border:0;padding:0 12px}}}}
 @media (max-width:1100px){{.hb .aside{{width:100%;border-left:0;border-top:1px solid var(--line)}}.hb .fm{{grid-template-columns:220px minmax(0,1fr)}}.hb .fm .pane.detp{{grid-column:1/-1;border-top:1px solid var(--line)}}}}
 @media (max-width:767px){{
@@ -488,6 +490,7 @@ ICONS = {
  "collapse": '<path d="m14 7-5 5 5 5"/><path d="M4 4v16"/>',
  "log": '<path d="M6 3h8l4 4v14H6V3z"/><path d="M9 13h6M9 17h6"/>',
  "term": '<path d="m5 7 5 5-5 5"/><path d="M12 19h7"/>',
+ "deploy": '<path d="M12 19V5"/><path d="m5 12 7-7 7 7"/><path d="M5 21h14"/>',
  "restart": '<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/>',
  "power": '<path d="M12 3v8"/><path d="M6.3 6.8a8 8 0 1 0 11.4 0"/>',
  "box": '<path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5z"/><path d="M3.5 7.5 12 12l8.5-4.5M12 12v9"/>',
@@ -542,7 +545,7 @@ def actions(keys: list) -> str:
 
 NAV = [
     ("總覽", "overview", "Overview.dc.html"),
-    ("主機與節點", "nodes", "Nodes.dc.html"),
+    ("主機", "nodes", "Nodes.dc.html"),
     ("專案與服務", "projects", "Projects.dc.html"),
     ("容器", "docker", "Containers.dc.html"),
     ("Kubernetes", "k8s", "Kubernetes.dc.html"),
@@ -568,16 +571,16 @@ GROUPS = [("應用", ["projects", "store", "web", "db", "ai", "api"]),
           ("基礎設施", ["nodes", "docker", "k8s", "storage", "cron"]),
           ("安全與紀錄", ["security", "analytics", "logs"]),
           ("管理", ["iam", "settings"])]
-NAV_ALIAS = {"svcmod": "nodes", "files": "nodes"}  # 這些頁屬於「主機與節點」底下
+NAV_ALIAS = {"svcmod": "nodes", "files": "nodes"}  # 這些頁屬於「主機」底下
 
 
-def nav(current: str, jobs: int = 3, attention: int = 4, mobile_links: bool = True) -> str:
+def nav(current: str, jobs: int = 3, attention: int = 5, mobile_links: bool = True, collapsed: bool = False) -> str:
     current = NAV_ALIAS.get(current, current)
     def link(key: str) -> str:
         label, k, file = next(n for n in NAV if n[1] == key)
         href = file if file else f"#{k}"
         cur = ' cur" aria-current="page' if k == current else ""
-        return f'<a class="nv{cur}" href="{href}">{icon(k)}<span>{label}</span></a>'
+        return f'<a class="nv{cur}" href="{href}" title="{label}">{icon(k)}<span>{label}</span></a>'
     ov = ' cur" aria-current="page' if current == "overview" else ""
     jb = ' cur" aria-current="page' if current == "jobs" else ""
     ev = ' cur" aria-current="page' if current == "events" else ""
@@ -586,23 +589,22 @@ def nav(current: str, jobs: int = 3, attention: int = 4, mobile_links: bool = Tr
            f'<a class="nv{ev}" href="Events.dc.html">{icon("events")}<span>事件與告警</span><span class="cnt dng" aria-label="{attention} 件需要處理">{attention}</span></a>')
     groups = "".join(f'<div class="navgrp">{g}</div><div class="navcol">{"".join(link(k) for k in keys)}</div>' for g, keys in GROUPS)
     return f"""
-  <nav class="side" aria-label="主導覽">
+  <nav class="side{" mini" if collapsed else ""}" aria-label="主導覽">
     <div class="navcol">{top}</div>
     {groups}
-    <button type="button" class="nv coll" aria-label="收合側欄">{icon("collapse")}<span>收合</span></button>
+    <button type="button" class="nv coll" aria-label="{"展開側欄" if collapsed else "收合側欄"}">{icon("collapse")}<span>收合</span></button>
   </nav>"""
 
 
-def topbar(current: str, jobs: int = 3, attention: int = 4, obs: str = "03:42:06") -> str:
+def topbar(current: str, jobs: int = 3, attention: int = 5, obs: str = "03:42:06", collapsed: bool = False) -> str:
     label = next((n[0] for n in NAV if n[1] == current), {"jobs": "工作中心", "terminal": "終端機", "logs": "日誌"}.get(current, "總覽"))
     return f"""
   <header class="top">
-    <a class="brand" href="Overview.dc.html"><span class="logo" aria-hidden="true"></span><span>HazelminX</span></a>
-    <button type="button" class="inp search" aria-label="搜尋或下指令">{icon("search")}<span>搜尋或下指令</span><span class="kbd">⌘K</span></button>
+    <a class="brand{" mini" if collapsed else ""}" href="Overview.dc.html" aria-label="HazelminX 總覽"><span class="logo" aria-hidden="true"></span><span>HazelminX</span></a>
+    <a class="inp search" href="CommandPalette.dc.html" aria-label="搜尋或下指令">{icon("search")}<span>搜尋或下指令</span><span class="kbd">⌘K</span></a>
     <div class="tright">
       <span class="obs">觀測 <span class="mono">{obs}</span> · 每 10 秒</span>
       <a class="ib" href="Events.dc.html" aria-label="需要處理 {attention}" data-tip="需要處理 · {attention}">{icon("events")}<b class="badge dng">{attention}</b></a>
-      <a class="ib" href="WorkCenter.dc.html" aria-label="進行中的工作 {jobs}" data-tip="進行中的工作 · {jobs}">{icon("jobs")}<b class="badge">{jobs}</b></a>
       <a class="ib" href="Terminal.dc.html" aria-label="終端機" data-tip="終端機">{icon("terminal")}</a>
       <button type="button" class="ib" aria-label="切換淺色或深色" data-tip="切換淺色或深色">{icon("sun")}</button>
       <button type="button" class="ib user" aria-label="tim · 擁有者">{icon("user")}<span>tim</span></button>

@@ -11,11 +11,12 @@
 | `coverage-1panel-frontend.csv` | 108 條 1Panel 前端路由的逐條對照 |
 | `edge-cases.md` | 16 個邊界情境與畫面規則 |
 | `information-architecture.md` | 頁面組織：側欄分組、清單 → 詳細、節點工作區，與 1Panel、Portainer、Komodo、Cockpit 的比較與任務走查 |
+| `persona-review.md` | 五種使用者（無工程背景、前端工程師、Zeabur 使用者、資深 SRE、賈伯斯標準）實際操作後的卡點、改法與待決定事項 |
 | `component-mapping.md` | 元件庫決定（Cloudflare Kumo）、token 對映、畫板元件 → Kumo |
 | `ux-evaluation.md` | UX 評估方法清單（專家審查、量測、真人測試）、門檻與改前改後數字、畫面文字來源規則 |
 | `ux-walkthrough.md` | 認知走查（六個任務）與啟發式掃描，以及市面面板版面慣例對照 |
 | `gap-analysis.md` | 規格 vs 畫面、參考專案 vs 我們的缺口盤點，與「圖形為主」第二輪的改動清單 |
-| `screens/` | 方向 B 定稿的 37 個畫板（Claude Design 畫布格式 `.dc.html`），由 `tools/build_screens.py` 產生 |
+| `screens/` | 方向 B 定稿的 54 個畫板（Claude Design 畫布格式 `.dc.html`），由 `tools/build_screens.py` 產生 |
 | `tools/hxui.py` | 共用 token CSS、導覽、圖表元件（純 SVG，CSS hover，不用 JavaScript） |
 | `tools/build_screens.py` | 示例資料與各畫面內容；執行後重建 `screens/` |
 | `screenshots/` | Playwright 渲染結果：桌面 1440 深淺色、手機 360 |
@@ -58,7 +59,23 @@
 | HostServices | 主機與節點「服務模組」分頁，Webmin 等價的宿主機服務模組：模組 × 節點、BIND zone 與紀錄、套用流程、版本 | 狀態矩陣、表格、流程段 |
 | ContainersEmpty | 節點沒有容器引擎時的容器頁：選擇卡、預檢、變更計畫、安裝流程 | 選擇卡、檢查清單、流程段 |
 | KubernetesEmpty | 沒有叢集時的 Kubernetes 頁：連接既有叢集或建立 K3s，選節點、預檢 | 選擇卡、表格、檢查清單 |
-| Login | 登入與第二步驗證（Passkey、TOTP、復原碼），失敗與限速訊息 | 無圖表 |
+| Login | 登入與第二步驗證（Passkey、TOTP、復原碼），救援方法直接顯示 | 無圖表 |
+| Setup | 第一次啟動：建立擁有者、綁定二次驗證、存好復原碼 | 步驟條 |
+| CommandPalette | ⌘K：動作、專案、容器、網站、檔案一起搜，只列有權限的 | 無圖表 |
+| BatchResult | 批次操作逐項結果：成功、失敗、略過與原因，可只重試失敗的 | 結果段條、表格 |
+| ProjectEnv | 專案環境變數：機密遮罩、未生效的變更、生效要重建哪些服務 | 表格 |
+| ComposeEditor | Compose 全畫面編輯器（側欄收合成圖示）：行號、風險標記、解析結果 | 編輯器、檢查清單 |
+| ImportConfigure | GitHub 匯入的偵測與設定：建置方式、環境變數、網址與 HTTPS（DNS 紀錄可複製） | 流程段 |
+| SiteCreate | 新增站點：類型、網域與 DNS 檢查、目標、HTTPS、防護、Zentinel 設定差異 | 流程段、差異 |
+| AddNode | 新增主機：設定、單次註冊碼與安裝指令、核對主機身分 | 步驟條 |
+| Updates | 跨主機安全更新：每台能不能套用與原因、影響圖示、自動與手動規則 | 表格、檢查清單 |
+| NodeOffline | 主機沒有回應：影響、發生經過、從控制中心檢查、恢復前不能做的事、可以做的事 | 表格、時間序清單 |
+| NodeLogs／NodeTerminal | 主機工作區的日誌與終端機（只看這台） | 日誌面板、終端面板 |
+| ContainerCreate | 建立容器：映像與環境、Port、掛載、變數、資源、建立前檢查與對應指令 | 流程段 |
+| BackupCreate | 新增備份任務：來源、包含與排除、一致性、目的地、保留、加密與驗證 | 表格、選擇卡 |
+| CronCreate | 新增計畫任務：類型、執行身分、排程與接下來 5 次、重疊與錯過的處理、撞時段提醒 | 清單 |
+| FirewallRule | 新增防火牆規則：套用到哪些主機、白話動作、套用前檢查、主機沒回應時排入 | 檢查清單、流程段 |
+| UserInvite | 邀請同事：白話角色（只能看／可以部署／管理主機／查帳）、範圍、強制二次驗證 | 選擇卡 |
 | M-Overview／M-WorkCenter／M-DeployConfirm | 360px 手機版 | 同上，單欄 |
 
 ## 重建與驗證
