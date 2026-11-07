@@ -16,6 +16,7 @@ import (
 
 	"github.com/HazelnutParadise/hazelminx/core/internal/api"
 	"github.com/HazelnutParadise/hazelminx/core/internal/config"
+	"github.com/HazelnutParadise/hazelminx/core/internal/jobs"
 	"github.com/HazelnutParadise/hazelminx/core/internal/store"
 	"github.com/HazelnutParadise/hazelminx/core/web"
 )
@@ -48,8 +49,21 @@ func run(args []string) error {
 	v, _ := st.SchemaVersion(ctx)
 	slog.Info("store ready", "path", st.Path(), "schemaVersion", v)
 
+	// Job engine (ticket 008). Handlers for host-changing kinds arrive with
+	// the Agent channel (tickets 004/007); until then no kind is registered.
+	engine := jobs.New(jobs.NewSQLStore(st.DB), jobs.Options{FreeBytes: jobs.FreeBytesOf(cfg.DataDir)})
+	rec, err := engine.Recover(ctx)
+	if err != nil {
+		return fmt.Errorf("recover jobs: %w", err)
+	}
+	slog.Info("job engine recovered", "markedUnknown", len(rec.MarkedUnknown), "locksRebuilt", rec.LocksRebuilt)
+	engine.Start(ctx)
+	defer engine.Stop()
+
+	apiServer := api.New(st, web.FS())
+	apiServer.RegisterJobs(engine)
 	srv := &http.Server{
-		Handler:           api.New(st, web.FS()).Handler(),
+		Handler:           apiServer.Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	ln, err := net.Listen("tcp", cfg.ListenAddr)

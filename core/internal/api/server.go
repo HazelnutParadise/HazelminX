@@ -31,6 +31,11 @@ type Server struct {
 	health HealthChecker
 	ui     fs.FS
 	start  time.Time
+	// operations is the discovery list served by overview; every registered
+	// feature appends its public operations here.
+	operations []gin.H
+	// extras are extra overview fields contributed by features (job kinds…).
+	extras []func() gin.H
 }
 
 // New builds the router. ui may be nil when no interface is embedded.
@@ -41,10 +46,12 @@ func New(health HealthChecker, ui fs.FS) *Server {
 	s := &Server{engine: e, health: health, ui: ui, start: time.Now()}
 
 	e.GET("/healthz", s.healthz)
+	s.addOperation("GET", "/healthz", "liveness and store health")
 
 	m := e.Group("/management/v1")
 	m.GET("", s.overview)
 	m.GET("/", s.overview)
+	s.addOperation("GET", "/management/v1", "this overview")
 
 	e.NoRoute(s.serveUI)
 	return s
@@ -78,16 +85,23 @@ func (s *Server) healthz(c *gin.Context) {
 // overview is the API discovery document required by the engineering
 // guidelines: every public operation must be reachable from here.
 func (s *Server) overview(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"name":    "HazelminX management API",
-		"version": "v1",
-		"build":   Version,
-		"operations": []gin.H{
-			{"method": "GET", "path": "/healthz", "summary": "liveness and store health"},
-			{"method": "GET", "path": "/management/v1", "summary": "this overview"},
-		},
-		"openapi": nil, // ticket 010 publishes /management/v1/openapi.json
-	})
+	body := gin.H{
+		"name":       "HazelminX management API",
+		"version":    "v1",
+		"build":      Version,
+		"operations": s.operations,
+		"openapi":    nil, // ticket 010 publishes /management/v1/openapi.json
+	}
+	for _, f := range s.extras {
+		for k, v := range f() {
+			body[k] = v
+		}
+	}
+	c.JSON(http.StatusOK, body)
+}
+
+func (s *Server) addOperation(method, path, summary string) {
+	s.operations = append(s.operations, gin.H{"method": method, "path": path, "summary": summary})
 }
 
 func (s *Server) serveUI(c *gin.Context) {
