@@ -1380,7 +1380,8 @@ def apiproxy_service() -> str:
     compat = _fp("相容 infra-manager", f"""
       <div class="row hd"><span>回應碼</span><span>情況</span><span>回應</span></div>
       {tr("400", "路徑少於兩段且沒有 Bearer", "無效的API路徑")}
-      {tr("401", "Token 錯誤、過期、停權或服務不符", "與 infra-manager 相同文字")}
+      {tr("404", "服務不存在或已停用", "找不到服務")}
+      {tr("403", "Token 無效、過期，或使用者停權", "無效的Token、Token已過期、用戶已被停權")}
       {tr("502", "上游連不到", "記為上游連線失敗")}
       <div class="wrap" style="padding:10px 14px 12px">{U.status("ok", "/use/ 讀 Bearer；/api/ 只讀網址裡的 Token，與舊版相同")}</div>""")
     def sv(name, typ, tgt, st, req, ok, users, toks, last, on=False):
@@ -1411,7 +1412,18 @@ def apiproxy_service() -> str:
         <div class="wrap">{U.status("info", "一個服務對一個 Port")}<span tabindex="0" data-tip="要同時開放 S3 API 和管理介面，就建兩個服務，例如 /minio 與 /minio-console">{U.icon("info", 14)}</span></div>
         <div class="wrap"><span class="note">上游路徑前綴</span><span style="flex:0 1 220px">{_in("/", mono=True)}</span><span class="note">呼叫 /use/minio/bucket → 轉到 9000/bucket</span></div>
       </div>""")
-    main = head + _api_tabs(1) + lst + picker + f'<div class="cg">{target}{upstream}</div>' + f'<div class="cg">{limits}{compat}</div>' + U.savebar("/ollama：2 處未儲存", "儲存後新請求立即套用", "儲存")
+    def dom(host, maps, cert, st):
+        return f'<div class="row"><span class="mono">{host}</span><span class="mono">{maps}</span><span>{cert}</span><span>{st}</span><span>{U.actions(["more"])}</span></div>'
+    domains = _fp("專屬網址", f"""
+      <div class="row hd"><span>網址</span><span>對應</span><span>憑證</span><span>DNS</span><span></span></div>
+      {dom("api.example.tw", "整個 API 代理 · /use/&lt;服務&gt;/…", U.status("ok", "自動 · 剩 82 天"), U.status("ok", "已指向入口"))}
+      {dom("ollama.api.example.tw", "只到 /ollama · 不用寫 /use/ollama", U.status("ok", "自動 · 剩 82 天"), U.status("ok", "已指向入口"))}
+      {dom("llm.lab.example.tw", "只到 /ollama", U.status("warn", "等 DNS"), U.status("warn", "還沒指向 · 新增 A 紀錄 203.0.113.22"))}
+      <div style="padding:10px 16px 12px;display:flex;flex-direction:column;gap:8px">
+        <div class="term">curl https://ollama.api.example.tw/api/tags -H "Authorization: Bearer hx_live_…"</div>
+        <div class="wrap"><button type="button" class="btn sm">{U.icon("plus", 14)}新增網址</button>{U.status("info", "服務專屬網址只收 Bearer")}<span tabindex="0" data-tip="網址裡沒有 /use/服務 這一段，所以不支援把 Token 放在路徑；/use/ 與 /api/ 的舊路徑照常可用">{U.icon("info", 14)}</span></div>
+      </div>""")
+    main = head + _api_tabs(1) + lst + domains + picker + f'<div class="cg">{target}{upstream}</div>' + f'<div class="cg">{limits}{compat}</div>' + U.savebar("/ollama：2 處未儲存", "儲存後新請求立即套用", "儲存")
     return U.shell("api", main)
 
 
@@ -1482,8 +1494,8 @@ def apiproxy_failures() -> str:
       <div class="wrap" style="padding:10px 14px;border-bottom:1px solid var(--line)"><span style="flex:0 1 180px;min-width:150px">{_dd("類型：全部")}</span><span style="flex:0 1 180px;min-width:150px">{_dd("服務：全部")}</span><span style="flex:0 1 150px;min-width:130px">{_dd("回應碼：全部")}</span><span style="flex:0 1 220px;min-width:180px">{_dd("11/08 00:00 – 現在")}</span><button type="button" class="btn">查詢</button></div>
       <div class="row hd srow"><span>時間 · 呼叫者</span><span>類型</span><span class="c3">原因</span><span class="c3">服務</span><span class="c4">回應碼</span><span class="c4">上游回應碼</span><span></span></div>
       {fr("03:41:12", U.status("warn", "驗證失敗"), "超過限速（60 次/分）", "/ollama", "lab-bot · Token #12", "429", "—")}
-      {fr("03:40:55", U.status("warn", "驗證失敗"), "Token 已過期", "/legacy-report", "old-intern · Token #3", "401", "—")}
-      {fr("03:39:31", U.status("warn", "驗證失敗"), "Token 無效或已停用", "/ollama", "—", "401", "—")}
+      {fr("03:40:55", U.status("warn", "驗證失敗"), "Token 已過期", "/legacy-report", "old-intern · Token #3", "403", "—")}
+      {fr("03:39:31", U.status("warn", "驗證失敗"), "Token 無效或已停用", "/ollama", "—", "403", "—")}
       {fr("03:38:20", U.status("warn", "驗證失敗"), "方法不允許（DELETE）", "/shop-admin", "ci-runner · Token #9", "403", "—")}
       {fr("03:21:07", U.status("dng", "上游連線失敗"), "連線逾時", "/legacy-report", "tim · Token #5", "502", "—")}
       {fr("03:05:44", U.status("dng", "上游連線失敗"), "上游 TLS 驗證失敗", "/shop-admin", "ci-runner · Token #9", "502", "—")}
