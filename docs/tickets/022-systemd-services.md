@@ -4,7 +4,7 @@
 **User Story:** 維運者可以管理作業系統  
 **Milestone:** M1 單機主機管理  
 **Blocked by:** [012 維運者可以執行需要高權限的固定動作，而 Agent 主程序維持低權限](012-privileged-executor.md)  
-**Status:** blocked  
+**Status:** ready  
 **規格章節:** 10｜主機、套件、服務與網路  
 **Issue:** [#22](https://github.com/HazelnutParadise/hazelminx/issues/22)  
 

@@ -110,7 +110,7 @@
     "T-021",
     "T-024"
    ],
-   "status": "blocked",
+   "status": "ready",
    "issue": 7
   },
   {
@@ -144,7 +144,7 @@
     "T-033",
     "T-034"
    ],
-   "status": "blocked",
+   "status": "in_progress",
    "issue": 8
   },
   {
@@ -165,7 +165,7 @@
     "T-013",
     "T-014"
    ],
-   "status": "blocked",
+   "status": "done",
    "issue": 9
   },
   {
@@ -200,7 +200,7 @@
     "DAT-004"
    ],
    "acceptance_tests": [],
-   "status": "blocked",
+   "status": "done",
    "issue": 11
   },
   {
@@ -221,7 +221,7 @@
    "acceptance_tests": [
     "T-039"
    ],
-   "status": "blocked",
+   "status": "done",
    "issue": 12
   },
   {
@@ -278,7 +278,7 @@
    "acceptance_tests": [
     "T-130"
    ],
-   "status": "blocked",
+   "status": "ready",
    "issue": 14
   },
   {
@@ -463,7 +463,7 @@
     "SYS-005"
    ],
    "acceptance_tests": [],
-   "status": "blocked",
+   "status": "ready",
    "issue": 22
   },
   {
@@ -480,7 +480,7 @@
     "SYS-007"
    ],
    "acceptance_tests": [],
-   "status": "blocked",
+   "status": "ready",
    "issue": 23
   },
   {
@@ -542,7 +542,7 @@
     "T-035",
     "T-036"
    ],
-   "status": "blocked",
+   "status": "ready",
    "issue": 26
   },
   {
