@@ -1,7 +1,10 @@
 package iam
 
 import (
+	"strconv"
+
 	"encoding/json"
+	"github.com/HazelnutParadise/hazelminx/core/internal/paging"
 	"strings"
 	"time"
 )
@@ -46,6 +49,23 @@ type AuditFilter struct {
 	ResourceID string
 	AfterSeq   int64
 	Limit      int
+	// Page, when it has a Sort, pages by keyset instead of AfterSeq order
+	// and Limit (sort fields: seq, at). AfterSeq still filters.
+	Page paging.Query
+}
+
+// AuditSortColumns maps list sort fields to audit columns.
+var AuditSortColumns = map[string]paging.Column{
+	"seq": {Expr: "seq", Int: true},
+	"at":  {Expr: "at"},
+}
+
+// SortValue returns the value of a sort field of ev.
+func (ev AuditEvent) SortValue(field string) string {
+	if field == "at" {
+		return ts(ev.At)
+	}
+	return strconv.FormatInt(ev.Seq, 10)
 }
 
 // MaxAuditPage bounds one page (36.1: reads have an upper limit).
