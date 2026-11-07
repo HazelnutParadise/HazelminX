@@ -23,6 +23,7 @@ Agent 收集 CPU 每核心、記憶體、swap、負載、磁碟 I/O 與健康、
 - [ ] USB bridge 不提供 SMART 時明示
 - [ ] GPU 欄位對齊 1Panel v2.4.1 `agent/utils/ai_tools/gpu/types.go`：效能狀態（P-state）、時脈（核心、顯示記憶體、媒體）、降頻原因、PCIe 世代與寬度、功耗（目前、上限、預設、最大）、溫度（核心、熱點、顯示記憶體）、風扇、顯示記憶體（已用、可用、保留）、引擎使用率（編碼、解碼、JPEG、OFA）、ECC 模式與錯誤、持久模式、運算模式、MIG、UUID、Bus ID；驅動不提供的欄位寫「不提供」。
 - [ ] 正在使用 GPU 的程序列出 PID、程序、類型、顯示記憶體、核心使用率，並以 cgroup 對回所屬容器（Docker、Podman、K8s Pod），主機程序標「主機」；容器列表顯示每個容器目前的 GPU 使用率與顯示記憶體。
+- [ ] 節點硬體依類別分組成卡片（CPU、記憶體、磁碟、GPU、網卡、溫度），一組超過 4 個改依使用率排序的精簡橫條並收合其餘；溫度列出所有讀得到的感測器（hwmon、smartctl／nvme、NVML、IPMI），以各自臨界溫度畫比例並標來源（畫板 NodeDetail「硬體」）。
 
 ## Delivery record
 

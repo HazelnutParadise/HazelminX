@@ -433,6 +433,19 @@ body{{margin:0}}
 .hb .at.ok{{color:var(--ok)}}.hb .at.warn{{color:var(--warn)}}.hb .at.dng{{color:var(--danger)}}
 .hb .ats{{display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center}}
 .hb .edban{{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--warn) 10%,var(--panel))}}
+.hb .hwg{{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(230px,100%),1fr));gap:12px;padding:12px 14px}}
+.hb .hwc{{display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--panel);min-width:0}}
+.hb .hwc.wide{{grid-column:1/-1}}
+@media (min-width:1280px){{.hb .hwc.wide{{grid-column:span 3}}}}
+.hb .hwt{{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-weight:600;font-size:13px}}
+.hb .hwc .rings{{justify-content:flex-start;gap:14px;flex-wrap:wrap}}
+.hb .hwb{{display:grid;grid-template-columns:minmax(0,1fr) minmax(48px,1.2fr) 76px;align-items:center;gap:8px;font-size:12px;min-height:22px}}
+.hb .hwb.t{{grid-template-columns:minmax(0,1.4fr) 76px minmax(48px,1fr) 76px}}.hb .hwb>:last-child{{text-align:right;white-space:nowrap}}.hb .hwb.t .at{{justify-content:center}}
+.hb .hwb .bar{{height:6px;border-radius:3px;background:var(--q2);overflow:hidden}}.hb .hwb .bar i{{display:block;height:100%;background:var(--hazel)}}
+.hb .hwb .bar i.warn{{background:var(--warn)}}.hb .hwb .bar i.dng{{background:var(--danger)}}
+.hb .hwb small{{color:var(--faint);font-size:11px}}
+.hb details.more>summary{{cursor:pointer;color:var(--hazel);font-size:12px;list-style:none;min-height:24px;display:flex;align-items:center}}.hb details.more>summary::-webkit-details-marker{{display:none}}
+.hb details.more[open]>summary{{margin-bottom:8px}}.hb details.more>.hwb+.hwb{{margin-top:8px}}
 @media (max-width:1024px){{.hb .tw{{--k5: ;}}}}
 @media (max-width:767px){{.hb .tw{{--k3: ;--k4: ;--k5: ;--k6: ;}}}}
 """
@@ -1088,6 +1101,34 @@ def attr(ic: str, tip: str, text: str = "", kind: str = "") -> str:
     """屬性圖示：固定圖示＋（可選）短值，完整意思放在提示。"""
     t = tip.replace('"', "&quot;")
     return f'<span class="at {kind}" tabindex="0" role="img" aria-label="{t}" data-tip="{t}">{icon(ic, 14)}{f"<span>{text}</span>" if text else ""}</span>'
+
+
+def hw_group(title: str, items: list, unit_note: str = "", max_rings: int = 4) -> str:
+    """硬體分組卡：items [(name, pct, value_text, sub)]。4 個以內畫環，超過改精簡橫條（依比例排序，前 4 個＋其餘收合）。"""
+    if len(items) <= max_rings:
+        body = '<div class="rings">' + "".join(ring(p, v, n + (f" {s}" if s else ""), size=64, warn=80, danger=90) for n, p, v, s in items) + "</div>"
+    else:
+        srt = sorted(items, key=lambda x: -x[1])
+        def bar(n, p, v, s):
+            cls = " dng" if p >= 90 else (" warn" if p >= 80 else "")
+            return (f'<div class="hwb"><span class="mono">{n}</span><span class="bar" aria-hidden="true"><i class="{cls.strip()}" style="width:{p:.0f}%"></i></span>'
+                    f'<span class="mono">{v}</span></div>')
+        body = "".join(bar(*it) for it in srt[:4]) + (f'<details class="more"><summary>全部 {len(items)} 個</summary>' + "".join(bar(*it) for it in srt[4:]) + "</details>")
+    return f'<div class="hwc"><div class="hwt"><span>{title}</span><span class="note">{unit_note}</span></div>{body}</div>'
+
+
+def temps(sensors: list, show: int = 6) -> str:
+    """溫度：sensors [(name, source, value_c, crit_c)]，依「值／臨界」排序；比例條以各自的臨界溫度為滿格。"""
+    srt = sorted(sensors, key=lambda x: -(x[2] / x[3]))
+    def row(n, src, v, crit):
+        p = v / crit * 100
+        cls = "dng" if p >= 90 else ("warn" if p >= 80 else "")
+        return (f'<div class="hwb t"><span>{n}</span><span class="at" data-tip="來源 {src}">{src}</span><span class="bar" aria-hidden="true"><i class="{cls}" style="width:{p:.0f}%"></i></span>'
+                f'<span class="mono">{v:.0f}°<small> / {crit:.0f}°</small></span></div>')
+    head = "".join(row(*s) for s in srt[:show])
+    rest = srt[show:]
+    more = (f'<details class="more"><summary>全部 {len(sensors)} 個感測器</summary>' + "".join(row(*s) for s in rest) + "</details>") if rest else ""
+    return f'<div class="hwc wide"><div class="hwt"><span>溫度</span><span class="note">{len(sensors)} 個感測器</span></div>{head}{more}</div>'
 
 
 def legend(items: list) -> str:

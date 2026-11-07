@@ -212,12 +212,15 @@ def node_detail() -> str:
     <div class="panel"><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); gap: 10px 16px; padding: 12px 14px; font-size: 13px">
       {kv("作業系統", "Ubuntu 24.04.2 LTS")}{kv("核心", "6.8.0-45-generic")}{kv("CPU", "8 核 · AMD EPYC 7B13")}{kv("記憶體", "31.3 GiB")}{kv("執行階段", "Docker 27.3.1")}{kv("Agent", "hazelminx-agent 0.1.0 · mTLS")}{kv("角色", "控制中心 · 資料節點")}{kv("GPU", "NVIDIA L4 · 24 GiB · 驅動 550.90 · NVML")}
     </div></div>"""
-    rings = f"""
-    <div class="panel"><div style="display: flex; flex-wrap: wrap; gap: 18px 28px; padding: 12px 14px; align-items: flex-end">
-      {U.ring(37, "37%", "CPU · 8 核", size=72)}{U.ring(11.2 / 31.3 * 100, "11G", "記憶體 /31G", size=72)}{U.ring(44, "412G", "/mnt/data /931G", size=72, warn=80, danger=90)}{U.ring(31, "29G", "/ /94G", size=72, warn=80, danger=90)}{U.ring(44, "44%", "GPU 核心", size=72)}{U.ring(14.2 / 24 * 100, "14G", "顯示記憶體 /24G", size=72)}{U.ring(51 / 90 * 100, "51°", "GPU 溫度 /83°", size=72, warn=83 / 90 * 100, danger=95)}
-      <div style="display:flex;flex-direction:column;gap:4px;margin-left:auto;min-width:160px"><span class="note">負載 1／5／15 分</span><span class="mono" style="font-size:20px;font-weight:600">2.1 · 2.4 · 2.0</span><span class="note">8 核，超過 8 代表排隊</span></div>
-      <div style="display:flex;flex-direction:column;gap:4px;min-width:160px"><span class="note">容器</span>{U.segmented([(9, "var(--ok)"), (1, "var(--danger)")])}<span class="note">9 執行中 · 1 異常（shop-redis 重啟中）</span></div>
-    </div></div>"""
+    hw = (f'<section class="panel" aria-labelledby="h-hw"><div class="ph"><h2 id="h-hw">硬體</h2><span class="note">03:42:06</span></div><div class="hwg">'
+          + U.hw_group("CPU", [("8 核", 37, "37%", "")], "EPYC 7B13 · 3.5 GHz · 負載 2.1")
+          + U.hw_group("記憶體", [("RAM", 11.2 / 31.3 * 100, "11G", "/31G"), ("Swap", 6, "0.2G", "/4G")])
+          + U.hw_group("磁碟", [("/mnt/data", 44, "412G", "/931G"), ("/", 31, "29G", "/94G")], "2 個")
+          + U.hw_group("GPU 0 · L4", [("核心", 44, "44%", ""), ("顯示記憶體", 14.2 / 24 * 100, "14G", "/24G")], "P0")
+          + U.hw_group("網卡", [("eth0", 31, "312 Mb/s", ""), ("eth1", 8, "84 Mb/s", ""), ("docker0", 12, "118 Mb/s", ""), ("wg0", 2, "21 Mb/s", ""), ("ens5f1", 0, "0 Mb/s", "")], "5 個 · 1 Gb/s 為滿格")
+          + U.temps([("CPU 封裝", "hwmon", 62, 95), ("CPU 最熱核心 · 5", "hwmon", 68, 95), ("主機板 PCH", "hwmon", 48, 90), ("DIMM A1", "hwmon", 39, 85), ("DIMM B1", "hwmon", 40, 85),
+                     ("NVMe nvme0", "smartctl", 41, 85), ("SATA sda", "smartctl", 34, 60), ("GPU 核心", "NVML", 51, 83), ("GPU 熱點", "NVML", 58, 95), ("網卡 eth1 (mlx5)", "hwmon", 55, 105), ("機殼 acpitz", "hwmon", 36, 98)])
+          + '</div></section>')
     cpu = U.ts_card("CPU 使用率", [U.Series("平均", CPU_TW, "var(--s1)", kind="area"), U.Series("最高（單核）", [min(100, v * 1.9 + 8) for v in CPU_TW], "var(--s2)")],
                     HOURS, unit="%", vmax=100, markers=[(22, "a3f9c1e 部署")], foot="100% = 8 核全忙 · 部署標記來自工作中心")
     mem = U.ts_card("記憶體", [U.Series("已用", MEM_USED, "var(--s1)"), U.Series("快取", MEM_CACHE, "var(--s2)"), U.Series("可用", MEM_FREE, "var(--s3)")],
@@ -300,7 +303,7 @@ def node_detail() -> str:
       <div class="note" style="padding: 8px 14px 10px">不以 <span class="mono">privileged</span> 當通用解法 · 驅動升級會影響整台主機，從 <a href="WorkCenter.dc.html" style="color: var(--hazel)">工作中心</a> 走批准流程</div>
     </section>"""
     tabs = ('<div class="panel"><div class="tabs" role="tablist"><button type="button" class="tab on" role="tab" aria-selected="true">監控</button><a class="tab" role="tab" href="System.dc.html">系統</a><a class="tab" role="tab" href="Containers.dc.html">容器 10</a><a class="tab" role="tab" href="Terminal.dc.html">終端機</a><a class="tab" role="tab" href="Logs.dc.html">日誌</a><a class="tab" role="tab" href="Storage.dc.html">儲存</a></div></div>')
-    main = (head + tabs + rings + range_row() + f'<div class="cg">{cpu}{mem}{io}{net}{load}{temp}</div><div class="cg">{disks}{hot}</div>'
+    main = (head + tabs + hw + range_row() + f'<div class="cg">{cpu}{mem}{io}{net}{load}{temp}</div><div class="cg">{disks}{hot}</div>'
             + gpu_head + gpu_dev + gpu_proc + f'<div class="cg">{gpu_util}{gpu_vram}{gpu_power}</div>' + gpu_auth)
     return U.shell("nodes", main)
 
