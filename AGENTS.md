@@ -45,7 +45,8 @@
 - 衍生自 1Panel（GPL-3.0）與 Komodo（GPL-3.0-or-later）的程式保留原作者授權與告知；`GPL-3.0-only` 或 `or-later` 的最終宣告待核定，未核定前不改授權欄位。
 - Windows Server 節點（WIN 系列、`scope:pending-approval`）是建議範圍；未經核定與實測不得在 UI 或文件顯示為正式支援。
 - Docker Compose 檔案以 `${VAR:?必須設定 VAR}` 宣告必要變數，不用 `env_file` 屬性；交付前執行 `docker compose config --quiet`。
-- Commit 訊息採 Conventional Commits，英文主旨；以 `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>` 結尾。
+- Commit 訊息採 Conventional Commits，英文主旨；以當次實際使用模型的 `Co-Authored-By` 行結尾。
+- 設計與實作並行（2026-11-08 使用者決定）：介面不等全部設計完才實作。實作中發現設計缺少畫面、狀態或元件規格時，不自行設計，在回報與 PR 描述用「設計缺口」標題逐條列出（哪一頁、缺什麼）；設計負責人補畫後同步回 `docs/design/` 與 DESIGN.md。
 
 ## Follow-ups
 
