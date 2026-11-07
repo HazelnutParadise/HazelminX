@@ -1,19 +1,16 @@
 # Delivery Status
 
 ## Current Phase
-M0 基礎與設計：規格已整併、票務已切好、GitHub issue 已開；正在進行設計系統與 UI/UX 原型（票 002）。
+M0 基礎與設計：Core 與 Agent 後端骨架（票 003、004、008、009、011、012）已合併進 `main`；設計系統與 UI/UX 原型（票 002）進行中。
 
 ## Stage Objective
 完成 `DESIGN.md` 與主要畫面原型並通過設計審查，讓票 003、004、005、007 可以在一致的視覺與互動基準上開工；M0 結束時 Core、Agent、Web 骨架可建置並在 CI 通過。
 
 ## Active Workstreams
-- 設計系統與原型（票 002）→ `DESIGN.md`、`docs/design/`、`DESIGN-REVIEW.md`。
-- 1Panel 功能基線盤點（票 092）→ `docs/baseline/`。
-- Core／Agent 骨架補完（票 003、004，PR #100、#101）與基線對照表填寫（票 092，PR #99）。
-- 工作引擎（票 008，分支 `claude/ticket-008-job-engine-47724c`，堆疊在票 003 之上）→ `core/internal/jobs`、`/management/v1/jobs`；Core 端完成，Agent 端對帳待票 004／007。
-- 機密與主金鑰（票 011）→ `core/internal/secrets/`，草稿 PR 堆疊在票 003 之上；復原包匯出留給票 078。
+- 設計系統與原型（票 002，PR #102）→ `DESIGN.md`、`docs/design/`、`DESIGN-REVIEW.md`。
+- 1Panel 功能基線盤點（票 092，PR #99）→ `docs/baseline/`。
+- 已在 `main` 但驗收未完成：票 003 等 CI（票 006）；票 004 缺 Komodo Periphery 改造起點的 crate 與授權清單、閒置 CPU 與記憶體量測；票 008 的 ENG-003 Agent 端等票 004、007。
 - 參考專案研究收尾 → `docs/research/`（1Panel 後端／前端、Komodo Periphery、Portainer Git Stack、Beszel 報告待補）。
-- IAM 基礎（票 009）→ `core/internal/iam`、`core/internal/api/iam_routes.go`；草稿 PR 堆疊在票 003 之上，等 003 合併後改 base 到 `main`。
 
 ## Milestones
 | id | target | owner | status | verification_signal |
@@ -29,10 +26,10 @@ M0 基礎與設計：規格已整併、票務已切好、GitHub issue 已開；�
 None。
 
 ## Next Verifiable Output
-PR #102（票 002：`DESIGN.md`、12 個畫板、`DESIGN-REVIEW.md`）合併；接著票 005 前端基礎依 `DESIGN.md` token 建立 `web/` 骨架，並把總覽頁的圖表元件做成真的。
+票 007 Core↔Agent 協定：Agent 以 mTLS WebSocket 連上 Core，交換協定版本與能力，Core 與 Agent 用同一組黃金 JSON 樣本通過契約測試。PR #102（票 002）合併後，票 005 依 `DESIGN.md` token 建立 `web/` 骨架。
 
 ## Next Ticket
-002 設計系統與 UI/UX 原型（進行中）。003、004、092 已有骨架草稿 PR，待補完驗收條件；007 等 003 與 004 合併後開工。
+007 Core 與 Agent 協定（ready）。005 前端骨架仍等票 002 完成。另外 014、022、023、026 的前置票都已 done，狀態改為 ready；010、013、024、025 還在等 003、004 或 008 完成驗收。
 
 ## Decision Log
 | decision | rationale | timestamp | impacted_ticket_ids |
@@ -50,13 +47,16 @@ PR #102（票 002：`DESIGN.md`、12 個畫板、`DESIGN-REVIEW.md`）合併；�
 | 驗證中的工作不可取消；Core 中途停止視同執行端斷線，工作轉「狀態不明」待對帳 | 步驟已全部完成，結果以驗證為準；重啟不得重設或重跑（ENG-003） | 2026-11-07 | 008 |
 | 登入節流用記憶體計數、帳號冷卻上限 15 分鐘、曾成功登入的來源不受帳號冷卻影響 | IAM-012 要求不能永久鎖死管理員；單一 Core 單一程序，重啟只會讓冷卻提早結束 | 2026-11-07 | 009、014 |
 | 猜到不可見範圍的資源 ID 回與「不存在」完全相同的 404，可見但無權才回 403 | T-014 要求查詢、下載、搜尋、事件串流都不洩漏存在與否 | 2026-11-07 | 009、008、010 |
+| `/management/v1/jobs` 掛在 IAM 驗證之後：讀取要全域 `platform:read`，提交與取消要全域 `platform:write`；各工作種類的權限與範圍由票 010 定 | 合併 008 與 009 時工作 API 原本不需登入；AGENTS.md 要求危險操作在後端驗權 | 2026-11-07 | 008、009、010 |
+| 003、004、008 驗收未完成仍先合併進 `main`，狀態維持 in_progress | 使用者決定（2026-11-07）；003 的 CI 條件要等 006，而 006 需要 003 先合併 | 2026-11-07 | 003、004、006、008 |
 | 主金鑰存 `<data-dir>/master.key`（多世代、舊世代永不刪）；SQLite 改 `synchronous=FULL`；`master.key` 存在而 `core.db` 不在視為遺失而非全新安裝 | 35.2 主金鑰不與資料庫同放、輪替後舊備份須可解密；DAT-002 已確認交易不可丟；T-012 不冒用空白庫 | 2026-11-07 | 011、078、013 |
 
 ## Source Links
 - 架構決策：`ENG.md`
 - 規格：`docs/spec/HazelminX_Spec_v1.1_zh-TW.md`
 - 票務：`docs/tickets/README.md`、GitHub issues #1–#98（milestone M0–M5）
-- 草稿 PR：#99（092 基線盤點）、#100（003 Core 骨架）、#101（004 Agent 骨架）、#102（002 設計方向）
+- 草稿 PR：#99（092 基線盤點）、#102（002 設計方向）
+- 已合併 PR：#100（003）、#101（004）、#103（011）、#104（009）、#105（008）、#106（012）
 - 設計畫布：<https://claude.ai/artifact/NBXgFGYEiZVnKLraoa7Nt8>（第一頁三個方向、第二頁方向 B 定稿 12 畫板，私人）
 - 研究：`docs/research/`
 - 工作規則：`AGENTS.md`

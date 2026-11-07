@@ -4,7 +4,7 @@
 **User Story:** 管理員可以把主機納入管理  
 **Milestone:** M0 基礎與設計  
 **Blocked by:** [004 管理員可以在主機上以 systemd 執行 hazelminx-agent 並回報身分](004-agent-skeleton.md)  
-**Status:** in_progress  
+**Status:** done  
 **規格章節:** 32｜節點通訊、信任與高權限操作  
 **Issue:** [#12](https://github.com/HazelnutParadise/hazelminx/issues/12)  
 

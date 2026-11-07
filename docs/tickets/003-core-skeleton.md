@@ -14,9 +14,9 @@ Go 模組 core/ 可建置成單一執行檔：載入設定、開啟 SQLite（WAL
 
 ## Acceptance criteria
 
-- [ ] 乾淨 Linux 上只放執行檔即可啟動，不需 Node.js 或外部資料庫
-- [ ] migration 有版本表與向上／拒絕向下的檢查
-- [ ] 單元測試與 go vet 在 CI 通過
+- [x] 乾淨 Linux 上只放執行檔即可啟動，不需 Node.js 或外部資料庫 — 證據：`CGO_ENABLED=0 GOOS=linux GOARCH=arm64` 建置出靜態連結執行檔，放進沒有 Node.js、Go、sqlite3、資料庫服務的 `debian:stable-slim`（Debian 13）容器啟動；`/healthz` 回 `200 {"status":"ok","checks":{"store":"ok"}}`，schema 版本 4，資料檔皆 0600，SIGTERM 後記錄 shutting down 並以 0 結束（2026-11-07）。x86_64 未實測。
+- [x] migration 有版本表與向上／拒絕向下的檢查 — 證據：`core/internal/store/store_test.go` `TestOpenCreatesAndMigrates`、`TestReopenIsIdempotent`、`TestRefusesNewerSchema`（資料庫比執行檔新時拒絕開啟且不覆寫）、`TestMigrationsAreContiguous`。
+- [ ] 單元測試與 go vet 在 CI 通過 — 本機 `go vet ./...`、`go test -race ./...` 通過；CI 由票 006 建立，未接上前不勾選。
 
 ## Delivery record
 

@@ -4,7 +4,7 @@
 **User Story:** 擁有者可以控制誰能做什麼  
 **Milestone:** M0 基礎與設計  
 **Blocked by:** [003 管理員可以啟動 hazelminx-core 並通過健康檢查](003-core-skeleton.md)  
-**Status:** in_progress  
+**Status:** done  
 **規格章節:** 05｜誰能用、誰能做什麼、36｜管理 API 與事件契約  
 **Issue:** [#9](https://github.com/HazelnutParadise/hazelminx/issues/9)  
 

@@ -4,7 +4,7 @@
 **User Story:** 使用者可以安全執行長時間操作  
 **Milestone:** M0 基礎與設計  
 **Blocked by:** [003 管理員可以啟動 hazelminx-core 並通過健康檢查](003-core-skeleton.md)  
-**Status:** in_progress  
+**Status:** done  
 **規格章節:** 35｜平台資料儲存、機密與復原包  
 **Issue:** [#11](https://github.com/HazelnutParadise/hazelminx/issues/11)  
 

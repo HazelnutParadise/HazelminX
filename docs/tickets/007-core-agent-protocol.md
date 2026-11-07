@@ -4,7 +4,7 @@
 **User Story:** 管理員可以把主機納入管理  
 **Milestone:** M0 基礎與設計  
 **Blocked by:** [003 管理員可以啟動 hazelminx-core 並通過健康檢查](003-core-skeleton.md), [004 管理員可以在主機上以 systemd 執行 hazelminx-agent 並回報身分](004-agent-skeleton.md)  
-**Status:** blocked  
+**Status:** ready  
 **規格章節:** 32｜節點通訊、信任與高權限操作  
 **Issue:** [#7](https://github.com/HazelnutParadise/hazelminx/issues/7)  
 
