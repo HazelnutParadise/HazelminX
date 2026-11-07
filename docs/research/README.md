@@ -11,3 +11,6 @@
 | `infra-manager-contract.md` | infra-manager commit 2ace566 | 必須相容的 Token API 代理契約 |
 | `zentinel.md` | Zentinel 0.6.54 | 網站入口的設定、重載、Agent、TLS、可信 IP、限制 |
 | `beszel.md` | Beszel 2026-11 | 監控指標、GPU 採集、告警 |
+| `1panel-dashboard.md` | 1Panel v2.4.1 `frontend/` | 儀表板環形圖、即時折線、監控頁、GPU 頁的實作方式與可圖形化的頁面 |
+| `komodo-ui.md` | Komodo main（2026-09） `ui/` | 儀表板「摘要＋最近＋表格」三層、狀態意圖統一配色、Server 統計分層 |
+| `portainer-ui.md` | Portainer develop（2026-11） `app/` | Home 環境卡、Dashboard 數字卡、容器 Stats 圖、GitReferenceCard；三個太文字化的地方（執行者逾時，為工作狀態摘要） |

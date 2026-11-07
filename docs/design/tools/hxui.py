@@ -118,6 +118,51 @@ body{{margin:0}}
 .hb .heat{{display:grid;gap:2px}}
 .hb .heat i{{display:block;aspect-ratio:1.6;border-radius:2px;min-height:14px}}
 .hb .heat .lab{{font-size:12px;color:var(--muted);display:block;line-height:22px;font-family:"Geist Mono",ui-monospace,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+.hb .fleet{{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(250px,100%),1fr));gap:12px;padding:12px 14px}}
+.hb .ncard{{display:flex;flex-direction:column;gap:10px;padding:12px;background:var(--raised);border:1px solid var(--line);border-radius:8px;min-width:0;color:var(--ink)}}
+.hb .ncard .nh{{display:flex;align-items:center;gap:8px;flex-wrap:wrap}}
+.hb .ncard .nh .n{{font-family:"Geist Mono",ui-monospace,monospace;font-weight:500}}
+.hb .ncard .nh .d{{font-size:12px;color:var(--faint);width:100%}}
+.hb .rings{{display:flex;gap:10px;justify-content:space-between}}
+.hb .ring{{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--faint);min-width:0}}
+.hb .ring svg{{display:block}}
+.hb .ring .v{{font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;fill:var(--ink)}}
+.hb .ncard .ft{{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);flex-wrap:wrap}}
+.hb .ncard .ft .seg{{flex:1;min-width:60px}}
+.hb .hmap{{display:flex;flex-direction:column;gap:10px;padding:12px 14px}}
+.hb .hgrp{{display:flex;flex-direction:column;gap:6px}}
+.hb .hgrp .lab{{display:flex;gap:8px;align-items:baseline;font-size:12px;color:var(--muted)}}
+.hb .hgrp .lab b{{font-family:"Geist Mono",ui-monospace,monospace;font-weight:500;color:var(--ink)}}
+.hb .hcells{{display:flex;flex-wrap:wrap;gap:3px}}
+.hb .hcell{{position:relative;width:26px;height:26px;border-radius:3px;display:flex;align-items:center;justify-content:center;border:1px solid transparent}}
+.hb .hcell.off{{background:transparent;border:1px dashed var(--line)}}
+.hb .hcell.bad{{border-color:var(--danger)}}
+.hb .hcell.bad::after{{content:"";width:8px;height:8px;background:var(--danger)}}
+.hb .hcell.stale::after{{content:"";width:8px;height:8px;border-radius:50%;border:2px solid var(--warn);box-sizing:border-box}}
+.hb .scale{{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--faint)}}
+.hb .scale i{{display:block;width:14px;height:10px;border-radius:2px}}
+.hb .tall{{display:flex;gap:2px;height:28px;border-radius:4px;overflow:hidden}}
+.hb .tall i{{display:flex;align-items:center;justify-content:center;height:100%;font-size:11px;font-family:"Geist Mono",ui-monospace,monospace;color:var(--ink);overflow:hidden;white-space:nowrap}}
+.hb .cal{{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,12px);gap:2px}}
+.hb .cal i{{display:block;width:12px;height:12px;border-radius:2px;background:var(--q1);position:relative}}
+.hb .cal i.o{{background:var(--ok)}}.hb .cal i.f{{background:var(--danger)}}.hb .cal i.r{{background:var(--warn)}}.hb .cal i.n{{background:transparent;border:1px dashed var(--line)}}
+.hb .cal i.f::after{{content:"";position:absolute;inset:3px;background:var(--panel)}}
+.hb .pipe{{display:flex;align-items:stretch;gap:0;overflow-x:auto}}
+.hb .pstage{{display:flex;flex-direction:column;gap:4px;min-width:110px;flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-size:12px;color:var(--muted);position:relative;background:var(--panel)}}
+.hb .pstage+.pstage{{margin-left:18px}}
+.hb .pstage+.pstage::before{{content:"";position:absolute;left:-12px;top:50%;width:6px;height:6px;border-top:2px solid var(--faint);border-right:2px solid var(--faint);transform:translateY(-50%) rotate(45deg)}}
+.hb .pstage .t{{color:var(--ink);font-weight:500;display:flex;align-items:center;gap:6px}}
+.hb .pstage.done{{border-color:var(--ok)}}.hb .pstage.cur{{border-color:var(--blue);background:var(--raised)}}.hb .pstage.fail{{border-color:var(--danger)}}.hb .pstage.wait{{border-color:var(--warn)}}
+.hb svg.topo{{display:block;width:100%;height:auto;font-family:"Geist","Noto Sans TC",sans-serif}}
+.hb svg.topo text{{font-size:12px;fill:var(--ink)}}
+.hb svg.topo text.sub{{font-size:11px;fill:var(--faint);font-family:"Geist Mono",ui-monospace,monospace}}
+.hb svg.topo text.col{{font-size:11px;fill:var(--faint);letter-spacing:.06em;text-transform:uppercase}}
+.hb svg.topo .box{{fill:var(--raised);stroke:var(--line)}}
+.hb svg.topo .box.danger{{stroke:var(--danger)}}.hb svg.topo .box.warn{{stroke:var(--warn)}}
+.hb svg.topo .lnk{{fill:none;stroke:var(--s1);stroke-opacity:.55;stroke-linecap:round}}
+.hb svg.topo .lnk.danger{{stroke:var(--danger)}}.hb svg.topo .lnk.dim{{stroke:var(--q3)}}
+.hb .flowlist{{display:flex;flex-direction:column;gap:6px;font-size:13px}}
+.hb .flowlist .fr{{display:grid;grid-template-columns:minmax(0,1fr) 16px minmax(0,1fr) auto;gap:6px;align-items:center}}
 .hb .range{{display:flex;gap:4px;flex-wrap:wrap}}
 .hb .range .btn{{min-height:32px;padding:0 10px;font-size:12px;color:var(--muted)}}
 .hb .range .btn.on{{background:var(--raised);color:var(--hazel);border-color:var(--line);font-weight:600}}
@@ -193,6 +238,9 @@ body{{margin:0}}
  .hb .hrow{{grid-template-columns:minmax(0,1.4fr) minmax(0,.7fr) minmax(0,1.2fr)}}
  .hb .rrow{{grid-template-columns:24px minmax(0,1.6fr) minmax(0,.8fr)}}
  .hb .tile .v{{font-size:24px}}
+ .hb .rings svg{{width:52px;height:52px}}
+ .hb .hcell{{width:36px;height:36px}}
+ .hb .pstage{{min-width:96px}}
 }}
 """
 
@@ -203,17 +251,17 @@ NAV = [
     ("Docker／Podman", "docker", "Containers.dc.html"),
     ("Kubernetes", "k8s", None),
     ("應用商店", "store", None),
-    ("網站與入口", "web", None),
+    ("網站與入口", "web", "Websites.dc.html"),
     ("API 代理", "api", None),
     ("資料庫", "db", None),
     ("AI", "ai", None),
     ("檔案", "files", None),
-    ("儲存", "storage", None),
-    ("備份與還原", "backup", None),
+    ("儲存", "storage", "Storage.dc.html"),
+    ("備份與還原", "backup", "Storage.dc.html"),
     ("計畫任務", "cron", None),
     ("安全防護", "security", None),
     ("流量分析", "analytics", None),
-    ("事件與告警", "events", None),
+    ("事件與告警", "events", "Events.dc.html"),
     ("身分與存取", "iam", None),
     ("平台設定", "settings", None),
 ]
@@ -492,6 +540,133 @@ def steps(items: list[tuple[str, str, str]]) -> str:
     """items: (label, state done|cur|wait|fail|todo, detail)"""
     return '<div class="steps">' + "".join(
         f'<div class="step {s}"><b aria-hidden="true"></b><span>{l}</span><span class="note">{d}</span></div>' for l, s, d in items) + "</div>"
+
+
+
+# ---------- 圖形為主的複合元件 ----------
+import math as _math
+
+
+def ring(pct: float, text: str, label: str = "", size: int = 64, warn=70, danger=90, aria: str = "") -> str:
+    """單一比例的環形量表：軌道 q2，填充依門檻換色；中央寫數值，形狀＋文字不只靠色。"""
+    r = (size - 8) / 2
+    c = 2 * _math.pi * r
+    p = max(0.0, min(100.0, pct))
+    color = "var(--danger)" if p >= danger else ("var(--warn)" if p >= warn else "var(--hazel)")
+    dash = f"{c * p / 100:.1f} {c:.1f}"
+    svg = (f'<svg width="{size}" height="{size}" viewBox="0 0 {size} {size}" role="meter" aria-valuenow="{p:.0f}" aria-valuemin="0" aria-valuemax="100" aria-label="{aria or label or text}">'
+           f'<circle cx="{size/2}" cy="{size/2}" r="{r}" fill="none" stroke="var(--q2)" stroke-width="6"/>'
+           f'<circle cx="{size/2}" cy="{size/2}" r="{r}" fill="none" stroke="{color}" stroke-width="6" stroke-linecap="round" stroke-dasharray="{dash}" transform="rotate(-90 {size/2} {size/2})"/>'
+           f'<text x="50%" y="50%" dy="0.35em" text-anchor="middle" class="v">{text}</text></svg>')
+    return f'<span class="ring">{svg}<span>{label}</span></span>' if label else f'<span class="ring">{svg}</span>'
+
+
+def node_card(name: str, desc: str, st: str, cpu: float, mem: tuple, disk: tuple, spark: list, last: str,
+              containers: tuple = (0, 0), href: str = "NodeDetail.dc.html", stale: bool = False, extra: str = "") -> str:
+    """艦隊卡：名稱＋狀態、三個環（CPU／記憶體／資料碟）、CPU 1 小時走勢、容器狀態段條與最後聯絡。"""
+    mu, mt = mem; du, dt = disk
+    run, total = containers
+    star = "*" if stale else ""
+    rings_html = (ring(cpu, f"{cpu:.0f}%{star}", "CPU", aria=f"{name} CPU") + ring(mu / mt * 100, f"{mu:.0f}G", f"記憶體 /{mt:.0f}G", aria=f"{name} 記憶體")
+                  + ring(du / dt * 100, f"{du:.0f}G", f"資料碟 /{dt:.0f}G", warn=80, danger=90, aria=f"{name} 資料碟"))
+    seg = segmented([(run, "var(--ok)"), (total - run, "var(--q2)")]) if total else ""
+    ct = f"容器 {run}/{total}" if total else "無容器"
+    return (f'<a class="ncard" href="{href}"><div class="nh"><span class="n">{name}</span>{st}<span class="d">{desc}</span></div>'
+            f'<div class="rings">{rings_html}</div>'
+            f'<div class="ft">{sparkline(spark, w=110, stale=stale)}<span>CPU 1 小時</span><span style="margin-left:auto" class="mono">{last}</span></div>'
+            f'<div class="ft">{seg}<span>{ct}</span></div>{extra}</a>')
+
+
+def hostmap(groups: list, legend: bool = True) -> str:
+    """主機地圖：每個節點一組，容器一格，顏色＝CPU 單色序列；失敗格加方塊、過期格加空心圓、停止格虛線。
+    groups: [(node, [(container, cpu_pct, state ok|bad|stale|off)])]"""
+    q = ["var(--q1)", "var(--q2)", "var(--q3)", "var(--q4)", "var(--q5)"]
+    out = []
+    for node, cells in groups:
+        n_bad = sum(1 for _, _, st in cells if st == "bad")
+        cs = "".join(
+            f'<span class="hcell {st if st != "ok" else ""}" style="background: {q[min(4, int(v / 100 * 4.999))] if st != "off" else "transparent"}" title="{c} · CPU {v:.0f}%"></span>'
+            for c, v, st in cells)
+        bad = f' <span style="color:var(--danger)">{n_bad} 異常</span>' if n_bad else ""
+        out.append(f'<div class="hgrp"><div class="lab"><b>{node}</b><span>{len(cells)} 個容器</span>{bad}</div><div class="hcells">{cs}</div></div>')
+    lg = ""
+    if legend:
+        lg = ('<div class="scale" style="margin-top:2px">CPU' + "".join(f'<i style="background:{c}"></i>' for c in q) + '高 · <span class="hcell bad" style="width:16px;height:16px"></span>異常 · <span class="hcell stale" style="width:16px;height:16px"></span>過期 · <span class="hcell off" style="width:16px;height:16px"></span>已停止</div>')
+    return f'<div class="hmap" role="img" aria-label="主機地圖，{len(groups)} 個節點">' + "".join(out) + lg + "</div>"
+
+
+def tall_bar(parts: list, total: float, unit: str = "G") -> str:
+    """高段條：parts [(value, label, color)]；每段印數值（塞得下才印），餘量算可用。"""
+    used = sum(v for v, _, _ in parts)
+    segs = []
+    for v, lab, col in parts:
+        w = v / total * 100
+        txt = f"{v:.0f}{unit}" if w >= 9 else ""
+        segs.append(f'<i style="width:{w:.1f}%;background:{col}" title="{lab} {v:.0f}{unit}">{txt}</i>')
+    free = max(0.0, total - used)
+    fw = free / total * 100
+    segs.append(f'<i style="width:{fw:.1f}%;background:var(--q1);color:var(--muted)" title="可用 {free:.0f}{unit}">{f"{free:.0f}{unit}" if fw >= 9 else ""}</i>')
+    return '<span class="tall" aria-hidden="true">' + "".join(segs) + "</span>"
+
+
+def calendar(states: str, start_label: str = "", end_label: str = "") -> str:
+    """日曆熱格：每字一天，o 成功 f 失敗 r 部分 e 未排 n 未來；7 列一週，直向填。"""
+    cls = {"o": "o", "f": "f", "r": "r", "e": "", "n": "n"}
+    cells = "".join(f'<i class="{cls.get(c, "")}"></i>' for c in states)
+    lab = f'<div class="note" style="display:flex;justify-content:space-between;margin-top:6px"><span>{start_label}</span><span>{end_label}</span></div>' if start_label else ""
+    return (f'<div class="cal" role="img" aria-label="每日結果：{states.count("o")} 成功、{states.count("f")} 失敗、{states.count("r")} 部分">{cells}</div>' + lab)
+
+
+def pipeline(stages: list) -> str:
+    """流程段：stages [(name, state done|cur|wait|fail|todo, duration_text, detail)]；下方再畫一條依時長比例的段條。"""
+    icon = {"done": "●", "cur": "■", "wait": "○", "fail": "■", "todo": "·"}
+    chips = "".join(
+        f'<div class="pstage {st}"><span class="t"><span aria-hidden="true" style="color:{ {"done":"var(--ok)","cur":"var(--blue)","wait":"var(--warn)","fail":"var(--danger)","todo":"var(--faint)"}[st] }">{icon[st]}</span>{n}</span>'
+        f'<span class="mono">{dur}</span><span>{det}</span></div>' for n, st, dur, det in stages)
+    return f'<div class="pipe">{chips}</div>'
+
+
+def topology(columns: list, links: list, w: int = 1140, box_w: int = 164, box_h: int = 44, gap: int = 14) -> str:
+    """拓撲圖：columns [(title, [(id, label, sub, state ok|warn|danger|dim)])]；links [(src, dst, weight 0–1, state)]。
+    欄等距排列，節點垂直置中，連線為三次曲線，粗細依 weight。"""
+    ncol = len(columns)
+    rows = max(len(c[1]) for c in columns)
+    h = 30 + rows * (box_h + gap)
+    xs = [20 + i * (w - 40 - box_w) / (ncol - 1) for i in range(ncol)] if ncol > 1 else [20]
+    pos = {}
+    out = [f'<svg class="topo" viewBox="0 0 {w} {h}" role="img" aria-label="拓撲：{"→".join(c[0] for c in columns)}">']
+    for ci, (title, nodes) in enumerate(columns):
+        x = xs[ci]
+        out.append(f'<text class="col" x="{x:.0f}" y="14">{title}</text>')
+        total_h = len(nodes) * box_h + (len(nodes) - 1) * gap
+        y0 = 30 + (rows * (box_h + gap) - gap - total_h) / 2
+        for ni, (nid, label, sub, st) in enumerate(nodes):
+            y = y0 + ni * (box_h + gap)
+            pos[nid] = (x, y)
+            shape = {"ok": f'<circle cx="{x+12}" cy="{y+box_h/2}" r="4" fill="var(--ok)"/>',
+                     "warn": f'<circle cx="{x+12}" cy="{y+box_h/2}" r="4" fill="var(--panel)" stroke="var(--warn)" stroke-width="2"/>',
+                     "danger": f'<rect x="{x+8}" y="{y+box_h/2-4}" width="8" height="8" fill="var(--danger)"/>',
+                     "info": f'<rect x="{x+8}" y="{y+box_h/2-4}" width="8" height="8" fill="var(--blue)"/>',
+                     "dim": f'<circle cx="{x+12}" cy="{y+box_h/2}" r="4" fill="none" stroke="var(--faint)" stroke-width="1.5"/>'}[st]
+            out.append(f'<rect class="box {st if st in ("danger","warn") else ""}" x="{x}" y="{y:.1f}" width="{box_w}" height="{box_h}" rx="6"/>{shape}'
+                       f'<text x="{x+22}" y="{y+18:.1f}">{label}</text><text class="sub" x="{x+22}" y="{y+33:.1f}">{sub}</text>')
+    lk = []
+    for src, dst, wgt, st in links:
+        (x1, y1), (x2, y2) = pos[src], pos[dst]
+        ax, ay = x1 + box_w, y1 + box_h / 2
+        bx, by = x2, y2 + box_h / 2
+        mx = (ax + bx) / 2
+        lk.append(f'<path class="lnk {st}" stroke-width="{1.5 + wgt * 6:.1f}" d="M{ax:.0f},{ay:.1f} C{mx:.0f},{ay:.1f} {mx:.0f},{by:.1f} {bx:.0f},{by:.1f}"/>')
+    out.insert(1, "".join(lk))
+    out.append("</svg>")
+    return "".join(out)
+
+
+def flowlist(links: list) -> str:
+    """拓撲的手機版：每條連線一列。links [(src_label, dst_label, note)]"""
+    return '<div class="flowlist">' + "".join(
+        f'<div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{a}</span><span class="note">→</span>'
+        f'<span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{b}</span><span class="note">{n}</span></div>' for a, b, n in links) + "</div>"
 
 
 def dc_wrap(title: str, body: str, width: int, height: int, lang="zh-Hant-TW") -> str:
