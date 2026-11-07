@@ -430,6 +430,11 @@ body{margin:0}
 .hb .hwb small{color:var(--faint);font-size:11px}
 .hb details.more>summary{cursor:pointer;color:var(--hazel);font-size:12px;list-style:none;min-height:24px;display:flex;align-items:center}.hb details.more>summary::-webkit-details-marker{display:none}
 .hb details.more[open]>summary{margin-bottom:8px}.hb details.more>.hwb+.hwb{margin-top:8px}
+.hb .pcrumb{display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:12px;color:var(--muted)}.hb .pcrumb a{color:var(--muted)}.hb .pcrumb a:hover{color:var(--ink)}.hb .pcrumb .sep{color:var(--faint)}
+.hb .subtabs{display:flex;flex-wrap:wrap;gap:4px}
+.hb .st2{min-height:30px;padding:0 12px;border-radius:999px;border:1px solid transparent;background:transparent;color:var(--muted);font-size:13px;cursor:pointer}
+.hb .st2:hover{color:var(--ink);background:var(--raised)}.hb .st2.on{color:var(--ink);background:var(--raised);border-color:var(--line)}
+@media (max-width:767px){.hb .subtabs{flex-wrap:nowrap;overflow-x:auto}.hb .st2{flex:none;min-height:44px}}
 @media (max-width:1024px){.hb .tw{--k5: ;}}
 @media (max-width:767px){.hb .tw{--k3: ;--k4: ;--k5: ;--k6: ;}}
 </style>
@@ -437,7 +442,6 @@ body{margin:0}
 <div class="hb theme-{{theme}}" style="min-height: 100vh; display: flex; flex-direction: column">
   <header class="top">
     <a class="brand" href="Overview.dc.html"><span class="logo" aria-hidden="true"></span><span>HazelminX</span></a>
-    <div class="crumb"><span class="note">tw-01</span><span class="sep">/</span><span>工作中心</span></div>
     <button type="button" class="inp search" aria-label="搜尋或下指令"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m20 20-4-4"/></svg><span>搜尋或下指令</span><span class="kbd">⌘K</span></button>
     <div class="tright">
       <span class="obs">觀測 <span class="mono">03:42:06</span> · 每 10 秒</span>

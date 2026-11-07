@@ -202,10 +202,17 @@ def range_row(on="24 小時") -> str:
 
 
 # ---------- 節點詳情 ----------
+def node_tabs(active: str, containers: int = 10) -> str:
+    """節點頁首的分頁：同一個節點的監控、系統、容器、終端機、日誌、儲存。"""
+    items = [("監控", "NodeDetail.dc.html"), ("系統", "System.dc.html"), (f"容器 {containers}", "Containers.dc.html"), ("終端機", "Terminal.dc.html"), ("日誌", "Logs.dc.html"), ("儲存", "Storage.dc.html")]
+    return ('<div class="panel"><div class="tabs" role="tablist">' + "".join(
+        f'<a class="tab{" on" if l.split(" ")[0] == active else ""}" role="tab" aria-selected="{"true" if l.split(" ")[0] == active else "false"}" href="{h}">{l}</a>' for l, h in items) + "</div></div>")
+
+
 def node_detail() -> str:
     head = f"""
     <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px">
-      <div class="name"><a href="Nodes.dc.html" class="note">主機與節點 /</a><h1 class="mono">hazel-tw-01</h1></div>
+      <div class="name">{U.crumbs([("主機與節點", "Nodes.dc.html")])}<h1 class="mono">hazel-tw-01</h1></div>
       {U.status("ok", "連線中")}<span class="note">最後聯絡 2 秒前</span>
       <div class="wrap" style="margin-left: auto"><button type="button" class="btn">終端機</button><button type="button" class="btn">進入維護模式</button><button type="button" class="btn">重新啟動 agent</button><button type="button" class="btn pri">部署到此節點</button></div>
     </div>
@@ -302,7 +309,7 @@ def node_detail() -> str:
       <div class="row garow"><span class="mono">shop-worker</span><span class="note">未授權</span><span class="c3 note">—</span><span>{U.status("info", "無 GPU 存取")} <span class="note">compose 沒宣告，不會自動給</span></span></div>
       <div class="note" style="padding: 8px 14px 10px">不以 <span class="mono">privileged</span> 當通用解法 · 驅動升級會影響整台主機，從 <a href="WorkCenter.dc.html" style="color: var(--hazel)">工作中心</a> 走批准流程</div>
     </section>"""
-    tabs = ('<div class="panel"><div class="tabs" role="tablist"><button type="button" class="tab on" role="tab" aria-selected="true">監控</button><a class="tab" role="tab" href="System.dc.html">系統</a><a class="tab" role="tab" href="Containers.dc.html">容器 10</a><a class="tab" role="tab" href="Terminal.dc.html">終端機</a><a class="tab" role="tab" href="Logs.dc.html">日誌</a><a class="tab" role="tab" href="Storage.dc.html">儲存</a></div></div>')
+    tabs = node_tabs("監控")
     main = (head + tabs + hw + range_row() + f'<div class="cg">{cpu}{mem}{io}{net}{load}{temp}</div><div class="cg">{disks}{hot}</div>'
             + gpu_head + gpu_dev + gpu_proc + f'<div class="cg">{gpu_util}{gpu_vram}{gpu_power}</div>' + gpu_auth)
     return U.shell("nodes", main)
@@ -550,7 +557,7 @@ def github_source() -> str:
 def deploy_check(confirm: bool = False) -> str:
     head = f"""
     <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px">
-      <div class="name"><a href="WorkCenter.dc.html" class="note">工作中心 / 等待批准 /</a><h1>變更計畫 #418 · shop production</h1></div>
+      <div class="name">{U.crumbs([("工作中心", "WorkCenter.dc.html"), ("等待批准", "WorkCenter.dc.html#approve")])}<h1>變更計畫 #418 · shop production</h1></div>
       {U.status("warn", "等待批准 · 44 分")}
       <div class="wrap" style="margin-left: auto"><button type="button" class="btn">拒絕</button><button type="button" class="btn pri">批准並部署…</button></div>
     </div>"""
@@ -1563,11 +1570,11 @@ def analytics() -> str:
 def system() -> str:
     head = f"""
     <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px">
-      <div class="name"><a href="Nodes.dc.html" class="note">主機與節點 /</a><h1 class="mono">hazel-jp-02 · 系統</h1></div>
+      <div class="name">{U.crumbs([("主機與節點", "Nodes.dc.html")])}<h1 class="mono">hazel-jp-02</h1></div>
       {U.status("warn", "狀態過期")}<span class="note">最後聯絡 03:41:18 · 以下是上次觀測</span>
       <div class="wrap" style="margin-left: auto"><button type="button" class="btn">終端機</button><button type="button" class="btn">重新開機</button><button type="button" class="btn pri">套用 5 個安全更新</button></div>
     </div>"""
-    tabs = ('<div class="panel"><div class="tabs" role="tablist">' + "".join(f'<button type="button" class="tab{" on" if i == 0 else ""}" role="tab" aria-selected="{"true" if i == 0 else "false"}">{t}</button>' for i, t in enumerate(["套件與更新", "服務與計時器", "使用者與 sudo", "網路", "掛載與檔案系統", "時間與主機名稱", "開關機"])) + '</div></div>')
+    tabs = ('<div class="subtabs" role="tablist" aria-label="系統分類">' + "".join(f'<button type="button" class="st2{" on" if i == 0 else ""}" role="tab" aria-selected="{"true" if i == 0 else "false"}">{t}</button>' for i, t in enumerate(["套件與更新", "服務與計時器", "使用者與 sudo", "網路", "掛載與檔案系統", "時間與主機名稱", "開關機"])) + '</div>')
     pk_tiles = '<div class="tiles">' + "".join([
         U.stat_tile("已安裝套件", "1,284", "", "apt · Debian 12 · 來源簽章有效", None),
         U.stat_tile("可更新", "23", "", "安全性 5 · 一般 18", False),
@@ -1652,7 +1659,7 @@ def system() -> str:
         <div class="ncard"><span class="note">root 密碼</span><span>{U.status("warn", "281 天未換")}</span><span class="note">上次變更 2 月 1 日</span></div>
       </div>
     </section>"""
-    main = head + U.scope_bar([("hazel-tw-01", "Ubuntu 24.04"), ("hazel-jp-02", "Debian 12 · 過期"), ("lab-mini", "Debian 13")], current=1, label="節點") + tabs + pk_tiles + pkgs + upd + services + f'<div class="cg">{users}{net}</div>' + mounts + time_
+    main = head + node_tabs("系統", 2) + tabs + pk_tiles + pkgs + upd + services + f'<div class="cg">{users}{net}</div>' + mounts + time_
     return U.shell("nodes", main)
 
 
@@ -1896,7 +1903,7 @@ root@hazel-tw-01:~# <span style="background:var(--ink);color:var(--panel)"> </sp
 # ---------- 安裝應用（1Panel 市集格式） ----------
 def app_install() -> str:
     head = f"""
-    <div class="phead"><div class="name"><a href="AppStore.dc.html" class="note">應用商店 /</a><h1>安裝 Nextcloud</h1></div>
+    <div class="phead"><div class="name">{U.crumbs([("應用商店", "AppStore.dc.html")])}<h1>安裝 Nextcloud</h1></div>
       <div class="wrap" style="margin-left:auto"><a class="btn" href="AppStore.dc.html">取消</a><button type="button" class="btn pri">安裝</button></div></div>"""
     def field(label, control, help_=""):
         return f'<div class="field"><label>{label}</label>{control}{f"<span class=help>{help_}</span>" if help_ else ""}</div>'

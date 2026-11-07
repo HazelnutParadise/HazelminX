@@ -446,6 +446,11 @@ body{{margin:0}}
 .hb .hwb small{{color:var(--faint);font-size:11px}}
 .hb details.more>summary{{cursor:pointer;color:var(--hazel);font-size:12px;list-style:none;min-height:24px;display:flex;align-items:center}}.hb details.more>summary::-webkit-details-marker{{display:none}}
 .hb details.more[open]>summary{{margin-bottom:8px}}.hb details.more>.hwb+.hwb{{margin-top:8px}}
+.hb .pcrumb{{display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:12px;color:var(--muted)}}.hb .pcrumb a{{color:var(--muted)}}.hb .pcrumb a:hover{{color:var(--ink)}}.hb .pcrumb .sep{{color:var(--faint)}}
+.hb .subtabs{{display:flex;flex-wrap:wrap;gap:4px}}
+.hb .st2{{min-height:30px;padding:0 12px;border-radius:999px;border:1px solid transparent;background:transparent;color:var(--muted);font-size:13px;cursor:pointer}}
+.hb .st2:hover{{color:var(--ink);background:var(--raised)}}.hb .st2.on{{color:var(--ink);background:var(--raised);border-color:var(--line)}}
+@media (max-width:767px){{.hb .subtabs{{flex-wrap:nowrap;overflow-x:auto}}.hb .st2{{flex:none;min-height:44px}}}}
 @media (max-width:1024px){{.hb .tw{{--k5: ;}}}}
 @media (max-width:767px){{.hb .tw{{--k3: ;--k4: ;--k5: ;--k6: ;}}}}
 """
@@ -586,7 +591,6 @@ def topbar(current: str, jobs: int = 3, attention: int = 4, obs: str = "03:42:06
     return f"""
   <header class="top">
     <a class="brand" href="Overview.dc.html"><span class="logo" aria-hidden="true"></span><span>HazelminX</span></a>
-    <div class="crumb"><span class="note">tw-01</span><span class="sep">/</span><span>{label}</span></div>
     <button type="button" class="inp search" aria-label="搜尋或下指令">{icon("search")}<span>搜尋或下指令</span><span class="kbd">⌘K</span></button>
     <div class="tright">
       <span class="obs">觀測 <span class="mono">{obs}</span> · 每 10 秒</span>
@@ -1130,6 +1134,10 @@ def temps(sensors: list, show: int = 6) -> str:
     more = (f'<details class="more"><summary>全部 {len(sensors)} 個感測器</summary>' + "".join(row(*s) for s in rest) + "</details>") if rest else ""
     return f'<div class="hwc wide"><div class="hwt"><span>溫度</span><span class="note">{len(sensors)} 個感測器</span></div>{head}{more}</div>'
 
+
+def crumbs(items: list) -> str:
+    """頁面麵包屑：items [(label, href)]，最後一層是頁面本身，不寫在這裡（由 h1 呈現）。"""
+    return '<nav class="pcrumb" aria-label="位置">' + "".join(f'<a href="{href}">{l}</a><span class="sep" aria-hidden="true">/</span>' for l, href in items) + "</nav>"
 
 def legend(items: list) -> str:
     """圖例：items [(kind, label)]；kind 是 ok|warn|dng|info（狀態形狀）、color:<css>（色塊）、line:<px>（線寬）。"""
