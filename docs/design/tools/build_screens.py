@@ -1413,9 +1413,9 @@ def apiproxy_service() -> str:
         <div class="wrap"><span class="note">上游路徑前綴</span><span style="flex:0 1 220px">{_in("/", mono=True)}</span><span class="note">呼叫 /use/minio/bucket → 轉到 9000/bucket</span></div>
       </div>""")
     def dom(host, maps, cert, st):
-        return f'<div class="row"><span class="mono">{host}</span><span class="mono">{maps}</span><span>{cert}</span><span>{st}</span><span>{U.actions(["more"])}</span></div>'
+        return f'<div class="row"><span class="mono">{host}</span><span class="mono">{maps}</span><span class="c5">{cert}</span><span>{st}</span><span>{U.actions(["more"])}</span></div>'
     domains = _fp("專屬網址", f"""
-      <div class="row hd"><span>網址</span><span>對應</span><span>憑證</span><span>DNS</span><span></span></div>
+      <div class="row hd"><span>網址</span><span>對應</span><span class="c5">憑證</span><span>DNS</span><span></span></div>
       {dom("api.example.tw", "整個 API 代理 · /use/&lt;服務&gt;/…", U.status("ok", "自動 · 剩 82 天"), U.status("ok", "已指向入口"))}
       {dom("ollama.api.example.tw", "只到 /ollama · 不用寫 /use/ollama", U.status("ok", "自動 · 剩 82 天"), U.status("ok", "已指向入口"))}
       {dom("llm.lab.example.tw", "只到 /ollama", U.status("warn", "等 DNS"), U.status("warn", "還沒指向 · 新增 A 紀錄 203.0.113.22"))}
@@ -1586,6 +1586,70 @@ def container_resources() -> str:
     main = (head + U.scope_bar([("Docker（root）@ tw-01", "15.1 GiB 映像"), ("Docker（root）@ jp-02", "過期"), ("Podman（deploy）@ lab-mini", "")], 0, "引擎環境")
             + tabs + f'<div class="cg">{space}{prune}</div>' + images + vols + nets + regs)
     return U.shell("docker", main)
+
+
+# ---------- 平台設定 › 解除安裝 ----------
+def uninstall() -> str:
+    head = _form_head([("平台設定", "Settings.dc.html")], "解除安裝", '<a class="btn" href="Settings.dc.html">取消</a>')
+    scope = _fp("範圍", _grid(_fld("移除", _seg(["整個平台", "一台主機"], 1, "範圍")), _fld("主機", _dd("hazel-tw-01")),
+                _fld("連不上的主機", U.status("info", "會產生離線移除包"), "在主機上執行 sudo hazelminx uninstall")))
+    modes = ('<section class="panel"><div class="ph"><h2>方式</h2></div><div class="fleet choices">'
+             + _choice("只移除平台", "預設", ["應用照常運作", "引擎與套件保留"], '<button type="button" class="btn sm">選擇</button>')
+             + _choice("移除平台與它建立的應用", "", ["應用與資料逐項選", "引擎與套件保留"], '<button type="button" class="btn sm">選擇</button>')
+             + _choice("完全移除", "回到安裝前", ["平台裝的引擎、套件、設定都移除", "改過的設定還原成安裝前"], U.status("ok", "已選"), on=True)
+             + "</div></section>")
+    def it(name, own, act, why):
+        return f'<div class="row srow"><span class="name"><span class="n mono">{name}</span><span class="d">{why}</span></span><span>{own}</span><span class="c3">{act}</span><span class="c4"></span><span class="c4"></span><span class="c5"></span><span></span></div>'
+    P = lambda t: U.status("info", t)
+    preview = f"""
+    <section class="panel" aria-labelledby="h-unp" data-pages="1–11 / 47">
+      <div class="ph"><h2 id="h-unp">預覽 · hazel-tw-01 · 47 項</h2><div class="wrap" style="margin-left:auto"><span class="chip on">全部</span><span class="chip">移除 31</span><span class="chip">還原 9</span><span class="chip">不動 5</span><span class="chip">要你決定 2</span></div></div>
+      <div class="row hd srow"><span>項目 · 帳本來源</span><span>擁有權</span><span class="c3">處理</span><span class="c4"></span><span class="c4"></span><span class="c5"></span><span></span></div>
+      {it("Docker Engine 27.3", P("平台安裝"), '<span class="wrap">' + U.status("warn", "要你決定") + _seg(["移除", "保留"], -1, "Docker") + '</span>', "11/02 工作 #12 · 有使用者自己建的容器 dev-scratch")}
+      {it("zentinel.service · Zentinel 0.9", P("平台安裝"), U.status("dng", "移除"), "11/02 工作 #14")}
+      {it("cloudflared.service", P("平台安裝"), U.status("dng", "移除"), "11/02 工作 #19")}
+      {it("apt：download.docker.com ＋ 簽章金鑰", P("平台安裝"), U.status("dng", "移除"), "11/02 工作 #12")}
+      {it("hazelminx 使用者與群組", P("平台安裝"), U.status("dng", "移除"), "11/02 安裝")}
+      {it("/etc/docker/daemon.json · log-opts", P("平台修改"), U.status("ok", "還原 · 安裝前不存在"), "11/02 工作 #12")}
+      {it("journald · SystemMaxUse", P("平台修改"), U.status("ok", "還原成 500M"), "11/02 安裝 · 原本 500M，平台沒放寬")}
+      {it("ufw · 平台加的 6 條規則", P("平台修改"), U.status("ok", "只刪這 6 條"), "其他 8 條是原本就有的")}
+      {it("/etc/ssh/sshd_config.d/50-hazelminx.conf", P("平台安裝"), '<span class="wrap">' + U.status("warn", "要你決定 · 你改過") + _seg(["刪除", "保留"], -1, "sshd") + '</span>', "11/03 工作 #40 · 之後內容被手動改過")}
+      {it("nginx 1.24", U.status("none", "既有"), U.status("none", "不動"), "安裝前就有")}
+      {it("node-exporter（使用者自己的容器）", U.status("none", "既有"), U.status("none", "不動"), "不是平台建立的")}
+    </section>"""
+    def dat(name, where, size, keep=True):
+        return (f'<div class="row"><span class="wrap" style="flex-wrap:nowrap"><input type="checkbox"{"" if keep else " checked"} aria-label="刪除 {name}"><span class="name"><span class="n">{name}</span><span class="d mono">{where}</span></span></span>'
+                f'<span class="mono">{size}</span><span>{U.status("ok", "保留") if keep else U.status("dng", "刪除")}</span><span><button type="button" class="btn sm">{U.icon("download", 14)}匯出</button></span></div>')
+    data = _fp("使用者資料 · 勾選的才刪除", f"""
+      <div class="row hd"><span>資料</span><span>大小</span><span>處理</span><span></span></div>
+      {dat("shop-db 資料庫", "shop-production-web_db · 儲存卷", "84 GiB")}
+      {dat("shop 上傳檔案", "shop-production-web_uploads · 儲存卷", "12 GiB")}
+      {dat("nextcloud 使用者檔案", "/mnt/fast/hazelminx/apps/nextcloud/data", "212 GiB")}
+      {dat("模型庫 fast", "/mnt/fast/hazelminx/models", "61 GiB", keep=False)}
+      {dat("本機備份", "/mnt/data/hazelminx/backups", "140 GiB", keep=False)}
+      <div class="wrap" style="padding:10px 14px 12px">{U.status("info", "S3 上的備份不在主機上，不會被刪除")}</div>""")
+    gaps = _fp("保留下來的東西會失去", f"""
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">
+        {_chk("warn", "憑證續期", "shop.example.tw 憑證 11 天後到期，之後沒有人續期", "保留資料但應用會被移除")}
+        {_chk("warn", "備份排程", "shop-db 每天 03:00 的備份停止", "已有的備份不刪")}
+        {_chk("ok", "對外入口", "完全移除後沒有 Zentinel，主機上不會留下沒人管的對外入口", "")}
+      </div>""")
+    confirm = _fp("確認", f"""
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
+        <div class="wrap"><span class="note">輸入主機名稱</span><span style="flex:0 1 260px">{_in("hazel-tw-01", mono=True)}</span>{U.status("warn", "還有 2 項要你決定")}</div>
+        <div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">下載離線移除包</button><button type="button" class="btn dng" disabled>開始完全移除</button></div>
+      </div>""")
+    report = _fp("移除後的比對報告 · 範例", f"""
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">
+        <div class="wrap">{U.status("ok", "與安裝前相同 41 項")}{U.status("warn", "不同 3 項")}{U.status("info", "需要重開機 1 項")}</div>
+        <div class="term">不同：shop-db 資料（使用者選擇保留）
+不同：/etc/ssh/sshd_config.d/50-hazelminx.conf（使用者改過，選擇保留）
+不同：Docker Engine（有使用者自己的容器，選擇保留）
+重開機：nvidia_uvm 核心模組
+報告：/var/log/hazelminx-uninstall-20261108T0412Z.txt · sudo hazelminx uninstall --report</div>
+      </div>""")
+    main = head + scope + modes + preview + f'<div class="cg">{data}{gaps}</div>' + confirm + report
+    return U.shell("settings", main)
 
 
 # ---------- 資料庫 ----------
@@ -2278,7 +2342,7 @@ def iam() -> str:
 # ---------- 平台設定 ----------
 def settings() -> str:
     head = U.page_head("平台設定", OBS, f'<button type="button" class="btn">匯出設定</button><button type="button" class="btn">診斷包</button><button type="button" class="btn" aria-disabled="true" data-tip="需要第二位擁有者批准；送出後建立變更計畫" style="opacity:.6">{U.icon("lock", 14)}輪替主金鑰</button><button type="button" class="btn pri">檢查更新</button>')
-    tabs = ('<div class="panel"><div class="tabs" role="tablist">' + "".join(f'<button type="button" class="tab{" on" if i == 0 else ""}" role="tab" aria-selected="{"true" if i == 0 else "false"}">{t}</button>' for i, t in enumerate(["基本", "管理入口與安全", "通知", "更新", "快照與匯入匯出", "整合", "遙測", "關於"])) + '</div></div>')
+    tabs = ('<div class="panel"><div class="tabs" role="tablist">' + "".join(f'<button type="button" class="tab{" on" if i == 0 else ""}" role="tab" aria-selected="{"true" if i == 0 else "false"}">{t}</button>' for i, t in enumerate(["基本", "管理入口與安全", "通知", "更新", "快照與匯入匯出", "整合", "遙測", "解除安裝", "關於"])) + '</div></div>')
     def card(title, rows, note=""):
         body = "".join(f'<div style="display:flex;justify-content:space-between;gap:10px;min-height:32px;align-items:center;border-top:1px solid var(--line);padding:4px 0"><span class="note">{k}</span><span style="text-align:right">{v}</span></div>' for k, v in rows)
         n = f'<span class="note" style="margin-top:6px">{note}</span>' if note else ""
@@ -3642,6 +3706,7 @@ SCREENS = {
     "Security": ("安全防護", security, 1440, 2400),
     "Analytics": ("流量分析", analytics, 1440, 2400),
     "IAM": ("身分與存取", iam, 1440, 2400),
+    "Uninstall": ("平台設定 · 解除安裝", uninstall, 1440, 2000),
     "Settings": ("平台設定", settings, 1440, 2600),
     "Logs": ("日誌", logs, 1440, 2200),
     "AppSettings": ("nextcloud · 網路與掛載", app_settings, 1440, 1300),
