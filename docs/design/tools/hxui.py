@@ -167,6 +167,8 @@ body{{margin:0}}
 .hb .srow{{grid-template-columns:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) 110px minmax(0,.7fr)}}
 .hb .crow{{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,.4fr) minmax(0,.7fr)}}
 .hb .drow{{grid-template-columns:minmax(0,.8fr) minmax(0,1.6fr) minmax(0,.6fr) minmax(0,1.4fr) minmax(0,.8fr)}}
+.hb .gprow{{grid-template-columns:minmax(0,1.4fr) minmax(0,.9fr) minmax(0,.5fr) minmax(0,1.2fr)}}
+.hb .garow{{grid-template-columns:minmax(0,.8fr) minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,1.4fr)}}
 .hb .dprow{{grid-template-columns:minmax(0,.5fr) minmax(0,1.6fr) minmax(0,.7fr) minmax(0,.7fr) minmax(0,1.4fr)}}
 .hb .hrow{{grid-template-columns:minmax(0,1.6fr) minmax(0,.8fr) minmax(0,.7fr) minmax(0,1.4fr)}}
 .hb .rrow{{grid-template-columns:24px minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,.5fr) minmax(0,.6fr)}}
@@ -185,6 +187,8 @@ body{{margin:0}}
  .hb .srow{{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,.8fr)}}
  .hb .crow{{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}}
  .hb .drow{{grid-template-columns:minmax(0,.9fr) minmax(0,1.2fr) minmax(0,1.3fr)}}
+ .hb .gprow{{grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr) minmax(0,1fr)}}
+ .hb .garow{{grid-template-columns:minmax(0,.8fr) minmax(0,1.4fr) minmax(0,1.2fr)}}
  .hb .dprow{{grid-template-columns:minmax(0,.5fr) minmax(0,1.4fr) minmax(0,1.3fr)}}
  .hb .hrow{{grid-template-columns:minmax(0,1.4fr) minmax(0,.7fr) minmax(0,1.2fr)}}
  .hb .rrow{{grid-template-columns:24px minmax(0,1.6fr) minmax(0,.8fr)}}

@@ -48,6 +48,10 @@ LOAD1 = walk(24, 2.1, .8, .3, 6, {22: 5.9})
 LOAD5 = [sum(LOAD1[max(0, i - 2):i + 1]) / len(LOAD1[max(0, i - 2):i + 1]) for i in range(24)]
 LOAD15 = [sum(LOAD1[max(0, i - 5):i + 1]) / len(LOAD1[max(0, i - 5):i + 1]) for i in range(24)]
 TEMP = walk(24, 48, 2.5, 40, 70, {22: 63})
+GPU_UTIL = walk(24, 58, 14, 4, 97, {22: 91, 23: 44})          # NVIDIA L4 · ollama 推論
+GPU_VRAM = walk(24, 13.6, 1.1, 9, 21.5)                       # GiB，上限 24
+GPU_POWER = [12 + u * 0.58 for u in GPU_UTIL]                 # W，上限 72
+GPU_TEMP = [38 + u * 0.3 for u in GPU_UTIL]                   # °C
 CONTAINERS = ["shop-api", "shop-worker", "shop-db", "shop-redis", "wiki-app", "wiki-db", "zentinel", "hazelminx-agent"]
 HEAT = [walk(12, b, a, 0, 100) for b, a in [(28, 12), (14, 8), (9, 4), (3, 2), (12, 6), (6, 3), (11, 5), (2, 1)]]
 HEAT[0][10] = 88
@@ -165,7 +169,7 @@ def node_detail() -> str:
       <div class="wrap" style="margin-left: auto"><button type="button" class="btn">終端機</button><button type="button" class="btn">進入維護模式</button><button type="button" class="btn">重新啟動 agent</button><button type="button" class="btn pri">部署到此節點</button></div>
     </div>
     <div class="panel"><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); gap: 10px 16px; padding: 12px 14px; font-size: 13px">
-      {kv("作業系統", "Ubuntu 24.04.2 LTS")}{kv("核心", "6.8.0-45-generic")}{kv("CPU", "8 核 · AMD EPYC 7B13")}{kv("記憶體", "31.3 GiB")}{kv("執行階段", "Docker 27.3.1")}{kv("Agent", "hazelminx-agent 0.1.0 · mTLS")}{kv("角色", "控制中心 · 資料節點")}{kv("GPU", "無")}
+      {kv("作業系統", "Ubuntu 24.04.2 LTS")}{kv("核心", "6.8.0-45-generic")}{kv("CPU", "8 核 · AMD EPYC 7B13")}{kv("記憶體", "31.3 GiB")}{kv("執行階段", "Docker 27.3.1")}{kv("Agent", "hazelminx-agent 0.1.0 · mTLS")}{kv("角色", "控制中心 · 資料節點")}{kv("GPU", "NVIDIA L4 · 24 GiB · 驅動 550.90 · NVML")}
     </div></div>"""
     cpu = U.ts_card("CPU 使用率", [U.Series("平均", CPU_TW, "var(--s1)", kind="area"), U.Series("最高（單核）", [min(100, v * 1.9 + 8) for v in CPU_TW], "var(--s2)")],
                     HOURS, unit="%", vmax=100, markers=[(22, "a3f9c1e 部署")], foot="100% = 8 核全忙 · 部署標記來自工作中心")
@@ -177,8 +181,8 @@ def node_detail() -> str:
                     fmt_val=lambda v: f"{v:.1f}", foot="單位 MB/s · 不含容器間流量")
     load = U.ts_card("負載平均", [U.Series("1 分鐘", LOAD1, "var(--s1)"), U.Series("5 分鐘", LOAD5, "var(--s2)"), U.Series("15 分鐘", LOAD15, "var(--s3)")],
                      HOURS, unit="", vmax=8, fmt_val=lambda v: f"{v:.1f}", foot="8 核 · 超過 8 代表有程序在排隊")
-    temp = U.ts_card("溫度 · CPU 封裝", [U.Series("溫度", TEMP, "var(--hazel)", kind="area")], HOURS, unit="°C", vmax=90,
-                     fmt_val=lambda v: f"{v:.0f}°", foot="門檻 85°C 告警 · 來源 hwmon k10temp")
+    temp = U.ts_card("溫度", [U.Series("CPU 封裝", TEMP, "var(--s1)"), U.Series("GPU", GPU_TEMP, "var(--s2)")], HOURS, unit="°C", vmax=90,
+                     fmt_val=lambda v: f"{v:.0f}°", foot="門檻：CPU 85°C、GPU 83°C 告警 · 來源 hwmon k10temp、NVML")
     disks = f"""
     <section class="panel" aria-labelledby="h-disk">
       <div class="ph"><h2 id="h-disk">磁碟使用</h2><span class="sub">路徑保存原值與解析結果</span></div>
@@ -193,7 +197,42 @@ def node_detail() -> str:
       {U.ranked([("shop-api", 21.4, "21.4%"), ("shop-worker", 8.9, "8.9%"), ("wiki-app", 3.1, "3.1%"), ("shop-db", 2.6, "2.6%"), ("zentinel", 1.8, "1.8%"), ("hazelminx-agent", 0.4, "0.4%")], vmax=25)}
       <div class="note" style="padding: 0 14px 10px">只列前 6 個，佔節點 CPU 的 38.2% · <a href="Containers.dc.html" style="color: var(--hazel)">全部容器 →</a></div>
     </section>"""
-    main = head + range_row() + f'<div class="cg">{cpu}{mem}{io}{net}{load}{temp}</div><div class="cg">{disks}{hot}</div>'
+    gpu_util = U.ts_card("GPU 使用率", [U.Series("核心", GPU_UTIL, "var(--s1)", kind="area")], HOURS, unit="%", vmax=100, markers=[(22, "a3f9c1e 部署")],
+                         foot="100% = 核心全忙 · 02:00 的高峰是 ollama 批次嵌入")
+    gpu_vram = U.ts_card("顯示記憶體", [U.Series("已用", GPU_VRAM, "var(--s1)", kind="area")], HOURS, unit=" GiB", vmax=24,
+                         fmt_val=lambda v: f"{v:.0f}G", foot="上限 24 GiB · 模型載入後常駐，不隨使用率下降")
+    gpu_power = U.ts_card("功耗", [U.Series("GPU", GPU_POWER, "var(--s1)")], HOURS, unit=" W", vmax=72,
+                          fmt_val=lambda v: f"{v:.0f}", foot="上限 72 W 由驅動回報 · 不含主機其他元件")
+    gpu_head = f"""
+    <section class="panel" aria-labelledby="h-gpu">
+      <div class="ph"><h2 id="h-gpu">GPU · NVIDIA L4</h2><span class="sub">24 GiB · 驅動 550.90 · 透過 NVML 每 10 秒取樣</span><span class="note" style="margin-left:auto">欄位依驅動能力顯示，缺值寫「不提供」，不跨廠牌假造</span></div>
+      <div class="tiles" style="padding: 12px 14px">
+        {U.stat_tile("使用率", "44", "%", "1 分鐘前 91%", None, spark=GPU_UTIL)}
+        {U.stat_tile("顯示記憶體", "14.2", "/ 24 GiB", "ollama 佔 13.1 GiB", None, spark=GPU_VRAM)}
+        {U.stat_tile("溫度", "51", "°C", "門檻 83°C", None, spark=GPU_TEMP)}
+        {U.stat_tile("功耗", "38", "/ 72 W", "", None, spark=GPU_POWER)}
+      </div>
+    </section>"""
+    gpu_proc = f"""
+    <section class="panel" aria-labelledby="h-gproc">
+      <div class="ph"><h2 id="h-gproc">GPU 程序 · 現在</h2><span class="sub">NVML 程序清單，對回容器名稱</span></div>
+      <div class="row hd gprow"><span>程序</span><span>容器</span><span class="c3">類型</span><span>顯示記憶體</span></div>
+      <div class="row gprow"><span class="mono">ollama runner · pid 41822</span><span class="mono">ollama</span><span class="c3">運算</span><span>{U.meter(13.1 / 24 * 100, "13.1 GiB", aria="ollama 顯示記憶體")}</span></div>
+      <div class="row gprow"><span class="mono">ffmpeg · pid 52107</span><span class="mono">wiki-media</span><span class="c3">解碼</span><span>{U.meter(0.9 / 24 * 100, "0.9 GiB", aria="wiki-media 顯示記憶體")}</span></div>
+      <div class="row gprow"><span class="mono">Xorg · pid 1180</span><span class="note">主機程序，非容器</span><span class="c3">繪圖</span><span>{U.meter(0.2 / 24 * 100, "0.2 GiB", aria="Xorg 顯示記憶體")}</span></div>
+      <div class="note" style="padding: 8px 14px 10px">每個程序的核心使用率：此驅動不提供，只有整卡數字 · AMD／Intel 卡沒有程序清單時，這個區塊會寫「驅動不提供」而不是空白</div>
+    </section>"""
+    gpu_auth = f"""
+    <section class="panel" aria-labelledby="h-gauth">
+      <div class="ph"><h2 id="h-gauth">容器 GPU 授權</h2><span class="sub">看得到 GPU 不等於容器能用：主機驅動、容器工具與裝置權限分開檢查</span></div>
+      <div class="row hd garow"><span>容器</span><span>授權方式</span><span class="c3">容器工具</span><span>實際可用</span></div>
+      <div class="row garow"><span class="mono">ollama</span><span class="mono">device: nvidia.com/gpu=all</span><span class="c3 mono">nvidia-container-toolkit 1.16</span><span>{U.status("ok", "已驗證 · 推論用 GPU")}</span></div>
+      <div class="row garow"><span class="mono">wiki-media</span><span class="mono">device: nvidia.com/gpu=0 · 僅 video</span><span class="c3 mono">nvidia-container-toolkit 1.16</span><span>{U.status("ok", "已驗證")}</span></div>
+      <div class="row garow"><span class="mono">shop-worker</span><span class="note">未授權</span><span class="c3 note">—</span><span>{U.status("info", "無 GPU 存取")} <span class="note">compose 沒宣告，不會自動給</span></span></div>
+      <div class="note" style="padding: 8px 14px 10px">不以 <span class="mono">privileged</span> 當通用解法 · 驅動升級會影響整台主機，從 <a href="WorkCenter.dc.html" style="color: var(--hazel)">工作中心</a> 走批准流程</div>
+    </section>"""
+    main = (head + range_row() + f'<div class="cg">{cpu}{mem}{io}{net}{load}{temp}</div><div class="cg">{disks}{hot}</div>'
+            + gpu_head + f'<div class="cg">{gpu_util}{gpu_vram}{gpu_power}</div><div class="cg">{gpu_proc}{gpu_auth}</div>')
     return U.shell("nodes", main)
 
 
