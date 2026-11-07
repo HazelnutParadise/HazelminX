@@ -361,7 +361,8 @@ func (cs *challengeStore) put(token string, c *loginChallenge, now time.Time) {
 	cs.byUser[c.userID] = h
 }
 
-// get returns a live challenge or nil.
+// get returns a copy of a live challenge, or nil. Callers never hold the
+// stored value, so concurrent requests on one challenge do not race.
 func (cs *challengeStore) get(token string, now time.Time) *loginChallenge {
 	cs.mu.Lock()
 	defer cs.mu.Unlock()
@@ -374,7 +375,20 @@ func (cs *challengeStore) get(token string, now time.Time) *loginChallenge {
 		cs.dropLocked(h, c)
 		return nil
 	}
-	return c
+	cp := *c
+	return &cp
+}
+
+// setPasskey attaches a passkey ceremony to a live challenge.
+func (cs *challengeStore) setPasskey(token string, pk *passkeyCeremony) bool {
+	cs.mu.Lock()
+	defer cs.mu.Unlock()
+	c := cs.byHash[hashToken(token)]
+	if c == nil {
+		return false
+	}
+	c.passkey = pk
+	return true
 }
 
 func (cs *challengeStore) drop(token string) {

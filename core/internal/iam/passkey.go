@@ -321,9 +321,9 @@ func (s *Service) BeginPasskeyLogin(ctx context.Context, challengeToken string, 
 	if err != nil {
 		return nil, err
 	}
-	s.challenges.mu.Lock()
-	c.passkey = pk
-	s.challenges.mu.Unlock()
+	if !s.challenges.setPasskey(challengeToken, pk) {
+		return nil, ErrChallengeInvalid
+	}
 	return opts, nil
 }
 

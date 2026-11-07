@@ -297,3 +297,27 @@ func TestRelyingPartyUsable(t *testing.T) {
 		}
 	}
 }
+
+// Concurrent passkey option requests and answers on one challenge must not
+// race (run with -race).
+func TestPasskeyChallengeConcurrentAccess(t *testing.T) {
+	svc, _ := newMFATestService(t)
+	ctx := context.Background()
+	p, _ := ownerSession(t, svc)
+	auth := newSoftAuthenticator(t)
+	registerPasskey(t, svc, p, auth)
+	login, err := svc.Login(ctx, "owner", ownerPW, Source{IP: "10.0.0.1", RPID: testRP.ID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var wg sync.WaitGroup
+	for i := 0; i < 4; i++ {
+		wg.Add(2)
+		go func() { defer wg.Done(); svc.BeginPasskeyLogin(ctx, login.Challenge.Token, testRP) }()
+		go func() {
+			defer wg.Done()
+			svc.CompleteSecondFactor(ctx, login.Challenge.Token, Proof{Method: MethodPasskey, Credential: []byte("{}")}, testRP, Source{})
+		}()
+	}
+	wg.Wait()
+}
