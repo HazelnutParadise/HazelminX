@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<title>HazelminX 總覽 方向 C 榛果</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+body{margin:0}
+.hc{--bg:#FAF8F4;--card:#FFFFFF;--tint:#F3EEE6;--line:#E4DCCF;--ink:#1C1917;--muted:#5C564D;--faint:#86806F;--hazel:#8A5A2B;--hazel-soft:#F1E4D3;--hazel-ink:#FFFFFF;--blue:#2F5DA8;--warn:#9A5A0B;--warn-soft:#FBEBD2;--danger:#B23A2F;--danger-soft:#FBE2DE;--ok:#2E6B3E;--ok-soft:#DDEFE0;
+  font-family:"Source Sans 3","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;font-synthesis:none;line-break:strict;color:var(--ink);background:var(--bg);font-size:15px}
+.hc.theme-dark{--bg:#171411;--card:#201C18;--tint:#2A251F;--line:#3B352D;--ink:#F0EAE0;--muted:#B7AE9F;--faint:#8E8677;--hazel:#D8A469;--hazel-soft:#3A2D1F;--hazel-ink:#1B140E;--blue:#8FB3EE;--warn:#E8AA56;--warn-soft:#3B2E17;--danger:#EE8C82;--danger-soft:#43221E;--ok:#92CBA0;--ok-soft:#1E352A}
+.hc .mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+.hc a{color:var(--hazel);text-decoration:none}.hc a:hover{text-decoration:underline}
+.hc button{font:inherit;cursor:pointer}
+.hc .top{display:flex;align-items:center;min-height:44px;padding:0 12px;color:var(--ink);font-weight:500;border-bottom:2px solid transparent}
+.hc .top:hover{color:var(--hazel);text-decoration:none}
+.hc .top.cur{border-bottom-color:var(--hazel);color:var(--hazel)}
+.hc .chip{display:inline-flex;align-items:center;gap:6px;min-height:26px;padding:0 10px;border-radius:13px;font-size:13px;font-weight:600;white-space:nowrap}
+.hc table{border-collapse:collapse;width:100%}.hc th{font-size:12px;font-weight:600;color:var(--faint);text-align:left;padding:8px 14px;border-bottom:1px solid var(--line);letter-spacing:.03em}
+.hc td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}.hc tr:last-child td{border-bottom:0}
+.hc .num{text-align:right;font-variant-numeric:tabular-nums}
+.hc .card{background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 1px 2px rgba(28,25,23,.05)}
+@media (max-width:767px){.hc .tablewrap{overflow-x:auto}.hc .tablewrap table{min-width:640px}.hc .hidephone{display:none!important}.hc .topnav{overflow-x:auto}.hc .act{grid-template-columns:minmax(0,1fr)!important}}
+</style>
+</helmet>
+<div class="hc theme-{{theme}}" style="min-height: 100vh; display: flex; flex-direction: column">
+
+  <!-- 頂列：品牌、搜尋、工作中心 -->
+  <header style="background: var(--card); border-bottom: 1px solid var(--line)">
+    <div style="max-width: 1360px; margin: 0 auto; padding: 0 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px; min-height: 60px">
+      <a href="#overview" style="display: flex; align-items: center; gap: 10px; color: var(--ink); font-weight: 700; font-size: 17px">
+        <span aria-hidden="true" style="width: 26px; height: 26px; border-radius: 8px 8px 12px 12px; background: var(--hazel); display: inline-block; position: relative"><span style="position: absolute; left: 7px; top: 9px; width: 12px; height: 10px; border-radius: 2px 2px 8px 8px; background: var(--hazel-soft)"></span></span>
+        HazelminX
+      </a>
+      <label for="qc" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">搜尋資源</label>
+      <input id="qc" type="search" placeholder="搜尋節點、服務、網域、工作" style="flex: 1 1 260px; max-width: 520px; min-width: 0; min-height: 40px; padding: 0 14px; font: inherit; font-size: 14px; color: var(--ink); background: var(--tint); border: 1px solid var(--line); border-radius: 8px">
+      <div style="margin-left: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+        <button type="button" style="min-height: 40px; padding: 0 14px; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; gap: 8px"><span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 50%; background: var(--blue)"></span>工作中心 <span class="mono" style="color: var(--muted)">3</span></button>
+        <button type="button" aria-label="切換淺色或深色" style="min-height: 40px; min-width: 44px; padding: 0 12px; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; font-size: 13px">{{themeLabel}}</button>
+        <span style="font-size: 14px; color: var(--muted)">tim · 擁有者</span>
+      </div>
+    </div>
+    <nav class="topnav" aria-label="主導覽" style="max-width: 1360px; margin: 0 auto; padding: 0 24px; display: flex; gap: 4px; white-space: nowrap">
+      <a class="top cur" href="#overview" aria-current="page">總覽</a>
+      <a class="top" href="#nodes">主機與節點</a>
+      <a class="top" href="#projects">專案與服務</a>
+      <a class="top" href="#docker">容器</a>
+      <a class="top" href="#k8s">Kubernetes</a>
+      <a class="top" href="#store">商店</a>
+      <a class="top" href="#web">網站與入口</a>
+      <a class="top" href="#api">API 代理</a>
+      <a class="top" href="#db">資料庫</a>
+      <a class="top" href="#ai">AI</a>
+      <a class="top" href="#files">檔案</a>
+      <a class="top" href="#storage">儲存</a>
+      <a class="top" href="#backup">備份</a>
+      <a class="top" href="#cron">計畫任務</a>
+      <a class="top" href="#security">安全</a>
+      <a class="top" href="#analytics">流量</a>
+      <a class="top" href="#events">事件</a>
+      <a class="top" href="#iam">身分</a>
+      <a class="top" href="#settings">設定</a>
+    </nav>
+  </header>
+
+  <main style="max-width: 1360px; width: 100%; margin: 0 auto; box-sizing: border-box; padding: 28px 24px 48px; display: flex; flex-direction: column; gap: 28px">
+
+    <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: 0">總覽</h1>
+        <p style="margin: 0; color: var(--muted)">3 個節點、2 個專案、10 個服務。觀測時間 <span class="mono">03:42:06</span>（UTC+8）。</p>
+      </div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap">
+        <button type="button" style="min-height: 40px; padding: 0 16px; background: var(--hazel); color: var(--hazel-ink); border: 1px solid var(--hazel); border-radius: 8px; font-weight: 600">部署專案</button>
+        <button type="button" style="min-height: 40px; padding: 0 16px; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 8px">新增節點</button>
+      </div>
+    </div>
+
+    <!-- 12 欄：需要處理 8 + 系統狀態 4 -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(560px, 100%), 2fr)); gap: 20px; align-items: start">
+      <section aria-labelledby="hc-act" class="card" style="grid-column: span 1; display: flex; flex-direction: column">
+        <div style="display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line)">
+          <h2 id="hc-act" style="margin: 0; font-size: 16px; font-weight: 700">需要處理</h2>
+          <span class="chip" style="background: var(--warn-soft); color: var(--warn)">3 件</span>
+          <a href="#events" style="margin-left: auto; font-size: 14px">全部事件</a>
+        </div>
+        <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column">
+          <li class="act" style="display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: start; padding: 16px 18px; border-bottom: 1px solid var(--line)">
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap"><span class="chip" style="background: var(--hazel-soft); color: var(--hazel)">待批准</span><span style="font-weight: 600">變更計畫 #418：新 commit 新增 root 掛載</span></div>
+              <div style="font-size: 14px; color: var(--muted); line-height: 1.5">影響 shop · production（hazel-tw-01），自動部署已暫停，舊版 a3f9c1e 繼續服務。證據：compose.yaml 第 41 行 <span class="mono">/:/host:ro</span>。</div>
+            </div>
+            <div style="display: flex; gap: 6px"><button type="button" style="min-height: 36px; padding: 0 12px; background: var(--hazel); color: var(--hazel-ink); border: 0; border-radius: 8px; font-weight: 600; font-size: 14px">檢視差異</button><button type="button" style="min-height: 36px; padding: 0 12px; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; font-size: 14px">拒絕</button></div>
+          </li>
+          <li class="act" style="display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: start; padding: 16px 18px; border-bottom: 1px solid var(--line)">
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap"><span class="chip" style="background: var(--warn-soft); color: var(--warn)">11 天後到期</span><span style="font-weight: 600">shop.example.tw 憑證續期失敗：DNS 驗證逾時</span></div>
+              <div style="font-size: 14px; color: var(--muted); line-height: 1.5">目前憑證仍有效，到期前不會中斷。下一步：檢查 DNS 供應商 Token，或改用 HTTP 驗證。證據：ACME 工作 #2291。</div>
+            </div>
+            <div style="display: flex; gap: 6px"><button type="button" style="min-height: 36px; padding: 0 12px; background: var(--hazel); color: var(--hazel-ink); border: 0; border-radius: 8px; font-weight: 600; font-size: 14px">重試續期</button><button type="button" style="min-height: 36px; padding: 0 12px; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; font-size: 14px">工作紀錄</button></div>
+          </li>
+          <li class="act" style="display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: start; padding: 16px 18px">
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap"><span class="chip" style="background: var(--danger-soft); color: var(--danger)">磁碟 93%</span><span style="font-weight: 600">hazel-jp-02 資料碟剩 61 GiB，且未綁定裝置身分</span></div>
+              <div style="font-size: 14px; color: var(--muted); line-height: 1.5">節點狀態已過期（最後回報 03:41:18）。影響：wiki 備份暫存可能不足；重開機後掛錯磁碟不會被阻止。下一步：清理或搬移資料，並綁定 UUID。</div>
+            </div>
+            <div style="display: flex; gap: 6px"><button type="button" style="min-height: 36px; padding: 0 12px; background: var(--hazel); color: var(--hazel-ink); border: 0; border-radius: 8px; font-weight: 600; font-size: 14px">查看儲存</button><button type="button" style="min-height: 36px; padding: 0 12px; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; font-size: 14px">靜音 24 小時</button></div>
+          </li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="hc-sys" class="card" style="display: flex; flex-direction: column">
+        <div style="padding: 14px 18px; border-bottom: 1px solid var(--line)"><h2 id="hc-sys" style="margin: 0; font-size: 16px; font-weight: 700">平台與入口</h2></div>
+        <dl style="margin: 0; display: flex; flex-direction: column">
+          <div style="display: flex; justify-content: space-between; gap: 12px; padding: 12px 18px; border-bottom: 1px solid var(--line)"><dt style="color: var(--muted)">控制中心</dt><dd style="margin: 0; display: flex; align-items: center; gap: 8px"><span class="chip" style="background: var(--ok-soft); color: var(--ok)">正常</span><span class="mono" style="font-size: 13px; color: var(--muted)">hazel-tw-01</span></dd></div>
+          <div style="display: flex; justify-content: space-between; gap: 12px; padding: 12px 18px; border-bottom: 1px solid var(--line)"><dt style="color: var(--muted)">Zentinel</dt><dd style="margin: 0; display: flex; align-items: center; gap: 8px"><span class="chip" style="background: var(--ok-soft); color: var(--ok)">執行中</span><span class="mono" style="font-size: 13px; color: var(--muted)">0.6.54</span></dd></div>
+          <div style="display: flex; justify-content: space-between; gap: 12px; padding: 12px 18px; border-bottom: 1px solid var(--line)"><dt style="color: var(--muted)">WAF</dt><dd style="margin: 0; display: flex; align-items: center; gap: 8px"><span class="chip" style="background: var(--warn-soft); color: var(--warn)">只偵測</span><span style="font-size: 13px; color: var(--muted)">規則 2026-10</span></dd></div>
+          <div style="display: flex; justify-content: space-between; gap: 12px; padding: 12px 18px; border-bottom: 1px solid var(--line)"><dt style="color: var(--muted)">今日請求（來源站）</dt><dd class="mono" style="margin: 0">184,392</dd></div>
+          <div style="display: flex; justify-content: space-between; gap: 12px; padding: 12px 18px"><dt style="color: var(--muted)">資料完整度</dt><dd class="mono" style="margin: 0">99.1% <span style="font-family: inherit; font-size: 13px; color: var(--muted)">（0.9% 取樣）</span></dd></div>
+        </dl>
+      </section>
+    </div>
+
+    <!-- 節點 -->
+    <section id="nodes" aria-labelledby="hc-nodes" class="card" style="display: flex; flex-direction: column; overflow: hidden">
+      <div style="display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line)">
+        <h2 id="hc-nodes" style="margin: 0; font-size: 16px; font-weight: 700">節點</h2>
+        <span style="font-size: 13px; color: var(--muted)">離線不等於應用已停止</span>
+        <a href="#nodes" style="margin-left: auto; font-size: 14px">管理節點</a>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>節點</th><th>狀態</th><th class="hidephone">作業系統</th><th class="num">CPU</th><th class="num hidephone">記憶體</th><th class="num">資料碟</th><th>最後聯絡</th></tr></thead>
+          <tbody>
+            <tr><td><a href="#nodes" class="mono" style="font-weight: 600">hazel-tw-01</a><div style="font-size: 13px; color: var(--muted)">控制中心 · Docker 28.5 · Zentinel</div></td><td><span class="chip" style="background: var(--ok-soft); color: var(--ok)">連線中</span></td><td class="hidephone">Ubuntu 24.04</td><td class="num mono">37%</td><td class="num mono hidephone">11.2 / 31.3 GiB</td><td class="num mono">412 / 931 GiB</td><td class="mono">2 秒前</td></tr>
+            <tr><td><a href="#nodes" class="mono" style="font-weight: 600">hazel-jp-02</a><div style="font-size: 13px; color: var(--muted)">Docker 28.5 · 資料碟未綁定</div></td><td><span class="chip" style="background: var(--warn-soft); color: var(--warn)">狀態過期</span></td><td class="hidephone">Debian 12</td><td class="num mono" style="color: var(--muted)">64%（上次）</td><td class="num mono hidephone" style="color: var(--muted)">13.9 / 15.5 GiB（上次）</td><td class="num mono" style="color: var(--danger)">870 / 931 GiB</td><td class="mono" style="color: var(--warn)">03:41:18</td></tr>
+            <tr><td><a href="#nodes" class="mono" style="font-weight: 600">lab-mini</a><div style="font-size: 13px; color: var(--muted)">Podman rootless（使用者 lab）</div></td><td><span class="chip" style="background: var(--tint); color: var(--blue)">維護中</span></td><td class="hidephone">Debian 13</td><td class="num mono">3%</td><td class="num mono hidephone">1.1 / 7.6 GiB</td><td class="num mono">38 / 118 GiB</td><td class="mono">5 秒前</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 工作 + 專案 -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(440px, 100%), 1fr)); gap: 20px; align-items: start">
+      <section aria-labelledby="hc-jobs" class="card" style="display: flex; flex-direction: column">
+        <div style="display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line)"><h2 id="hc-jobs" style="margin: 0; font-size: 16px; font-weight: 700">進行中的工作</h2><a href="#jobs" style="margin-left: auto; font-size: 14px">工作中心</a></div>
+        <ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column">
+          <li style="display: flex; flex-direction: column; gap: 8px; padding: 14px 18px; border-bottom: 1px solid var(--line)">
+            <div style="display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap"><span style="font-weight: 600">部署 shop-api 到 production</span><span class="chip" style="background: var(--tint); color: var(--blue)">驗證中</span></div>
+            <div style="font-size: 14px; color: var(--muted)">hazel-tw-01 · 健康檢查 2／3 通過 · 心跳 2 秒前</div>
+            <div style="display: flex; align-items: center; gap: 12px"><div aria-hidden="true" style="flex: 1; height: 6px; background: var(--tint); border-radius: 3px; overflow: hidden"><div style="width: 66%; height: 100%; background: var(--blue)"></div></div><button type="button" style="min-height: 34px; padding: 0 12px; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; font-size: 13px">要求取消</button></div>
+          </li>
+          <li style="display: flex; flex-direction: column; gap: 8px; padding: 14px 18px; border-bottom: 1px solid var(--line)">
+            <div style="display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap"><span style="font-weight: 600">備份 wiki-db 到 S3（tokyo-backups）</span><span class="chip" style="background: var(--tint); color: var(--blue)">執行中</span></div>
+            <div style="font-size: 14px; color: var(--muted)">hazel-tw-01 · 已傳 1.8／4.6 GiB · 這一步不能取消（資料庫 dump 中）</div>
+            <div aria-hidden="true" style="height: 6px; background: var(--tint); border-radius: 3px; overflow: hidden"><div style="width: 39%; height: 100%; background: var(--blue)"></div></div>
+          </li>
+          <li style="display: flex; flex-direction: column; gap: 8px; padding: 14px 18px">
+            <div style="display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap"><span style="font-weight: 600">更新套件 openssl</span><span class="chip" style="background: var(--warn-soft); color: var(--warn)">狀態不明</span></div>
+            <div style="font-size: 14px; color: var(--muted)">hazel-jp-02 · 最後心跳 03:41:18 · 重連後先對帳，不會自動重跑</div>
+          </li>
+        </ol>
+      </section>
+
+      <section id="projects" aria-labelledby="hc-proj" class="card" style="display: flex; flex-direction: column; overflow: hidden">
+        <div style="display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line)"><h2 id="hc-proj" style="margin: 0; font-size: 16px; font-weight: 700">專案與服務</h2><a href="#projects" style="margin-left: auto; font-size: 14px">全部專案</a></div>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>專案 · 環境</th><th class="num">服務</th><th>最近部署</th><th class="hidephone">入口</th></tr></thead>
+            <tbody>
+              <tr><td><strong>shop</strong> <span style="color: var(--muted)">· production</span></td><td class="num mono">4</td><td><span class="mono">a3f9c1e</span> · 02:57 · <span class="chip" style="background: var(--ok-soft); color: var(--ok)">成功</span></td><td class="hidephone"><a href="#web">shop.example.tw</a></td></tr>
+              <tr><td><strong>wiki</strong> <span style="color: var(--muted)">· production</span></td><td class="num mono">2</td><td><span class="mono">7d02b4a</span> · 1 天前 · <span class="chip" style="background: var(--ok-soft); color: var(--ok)">成功</span></td><td class="hidephone"><a href="#web">wiki.example.tw</a></td></tr>
+              <tr><td><strong>shop</strong> <span style="color: var(--muted)">· staging</span></td><td class="num mono">4</td><td><span class="mono">c91e0d7</span> · 昨天 · <span class="chip" style="background: var(--danger-soft); color: var(--danger)">失敗</span><div style="font-size: 13px; color: var(--muted)">migration 不相容</div></td><td class="hidephone"><a href="#web">staging.shop.example.tw</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- 儲存 -->
+    <section id="storage" aria-labelledby="hc-sto" class="card" style="display: flex; flex-direction: column">
+      <div style="display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line)"><h2 id="hc-sto" style="margin: 0; font-size: 16px; font-weight: 700">儲存與備份</h2><a href="#storage" style="margin-left: auto; font-size: 14px">儲存設定</a></div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 1px; background: var(--line)">
+        <div style="display: flex; flex-direction: column; gap: 6px; padding: 14px 18px; background: var(--card)"><span class="mono" style="font-weight: 600">hazel-tw-01 /mnt/data</span><span><span class="chip" style="background: var(--ok-soft); color: var(--ok)">已綁定裝置身分</span></span><span class="mono" style="font-size: 13px; color: var(--muted)">412 / 931 GiB</span></div>
+        <div style="display: flex; flex-direction: column; gap: 6px; padding: 14px 18px; background: var(--card)"><span class="mono" style="font-weight: 600">hazel-jp-02 /mnt/data</span><span><span class="chip" style="background: var(--danger-soft); color: var(--danger)">未綁定 · 風險</span></span><span class="mono" style="font-size: 13px; color: var(--danger)">870 / 931 GiB（93%）</span></div>
+        <div style="display: flex; flex-direction: column; gap: 6px; padding: 14px 18px; background: var(--card)"><span style="font-weight: 600">最近備份 wiki-db · 03:00</span><span><span class="chip" style="background: var(--ok-soft); color: var(--ok)">校驗通過</span> <span style="font-size: 13px; color: var(--muted)">尚未還原測試</span></span><span class="mono" style="font-size: 13px; color: var(--muted)">S3 tokyo-backups</span></div>
+      </div>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false,"section":"主題"},"$preview":{"width":1440,"height":1560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dark = this.props.dark ?? false;
+    return { theme: dark ? 'dark' : 'light', themeLabel: dark ? '淺色' : '深色' };
+  }
+}
+</script>
+</body>
+</html>
