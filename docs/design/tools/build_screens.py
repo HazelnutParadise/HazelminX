@@ -1771,12 +1771,19 @@ def logs() -> str:
 # ---------- 終端機 ----------
 def terminal() -> str:
     head = U.page_head("終端機", OBS, '<button type="button" class="btn pri">新連線</button><button type="button" class="btn">快捷指令</button><button type="button" class="btn">設定</button>')
-    tabs = ('<div class="panel"><div class="tabs" role="tablist"><button type="button" class="tab on" role="tab" aria-selected="true">hazel-tw-01 · root</button><button type="button" class="tab" role="tab" aria-selected="false">shop-api（容器）</button>'
-            '<button type="button" class="tab" role="tab" aria-selected="false">lab-mini · deploy</button><button type="button" class="tab" role="tab" aria-selected="false">＋</button><span style="margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:10px">'
-            + U.status("dng", "這個終端機代表 root@hazel-tw-01 · 稽核：完整錄製") + '<span class="chip">縮到底部 Dock</span><span class="chip">全螢幕</span></span></div></div>')
+    def ttab(on, dot, ic, name, sub, label):
+        return (f'<div class="ttab{" on" if on else ""}" role="tab" aria-selected="{"true" if on else "false"}" tabindex="{0 if on else -1}">'
+                f'<span class="dot {dot}" aria-hidden="true"></span>{U.icon(ic, 14)}<span class="tn">{name}</span><span class="tu">{sub}</span>'
+                f'<button type="button" class="ib" aria-label="關閉 {label}">{U.icon("x", 14)}</button></div>')
+    tabs = ('<div class="panel"><div class="ttabs"><div role="tablist" aria-label="終端機分頁" style="display:flex">'
+            + ttab(True, "ok", "nodes", "hazel-tw-01", "root", "hazel-tw-01 root")
+            + ttab(False, "ok", "docker", "shop-api", "容器 · tw-01", "shop-api 容器")
+            + ttab(False, "info", "nodes", "lab-mini", "deploy", "lab-mini deploy")
+            + f'</div><span class="tadd"><button type="button" class="ib" aria-label="新分頁">{U.icon("plus")}</button></span>'
+            + f'<span class="tend"><button type="button" class="ib" aria-label="縮到底部 Dock">{U.icon("dock")}</button><button type="button" class="ib" aria-label="全螢幕">{U.icon("max")}</button></span></div></div>')
     term = f"""
     <section class="panel" aria-labelledby="h-tm">
-      <div class="ph"><h2 id="h-tm">hazel-tw-01 · root · 會話 #3 · 開始 03:36 · 心跳正常</h2><span class="sub">經 Agent，不走 sshd；切到別的頁面回來輸出仍完整</span></div>
+      <div class="ph"><h2 id="h-tm" class="mono">root@hazel-tw-01</h2><span class="note">會話 #3 · 03:36 開始 · 經 Agent</span><div class="wrap" style="margin-left:auto">{U.status("info", "錄製中")}{U.status("ok", "心跳 3 ms")}</div></div>
       <div style="padding:10px 14px"><div class="term" style="min-height:300px">root@hazel-tw-01:~# docker ps --format 'table {{{{.Names}}}}\t{{{{.Status}}}}'
 NAMES             STATUS
 shop-api-1        Up 46 minutes (healthy)
@@ -1794,7 +1801,7 @@ root@hazel-tw-01:~# <span style="background:var(--ink);color:var(--panel)"> </sp
     <section class="panel" aria-labelledby="h-hs">
       <div class="ph"><h2 id="h-hs">連線目標</h2><span class="sub">節點經 Agent；外部主機用 SSH 資產（金鑰在機密庫）</span></div>
       <div class="row hd srow"><span>目標</span><span>狀態</span><span class="c3">方式</span><span class="c4">身分</span><span class="c4">稽核</span><span class="c5"></span><span></span></div>
-      <a class="row srow" href="#h1"><span class="name"><span class="n">hazel-tw-01</span><span class="d">節點</span></span><span>{U.status("ok", "連線中")}</span><span class="c3 note">Agent</span><span class="mono c4">root · tim 可</span><span class="c4 note">完整錄製</span><span class="c5"></span><span><button type="button" class="btn sm">開啟</button></span></a>
+      <a class="row srow" href="#h1"><span class="name"><span class="n">hazel-tw-01</span><span class="d">節點</span></span><span>{U.status("ok", "連線中")}</span><span class="c3 note">Agent</span><span class="mono c4">root</span><span class="c4 note">完整錄製</span><span class="c5"></span><span><button type="button" class="btn sm">開啟</button></span></a>
       <a class="row srow" href="#h2"><span class="name"><span class="n">hazel-jp-02</span><span class="d">節點</span></span><span>{U.status("warn", "狀態過期")}</span><span class="c3 note">Agent</span><span class="mono c4">root</span><span class="c4 note">完整錄製</span><span class="c5"></span><span><button type="button" class="btn sm">開啟</button></span></a>
       <a class="row srow" href="#h3"><span class="name"><span class="n">lab-mini</span><span class="d">節點 · rootless</span></span><span>{U.status("info", "維護中")}</span><span class="c3 note">Agent</span><span class="mono c4">deploy（非 root）</span><span class="c4 note">指令紀錄</span><span class="c5"></span><span><button type="button" class="btn sm">開啟</button></span></a>
       <a class="row srow" href="#h4"><span class="name"><span class="n">nas.example.tw</span><span class="d">外部 SSH 資產</span></span><span>{U.status("ok", "可達")}</span><span class="c3 note">SSH · 金鑰 id_nas</span><span class="mono c4">backup</span><span class="c4 note">指令紀錄</span><span class="c5"></span><span><button type="button" class="btn sm">開啟</button></span></a>

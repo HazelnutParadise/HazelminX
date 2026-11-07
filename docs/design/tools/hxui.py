@@ -389,6 +389,14 @@ body{{margin:0}}
 .hb .imp:focus-visible{{outline:2px solid var(--hazel);outline-offset:2px}}
 .hb .imp[data-tip]:hover,.hb .imp[data-tip]:focus-visible{{anchor-name:--imp}}
 .hb .imp[data-tip]:hover::after,.hb .imp[data-tip]:focus-visible::after{{content:attr(data-tip);position:fixed;position-anchor:--imp;position-area:bottom span-left;position-try-fallbacks:bottom span-right,top span-left;margin:6px 0;z-index:50;white-space:nowrap;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:500;color:var(--ink);background:var(--raised);border:1px solid var(--line);box-shadow:0 4px 12px rgb(0 0 0 / .25);pointer-events:none}}
+.hb .ttabs{{display:flex;align-items:stretch;border-bottom:1px solid var(--line);overflow-x:auto}}
+.hb .ttab{{display:flex;align-items:center;gap:8px;height:40px;padding:0 6px 0 12px;border-right:1px solid var(--hairline);white-space:nowrap;color:var(--muted);font-size:13px;flex:none}}
+.hb .ttab.on{{color:var(--ink);background:var(--raised);box-shadow:inset 0 -2px 0 var(--hazel)}}
+.hb .ttab .dot{{width:8px;height:8px;border-radius:50%;flex:none}}.hb .ttab .dot.ok{{background:var(--ok)}}.hb .ttab .dot.warn{{background:var(--warn)}}.hb .ttab .dot.info{{background:var(--blue)}}
+.hb .ttab .tn{{font-family:"Geist Mono",ui-monospace,monospace;font-weight:500}}.hb .ttab .tu{{color:var(--faint);font-size:12px}}
+.hb .ttab .ib{{min-width:24px;min-height:24px;width:24px;height:24px}}
+.hb .ttabs .tend{{margin-left:auto;display:flex;align-items:center;gap:4px;padding:0 8px;flex:none}}
+.hb .ttabs .tadd{{display:flex;align-items:center;padding:0 6px;flex:none}}
 @media (max-width:1024px){{.hb .tw{{--k5: ;}}}}
 @media (max-width:767px){{.hb .tw{{--k3: ;--k4: ;--k5: ;}}}}
 """
@@ -429,6 +437,10 @@ ICONS = {
  "power": '<path d="M12 3v8"/><path d="M6.3 6.8a8 8 0 1 0 11.4 0"/>',
  "box": '<path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5z"/><path d="M3.5 7.5 12 12l8.5-4.5M12 12v9"/>',
  "check": '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+ "x": '<path d="M6 6l12 12M18 6 6 18"/>',
+ "plus": '<path d="M12 5v14M5 12h14"/>',
+ "dock": '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 14h18"/>',
+ "max": '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
  "more": '<circle cx="6" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18" cy="12" r="1.2"/>',
  "stop": '<rect x="6" y="6" width="12" height="12" rx="1.5"/>',
  "chev": '<path d="m9 6 6 6-6 6"/>',
