@@ -52,10 +52,26 @@ go test ./...
 |---|---|
 | `cmd/hazelminx-core` | 進入點：設定、儲存、HTTP、優雅關閉 |
 | `internal/config` | 旗標與環境變數載入、驗證 |
-| `internal/store` | SQLite 開啟、WAL、只升不降的 migration（`migrations/NNNN_name.sql`） |
+| `internal/store` | SQLite 開啟、WAL、`synchronous=FULL`、開檔前 `quick_check`、只升不降的 migration（`migrations/NNNN_name.sql`） |
 | `internal/api` | Gin 路由、健康檢查、總覽、工作 API、介面靜態檔；`iam_routes.go` 是工作階段、CSRF 與授權中介層（`RequireGlobal`、`RequireScoped`）與 IAM 端點 |
 | `internal/jobs` | 工作引擎：狀態機、冪等鍵、資源鎖、預算、事件序號、診斷、SQLite 儲存 |
 | `internal/iam` | 帳號、角色與資源範圍、密碼雜湊、工作階段、預設拒絕的授權判定、稽核紀錄、登入嘗試限制 |
+| `internal/secrets` | 機密參照（加密值、版本、使用範圍、到期、變更紀錄）、主金鑰檔與輪替、Token 雜湊查驗 |
 | `web` | 嵌入式前端（`embedweb` build tag） |
 
-資料庫 schema 比執行檔新時拒絕啟動，不會建立空白資料庫（REL-006、T-009、T-012）。
+## 資料目錄與復原狀態
+
+| 檔案 | 內容 | 權限 |
+|---|---|---|
+| `core.db`（含 `-wal`、`-shm`） | 平台資料庫 | 0600 |
+| `master.key` | 主金鑰檔：各世代金鑰、目前作用中的世代、復原材料已取得的確認。不在資料庫內。 | 0600 |
+
+啟動時依序檢查，任一不過就以非零結束並說明原因，不會建立空白資料庫冒充全新安裝（DAT-002、REL-006、T-009、T-012）：
+
+- `master.key` 存在但 `core.db` 不在：資料庫遺失，進復原狀態。
+- `core.db` 無法通過 `PRAGMA quick_check`：資料庫損壞，檔案原樣保留。
+- schema 版本比執行檔新：拒絕開啟。
+- `master.key` 可被擁有者以外讀取、或無法解析：拒絕啟動。
+- 資料庫裡有密文引用主金鑰檔沒有的世代：拒絕啟動並列出缺少的世代（舊備份搭配新主金鑰檔時會在這裡被攔下，而不是還原時才發現）。
+
+主金鑰輪替（`secrets.Service.RotateMasterKey`）分三步：新世代先寫進 `master.key` 標為 pending → 一個交易內把所有密文重新包裝並用新舊兩把金鑰驗證 → `master.key` 把新世代設為作用中、舊世代標為 retired。舊世代永遠保留在檔案裡，所以輪替前的備份仍可解密。中途失敗時交易回滾、舊世代維持作用中；中途斷電由下次啟動依資料庫實際引用的世代收尾。
