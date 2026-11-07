@@ -15,7 +15,7 @@
 | [005](005-web-skeleton.md) | 使用者可以開啟 React 介面並切換語言與淺深色 | 基礎建設 | 001, 002 | [#5](https://github.com/HazelnutParadise/hazelminx/issues/5) | blocked |
 | [006](006-ci-pipeline.md) | 維護者可以在 CI 建置、測試並產生各架構成品 | 發布與供應鏈 | 003, 004, 005 | [#6](https://github.com/HazelnutParadise/hazelminx/issues/6) | blocked |
 | [007](007-core-agent-protocol.md) | Core 與 Agent 可以用版本化、雙向驗證的通道交換能力與工作事件 | 節點與 Agent | 003, 004 | [#7](https://github.com/HazelnutParadise/hazelminx/issues/7) | blocked |
-| [008](008-job-engine.md) | 使用者可以提交工作後關閉頁面，之後仍能查到進度、證據與結果 | 基礎建設 | 003 | [#8](https://github.com/HazelnutParadise/hazelminx/issues/8) | blocked |
+| [008](008-job-engine.md) | 使用者可以提交工作後關閉頁面，之後仍能查到進度、證據與結果 | 基礎建設 | 003 | [#8](https://github.com/HazelnutParadise/hazelminx/issues/8) | in_progress |
 | [009](009-iam-foundation.md) | 擁有者可以登入、建立帳號與角色，未授權的 API 呼叫一律被拒絕 | 身分與存取 | 003 | [#9](https://github.com/HazelnutParadise/hazelminx/issues/9) | blocked |
 | [010](010-management-api-contract.md) | 整合者可以用 /management/v1 的分頁、版本條件與工作回應操作資源 | API、CLI 與整合 | 003, 008 | [#10](https://github.com/HazelnutParadise/hazelminx/issues/10) | blocked |
 | [011](011-secrets-and-master-key.md) | 管理員可以安全保存機密，且主金鑰可輪替並驗證舊備份仍可解密 | 基礎建設 | 003 | [#11](https://github.com/HazelnutParadise/hazelminx/issues/11) | blocked |
