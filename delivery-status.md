@@ -10,6 +10,7 @@ M0 基礎與設計：規格已整併、票務已切好、GitHub issue 已開；�
 - 設計系統與原型（票 002）→ `DESIGN.md`、`docs/design/`、`DESIGN-REVIEW.md`。
 - 1Panel 功能基線盤點（票 092）→ `docs/baseline/`。
 - 參考專案研究收尾 → `docs/research/`（1Panel 後端／前端、Komodo Periphery、Portainer Git Stack、Beszel 報告待補）。
+- IAM 基礎（票 009）→ `core/internal/iam`、`core/internal/api/iam_routes.go`；草稿 PR 堆疊在票 003 之上，等 003 合併後改 base 到 `main`。
 
 ## Milestones
 | id | target | owner | status | verification_signal |
@@ -39,6 +40,8 @@ None。
 | 可信 IP 與 WAF 以 Zentinel agent filter 實作；核心 `waf.mode` 不用 | Zentinel 研究：核心 WAF 未接線、只有 X-Forwarded-For 處理 | 2026-11-06 | 064、065 |
 | TCP/UDP 代理另選元件 | Zentinel 無 L4 代理 | 2026-11-06 | 060 |
 | Windows 節點票標 `scope:pending-approval` | 08.7 為建議範圍 | 2026-11-06 | 093 |
+| 登入節流用記憶體計數、帳號冷卻上限 15 分鐘、曾成功登入的來源不受帳號冷卻影響 | IAM-012 要求不能永久鎖死管理員；單一 Core 單一程序，重啟只會讓冷卻提早結束 | 2026-11-07 | 009、014 |
+| 猜到不可見範圍的資源 ID 回與「不存在」完全相同的 404，可見但無權才回 403 | T-014 要求查詢、下載、搜尋、事件串流都不洩漏存在與否 | 2026-11-07 | 009、008、010 |
 
 ## Source Links
 - 架構決策：`ENG.md`

@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/HazelnutParadise/hazelminx/core/internal/iam"
 	"github.com/gin-gonic/gin"
 )
 
@@ -31,6 +32,10 @@ type Server struct {
 	health HealthChecker
 	ui     fs.FS
 	start  time.Time
+
+	iam       *iam.Service     // set by MountIAM
+	protected *gin.RouterGroup // authenticated /management/v1 group
+	extraOps  []gin.H          // operations registered by Mount* for the overview
 }
 
 // New builds the router. ui may be nil when no interface is embedded.
@@ -78,15 +83,17 @@ func (s *Server) healthz(c *gin.Context) {
 // overview is the API discovery document required by the engineering
 // guidelines: every public operation must be reachable from here.
 func (s *Server) overview(c *gin.Context) {
+	ops := []gin.H{
+		{"method": "GET", "path": "/healthz", "summary": "liveness and store health"},
+		{"method": "GET", "path": "/management/v1", "summary": "this overview"},
+	}
+	ops = append(ops, s.extraOps...)
 	c.JSON(http.StatusOK, gin.H{
-		"name":    "HazelminX management API",
-		"version": "v1",
-		"build":   Version,
-		"operations": []gin.H{
-			{"method": "GET", "path": "/healthz", "summary": "liveness and store health"},
-			{"method": "GET", "path": "/management/v1", "summary": "this overview"},
-		},
-		"openapi": nil, // ticket 010 publishes /management/v1/openapi.json
+		"name":       "HazelminX management API",
+		"version":    "v1",
+		"build":      Version,
+		"operations": ops,
+		"openapi":    nil, // ticket 010 publishes /management/v1/openapi.json
 	})
 }
 
