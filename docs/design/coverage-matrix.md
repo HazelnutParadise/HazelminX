@@ -103,10 +103,10 @@
 | Users and Groups | System（使用者與 sudo） | 有畫面；建立表單未畫 |
 | Change Passwords | System（root 密碼卡） | 摘要 |
 | System Logs（journald） | Logs | 有畫面 |
-| Log File Rotation | — | 規格外 |
+| Log File Rotation | HostServices | 納入（增補 01、票 105）；編輯表單未畫 |
 | Disk and Network Filesystems（fstab、NFS／SMB 掛載） | System（掛載）、Storage | 有畫面；掛載操作流程未畫（票 031） |
 | Partitions、LVM、RAID、LUKS | Storage | 摘要：操作流程未畫（票 031） |
-| Disk Quotas | — | 規格外 |
+| Disk Quotas | HostServices | 納入（票 105） |
 | Filesystem Backup | Storage（備份任務） | 有畫面 |
 | Network Configuration（介面、路由、DNS、hosts） | System（網路） | 有畫面；編輯表單未畫 |
 | Linux Firewall（iptables／nftables） | Nodes（Port 矩陣）、Security | 摘要：規則編輯未畫 |
@@ -117,18 +117,18 @@
 | Custom Commands | Terminal（快捷指令） | 有畫面 |
 | Webmin Users／ACL、Webmin Configuration | IAM、Settings | 有畫面 |
 | System and Server Status | Overview、NodeDetail | 有畫面 |
-| Apache／Nginx config | — | 規格外（入口由 Zentinel 負責；站點設定在 Websites） |
-| BIND DNS Server | — | 規格外 |
-| DHCP Server | — | 規格外 |
-| Postfix／Dovecot／Sendmail | — | 規格外 |
-| Samba、NFS Exports（伺服器端） | — | 規格外（規格只有掛載客戶端 STO-004） |
+| Apache／Nginx config | HostServices | 納入（票 104）；與 Zentinel 分工見增補 01 |
+| BIND DNS Server | HostServices（zone、紀錄、套用流程、版本） | 納入（票 101）；有畫面 |
+| DHCP Server | HostServices | 納入（票 101）；租約表未畫 |
+| Postfix／Dovecot／Sendmail | HostServices | 納入（票 102）；佇列頁未畫 |
+| Samba、NFS Exports（伺服器端） | HostServices | 納入（票 103） |
 | ProFTPD | Nodes（FTP／SFTP 卡） | 摘要 |
 | MySQL／PostgreSQL Database Server | Database | 有畫面 |
-| PAM、MIME、Printer、Perl modules | — | 規格外 |
+| PAM、MIME、Printer | HostServices | 納入（票 106）；Perl modules 不納入 |
 
-## 五、要你決定的範圍
+## 五、已決定的範圍
 
-Webmin 有九類模組規格沒要求（DNS、DHCP、郵件、Samba／NFS 伺服器、Apache／Nginx 原生設定、日誌輪替、磁碟配額、PAM／MIME／印表機）。「完全取代 Webmin」要不要包含這些？納入就要加規格章節與票；不納入就在發布說明寫清楚。
+2026-11-07 使用者決定納入 Webmin 九類規格外模組。規格增補 `docs/spec/addendum-01-host-service-modules.md`、票 100–106（M6）、畫板 HostServices。
 
 ## 六、下一批要畫的細部畫面（依矩陣優先序）
 

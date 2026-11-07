@@ -2248,6 +2248,148 @@
    ],
    "status": "blocked",
    "issue": 98
+  },
+  {
+   "id": "100",
+   "file": "100-host-service-module-framework.md",
+   "title": "維運者可以在通用框架裡看模組狀態、結構化或原始編輯設定、套用前驗證並回滾",
+   "epic": "host-services",
+   "milestone": "M6",
+   "blocked_by": [
+    "022",
+    "012",
+    "029"
+   ],
+   "requirements": [
+    "HSM-001",
+    "HSM-002",
+    "HSM-003",
+    "HSM-013",
+    "HSM-014"
+   ],
+   "acceptance_tests": [
+    "T-148"
+   ],
+   "status": "blocked",
+   "issue": 107
+  },
+  {
+   "id": "101",
+   "file": "101-dns-dhcp-servers.md",
+   "title": "維運者可以管理 BIND 權威 DNS 與 DHCP（ISC／Kea）的 zone、紀錄、子網、租約",
+   "epic": "host-services",
+   "milestone": "M6",
+   "blocked_by": [
+    "100"
+   ],
+   "requirements": [
+    "HSM-004",
+    "HSM-005"
+   ],
+   "acceptance_tests": [
+    "T-140",
+    "T-141"
+   ],
+   "status": "blocked",
+   "issue": 108
+  },
+  {
+   "id": "102",
+   "file": "102-mail-servers.md",
+   "title": "維運者可以管理 Postfix／Dovecot 的網域、信箱、別名、TLS 與佇列",
+   "epic": "host-services",
+   "milestone": "M6",
+   "blocked_by": [
+    "100",
+    "011"
+   ],
+   "requirements": [
+    "HSM-006"
+   ],
+   "acceptance_tests": [
+    "T-142"
+   ],
+   "status": "blocked",
+   "issue": 109
+  },
+  {
+   "id": "103",
+   "file": "103-file-sharing-servers.md",
+   "title": "維運者可以管理 Samba 分享與 NFS exports 並看目前連線",
+   "epic": "host-services",
+   "milestone": "M6",
+   "blocked_by": [
+    "100",
+    "023"
+   ],
+   "requirements": [
+    "HSM-007"
+   ],
+   "acceptance_tests": [
+    "T-143"
+   ],
+   "status": "blocked",
+   "issue": 110
+  },
+  {
+   "id": "104",
+   "file": "104-native-web-servers.md",
+   "title": "維運者可以管理宿主機原生 Apache／Nginx 的虛擬主機與模組，並與 Zentinel 分工",
+   "epic": "host-services",
+   "milestone": "M6",
+   "blocked_by": [
+    "100",
+    "060"
+   ],
+   "requirements": [
+    "HSM-008"
+   ],
+   "acceptance_tests": [
+    "T-144"
+   ],
+   "status": "blocked",
+   "issue": 111
+  },
+  {
+   "id": "105",
+   "file": "105-logrotate-and-quotas.md",
+   "title": "維運者可以管理 logrotate 與磁碟配額",
+   "epic": "host-services",
+   "milestone": "M6",
+   "blocked_by": [
+    "100",
+    "030"
+   ],
+   "requirements": [
+    "HSM-009",
+    "HSM-010"
+   ],
+   "acceptance_tests": [
+    "T-145",
+    "T-146"
+   ],
+   "status": "blocked",
+   "issue": 112
+  },
+  {
+   "id": "106",
+   "file": "106-pam-mime-printers.md",
+   "title": "維運者可以管理 PAM、MIME 對映與 CUPS 印表機",
+   "epic": "host-services",
+   "milestone": "M6",
+   "blocked_by": [
+    "100",
+    "009"
+   ],
+   "requirements": [
+    "HSM-011",
+    "HSM-012"
+   ],
+   "acceptance_tests": [
+    "T-147"
+   ],
+   "status": "blocked",
+   "issue": 113
   }
  ]
 }

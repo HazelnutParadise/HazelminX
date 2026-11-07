@@ -132,8 +132,22 @@
 | [098](098-release-gates-traceability.md) | 驗收者可以依 G-01 至 G-14 門檻與需求→測試→證據追溯表判定可否發布 | 品質與驗收 | 092, 097 | [#97](https://github.com/HazelnutParadise/hazelminx/issues/97) | blocked |
 | [099](099-performance-budget.md) | 維護者可以依 38 章情境量測效能並附測試條件 | 品質與驗收 | 084, 066 | [#98](https://github.com/HazelnutParadise/hazelminx/issues/98) | blocked |
 
+## M6 宿主機服務模組（Webmin 等價）
+
+規格增補 01（`docs/spec/addendum-01-host-service-modules.md`），2026-11-07 使用者核定納入。
+
+| 票 | 使用者可以做什麼 | Epic | Blocked by | Issue | 狀態 |
+|---|---|---|---|---|---|
+| [100](100-host-service-module-framework.md) | 維運者可以在通用框架裡看模組狀態、結構化或原始編輯設定、套用前驗證並回滾 | 宿主機服務模組 | 022, 012, 029 | [#107](https://github.com/HazelnutParadise/hazelminx/issues/107) | blocked |
+| [101](101-dns-dhcp-servers.md) | 維運者可以管理 BIND 權威 DNS 與 DHCP（ISC／Kea）的 zone、紀錄、子網、租約 | 宿主機服務模組 | 100 | [#108](https://github.com/HazelnutParadise/hazelminx/issues/108) | blocked |
+| [102](102-mail-servers.md) | 維運者可以管理 Postfix／Dovecot 的網域、信箱、別名、TLS 與佇列 | 宿主機服務模組 | 100, 011 | [#109](https://github.com/HazelnutParadise/hazelminx/issues/109) | blocked |
+| [103](103-file-sharing-servers.md) | 維運者可以管理 Samba 分享與 NFS exports 並看目前連線 | 宿主機服務模組 | 100, 023 | [#110](https://github.com/HazelnutParadise/hazelminx/issues/110) | blocked |
+| [104](104-native-web-servers.md) | 維運者可以管理宿主機原生 Apache／Nginx 的虛擬主機與模組，並與 Zentinel 分工 | 宿主機服務模組 | 100, 060 | [#111](https://github.com/HazelnutParadise/hazelminx/issues/111) | blocked |
+| [105](105-logrotate-and-quotas.md) | 維運者可以管理 logrotate 與磁碟配額 | 宿主機服務模組 | 100, 030 | [#112](https://github.com/HazelnutParadise/hazelminx/issues/112) | blocked |
+| [106](106-pam-mime-printers.md) | 維運者可以管理 PAM、MIME 對映與 CUPS 印表機 | 宿主機服務模組 | 100, 009 | [#113](https://github.com/HazelnutParadise/hazelminx/issues/113) | blocked |
+
 ## 覆蓋檢查
 
-- 規格需求 449 條，已指派擁有票 449 條，未指派 0 條。
-- 驗收案例 186 個，已連到票 186 個。
+- 規格需求 449 條＋增補 01 的 14 條，已指派擁有票 463 條，未指派 0 條。
+- 驗收案例 186 個＋增補 01 的 9 個，已連到票 195 個。
 - 本檔由 `docs/tickets/traceability.json` 同步產生；修改票的需求範圍時同時更新兩者。

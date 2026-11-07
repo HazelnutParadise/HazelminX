@@ -14,11 +14,11 @@ FONT_LINK = ('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?fam
 DARK = dict(bg="#161412", panel="#1D1B18", raised="#262320", line="#35312B", ink="#ECE6DA", muted="#A79E8E",
             faint="#9A917F", hazel="#D9A066", hazelink="#1A1410", blue="#8DB4F2", warn="#F0B35B",
             danger="#F28B82", ok="#9BD3A4", s1="#AF711F", s2="#5682BB", s3="#47AA62", s4="#B55B9A",
-            q1="#2A241C", q2="#4A3A22", q3="#6E5228", q4="#9A6F33", q5="#D9A066", scrim="rgba(0,0,0,.45)")
+            q1="#2A241C", q2="#4A3A22", q3="#6E5228", q4="#9A6F33", q5="#D9A066", scrim="rgba(0,0,0,.45)", hairline="#2B2825")
 LIGHT = dict(bg="#F6F2EA", panel="#FFFDF8", raised="#EFE9DE", line="#D9D1C2", ink="#1B1814", muted="#5E574C",
              faint="#6B6457", hazel="#8F5B23", hazelink="#FFFFFF", blue="#2E5FA8", warn="#9A5A0B",
              danger="#B4382E", ok="#2F6B3C", s1="#7C4B02", s2="#2E598F", s3="#218A45", s4="#883170",
-             q1="#F3E6D3", q2="#E3C9A4", q3="#CFA772", q4="#B38347", q5="#8F5B23", scrim="rgba(0,0,0,.25)")
+             q1="#F3E6D3", q2="#E3C9A4", q3="#CFA772", q4="#B38347", q5="#8F5B23", scrim="rgba(0,0,0,.25)", hairline="#ECE6DA")
 
 
 def _vars(t: dict) -> str:
@@ -35,33 +35,34 @@ body{{margin:0}}
 .hb button,.hb input,.hb select{{font:inherit;color:inherit}}
 .hb button{{cursor:pointer}}
 .hb :is(a,button,input,select,[tabindex]):focus-visible{{outline:2px solid var(--hazel);outline-offset:2px}}
-.hb h1{{margin:0;font-size:20px;font-weight:600;line-height:1.3}}
+.hb h1{{margin:0;font-size:18px;font-weight:600;line-height:1.3}}
 .hb h2{{margin:0;font-size:14px;font-weight:600;line-height:1.4}}
 .hb p{{margin:0}}
-.hb .btn{{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:0 12px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--ink);font-size:13px;white-space:nowrap}}
+.hb .btn{{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:32px;padding:0 12px;border-radius:4px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:13px;font-weight:500;white-space:nowrap}}
 .hb .btn.pri{{background:var(--hazel);border-color:var(--hazel);color:var(--hazelink);font-weight:600}}
 .hb .btn.dng{{background:var(--danger);border-color:var(--danger);color:var(--hazelink);font-weight:600}}
-.hb .btn.sm{{min-height:32px;padding:0 10px;font-size:12px;color:var(--muted)}}
+.hb .btn.sm{{min-height:28px;padding:0 8px;font-size:12px;color:var(--muted)}}
 .hb .btn:active{{transform:translateY(1px)}}
 .hb .panel{{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}}
-.hb .ph{{display:flex;align-items:center;gap:10px;min-height:46px;padding:8px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}}
+.hb .ph{{display:flex;align-items:center;gap:10px;min-height:40px;padding:6px 16px;border-bottom:1px solid var(--hairline);flex-wrap:wrap}}
 .hb .ph .sub{{font-size:12px;color:var(--muted)}}
 .hb .ph .more{{margin-left:auto;font-size:13px;color:var(--hazel);min-height:32px;min-width:44px;padding:0 4px;display:inline-flex;align-items:center;justify-content:flex-end}}
 .hb .foot a,.hb .note a,.hb a.note{{min-height:28px;display:inline-flex;align-items:center}}
 .hb .inp input,.hb .inp select{{min-height:30px}}
-.hb .card{{background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:8px}}
-.hb .row{{display:grid;grid-template-columns:var(--t);gap:12px;align-items:center;min-height:44px;padding:0 16px;border-bottom:1px solid var(--line)}}
+.hb .card{{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:8px}}
+.hb .row{{display:grid;grid-template-columns:var(--t);gap:12px;align-items:center;min-height:40px;padding:0 16px;border-bottom:1px solid var(--hairline)}}
 .hb .row.batch{{grid-template-columns:28px var(--t)}}
 .hb .row .ck{{justify-self:start}}
 .hb a.row{{cursor:pointer}}
 .hb .row:hover{{background:var(--raised)}}
 .hb .row:last-child{{border-bottom:0}}
-.hb .hd{{font-size:11px;color:var(--faint);letter-spacing:.06em;text-transform:uppercase;min-height:34px;font-weight:500}}
+.hb .hd{{font-size:12px;color:var(--muted);min-height:32px;font-weight:600;background:var(--raised)}}
 .hb .hd:hover{{background:transparent}}
 .hb .name{{display:flex;flex-direction:column;gap:2px;min-width:0}}
 .hb .name .n{{font-family:"Geist Mono",ui-monospace,monospace;font-weight:500;overflow-wrap:anywhere;line-height:1.3}}
 .hb .name .d{{font-size:12px;color:var(--faint);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;overflow-wrap:anywhere}}
-.hb .st{{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;font-size:12px;font-weight:500;padding:2px 8px 2px 7px;border-radius:999px;background:color-mix(in srgb,currentColor 13%,transparent)}}
+.hb .st>i{{flex:none}}
+.hb .st{{display:inline-flex;align-items:center;gap:6px;max-width:100%;word-break:keep-all;overflow-wrap:anywhere;font-size:11px;line-height:16px;font-weight:500;padding:1px 8px 1px 7px;border-radius:9px;background:color-mix(in srgb,currentColor 13%,transparent)}}
 .hb .lg .st,.hb .mx .st{{padding:1px 7px 1px 6px}}
 .hb.theme-light .st{{background:var(--raised);box-shadow:inset 0 0 0 1px color-mix(in srgb,currentColor 35%,transparent)}}
 .hb .st i{{display:inline-block;width:8px;height:8px;flex:none}}
@@ -70,27 +71,37 @@ body{{margin:0}}
 .hb .st.dng{{color:var(--danger)}}.hb .st.dng i{{background:var(--danger)}}
 .hb .st.info{{color:var(--blue)}}.hb .st.info i{{background:var(--blue)}}
 .hb .st.off{{color:var(--muted)}}.hb .st.off i{{border-radius:50%;border:2px solid var(--muted);border-style:dashed}}
-.hb .nv{{display:flex;align-items:center;gap:10px;min-height:38px;padding:0 10px;border-radius:6px;font-size:13.5px;color:var(--ink);border:0;background:transparent;width:100%;text-align:left}}
+.hb .nv{{display:flex;align-items:center;gap:10px;min-height:32px;padding:0 12px;border-radius:8px;font-size:13px;color:var(--ink);border:0;background:transparent;width:100%;text-align:left}}
 .hb .nv svg{{flex:none;color:var(--muted)}}.hb .nv.cur svg{{color:var(--hazel)}}
 .hb .nv:hover{{background:var(--raised);color:var(--ink)}}
 .hb .nv.cur{{background:var(--raised);color:var(--hazel);font-weight:600}}
 .hb .nv .cnt{{margin-left:auto;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px}}
 .hb .kbd{{font-family:"Geist Mono",ui-monospace,monospace;font-size:11px;color:var(--faint);border:1px solid var(--line);border-radius:4px;padding:1px 5px;margin-left:auto}}
-.hb .navgrp{{font-size:11px;color:var(--faint);letter-spacing:.06em;padding:6px 10px 0}}
+.hb .navgrp{{font-size:12px;color:var(--faint);font-weight:500;padding:8px 12px 2px}}
 .hb .navcol{{display:flex;flex-direction:column;gap:2px}}
-.hb .tiles{{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(170px,100%),1fr));gap:12px}}
-.hb .tile{{display:flex;flex-direction:column;gap:4px;padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:8px;min-width:0}}
+.hb .tiles{{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr));gap:0;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}}
+.hb .tile{{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto;column-gap:12px;row-gap:2px;align-items:center;padding:12px 16px;background:transparent;border:0;border-right:1px solid var(--hairline);min-width:0}}
+.hb .tile .l,.hb .tile .tdl{{grid-column:1/-1}}.hb .tile .v{{grid-column:1;grid-row:2}}
+.hb .tile:last-child{{border-right:0}}
+.hb .tiles:has(>.tile:nth-child(4):last-child){{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.hb .tiles:has(>.tile:nth-child(4):last-child)>.tile:nth-child(2n){{border-right:0}}
+.hb .tiles:has(>.tile:nth-child(4):last-child)>.tile:nth-child(-n+2){{border-bottom:1px solid var(--hairline)}}
+@media (min-width:1400px){{.hb .tiles:has(>.tile:nth-child(4):last-child){{grid-template-columns:repeat(4,minmax(0,1fr))}}.hb .tiles:has(>.tile:nth-child(4):last-child)>.tile{{border-right:1px solid var(--hairline)}}.hb .tiles:has(>.tile:nth-child(4):last-child)>.tile:last-child{{border-right:0}}.hb .tiles:has(>.tile:nth-child(4):last-child)>.tile:nth-child(-n+2){{border-bottom:0}}}}
+@media (min-width:1180px) and (max-width:1399px){{.hb:not(:has(.aside)) .tiles:has(>.tile:nth-child(4):last-child){{grid-template-columns:repeat(4,minmax(0,1fr))}}.hb:not(:has(.aside)) .tiles:has(>.tile:nth-child(4):last-child)>.tile{{border-right:1px solid var(--hairline)}}.hb:not(:has(.aside)) .tiles:has(>.tile:nth-child(4):last-child)>.tile:last-child{{border-right:0}}.hb:not(:has(.aside)) .tiles:has(>.tile:nth-child(4):last-child)>.tile:nth-child(-n+2){{border-bottom:0}}}}
+@media (max-width:640px){{.hb .tiles:has(>.tile:nth-child(4):last-child){{grid-template-columns:minmax(0,1fr)}}.hb .tiles:has(>.tile:nth-child(4):last-child)>.tile{{border-right:0;border-bottom:1px solid var(--hairline)}}.hb .tiles:has(>.tile:nth-child(4):last-child)>.tile:last-child{{border-bottom:0}}}}
+.hb .tile svg.sp{{width:88px;height:22px;grid-column:2;grid-row:2;align-self:end}}
 .hb .tile .l{{font-size:12px;color:var(--muted)}}
-.hb .tile .v{{font-size:28px;font-weight:600;line-height:1.1;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}}
+.hb .tile .v{{font-size:20px;font-weight:600;line-height:1.2;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}}
 .hb .tile .v small{{font-size:12px;font-weight:400;color:var(--muted)}}
-.hb .tile .dl{{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap}}
+.hb .tile .tdl{{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap}}
 .hb .up{{color:var(--ok)}}.hb .dn{{color:var(--danger)}}
-.hb .meter{{display:flex;align-items:center;gap:8px;min-width:0}}
-.hb .meter .tr{{flex:1;height:6px;border-radius:4px;background:var(--q2);overflow:hidden;min-width:40px}}
+.hb .meter{{display:flex;align-items:center;gap:4px 8px;min-width:0}}
+.hb .meter .tr{{flex:1 1 40px;height:6px;border-radius:4px;background:var(--q2);overflow:hidden;min-width:40px}}
 .hb .meter .fl{{height:100%;border-radius:4px;background:var(--hazel)}}
 .hb .meter .fl.warn{{background:var(--warn)}}.hb .meter .fl.dng{{background:var(--danger)}}
 .hb .meter .num{{font-family:"Geist Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;font-size:12px;white-space:nowrap}}
 .hb .cg{{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(440px,100%),1fr));gap:16px}}
+.hb .cg:has(.tw,.mxw){{grid-template-columns:repeat(auto-fit,minmax(min(620px,100%),1fr))}}
 .hb .chart{{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;min-width:0}}
 .hb .chart .ph{{padding:8px 12px}}
 .hb .chart .unit{{font-size:12px;color:var(--faint)}}
@@ -127,10 +138,11 @@ body{{margin:0}}
 .hb .heat i{{display:block;aspect-ratio:1.6;border-radius:2px;min-height:14px}}
 .hb .heat .lab{{font-size:12px;color:var(--muted);display:block;line-height:22px;font-family:"Geist Mono",ui-monospace,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
 .hb .fleet{{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(250px,100%),1fr));gap:12px;padding:12px 14px}}
-.hb .ncard{{display:flex;flex-direction:column;gap:10px;padding:12px;background:var(--raised);border:1px solid var(--line);border-radius:8px;min-width:0;color:var(--ink)}}
+.hb .ncard{{display:flex;flex-direction:column;gap:10px;padding:12px;background:var(--panel);border:1px solid var(--line);border-radius:8px;min-width:0;color:var(--ink)}}
+.hb .ncard:hover{{border-color:var(--faint)}}
 .hb .ncard .nh{{display:flex;align-items:center;gap:8px;flex-wrap:wrap}}
 .hb .ncard .nh .n{{font-family:"Geist Mono",ui-monospace,monospace;font-weight:500}}
-.hb .ncard .nh .d{{font-size:12px;color:var(--faint);width:100%}}
+.hb .ncard .nh .d{{font-size:12px;line-height:18px;color:var(--faint);width:100%;min-height:36px}}
 .hb .rings{{display:flex;gap:10px;justify-content:space-between}}
 .hb .ring{{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--faint);min-width:0}}
 .hb .ring svg{{display:block}}
@@ -166,7 +178,7 @@ body{{margin:0}}
 .hb svg.topo a:hover .box{{stroke:var(--hazel)}}
 .hb svg.topo text{{font-size:12px;fill:var(--ink)}}
 .hb svg.topo text.sub{{font-size:11px;fill:var(--faint);font-family:"Geist Mono",ui-monospace,monospace}}
-.hb svg.topo text.col{{font-size:11px;fill:var(--faint);letter-spacing:.06em;text-transform:uppercase}}
+.hb svg.topo text.col{{font-size:11px;fill:var(--faint);font-weight:500}}
 .hb svg.topo .box{{fill:var(--raised);stroke:var(--line)}}
 .hb svg.topo .box.danger{{stroke:var(--danger)}}.hb svg.topo .box.warn{{stroke:var(--warn)}}
 .hb svg.topo .lnk{{fill:none;stroke:var(--s1);stroke-opacity:.55;stroke-linecap:round}}
@@ -174,6 +186,7 @@ body{{margin:0}}
 .hb .flowlist{{display:flex;flex-direction:column;gap:6px;font-size:13px}}
 .hb .flowlist .fr{{display:grid;grid-template-columns:minmax(0,1fr) 16px minmax(0,1fr) auto;gap:6px;align-items:center}}
 .hb .mx{{display:grid;gap:2px;font-size:12px}}
+.hb .mx .st,.hb .mx .c{{white-space:nowrap}}
 .hb .mx .c{{min-height:32px;display:flex;align-items:center;justify-content:center;gap:4px;background:var(--raised);border-radius:4px;padding:0 6px;text-align:center}}
 .hb .mx .c.empty{{background:transparent;border:1px dashed var(--line);color:var(--faint)}}
 .hb .mx .rl{{display:flex;align-items:center;white-space:normal;overflow-wrap:anywhere;font-family:"Geist Mono",ui-monospace,monospace;color:var(--muted);min-height:32px;line-height:1.3}}
@@ -225,7 +238,7 @@ body{{margin:0}}
 .hb .appcard .bd{{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}}
 .hb .appcard .bd .n{{font-weight:500}}
 .hb .appcard .bd .d{{font-size:12px;color:var(--faint)}}
-.hb .chip{{display:inline-flex;align-items:center;min-height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line);font-size:11px;color:var(--muted);background:transparent}}
+.hb .chip{{display:inline-flex;align-items:center;min-height:22px;padding:0 8px;border-radius:999px;border:1px solid var(--line);font-size:11px;font-weight:500;color:var(--muted);background:transparent}}
 .hb .chip.on{{color:var(--hazel);border-color:var(--hazel)}}
 .hb .term,.hb .diff{{--ink:#ECE6DA;--muted:#A79E8E;--faint:#9A917F;--panel:#14120F;--line:#35312B;--ok:#9BD3A4;--warn:#F0B35B;--danger:#F28B82;--blue:#8DB4F2}}
 .hb .term{{background:#14120F;border:1px solid var(--line);border-radius:8px;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;padding:10px 12px;color:var(--ink);white-space:pre;overflow:auto;min-height:220px}}
@@ -235,16 +248,16 @@ body{{margin:0}}
 .hb .lg i.ln{{display:inline-block;width:18px;border-radius:2px;background:var(--s1)}}
 .hb .lg .st{{gap:5px}}
 .hb .scope{{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;background:var(--panel);border:1px solid var(--line);border-radius:8px}}
-.hb .scope .lbl{{font-size:12px;color:var(--faint);letter-spacing:.06em;text-transform:uppercase}}
-.hb .scope .btn{{min-height:32px;padding:0 10px;font-size:12px;color:var(--muted);gap:6px}}
+.hb .scope .lbl{{font-size:12px;color:var(--faint);font-weight:500}}
+.hb .scope .btn{{min-height:28px;padding:0 10px;font-size:12px;color:var(--muted);gap:6px;background:transparent}}
 .hb .scope .btn.on{{background:var(--raised);color:var(--ink);border-color:var(--hazel);font-weight:600}}
 .hb .scope .btn .mono{{color:var(--faint);font-size:11px}}
 .hb .range{{display:flex;gap:4px;flex-wrap:wrap}}
-.hb .range .btn{{min-height:32px;padding:0 10px;font-size:12px;color:var(--muted)}}
+.hb .range .btn{{min-height:28px;padding:0 10px;font-size:12px;color:var(--muted);background:transparent}}
 .hb .range .btn.on{{background:var(--raised);color:var(--hazel);border-color:var(--line);font-weight:600}}
 .hb .field{{display:flex;flex-direction:column;gap:6px}}
 .hb .field label{{font-size:12px;color:var(--muted)}}
-.hb .inp{{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 10px;background:var(--raised);border:1px solid var(--line);border-radius:6px;color:var(--ink);width:100%}}
+.hb .inp{{display:flex;align-items:center;gap:8px;min-height:36px;padding:0 10px;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--ink);width:100%}}
 .hb .inp.err{{border-color:var(--danger)}}
 .hb .help{{font-size:12px;color:var(--faint)}}
 .hb .errt{{font-size:12px;color:var(--danger)}}
@@ -281,12 +294,12 @@ body{{margin:0}}
 .hb .wrap{{display:flex;flex-wrap:wrap;gap:8px;align-items:center}}
 .hb .scroll{{overflow-x:auto}}
 .hb .aside{{width:340px;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:18px;padding:18px 16px 24px}}
-.hb .main{{flex:999 1 560px;min-width:0;display:flex;flex-direction:column;gap:16px;padding:20px 24px 40px}}
+.hb .main{{flex:999 1 560px;min-width:0;display:flex;flex-direction:column;gap:16px;padding:16px 24px 40px}}
 .hb .body{{display:flex;flex-wrap:wrap;align-items:stretch;flex:1}}
 .hb .side{{width:220px;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:10px;padding:12px 10px 16px}}
 .hb .side .coll{{margin-top:auto;color:var(--muted)}}
-.hb .top{{display:flex;align-items:center;gap:14px;min-height:56px;padding:0 16px 0 0;border-bottom:1px solid var(--line);background:var(--panel)}}
-.hb .brand{{display:flex;align-items:center;gap:10px;width:220px;padding:0 16px;font-weight:600;font-size:15px;border-right:1px solid var(--line);align-self:stretch}}
+.hb .top{{display:flex;align-items:center;gap:14px;min-height:48px;padding:0 16px 0 0;border-bottom:1px solid var(--line);background:var(--panel)}}
+.hb .brand{{display:flex;align-items:center;gap:10px;width:220px;padding:0 16px;font-weight:600;font-size:14px;border-right:1px solid var(--line);align-self:stretch}}
 .hb .logo{{width:22px;height:22px;border-radius:50%;background:var(--hazel);display:inline-block;box-shadow:inset 0 0 0 5px var(--panel),inset 0 0 0 7px var(--hazel);flex:none}}
 .hb .crumb{{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;white-space:nowrap}}
 .hb .crumb .sep{{color:var(--faint)}}
@@ -328,6 +341,7 @@ body{{margin:0}}
 @media (max-width:900px){{.hb .top{{flex-wrap:wrap;padding:8px 12px;gap:8px;min-height:0}}.hb .crumb{{display:none}}.hb .top .search{{order:3;flex:1 1 100%;max-width:none;margin:0}}.hb .obs{{display:none}}.hb .ib.user span{{display:none}}.hb .side{{width:100%;border-right:0;border-bottom:1px solid var(--line);flex-direction:row;flex-wrap:nowrap;overflow-x:auto;gap:4px;padding:8px 12px}}.hb .navgrp{{display:none}}.hb .navcol{{flex-direction:row;flex:none;gap:4px}}.hb .side .nv{{width:auto;min-width:44px;justify-content:center;min-height:36px;padding:0 10px;white-space:nowrap;font-size:13px}}.hb .side .nv .cnt{{margin-left:4px}}.hb .side .coll{{display:none}}.hb .nv svg{{display:none}}.hb .brand{{width:auto;border:0;padding:0 12px}}}}
 @media (max-width:1100px){{.hb .aside{{width:100%;border-left:0;border-top:1px solid var(--line)}}.hb .fm{{grid-template-columns:220px minmax(0,1fr)}}.hb .fm .pane.detp{{grid-column:1/-1;border-top:1px solid var(--line)}}}}
 @media (max-width:767px){{
+ .hb .meter{{flex-wrap:wrap}}
  .hb .side{{width:100%;border-right:0;border-bottom:1px solid var(--line);flex-direction:row;flex-wrap:nowrap;overflow-x:auto;gap:4px;padding:8px 12px}}
  .hb .navgrp{{display:none}}.hb .navcol{{flex-direction:row;flex:none;gap:4px}}.hb .side .nv{{width:auto;min-width:44px;justify-content:center;min-height:36px;padding:0 10px;white-space:nowrap;font-size:13px}}.hb .side .nv .cnt{{margin-left:4px}}
  .hb .main{{padding:14px 16px 32px;gap:16px}}.hb .aside{{padding:14px 16px 24px}}
@@ -355,13 +369,28 @@ body{{margin:0}}
  .hb .dprow{{--t:minmax(0,.5fr) minmax(0,1.4fr) minmax(0,1.3fr)}}
  .hb .hrow{{--t:minmax(0,1.4fr) minmax(0,.7fr) minmax(0,1.2fr)}}
  .hb .rrow{{--t:24px minmax(0,1.6fr) minmax(0,.8fr)}}
- .hb .tile .v{{font-size:24px}}
+ .hb .tile{{border-right:0;border-bottom:1px solid var(--hairline)}}.hb .tile:last-child{{border-bottom:0}}
  .hb .rings svg{{width:52px;height:52px}}
  .hb .hcell{{width:36px;height:36px}}
  .hb .tabs{{flex-wrap:nowrap;overflow-x:auto}}.hb .tab{{white-space:nowrap;flex:none}}
  .hb .ph .wrap{{width:100%}}
  .hb .pstage{{min-width:96px}}
 }}
+.hb .tw{{display:grid;grid-template-columns:var(--tc);overflow-x:auto;align-content:start}}
+.hb .tw>*{{grid-column:1/-1;min-width:0}}
+.hb .tw>.row,.hb .tw>.row.batch{{grid-template-columns:subgrid;column-gap:12px}}
+.hb .tw>.row:last-child{{border-bottom:0}}
+.hb .tw .row .st,.hb .tw .row>.mono,.hb .tw .row>span>.mono,.hb .tw .row .num,.hb .tw .hd>span{{white-space:nowrap}}
+.hb .tw .row>.wr{{white-space:normal;overflow-wrap:anywhere}}
+.hb .imps{{display:inline-flex;gap:6px;align-items:center}}
+.hb .imp{{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:6px;background:color-mix(in srgb,currentColor 13%,transparent);flex:none;cursor:help}}
+.hb .lg .imp{{width:20px;height:20px;cursor:default;margin-right:2px}}
+.hb .imp.ok{{color:var(--ok)}}.hb .imp.warn{{color:var(--warn)}}.hb .imp.dng{{color:var(--danger)}}
+.hb .imp:focus-visible{{outline:2px solid var(--hazel);outline-offset:2px}}
+.hb .imp[data-tip]:hover,.hb .imp[data-tip]:focus-visible{{anchor-name:--imp}}
+.hb .imp[data-tip]:hover::after,.hb .imp[data-tip]:focus-visible::after{{content:attr(data-tip);position:fixed;position-anchor:--imp;position-area:bottom span-left;position-try-fallbacks:bottom span-right,top span-left;margin:6px 0;z-index:50;white-space:nowrap;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:500;color:var(--ink);background:var(--raised);border:1px solid var(--line);box-shadow:0 4px 12px rgb(0 0 0 / .25);pointer-events:none}}
+@media (max-width:1024px){{.hb .tw{{--k5: ;}}}}
+@media (max-width:767px){{.hb .tw{{--k3: ;--k4: ;--k5: ;}}}}
 """
 
 ICONS = {
@@ -388,6 +417,7 @@ ICONS = {
  "logs": '<path d="M6 3h8l4 4v14H6V3z"/><path d="M14 3v4h4M9 12h6M9 16h6"/>',
  "iam": '<circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15 15a4 4 0 0 1 6 5"/>',
  "settings": '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>',
+ "svcmod": '<rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/><path d="M7 7h.01M7 17h.01M11 7h6M11 17h6"/>',
  "search": '<circle cx="11" cy="11" r="6"/><path d="m20 20-4-4"/>',
  "sun": '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5"/>',
  "user": '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
@@ -396,6 +426,9 @@ ICONS = {
  "log": '<path d="M6 3h8l4 4v14H6V3z"/><path d="M9 13h6M9 17h6"/>',
  "term": '<path d="m5 7 5 5-5 5"/><path d="M12 19h7"/>',
  "restart": '<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/>',
+ "power": '<path d="M12 3v8"/><path d="M6.3 6.8a8 8 0 1 0 11.4 0"/>',
+ "box": '<path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5z"/><path d="M3.5 7.5 12 12l8.5-4.5M12 12v9"/>',
+ "check": '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
  "more": '<circle cx="6" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18" cy="12" r="1.2"/>',
  "stop": '<rect x="6" y="6" width="12" height="12" rx="1.5"/>',
  "chev": '<path d="m9 6 6 6-6 6"/>',
@@ -436,6 +469,7 @@ NAV = [
     ("專案與服務", "projects", "Projects.dc.html"),
     ("Docker／Podman", "docker", "Containers.dc.html"),
     ("Kubernetes", "k8s", "Kubernetes.dc.html"),
+    ("服務模組", "svcmod", "HostServices.dc.html"),
     ("應用商店", "store", "AppStore.dc.html"),
     ("網站與入口", "web", "Websites.dc.html"),
     ("API 代理", "api", "APIProxy.dc.html"),
@@ -452,7 +486,7 @@ NAV = [
     ("身分與存取", "iam", "IAM.dc.html"),
     ("平台設定", "settings", "Settings.dc.html"),
 ]
-GROUPS = [("基礎設施", ["nodes", "docker", "k8s", "storage", "files"]),
+GROUPS = [("基礎設施", ["nodes", "docker", "k8s", "svcmod", "storage", "files"]),
           ("應用", ["projects", "store", "db", "ai", "backup", "cron"]),
           ("入口與安全", ["web", "api", "security", "analytics", "events", "logs", "iam", "settings"])]
 
@@ -558,7 +592,7 @@ def stat_tile(label: str, value: str, unit: str = "", delta: str = "", good: boo
     unit_html = f"<small>{unit}</small>" if unit else ""
     note_html = f'<span class="note">{note}</span>' if note else ""
     return (f'<div class="tile"><span class="l">{label}</span><span class="v">{value}{unit_html}</span>'
-            f'<span class="dl">{d}{note_html}</span>{sp}</div>')
+            f'<span class="tdl">{d}{note_html}</span>{sp}</div>')
 
 
 def meter(pct: float, text: str, warn=70, danger=90, aria: str = "") -> str:
@@ -896,7 +930,7 @@ def matrix(rows: list, cols: list, cells: list, first_col: str = "minmax(110px,1
                 out.append(f'<span class="c empty">{txt or "—"}</span>')
             else:
                 out.append(f'<span class="c"><span class="st {kind}"><i aria-hidden="true"></i>{txt}</span></span>')
-    return f'<div class="mxw"><div class="mx" style="grid-template-columns:{first_col} repeat({len(cols)},minmax(0,1fr))">' + "".join(out) + "</div></div>"
+    return f'<div class="mxw"><div class="mx" style="grid-template-columns:{first_col} repeat({len(cols)},minmax(max-content,1fr))">' + "".join(out) + "</div></div>"
 
 
 def tree(items: list, open_depth: int = 1) -> str:
@@ -931,6 +965,33 @@ def scope_bar(items: list, current: int = 0, label: str = "範圍", extra: str =
     """範圍列：這一頁在看哪些節點／叢集。items [(label, sub)]；永遠放在頁面標題正下方。"""
     btns = "".join(f'<button type="button" class="btn{" on" if i == current else ""}" aria-pressed="{"true" if i == current else "false"}">{l}{f"<span class=mono>{sub}</span>" if sub else ""}</button>' for i, (l, sub) in enumerate(items))
     return f'<div class="scope" role="group" aria-label="{label}"><span class="lbl">{label}</span>{btns}{extra}</div>'
+
+
+IMPACTS = {
+    # kind: (icon, 顏色類別, 標籤)
+    "svc": ("restart", "warn", "重啟服務"),
+    "ctr": ("box", "dng", "重啟容器"),
+    "reboot": ("power", "dng", "需要重開機"),
+    "none": ("check", "ok", "無影響"),
+}
+
+
+def impacts(items: list) -> str:
+    """影響類型圖示：items [(kind, detail)]。每種影響固定一個圖示；滑鼠停留或鍵盤聚焦顯示「標籤：細節」。"""
+    out = []
+    for kind, detail in items:
+        ic, col, label = IMPACTS[kind]
+        tip = f"{label}：{detail}" if detail else label
+        out.append(f'<span class="imp {col}" tabindex="0" role="img" aria-label="{tip}" data-tip="{tip}">{icon(ic, 16)}</span>')
+    return '<span class="imps">' + "".join(out) + "</span>"
+
+
+def impact_legend(kinds: list) -> str:
+    out = []
+    for k in kinds:
+        ic, col, label = IMPACTS[k]
+        out.append(f'<span role="listitem"><span class="imp {col}" aria-hidden="true">{icon(ic, 14)}</span>{label}</span>')
+    return '<div class="lg" role="list">' + "".join(out) + "</div>"
 
 
 def legend(items: list) -> str:
