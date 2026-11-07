@@ -33,7 +33,7 @@ def walk(n, base, amp, lo=0, hi=100, spikes=None):
 
 
 TOPO_LEGEND = [("ok", "正常"), ("warn", "過期／待處理"), ("dng", "失敗／維護"), ("line:2", "少"), ("line:6", "多")]
-RING_LEGEND = [("color:var(--hazel)", "正常"), ("color:var(--warn)", "≥ 70%"), ("color:var(--danger)", "≥ 90%"), ("color:var(--ok)", "執行中的容器")]
+RING_LEGEND = [("color:var(--use)", "正常"), ("color:var(--warn)", "≥ 70%"), ("color:var(--danger)", "≥ 90%"), ("color:var(--ok)", "執行中的容器")]
 TL_LEGEND = [("color:var(--ok)", "成功"), ("color:var(--danger)", "失敗"), ("color:var(--warn)", "回滾／靜音"), ("color:var(--blue)", "進行中"), ("color:var(--q2)", "無資料")]
 
 # ---------- 示例資料（假設） ----------
@@ -69,7 +69,7 @@ def kv(k, v, cls=""):
 # ---------- 總覽 ----------
 def overview() -> str:
     tiles = '<div class="tiles">' + "".join([
-        U.stat_tile("節點", "2", "/3 連線中", "jp-02 狀態過期", False, spark=[3] * 20 + [2, 2, 2, 2], note=""),
+        U.stat_tile("主機", "2", "/3 連線中", "jp-02 沒有回應", False, spark=[3] * 20 + [2, 2, 2, 2], note=""),
         U.stat_tile("服務", "10", "2 專案", "1 部署失敗（staging）", False, spark=[9, 9, 9, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]),
         U.stat_tile("今日請求（Zentinel 來源站）", U.fmt(sum(REQ_ORIGIN)), "", "較昨日 +8.4%", True, spark=REQ_ORIGIN, note="邊緣完整度 99.1%"),
         U.stat_tile("進行中的工作", "3", "", "1 狀態不明", False, spark=[1, 1, 2, 2, 1, 1, 1, 2, 3, 2, 2, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3]),

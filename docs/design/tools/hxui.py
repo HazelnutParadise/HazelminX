@@ -12,11 +12,11 @@ FONT_LINK = ('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?fam
              '&family=Geist+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&display=swap">')
 
 DARK = dict(bg="#161412", panel="#1D1B18", raised="#262320", line="#35312B", ink="#ECE6DA", muted="#A79E8E",
-            faint="#9A917F", hazel="#D9A066", hazelink="#1A1410", blue="#8DB4F2", warn="#F0B35B",
+            faint="#9A917F", hazel="#D9A066", hazelink="#1A1410", use="#A39B8E", blue="#8DB4F2", warn="#F0B35B",
             danger="#F28B82", ok="#9BD3A4", s1="#AF711F", s2="#5682BB", s3="#47AA62", s4="#B55B9A",
             q1="#2A241C", q2="#4A3A22", q3="#6E5228", q4="#9A6F33", q5="#D9A066", scrim="rgba(0,0,0,.45)", hairline="#2B2825")
 LIGHT = dict(bg="#F6F2EA", panel="#FFFDF8", raised="#EFE9DE", line="#D9D1C2", ink="#1B1814", muted="#5E574C",
-             faint="#6B6457", hazel="#8F5B23", hazelink="#FFFFFF", blue="#2E5FA8", warn="#9A5A0B",
+             faint="#6B6457", hazel="#8F5B23", hazelink="#FFFFFF", use="#857C6F", blue="#2E5FA8", warn="#9A5A0B",
              danger="#B4382E", ok="#2F6B3C", s1="#7C4B02", s2="#2E598F", s3="#218A45", s4="#883170",
              q1="#F3E6D3", q2="#E3C9A4", q3="#CFA772", q4="#B38347", q5="#8F5B23", scrim="rgba(0,0,0,.25)", hairline="#ECE6DA")
 
@@ -104,7 +104,7 @@ body{{margin:0}}
 .hb .up{{color:var(--ok)}}.hb .dn{{color:var(--danger)}}
 .hb .meter{{display:flex;align-items:center;gap:4px 8px;min-width:0}}
 .hb .meter .tr{{flex:1 1 40px;height:6px;border-radius:4px;background:var(--q2);overflow:hidden;min-width:40px}}
-.hb .meter .fl{{height:100%;border-radius:4px;background:var(--hazel)}}
+.hb .meter .fl{{height:100%;border-radius:4px;background:var(--use)}}
 .hb .meter .fl.warn{{background:var(--warn)}}.hb .meter .fl.dng{{background:var(--danger)}}
 .hb .meter .num{{font-family:"Geist Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;font-size:12px;white-space:nowrap}}
 .hb .cg{{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(440px,100%),1fr));gap:16px}}
@@ -843,7 +843,7 @@ def ring(pct: float, text: str, label: str = "", size: int = 64, warn=70, danger
     r = (size - 8) / 2
     c = 2 * _math.pi * r
     p = max(0.0, min(100.0, pct))
-    color = "var(--danger)" if p >= danger else ("var(--warn)" if p >= warn else "var(--hazel)")
+    color = "var(--danger)" if p >= danger else ("var(--warn)" if p >= warn else "var(--use)")
     dash = f"{c * p / 100:.1f} {c:.1f}"
     svg = (f'<svg width="{size}" height="{size}" viewBox="0 0 {size} {size}" role="meter" aria-valuenow="{p:.0f}" aria-valuemin="0" aria-valuemax="100" aria-label="{aria or label or text}">'
            f'<circle cx="{size/2}" cy="{size/2}" r="{r}" fill="none" stroke="var(--q2)" stroke-width="6"/>'
