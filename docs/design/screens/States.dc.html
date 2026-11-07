@@ -379,7 +379,7 @@ body{margin:0}
 .hb .imp.ok{color:var(--ok)}.hb .imp.warn{color:var(--warn)}.hb .imp.dng{color:var(--danger)}
 .hb .imp:focus-visible{outline:2px solid var(--hazel);outline-offset:2px}
 .hb [data-tip]:hover,.hb [data-tip]:focus-visible{anchor-name:--imp}
-.hb [data-tip]:hover::after,.hb [data-tip]:focus-visible::after{content:attr(data-tip);position:fixed;position-anchor:--imp;position-area:bottom span-left;position-try-fallbacks:bottom span-right,top span-left;margin:6px 0;z-index:50;white-space:nowrap;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:500;color:var(--ink);background:var(--raised);border:1px solid var(--line);box-shadow:0 4px 12px rgb(0 0 0 / .25);pointer-events:none}
+.hb [data-tip]:hover::after,.hb [data-tip]:focus-visible::after{content:attr(data-tip);position:fixed;position-anchor:--imp;position-area:bottom span-left;position-try-fallbacks:bottom span-right,top span-left;margin:6px 0;z-index:50;white-space:normal;width:max-content;max-width:320px;line-height:1.45;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:500;color:var(--ink);background:var(--raised);border:1px solid var(--line);box-shadow:0 4px 12px rgb(0 0 0 / .25);pointer-events:none}
 .hb .ttabs{display:flex;align-items:stretch;border-bottom:1px solid var(--line);overflow-x:auto}
 .hb .ttab{display:flex;align-items:center;gap:8px;height:40px;padding:0 6px 0 12px;border-right:1px solid var(--hairline);white-space:nowrap;color:var(--muted);font-size:13px;flex:none}
 .hb .ttab.on{color:var(--ink);background:var(--raised);box-shadow:inset 0 -2px 0 var(--hazel)}
@@ -411,6 +411,12 @@ body{margin:0}
 .hb .opt{display:flex;align-items:flex-start;gap:8px;font-size:13px;padding:4px 0}.hb .opt input{margin-top:3px}
 .hb .fleet.choices{grid-template-columns:repeat(auto-fit,minmax(min(250px,100%),1fr))}
 .hb .row.sel{background:color-mix(in srgb,var(--hazel) 8%,transparent)}
+.hb .hint{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;color:var(--faint);cursor:help;vertical-align:middle;flex:none}
+.hb .hint:hover,.hb .hint:focus-visible{color:var(--ink)}
+.hb .at{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 6px;border-radius:6px;background:var(--raised);color:var(--muted);font-size:12px;cursor:help;white-space:nowrap;flex:none}
+.hb .at.ok{color:var(--ok)}.hb .at.warn{color:var(--warn)}.hb .at.dng{color:var(--danger)}
+.hb .ats{display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center}
+.hb .edban{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--warn) 10%,var(--panel))}
 @media (max-width:1024px){.hb .tw{--k5: ;}}
 @media (max-width:767px){.hb .tw{--k3: ;--k4: ;--k5: ;--k6: ;}}
 </style>
@@ -442,7 +448,7 @@ body{margin:0}
       <div class="body" style="display:flex;flex-direction:column;gap:10px;padding:12px">
         <div style="display:flex;gap:8px"><span class="skel" style="width:120px;height:14px"></span><span class="skel" style="width:60px;height:14px;margin-left:auto"></span></div>
         <div style="display:grid;grid-template-columns:40px 1fr;gap:8px;height:120px"><div style="display:flex;flex-direction:column;justify-content:space-between"><span class="skel" style="width:28px;height:10px"></span><span class="skel" style="width:28px;height:10px"></span><span class="skel" style="width:28px;height:10px"></span></div><div class="skel" style="height:100%"></div></div>
-        <div class="row" style="padding:0;min-height:36px;border:0"><span class="skel" style="width:40%;height:12px"></span><span class="skel" style="width:20%;height:12px"></span></div>
+        <div class="row r0" style="padding:0;min-height:36px;border:0"><span class="skel" style="width:40%;height:12px"></span><span class="skel" style="width:20%;height:12px"></span></div>
       </div></section>
     <section class="chart" aria-label="空資料範例"><div class="ph"><h2>還沒有節點</h2></div>
       <div class="body" style="display:flex;flex-direction:column;gap:10px;padding:20px 14px;align-items:flex-start">

@@ -379,7 +379,7 @@ body{margin:0}
 .hb .imp.ok{color:var(--ok)}.hb .imp.warn{color:var(--warn)}.hb .imp.dng{color:var(--danger)}
 .hb .imp:focus-visible{outline:2px solid var(--hazel);outline-offset:2px}
 .hb [data-tip]:hover,.hb [data-tip]:focus-visible{anchor-name:--imp}
-.hb [data-tip]:hover::after,.hb [data-tip]:focus-visible::after{content:attr(data-tip);position:fixed;position-anchor:--imp;position-area:bottom span-left;position-try-fallbacks:bottom span-right,top span-left;margin:6px 0;z-index:50;white-space:nowrap;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:500;color:var(--ink);background:var(--raised);border:1px solid var(--line);box-shadow:0 4px 12px rgb(0 0 0 / .25);pointer-events:none}
+.hb [data-tip]:hover::after,.hb [data-tip]:focus-visible::after{content:attr(data-tip);position:fixed;position-anchor:--imp;position-area:bottom span-left;position-try-fallbacks:bottom span-right,top span-left;margin:6px 0;z-index:50;white-space:normal;width:max-content;max-width:320px;line-height:1.45;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:500;color:var(--ink);background:var(--raised);border:1px solid var(--line);box-shadow:0 4px 12px rgb(0 0 0 / .25);pointer-events:none}
 .hb .ttabs{display:flex;align-items:stretch;border-bottom:1px solid var(--line);overflow-x:auto}
 .hb .ttab{display:flex;align-items:center;gap:8px;height:40px;padding:0 6px 0 12px;border-right:1px solid var(--hairline);white-space:nowrap;color:var(--muted);font-size:13px;flex:none}
 .hb .ttab.on{color:var(--ink);background:var(--raised);box-shadow:inset 0 -2px 0 var(--hazel)}
@@ -411,6 +411,12 @@ body{margin:0}
 .hb .opt{display:flex;align-items:flex-start;gap:8px;font-size:13px;padding:4px 0}.hb .opt input{margin-top:3px}
 .hb .fleet.choices{grid-template-columns:repeat(auto-fit,minmax(min(250px,100%),1fr))}
 .hb .row.sel{background:color-mix(in srgb,var(--hazel) 8%,transparent)}
+.hb .hint{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;color:var(--faint);cursor:help;vertical-align:middle;flex:none}
+.hb .hint:hover,.hb .hint:focus-visible{color:var(--ink)}
+.hb .at{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 6px;border-radius:6px;background:var(--raised);color:var(--muted);font-size:12px;cursor:help;white-space:nowrap;flex:none}
+.hb .at.ok{color:var(--ok)}.hb .at.warn{color:var(--warn)}.hb .at.dng{color:var(--danger)}
+.hb .ats{display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center}
+.hb .edban{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--warn) 10%,var(--panel))}
 @media (max-width:1024px){.hb .tw{--k5: ;}}
 @media (max-width:767px){.hb .tw{--k3: ;--k4: ;--k5: ;--k6: ;}}
 </style>
@@ -444,7 +450,7 @@ body{margin:0}
     </div></div>
     <section class="panel" aria-labelledby="h-chk">
       <div class="ph"><h2 id="h-chk">預檢 · 1 高風險、1 警告、6 通過</h2></div>
-      <div class="check"><span class="mk dng" aria-hidden="true"></span><span><strong>高風險：新增 root 檔案系統掛載</strong><br><span class="ev">compose.yaml:41 · shop-worker · volumes: /:/host:ro</span><br><span class="note">影響：容器可讀整台主機的檔案，含其他專案的資料與機密參照。即使唯讀也超出 shop-worker 原本的範圍。</span></span><span class="note">需要擁有者批准</span></div>
+      <div class="check"><span class="mk dng" aria-hidden="true"></span><span><strong>高風險：新增 root 檔案系統掛載</strong><br><span class="ev">compose.yaml:41 · shop-worker · volumes: /:/host:ro</span><br><span class="hint" tabindex="0" role="img" aria-label="影響：容器可讀整台主機的檔案，含其他專案的資料與機密參照。即使唯讀也超出 shop-worker 原本的範圍。" data-tip="影響：容器可讀整台主機的檔案，含其他專案的資料與機密參照。即使唯讀也超出 shop-worker 原本的範圍。"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></span></span><span class="note">需要擁有者批准</span></div>
       <div class="check"><span class="mk warn" aria-hidden="true"></span><span><strong>警告：映像標籤由 commit 短碼改成 latest</strong><br><span class="ev">compose.yaml:12 · shop-api · image: …/shop-api:latest</span><br><span class="note">規則：映像標籤應為固定 commit 短碼 · 影響：回滾目標不可確定</span></span><span class="note">可批准</span></div>
       <div class="check"><span class="mk ok" aria-hidden="true"></span><span>映像可拉取（ghcr.io 認證有效）<br><span class="ev">shop-api:9b3e7f1 · 212 MB · shop-worker:9b3e7f1 · 198 MB</span></span><span class="note">通過</span></div>
       <div class="check"><span class="mk ok" aria-hidden="true"></span><span>Port 無衝突<br><span class="ev">8080 → 僅內部，由 Zentinel 轉發 443</span></span><span class="note">通過</span></div>

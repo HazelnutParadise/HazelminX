@@ -379,7 +379,7 @@ body{margin:0}
 .hb .imp.ok{color:var(--ok)}.hb .imp.warn{color:var(--warn)}.hb .imp.dng{color:var(--danger)}
 .hb .imp:focus-visible{outline:2px solid var(--hazel);outline-offset:2px}
 .hb [data-tip]:hover,.hb [data-tip]:focus-visible{anchor-name:--imp}
-.hb [data-tip]:hover::after,.hb [data-tip]:focus-visible::after{content:attr(data-tip);position:fixed;position-anchor:--imp;position-area:bottom span-left;position-try-fallbacks:bottom span-right,top span-left;margin:6px 0;z-index:50;white-space:nowrap;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:500;color:var(--ink);background:var(--raised);border:1px solid var(--line);box-shadow:0 4px 12px rgb(0 0 0 / .25);pointer-events:none}
+.hb [data-tip]:hover::after,.hb [data-tip]:focus-visible::after{content:attr(data-tip);position:fixed;position-anchor:--imp;position-area:bottom span-left;position-try-fallbacks:bottom span-right,top span-left;margin:6px 0;z-index:50;white-space:normal;width:max-content;max-width:320px;line-height:1.45;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:500;color:var(--ink);background:var(--raised);border:1px solid var(--line);box-shadow:0 4px 12px rgb(0 0 0 / .25);pointer-events:none}
 .hb .ttabs{display:flex;align-items:stretch;border-bottom:1px solid var(--line);overflow-x:auto}
 .hb .ttab{display:flex;align-items:center;gap:8px;height:40px;padding:0 6px 0 12px;border-right:1px solid var(--hairline);white-space:nowrap;color:var(--muted);font-size:13px;flex:none}
 .hb .ttab.on{color:var(--ink);background:var(--raised);box-shadow:inset 0 -2px 0 var(--hazel)}
@@ -411,6 +411,12 @@ body{margin:0}
 .hb .opt{display:flex;align-items:flex-start;gap:8px;font-size:13px;padding:4px 0}.hb .opt input{margin-top:3px}
 .hb .fleet.choices{grid-template-columns:repeat(auto-fit,minmax(min(250px,100%),1fr))}
 .hb .row.sel{background:color-mix(in srgb,var(--hazel) 8%,transparent)}
+.hb .hint{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;color:var(--faint);cursor:help;vertical-align:middle;flex:none}
+.hb .hint:hover,.hb .hint:focus-visible{color:var(--ink)}
+.hb .at{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 6px;border-radius:6px;background:var(--raised);color:var(--muted);font-size:12px;cursor:help;white-space:nowrap;flex:none}
+.hb .at.ok{color:var(--ok)}.hb .at.warn{color:var(--warn)}.hb .at.dng{color:var(--danger)}
+.hb .ats{display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center}
+.hb .edban{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--warn) 10%,var(--panel))}
 @media (max-width:1024px){.hb .tw{--k5: ;}}
 @media (max-width:767px){.hb .tw{--k3: ;--k4: ;--k5: ;--k6: ;}}
 </style>
@@ -441,7 +447,7 @@ body{margin:0}
     <section class="panel" aria-labelledby="h-k0">
       <div class="ph"><h2 id="h-k0">還沒有叢集</h2></div>
       <div class="fleet choices">
-        <div class="ncard"><div class="nh"><span class="n">連接既有叢集</span><span class="d">kubeconfig 或服務帳號 Token</span></div><span class="note">驗證 CA、叢集身分與實際權限</span><span class="note">預設唯讀，之後再提升</span><span class="note">kubeconfig 存進機密庫，不給瀏覽器</span><div class="wrap"><button type="button" class="btn sm">上傳 kubeconfig</button></div></div>
+        <div class="ncard"><div class="nh"><span class="n">連接既有叢集</span><span class="d">kubeconfig 或服務帳號 Token</span></div><span class="note">驗證 CA、叢集身分與實際權限</span><span class="hint" tabindex="0" role="img" aria-label="預設唯讀，之後再提升" data-tip="預設唯讀，之後再提升"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></span><span class="hint" tabindex="0" role="img" aria-label="kubeconfig 存進機密庫，不給瀏覽器" data-tip="kubeconfig 存進機密庫，不給瀏覽器"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></span><div class="wrap"><button type="button" class="btn sm">上傳 kubeconfig</button></div></div>
         <div class="ncard on"><div class="nh"><span class="n">建立 K3s 叢集</span><span class="d">K3s v1.31.2+k3s1</span></div><span class="note">選 1 或 3 台控制節點、任意工作節點</span><span class="note">預檢 OS、時間、主機名、Port</span><span class="note">內建 Traefik／ServiceLB 預設停用</span><div class="wrap"><button type="button" class="btn sm pri" aria-pressed="true">已選擇</button></div></div>
       </div>
     </section>

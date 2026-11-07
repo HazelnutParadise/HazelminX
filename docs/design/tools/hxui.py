@@ -395,7 +395,7 @@ body{{margin:0}}
 .hb .imp.ok{{color:var(--ok)}}.hb .imp.warn{{color:var(--warn)}}.hb .imp.dng{{color:var(--danger)}}
 .hb .imp:focus-visible{{outline:2px solid var(--hazel);outline-offset:2px}}
 .hb [data-tip]:hover,.hb [data-tip]:focus-visible{{anchor-name:--imp}}
-.hb [data-tip]:hover::after,.hb [data-tip]:focus-visible::after{{content:attr(data-tip);position:fixed;position-anchor:--imp;position-area:bottom span-left;position-try-fallbacks:bottom span-right,top span-left;margin:6px 0;z-index:50;white-space:nowrap;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:500;color:var(--ink);background:var(--raised);border:1px solid var(--line);box-shadow:0 4px 12px rgb(0 0 0 / .25);pointer-events:none}}
+.hb [data-tip]:hover::after,.hb [data-tip]:focus-visible::after{{content:attr(data-tip);position:fixed;position-anchor:--imp;position-area:bottom span-left;position-try-fallbacks:bottom span-right,top span-left;margin:6px 0;z-index:50;white-space:normal;width:max-content;max-width:320px;line-height:1.45;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:500;color:var(--ink);background:var(--raised);border:1px solid var(--line);box-shadow:0 4px 12px rgb(0 0 0 / .25);pointer-events:none}}
 .hb .ttabs{{display:flex;align-items:stretch;border-bottom:1px solid var(--line);overflow-x:auto}}
 .hb .ttab{{display:flex;align-items:center;gap:8px;height:40px;padding:0 6px 0 12px;border-right:1px solid var(--hairline);white-space:nowrap;color:var(--muted);font-size:13px;flex:none}}
 .hb .ttab.on{{color:var(--ink);background:var(--raised);box-shadow:inset 0 -2px 0 var(--hazel)}}
@@ -427,6 +427,12 @@ body{{margin:0}}
 .hb .opt{{display:flex;align-items:flex-start;gap:8px;font-size:13px;padding:4px 0}}.hb .opt input{{margin-top:3px}}
 .hb .fleet.choices{{grid-template-columns:repeat(auto-fit,minmax(min(250px,100%),1fr))}}
 .hb .row.sel{{background:color-mix(in srgb,var(--hazel) 8%,transparent)}}
+.hb .hint{{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;color:var(--faint);cursor:help;vertical-align:middle;flex:none}}
+.hb .hint:hover,.hb .hint:focus-visible{{color:var(--ink)}}
+.hb .at{{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 6px;border-radius:6px;background:var(--raised);color:var(--muted);font-size:12px;cursor:help;white-space:nowrap;flex:none}}
+.hb .at.ok{{color:var(--ok)}}.hb .at.warn{{color:var(--warn)}}.hb .at.dng{{color:var(--danger)}}
+.hb .ats{{display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center}}
+.hb .edban{{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--warn) 10%,var(--panel))}}
 @media (max-width:1024px){{.hb .tw{{--k5: ;}}}}
 @media (max-width:767px){{.hb .tw{{--k3: ;--k4: ;--k5: ;--k6: ;}}}}
 """
@@ -467,6 +473,11 @@ ICONS = {
  "power": '<path d="M12 3v8"/><path d="M6.3 6.8a8 8 0 1 0 11.4 0"/>',
  "box": '<path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5z"/><path d="M3.5 7.5 12 12l8.5-4.5M12 12v9"/>',
  "check": '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+ "info": '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+ "lock": '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+ "globe": '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+ "archive": '<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10h14V9M10 13h4"/>',
+ "branch": '<circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="8" r="2"/><path d="M6 7v10M18 10a6 6 0 0 1-6 6H8"/>',
  "x": '<path d="M6 6l12 12M18 6 6 18"/>',
  "save": '<path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/>',
  "undo": '<path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>',
@@ -1041,7 +1052,7 @@ def impact_legend(kinds: list) -> str:
     return '<div class="lg" role="list">' + "".join(out) + "</div>"
 
 
-def code_editor(tabs: list, lines: list, status: list, toolbar_right: str = "") -> str:
+def code_editor(tabs: list, lines: list, status: list, toolbar_right: str = "", banner: str = "") -> str:
     """程式碼編輯器（對齊 1Panel 檔案管理的 Monaco 編輯器）。
     tabs: [(name, active, modified)]；lines: 已上色的 HTML 行；status: 狀態列項目。第 cur 行（以 ▸ 開頭標記）為目前行。"""
     t = "".join(
@@ -1062,9 +1073,21 @@ def code_editor(tabs: list, lines: list, status: list, toolbar_right: str = "") 
             + tb("undo", "復原") + tb("search", "搜尋與取代") + tb("wrapline", "自動換行") + '<span class="sep"></span>'
             + tb("history", "版本歷史") + tb("diff", "與上一版比較")
             + f'<span style="margin-left:auto" class="wrap">{toolbar_right}</span>' + tb("max", "全螢幕")
-            + '</div>'
-            f'<div class="edb" role="textbox" aria-multiline="true" aria-label="檔案內容">{"".join(rows)}</div>'
+            + '</div>' + (f'<div class="edban" role="status">{banner}</div>' if banner else "")
+            + f'<div class="edb" role="textbox" aria-multiline="true" aria-label="檔案內容">{"".join(rows)}</div>'
             '<div class="edsb">' + "".join(f"<span>{s}</span>" for s in status) + '</div></div>')
+
+
+def hint(text: str) -> str:
+    """說明句不直接顯示：ⓘ 圖示，滑鼠停留或鍵盤聚焦才看得到。"""
+    t = text.replace('"', "&quot;")
+    return f'<span class="hint" tabindex="0" role="img" aria-label="{t}" data-tip="{t}">{icon("info", 14)}</span>'
+
+
+def attr(ic: str, tip: str, text: str = "", kind: str = "") -> str:
+    """屬性圖示：固定圖示＋（可選）短值，完整意思放在提示。"""
+    t = tip.replace('"', "&quot;")
+    return f'<span class="at {kind}" tabindex="0" role="img" aria-label="{t}" data-tip="{t}">{icon(ic, 14)}{f"<span>{text}</span>" if text else ""}</span>'
 
 
 def legend(items: list) -> str:

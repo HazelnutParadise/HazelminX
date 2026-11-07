@@ -482,6 +482,10 @@ def work_center() -> str:
     <section class="panel" aria-labelledby="h-wait">
       <div class="ph"><h2 id="h-wait">等待批准 · 1</h2></div>
       <div class="list" style="padding: 12px 14px">
+        {job("批次重啟 3 個容器", "由 tim 觸發 03:39:02 · 3 個節點", U.status("warn", "部分完成 2 / 3"),
+             [("tw-01 shop-api", "done", "成功 · 4 秒"), ("tw-01 shop-worker", "done", "成功 · 3 秒"), ("jp-02 wiki-app", "wait", "未回應 · 節點過期")],
+             "未回應不算失敗：jp-02 重新連線後回報實際結果",
+             '<button type="button" class="btn sm">只重試未回應的</button><button type="button" class="btn sm">看日誌</button>')}
         {job("變更計畫 #418 · shop production · commit 9b3e7f1", "hazel-tw-01 · 由 Webhook 偵測 02:58:30 · 自動部署已暫停", U.status("warn", "等待批准"),
              [("預檢", "done", "發現 1 個高風險變更"), ("批准", "wait", "需要擁有者"), ("執行", "todo", ""), ("驗證", "todo", "")],
              "規則：新增宿主機掛載 · <span class='mono'>compose.yaml:41  - /:/host:ro</span> · 受影響：shop-api、shop-worker · 策略：滾動",
@@ -509,19 +513,20 @@ def github_source() -> str:
     head = U.page_head("從 GitHub 匯入專案", OBS, '<a class="btn" href="Projects.dc.html">取消</a>')
     stepper = U.steps([("連接 GitHub", "done", "GitHub App · hazelnut 組織"), ("選擇倉庫與分支", "cur", ""), ("偵測與設定", "todo", "compose、環境變數"), ("部署檢查", "todo", "預檢後才建立")])
 
-    def repo(name, desc, branch, updated, cur=False, compose=True):
-        mark = U.status("ok", "有 compose.yaml") if compose else U.status("off", "未偵測到 compose")
-        return (f'<label class="row rrow" style="cursor:pointer;{"background: var(--raised)" if cur else ""}"><input type="radio" name="repo" aria-label="選擇此 Repo" {"checked" if cur else ""} style="width:18px;height:18px;accent-color: var(--hazel)">'
-                f'<span class="name"><span class="n">{name}</span><span class="d">{desc}</span></span><span class="c3">{mark}</span><span class="mono c4">{branch}</span><span class="mono note">{updated}</span></label>')
+    def repo(name, desc, branch, updated, attrs, cur=False, compose=True):
+        det = U.attr("check", "找到 deploy/compose.yaml", "compose", "ok") if compose else U.attr("x", "沒有偵測到 compose 檔", "compose", "dng")
+        return (f'<div class="row rrow{" sel" if cur else ""}"><span><input type="radio" name="repo" aria-label="選擇 {name}" {"checked" if cur else ""} style="width:18px;height:18px;accent-color: var(--hazel)"></span>'
+                f'<span class="name"><span class="n" data-tip="{desc}">{name}</span></span><span class="ats">{attrs}</span><span>{det}</span>'
+                f'<span class="c4">{U.attr("branch", "預設分支", branch)}</span><span class="mono note">{updated}</span></div>')
     left = f"""
     <section class="panel" aria-labelledby="h-repo">
       <div class="ph"><h2 id="h-repo">倉庫 · hazelnut（12）</h2><span class="sub">只列 GitHub App 被授權的倉庫</span><a class="more" href="https://github.com/apps/hazelminx">管理授權 ↗</a></div>
       <div style="padding: 10px 14px"><label class="inp"><span class="note">搜尋</span><input value="shop" style="background:transparent;border:0;flex:1;min-width:0" aria-label="搜尋倉庫"></label></div>
-      <div class="row hd rrow"><span></span><span>倉庫</span><span class="c3">偵測</span><span class="c4">預設分支</span><span>更新</span></div>
-      {repo("hazelnut/shop", "電商主站 · 私有 · 4 個 compose 服務", "main", "2 小時前", cur=True)}
-      {repo("hazelnut/shop-mobile-api", "行動 API · 私有", "main", "3 天前")}
-      {repo("hazelnut/shop-legacy", "舊版 PHP · 封存", "master", "1 年前", compose=False)}
-      <div class="note" style="padding: 8px 14px; border-top: 1px solid var(--line)">找不到倉庫？GitHub App 可能沒被授權該倉庫，到「管理授權」加上。</div>
+      <div class="row hd rrow"><span></span><span>倉庫</span><span>屬性</span><span>偵測</span><span class="c4">分支</span><span>更新</span></div>
+      {repo("hazelnut/shop", "電商主站", "main", "2 小時前", U.attr("lock", "私有倉庫") + U.attr("box", "4 個 compose 服務", "4"), cur=True)}
+      {repo("hazelnut/shop-mobile-api", "行動 API", "main", "3 天前", U.attr("lock", "私有倉庫") + U.attr("box", "2 個 compose 服務", "2"))}
+      {repo("hazelnut/shop-legacy", "舊版 PHP", "master", "1 年前", U.attr("lock", "私有倉庫") + U.attr("archive", "已封存，唯讀", "", "warn"), compose=False)}
+      
     </section>"""
     right = f"""
     <section class="panel" aria-labelledby="h-br">
@@ -530,9 +535,9 @@ def github_source() -> str:
         <div class="field"><label for="br">分支或標籤</label><div class="inp"><span class="mono">main</span><span class="note" style="margin-left:auto">最新 9b3e7f1 · 38 分鐘前</span></div><span class="help">之後每次推送到這個分支都會建立變更計畫；高風險變更先暫停等批准。</span></div>
         <div class="field"><label for="path">compose 檔路徑</label><div class="inp"><span class="mono">deploy/compose.yaml</span>{U.status("ok", "已找到")}</div><span class="help">也偵測到 <span class="mono">compose.override.yaml</span>，部署時不套用。</span></div>
         <div class="field"><label>觸發方式</label><div class="wrap"><label class="btn" style="gap:8px"><input type="radio" name="trig" aria-label="觸發方式" checked style="accent-color: var(--hazel)">Webhook（推送即部署）</label><label class="btn" style="gap:8px"><input type="radio" name="trig" aria-label="觸發方式" style="accent-color: var(--hazel)">定期檢查（每 5 分鐘）</label><label class="btn" style="gap:8px"><input type="radio" name="trig" aria-label="觸發方式" style="accent-color: var(--hazel)">只手動</label></div><span class="help">Webhook 會在 GitHub 上建立；沒有公開入口時自動改用定期檢查。</span></div>
-        <div class="field"><label for="env">目標環境與節點</label><div class="wrap"><div class="inp" style="width:auto;min-width:160px"><span>production</span></div><div class="inp" style="width:auto;min-width:200px"><span class="mono">hazel-tw-01</span><span class="note" style="margin-left:auto">412 GiB 可用</span></div></div><span class="errt">hazel-jp-02 不可選：狀態過期且資料碟 93%。</span></div>
+        <div class="field"><label for="env">目標環境與節點</label><div class="wrap"><div class="inp" style="width:auto;min-width:160px"><span>production</span></div><div class="wrap" role="radiogroup" aria-label="目標節點"><button type="button" class="btn on" role="radio" aria-checked="true"><span class="mono">hazel-tw-01</span>{U.attr("storage", "/mnt/data 可用 412 GiB", "412G")}</button><button type="button" class="btn" role="radio" aria-checked="false" aria-disabled="true" style="opacity:.55"><span class="mono">hazel-jp-02</span>{U.attr("attention", "不可選：狀態過期、資料碟 93%", "", "warn")}</button></div></div></div>
       </div>
-      <div class="ph" style="border-top: 1px solid var(--line); border-bottom: 0"><span class="note">讀取 compose 檔 → 列出服務、Port、Volume → 建立部署工作</span><div class="wrap" style="margin-left:auto"><a class="btn" href="Projects.dc.html">上一步</a><a class="btn pri" href="DeployCheck.dc.html">偵測與設定 →</a></div></div>
+      <div class="ph" style="border-top: 1px solid var(--line); border-bottom: 0"><div class="wrap" style="margin-left:auto"><a class="btn" href="Projects.dc.html">上一步</a><a class="btn pri" href="DeployCheck.dc.html">偵測與設定 →</a></div></div>
     </section>"""
     main = head + f'<div class="panel" style="padding: 12px 14px">{stepper}</div><div class="cg">{left}{right}</div>'
     return U.shell("projects", main)
@@ -918,7 +923,7 @@ def nodes() -> str:
       <div style="padding:12px 14px">{U.matrix(["hazel-tw-01", "hazel-jp-02", "lab-mini"], ["Agent", "Docker", "Podman", "K3s", "Zentinel", "節點憑證"], [
         [("ok", "0.1.0"), ("ok", "27.3.1"), ("none", ""), ("none", ""), ("ok", "0.6.54"), ("warn", "12 天")],
         [("warn", "0.1.0 過期"), ("ok", "27.1.0"), ("none", ""), ("none", ""), ("warn", "0.6.50 可更新"), ("ok", "71 天")],
-        [("ok", "0.1.0"), ("none", ""), ("ok", "5.2 rootless"), ("ok", "1.31.2"), ("none", ""), ("ok", "88 天")],
+        [("ok", "0.1.0"), ("none", ""), ("warn", "5.2 未驗證"), ("ok", "1.31.2"), ("none", ""), ("ok", "88 天")],
       ])}</div>
       <div class="note" style="padding:0 14px 10px">rootless Podman 依 Linux 使用者分環境：lab-mini 有 <span class="mono">deploy</span>、<span class="mono">tim</span> 兩個</div>
     </section>"""
@@ -1356,8 +1361,9 @@ def files() -> str:
     <section class="panel" aria-labelledby="h-ed">
       <div class="ph"><h2 id="h-ed" class="mono">/mnt/data/apps/wiki/.env</h2><span class="note">hazel-tw-01 · root:root · -rw-------</span><div class="wrap" style="margin-left:auto"><a class="btn sm" href="Containers.dc.html">套用到 wiki-app</a></div></div>
       <div style="padding:12px 14px">{U.code_editor([("compose.yaml", False, False), (".env", True, True)], env_lines,
-        ["第 6 行，第 30 欄", "dotenv", "UTF-8", "LF", "812 B → 824 B", "未儲存", "外部修改：無"],
-        '<label class="inp" style="min-height:28px;width:auto"><span class="note">語言</span><select aria-label="語言" style="background:transparent;border:0"><option>dotenv</option></select></label>')}</div>
+        ["第 6 行，第 30 欄", "dotenv", "UTF-8", "LF", "812 B → 824 B", "未儲存", "外部修改：ops-ann 03:40:12"],
+        '<label class="inp" style="min-height:28px;width:auto"><span class="note">語言</span><select aria-label="語言" style="background:transparent;border:0"><option>dotenv</option></select></label>',
+        banner=U.status("warn", "ops-ann 03:40:12 存了新版本") + '<span class="wrap" style="margin-left:auto"><button type="button" class="btn sm">看差異</button><button type="button" class="btn sm">用我的版本覆蓋</button><button type="button" class="btn sm">放棄我的修改</button></span>')}</div>
     </section>"""
     transfers = f"""
     <section class="panel" aria-labelledby="h-tr">
@@ -1714,7 +1720,7 @@ def iam() -> str:
 
 # ---------- 平台設定 ----------
 def settings() -> str:
-    head = U.page_head("平台設定", OBS, '<button type="button" class="btn">匯出設定</button><button type="button" class="btn">診斷包</button><button type="button" class="btn pri">檢查更新</button>')
+    head = U.page_head("平台設定", OBS, f'<button type="button" class="btn">匯出設定</button><button type="button" class="btn">診斷包</button><button type="button" class="btn" aria-disabled="true" data-tip="需要第二位擁有者批准；送出後建立變更計畫" style="opacity:.6">{U.icon("lock", 14)}輪替主金鑰</button><button type="button" class="btn pri">檢查更新</button>')
     tabs = ('<div class="panel"><div class="tabs" role="tablist">' + "".join(f'<button type="button" class="tab{" on" if i == 0 else ""}" role="tab" aria-selected="{"true" if i == 0 else "false"}">{t}</button>' for i, t in enumerate(["基本", "管理入口與安全", "通知", "更新", "快照與匯入匯出", "整合", "遙測", "關於"])) + '</div></div>')
     def card(title, rows, note=""):
         body = "".join(f'<div style="display:flex;justify-content:space-between;gap:10px;min-height:32px;align-items:center;border-top:1px solid var(--line);padding:4px 0"><span class="note">{k}</span><span style="text-align:right">{v}</span></div>' for k, v in rows)
@@ -2225,7 +2231,6 @@ SCREENS = {
     "Logs": ("日誌", logs, 1440, 2200),
     "AppInstall": ("安裝應用（1Panel 市集）", app_install, 1440, 1800),
     "HostServices": ("服務模組（Webmin 等價）", host_services, 1440, 1900),
-    "EdgeCases": ("邊界情境", edge_cases, 1440, 1800),
     "ContainersEmpty": ("容器引擎未安裝", containers_empty, 1440, 1900),
     "KubernetesEmpty": ("Kubernetes 未連接", kubernetes_empty, 1440, 1500),
     "M-Overview": ("總覽 · 360", overview, 360, 3600),
@@ -2318,6 +2323,34 @@ def table_affordances(html: str) -> str:
     return re.sub(r'<section class="panel"([^>]*)>.*?</section>', fix, html, flags=re.S)
 
 
+class _Row:
+    def __init__(self, start, end, tag, cls, attrs, inner):
+        self.s, self.e, self.tag, self.cls, self.attrs, self.inner = start, end, tag, cls, attrs, inner
+    def start(self): return self.s
+    def end(self): return self.e
+    def group(self, i):
+        return {1: self.tag, 2: self.cls, 3: self.attrs, 4: self.inner}[i]
+
+
+def _rows(sec: str):
+    """找出區塊裡的 .row（考慮同名標籤嵌套，例如列裡的 div 時間軸）。"""
+    out = []
+    for m in re.finditer(r'<(a|div|label) class="row ([^"]*)"([^>]*)>', sec):
+        tag = m.group(1); depth = 1; i = m.end()
+        pat = re.compile(rf"<(/?){tag}\b")
+        while depth:
+            n = pat.search(sec, i)
+            if not n:
+                break
+            depth += 1 if n.group(1) == "" else -1
+            i = n.end()
+        close = sec.rfind(f"</{tag}", 0, i)
+        end = sec.index(">", close) + 1
+        out.append(_Row(m.start(), end, tag, m.group(2), m.group(3), sec[m.end():close]))
+    # 只留最外層
+    return [r for r in out if not any(o.s < r.s and r.e <= o.e for o in out if o is not r)]
+
+
 def auto_tables(html: str) -> str:
     """表格欄寬依內容自動算（對齊真正的 table／Kumo Table）：面板變成 grid，列用 subgrid 共用欄。
     名稱欄吃剩餘空間，其他欄依內容；.c3/.c4/.c5 欄的軌道在隱藏時一起拿掉（--k3/--k4/--k5 設為空）。"""
@@ -2325,7 +2358,7 @@ def auto_tables(html: str) -> str:
         return re.sub(r"<[^>]+>", "", sp).strip()
     def fix(m):
         sec = m.group(0)
-        rows = list(re.finditer(r'<(a|div) class="row ([^"]*)"([^>]*)>(.*?)</\1>', sec, flags=re.S))
+        rows = _rows(sec)
         if len(rows) < 2 or any("frow" in r.group(2).split() for r in rows):
             return sec
         spans = [_top_spans(r.group(4)) for r in rows]
@@ -2348,6 +2381,8 @@ def auto_tables(html: str) -> str:
                 t = "44px" if j == 0 else "28px"
             elif j == name_col:
                 t = "minmax(min(160px,34%),1fr)"
+            elif any(('class="timeline' in sp[j]) or ('class="seg' in sp[j]) for sp in body):
+                t = "minmax(160px,2fr)"
             else:
                 t = "auto"
             for k in ("c3", "c4", "c5", "c6"):
@@ -2355,8 +2390,59 @@ def auto_tables(html: str) -> str:
                     t = f"var(--k{k[1]},{t})"
             tracks.append(t)
         a, b = rows[0].start(), rows[-1].end()
-        return sec[:a] + f'<div class="tw" style="--tc:{" ".join(tracks)}">' + sec[a:b] + "</div>" + sec[b:]
+        mid = re.sub(r'(class="row [^"]*"[^>]*style="[^"]*?)grid-template-columns:[^;"]*;?', r"\1", sec[a:b])
+        return sec[:a] + f'<div class="tw" style="--tc:{" ".join(tracks)}">' + mid + "</div>" + sec[b:]
     return re.sub(r'<section class="panel"[^>]*>.*?</section>', fix, html, flags=re.S)
+
+
+def iconize(html: str) -> str:
+    """UI 以圖示為主：說明句（help、句子型 note、名稱下的句子）改成 ⓘ 提示，不直接佔版面。"""
+    SENT = re.compile(r"[，；。]")
+    def plain(x):
+        return re.sub(r"<[^>]+>", "", x).strip()
+    def span_end(h, start):
+        depth, i = 0, start
+        while True:
+            m = re.search(r"<(/?)span\b", h[i:])
+            j = i + m.start()
+            depth += 1 if m.group(1) == "" else -1
+            i = j + 1
+            if depth == 0:
+                return h.index(">", j) + 1
+    while True:
+        k = html.find('<span class="help"')
+        if k == -1:
+            break
+        e = span_end(html, k)
+        inner = re.sub(r'^<span class="help"[^>]*>|</span>$', "", html[k:e])
+        html = html[:k] + U.hint(plain(inner)) + html[e:]
+    # 欄位的 ⓘ 移到欄位標題後面
+    out, pos = [], 0
+    for m in re.finditer(r'<span class="hint".*?</span>', html, flags=re.S):
+        start = m.start()
+        f = html.rfind('<div class="field"', 0, start)
+        lab = html.find("</label>", f) if f != -1 else -1
+        if f != -1 and f < lab < start and lab >= pos:
+            out.append(html[pos:lab]); out.append(" " + m.group(0)); out.append(html[lab:start]); pos = m.end()
+    out.append(html[pos:]); html = "".join(out)
+    def note(m):
+        t = plain(m.group(2))
+        return U.hint(t) if SENT.search(t) else m.group(0)
+    html = re.sub(r'<span class="(note|d)"[^>]*>((?:(?!</?span).)*)</span>', note, html, flags=re.S)
+    def divnote(m):
+        t = plain(m.group(1))
+        return f'<div class="foot">{U.hint(t)}</div>' if SENT.search(t) else m.group(0)
+    html = re.sub(r'<div class="note"[^>]*>(.*?)</div>', divnote, html, flags=re.S)
+    # 只剩一個 ⓘ 的區塊註腳：移到該面板標題旁
+    def sec(m):
+        body = m.group(0)
+        hints = re.findall(r'<div class="foot">(<span class="hint".*?</span>)</div>', body, flags=re.S)
+        if not hints or "</h2>" not in body:
+            return body
+        body = re.sub(r'<div class="foot"><span class="hint".*?</span></div>', "", body, flags=re.S)
+        return body.replace("</h2>", "</h2>" + "".join(hints), 1)
+    html = re.sub(r'<section\b.*?</section>', sec, html, flags=re.S)
+    return html
 
 
 def declutter(html: str) -> str:
@@ -2386,7 +2472,8 @@ def main():
     if args.render_dir:
         os.makedirs(args.render_dir, exist_ok=True)
     for name, (title, fn, w, h) in SCREENS.items():
-        body = auto_tables(table_affordances(trim_columns(declutter(fn()))))
+        raw = fn().replace('class="row"', 'class="row r0"').replace('class="row hd"', 'class="row hd r0"')
+        body = auto_tables(table_affordances(trim_columns(iconize(declutter(raw)))))
         for bad in BANNED:
             for m in re.finditer(bad, re.sub(r"<[^>]+>", " ", body)):
                 print(f"  ! {name}: 「{bad}」 … {re.sub(r'<[^>]+>', ' ', body)[max(0, m.start() - 20):m.end() + 20].strip()}")
