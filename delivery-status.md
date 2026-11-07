@@ -1,13 +1,14 @@
 # Delivery Status
 
 ## Current Phase
-M0 基礎與設計：Core 與 Agent 後端骨架（票 003、004、008、009、011、012）已合併進 `main`；設計系統與 UI/UX 原型（票 002）進行中。
+M0 基礎與設計：Core 與 Agent 後端骨架（票 003、004、008、009、011、012）已合併進 `main`，管理 API 共用契約（票 010）在 PR 審查中；設計系統與 UI/UX 原型（票 002）進行中。
 
 ## Stage Objective
 完成 `DESIGN.md` 與主要畫面原型並通過設計審查，讓票 003、004、005、007 可以在一致的視覺與互動基準上開工；M0 結束時 Core、Agent、Web 骨架可建置並在 CI 通過。
 
 ## Active Workstreams
 - 設計系統與原型（票 002，PR #102）→ `DESIGN.md`、`docs/design/`、`DESIGN-REVIEW.md`。
+- 管理 API 共用契約（票 010）→ `core/internal/api` 的錯誤代碼表、列表、版本條件、dryRun、202 工作回應、確認端點與 OpenAPI，PR 等審查。
 - 1Panel 功能基線盤點（票 092，PR #99）→ `docs/baseline/`。
 - 已在 `main` 但驗收未完成：票 003 等 CI（票 006）；票 004 缺 Komodo Periphery 改造起點的 crate 與授權清單、閒置 CPU 與記憶體量測；票 008 的 ENG-003 Agent 端等票 004、007。
 - 參考專案研究收尾 → `docs/research/`（1Panel 後端／前端、Komodo Periphery、Portainer Git Stack、Beszel 報告待補）。
@@ -29,7 +30,7 @@ None。
 票 007 Core↔Agent 協定：Agent 以 mTLS WebSocket 連上 Core，交換協定版本與能力，Core 與 Agent 用同一組黃金 JSON 樣本通過契約測試。PR #102（票 002）合併後，票 005 依 `DESIGN.md` token 建立 `web/` 骨架。
 
 ## Next Ticket
-007 Core 與 Agent 協定（ready）。005 前端骨架仍等票 002 完成。另外 014、022、023、026 的前置票都已 done，狀態改為 ready；010、013、024、025 還在等 003、004 或 008 完成驗收。
+007 Core 與 Agent 協定（ready）。005 前端骨架仍等票 002 完成。另外 014、015、022、023、026 的前置票都已 done，狀態為 ready；013、016、024、025 還在等 003、004 或 008 完成驗收。
 
 ## Decision Log
 | decision | rationale | timestamp | impacted_ticket_ids |
@@ -50,6 +51,10 @@ None。
 | `/management/v1/jobs` 掛在 IAM 驗證之後：讀取要全域 `platform:read`，提交與取消要全域 `platform:write`；各工作種類的權限與範圍由票 010 定 | 合併 008 與 009 時工作 API 原本不需登入；AGENTS.md 要求危險操作在後端驗權 | 2026-11-07 | 008、009、010 |
 | 003、004、008 驗收未完成仍先合併進 `main`，狀態維持 in_progress | 使用者決定（2026-11-07）；003 的 CI 條件要等 006，而 006 需要 003 先合併 | 2026-11-07 | 003、004、006、008 |
 | 主金鑰存 `<data-dir>/master.key`（多世代、舊世代永不刪）；SQLite 改 `synchronous=FULL`；`master.key` 存在而 `core.db` 不在視為遺失而非全新安裝 | 35.2 主金鑰不與資料庫同放、輪替後舊備份須可解密；DAT-002 已確認交易不可丟；T-012 不冒用空白庫 | 2026-11-07 | 011、078、013 |
+| `/management/v1` 列表統一回 `{items, page}`、以 keyset 游標翻頁；`INVALID_REQUEST`、`JOB_KIND_UNKNOWN` 併入 `VALIDATION_FAILED`，`JOB_NOT_FOUND` 併入 `NOT_FOUND`，`CONFLICT` 改名 `ALREADY_EXISTS` | 使用者決定（2026-11-08）；尚未發版，統一後前端只需處理一套格式 | 2026-11-08 | 010、005、017 |
+| 版本過期回 `412 VERSION_MISMATCH`，缺少或 `*` 回 `428 VERSION_REQUIRED`；`409` 只用於資源狀態擋下 | 使用者決定（2026-11-08）；RFC 9110 13.1.1 | 2026-11-08 | 010、015、016 |
+| 背景列表查詢結果存獨立表，最多 100,000 筆、保存 7 天 | 使用者決定（2026-11-08）；大結果放在工作紀錄會拖慢工作列表 | 2026-11-08 | 010、017 |
+| ROB-010 確認只接受套用者本人、從套用後才建立的連線送出；有反向代理時不成立，前提是管理入口直連 Core | 使用者決定（2026-11-08）；瀏覽器會同時開多條連線，只比連線 ID 不夠 | 2026-11-08 | 010、024、065 |
 
 ## Source Links
 - 架構決策：`ENG.md`
@@ -57,6 +62,7 @@ None。
 - 票務：`docs/tickets/README.md`、GitHub issues #1–#98（milestone M0–M5）
 - 草稿 PR：#99（092 基線盤點）、#102（002 設計方向）
 - 已合併 PR：#100（003）、#101（004）、#103（011）、#104（009）、#105（008）、#106（012）
+- 待審 PR：票 010（分支 `ticket/010-management-api-contract`）
 - 設計畫布：<https://claude.ai/artifact/NBXgFGYEiZVnKLraoa7Nt8>（第一頁三個方向、第二頁方向 B 定稿 12 畫板，私人）
 - 研究：`docs/research/`
 - 工作規則：`AGENTS.md`
@@ -66,3 +72,5 @@ None。
 - 參考專案原始碼放在本機暫存目錄，不進 repo；研究報告是線索，實作前以固定 commit 重新核對。
 - Vite+ 的 `vp` 尚未安裝在開發機；票 005 開工時先裝全域 CLI（`curl -fsSL https://vite.plus | bash`）。
 - 在 `/Volumes/SSD` 上 `cargo build` 需設 `CARGO_TARGET_DIR` 到支援檔案鎖的磁碟（project memory 有紀錄）。
+- 票 010 新增 migration `0006_management_contract.sql`。其他平行分支若也新增 `0006`，後合併的一方要改號，並同步更新票檔裡的引用。
+- 2026-11-08 起，`main` 上 `core/internal/api` 的測試會失敗：IAM 測試的時鐘寫死在 2026-11-07，cookie 的 Max-Age 卻用牆上時鐘算。票 010 分支的第一個 commit 已經修正，同時修了 `TestRecoverAfterRestartDoesNotResetOrRerun` 約三成機率失敗的問題。
