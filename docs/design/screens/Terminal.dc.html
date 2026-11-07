@@ -166,6 +166,16 @@ body{margin:0}
 .hb .chip{display:inline-flex;align-items:center;min-height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line);font-size:11px;color:var(--muted);background:transparent}
 .hb .chip.on{color:var(--hazel);border-color:var(--hazel)}
 .hb .term{background:var(--neutral,#0f0e0c);border:1px solid var(--line);border-radius:8px;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;padding:10px 12px;color:var(--ink);white-space:pre;overflow:auto;min-height:220px}
+.hb .lg{display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted);margin-left:auto}
+.hb .lg span{display:inline-flex;align-items:center;gap:5px}
+.hb .lg i.sw{display:inline-block;width:12px;height:8px;border-radius:2px}
+.hb .lg i.ln{display:inline-block;width:18px;border-radius:2px;background:var(--s1)}
+.hb .lg .st{gap:5px}
+.hb .scope{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;background:var(--panel);border:1px solid var(--line);border-radius:8px}
+.hb .scope .lbl{font-size:12px;color:var(--faint);letter-spacing:.06em;text-transform:uppercase}
+.hb .scope .btn{min-height:32px;padding:0 10px;font-size:12px;color:var(--muted);gap:6px}
+.hb .scope .btn.on{background:var(--raised);color:var(--ink);border-color:var(--hazel);font-weight:600}
+.hb .scope .btn .mono{color:var(--faint);font-size:11px}
 .hb .range{display:flex;gap:4px;flex-wrap:wrap}
 .hb .range .btn{min-height:32px;padding:0 10px;font-size:12px;color:var(--muted)}
 .hb .range .btn.on{background:var(--raised);color:var(--hazel);border-color:var(--line);font-weight:600}
@@ -257,8 +267,8 @@ body{margin:0}
       <span class="mono" style="font-size: 11px; color: var(--faint); margin-left: auto">tw-01</span>
     </div>
     <button type="button" class="inp" style="color: var(--muted); text-align: left"><span>搜尋或下指令</span><span class="kbd">⌘K</span></button>
-    <div class="navcol"><a class="nv" href="Overview.dc.html">總覽<span class="kbd">G O</span></a><a class="nv" href="WorkCenter.dc.html">工作中心<span class="cnt" style="color: var(--hazel)">3</span></a><a class="nv" href="Overview.dc.html#attention">需要處理<span class="cnt" style="color: var(--warn)">3</span></a></div>
-    <div class="navgrp">基礎設施</div><div class="navcol"><a class="nv cur" aria-current="page" href="Nodes.dc.html">主機與節點</a><a class="nv" href="Containers.dc.html">Docker／Podman</a><a class="nv" href="Kubernetes.dc.html">Kubernetes</a><a class="nv" href="Storage.dc.html">儲存</a><a class="nv" href="Files.dc.html">檔案</a></div><div class="navgrp">應用</div><div class="navcol"><a class="nv" href="Projects.dc.html">專案與服務</a><a class="nv" href="AppStore.dc.html">應用商店</a><a class="nv" href="Database.dc.html">資料庫</a><a class="nv" href="AI.dc.html">AI</a><a class="nv" href="Storage.dc.html">備份與還原</a><a class="nv" href="Cron.dc.html">計畫任務</a></div><div class="navgrp">入口與安全</div><div class="navcol"><a class="nv" href="Websites.dc.html">網站與入口</a><a class="nv" href="APIProxy.dc.html">API 代理</a><a class="nv" href="Security.dc.html">安全防護</a><a class="nv" href="Analytics.dc.html">流量分析</a><a class="nv" href="Events.dc.html">事件與告警</a><a class="nv" href="IAM.dc.html">身分與存取</a><a class="nv" href="Settings.dc.html">平台設定</a></div>
+    <div class="navcol"><a class="nv" href="Overview.dc.html">總覽<span class="kbd">G O</span></a><a class="nv" href="WorkCenter.dc.html">工作中心<span class="cnt" style="color: var(--hazel)">3</span></a><a class="nv" href="Overview.dc.html#attention">需要處理<span class="cnt" style="color: var(--warn)">3</span></a><a class="nv cur" href="Terminal.dc.html">終端機<span class="kbd">⌘`</span></a></div>
+    <div class="navgrp">基礎設施</div><div class="navcol"><a class="nv" href="Nodes.dc.html">主機與節點</a><a class="nv" href="Containers.dc.html">Docker／Podman</a><a class="nv" href="Kubernetes.dc.html">Kubernetes</a><a class="nv" href="Storage.dc.html">儲存</a><a class="nv" href="Files.dc.html">檔案</a></div><div class="navgrp">應用</div><div class="navcol"><a class="nv" href="Projects.dc.html">專案與服務</a><a class="nv" href="AppStore.dc.html">應用商店</a><a class="nv" href="Database.dc.html">資料庫</a><a class="nv" href="AI.dc.html">AI</a><a class="nv" href="Storage.dc.html">備份與還原</a><a class="nv" href="Cron.dc.html">計畫任務</a></div><div class="navgrp">入口與安全</div><div class="navcol"><a class="nv" href="Websites.dc.html">網站與入口</a><a class="nv" href="APIProxy.dc.html">API 代理</a><a class="nv" href="Security.dc.html">安全防護</a><a class="nv" href="Analytics.dc.html">流量分析</a><a class="nv" href="Events.dc.html">事件與告警</a><a class="nv" href="Logs.dc.html">日誌</a><a class="nv" href="IAM.dc.html">身分與存取</a><a class="nv" href="Settings.dc.html">平台設定</a></div>
     <div style="margin-top: auto; display: flex; align-items: center; gap: 8px; padding: 8px 10px 0; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted)">
       <span>tim · 擁有者</span>
       <button type="button" class="btn sm" aria-label="切換淺色或深色" style="margin-left: auto; min-width: 44px">{{themeLabel}}</button>
@@ -270,7 +280,7 @@ body{margin:0}
       <div class="wrap" style="margin-left: auto"><button type="button" class="btn pri">新連線</button><button type="button" class="btn">快捷指令</button><button type="button" class="btn">設定</button></div>
     </div><div class="panel"><div class="tabs" role="tablist"><button type="button" class="tab on" role="tab" aria-selected="true">hazel-tw-01 · root</button><button type="button" class="tab" role="tab" aria-selected="false">shop-api（容器）</button><button type="button" class="tab" role="tab" aria-selected="false">lab-mini · deploy</button><button type="button" class="tab" role="tab" aria-selected="false">＋</button><span style="margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:10px"><span class="st dng"><i aria-hidden="true"></i>這個終端機代表 root@hazel-tw-01 · 稽核：完整錄製</span><span class="chip">縮到底部 Dock</span><span class="chip">全螢幕</span></span></div></div>
     <section class="panel" aria-labelledby="h-tm">
-      <div class="ph"><h2 id="h-tm">hazel-tw-01 · root · 會話 #3 · 開始 03:36 · 心跳正常</h2><span class="sub">經 Agent，不走 sshd；切到別的頁面回來輸出仍完整</span></div>
+      <div class="ph"><h2 id="h-tm">hazel-tw-01 · root · 會話 #3 · 開始 03:36 · 心跳正常</h2></div>
       <div style="padding:10px 14px"><div class="term" style="min-height:300px">root@hazel-tw-01:~# docker ps --format 'table {{.Names}}	{{.Status}}'
 NAMES             STATUS
 shop-api-1        Up 46 minutes (healthy)
@@ -285,7 +295,7 @@ Nov 07 03:42:16 hazel-tw-01 hazelminx-agent[912]: INFO heartbeat ok seq=51205 rt
 root@hazel-tw-01:~# <span style="background:var(--ink);color:var(--panel)"> </span></div></div>
     </section><div class="cg">
     <section class="panel" aria-labelledby="h-hs">
-      <div class="ph"><h2 id="h-hs">連線目標</h2><span class="sub">節點經 Agent；外部主機用 SSH 資產（金鑰在機密庫）</span></div>
+      <div class="ph"><h2 id="h-hs">連線目標</h2></div>
       <div class="row hd srow"><span>目標</span><span>狀態</span><span class="c3">方式</span><span class="c4">身分</span><span class="c4">稽核</span><span class="c5"></span><span></span></div>
       <a class="row srow" href="#h1"><span class="name"><span class="n">hazel-tw-01</span><span class="d">節點</span></span><span><span class="st ok"><i aria-hidden="true"></i>連線中</span></span><span class="c3 note">Agent</span><span class="mono c4">root · tim 可</span><span class="c4 note">完整錄製</span><span class="c5"></span><span><button type="button" class="btn sm">開啟</button></span></a>
       <a class="row srow" href="#h2"><span class="name"><span class="n">hazel-jp-02</span><span class="d">節點</span></span><span><span class="st warn"><i aria-hidden="true"></i>狀態過期</span></span><span class="c3 note">Agent</span><span class="mono c4">root</span><span class="c4 note">完整錄製</span><span class="c5"></span><span><button type="button" class="btn sm">開啟</button></span></a>
@@ -294,7 +304,7 @@ root@hazel-tw-01:~# <span style="background:var(--ink);color:var(--panel)"> </sp
       <a class="row srow" href="#h5"><span class="name"><span class="n">shop-api（容器）</span><span class="d">tw-01 · docker exec</span></span><span><span class="st ok"><i aria-hidden="true"></i>執行中</span></span><span class="c3 note">Agent · exec</span><span class="mono c4">node（容器內）</span><span class="c4 note">指令紀錄</span><span class="c5"></span><span><button type="button" class="btn sm">開啟</button></span></a>
     </section>
     <section class="panel" aria-labelledby="h-qc">
-      <div class="ph"><h2 id="h-qc">快捷指令 · 6</h2><span class="sub">可匯入；高風險指令要二次確認</span></div>
+      <div class="ph"><h2 id="h-qc">快捷指令 · 6</h2></div>
       <div class="ranks"><div class="rank"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">docker ps（健康欄）</span><span class="bar" aria-hidden="true"><i style="width: 91%"></i></span><span class="mono" style="font-size:12px">41 次</span></div><div class="rank"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">journalctl -u hazelminx-agent -f</span><span class="bar" aria-hidden="true"><i style="width: 40%"></i></span><span class="mono" style="font-size:12px">18 次</span></div><div class="rank"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">df -h /mnt/data</span><span class="bar" aria-hidden="true"><i style="width: 27%"></i></span><span class="mono" style="font-size:12px">12 次</span></div><div class="rank"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">pg_isready -h shop-db</span><span class="bar" aria-hidden="true"><i style="width: 16%"></i></span><span class="mono" style="font-size:12px">7 次</span></div><div class="rank"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">systemctl restart zentinel ⚠</span><span class="bar" aria-hidden="true"><i style="width: 7%"></i></span><span class="mono" style="font-size:12px">3 次</span></div><div class="rank"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">apt list --upgradable</span><span class="bar" aria-hidden="true"><i style="width: 4%"></i></span><span class="mono" style="font-size:12px">2 次</span></div></div>
     </section></div>
     <section class="panel" aria-labelledby="h-tp">

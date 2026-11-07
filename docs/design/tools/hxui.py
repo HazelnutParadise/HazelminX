@@ -182,6 +182,16 @@ body{{margin:0}}
 .hb .chip{{display:inline-flex;align-items:center;min-height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line);font-size:11px;color:var(--muted);background:transparent}}
 .hb .chip.on{{color:var(--hazel);border-color:var(--hazel)}}
 .hb .term{{background:var(--neutral,#0f0e0c);border:1px solid var(--line);border-radius:8px;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;padding:10px 12px;color:var(--ink);white-space:pre;overflow:auto;min-height:220px}}
+.hb .lg{{display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted);margin-left:auto}}
+.hb .lg span{{display:inline-flex;align-items:center;gap:5px}}
+.hb .lg i.sw{{display:inline-block;width:12px;height:8px;border-radius:2px}}
+.hb .lg i.ln{{display:inline-block;width:18px;border-radius:2px;background:var(--s1)}}
+.hb .lg .st{{gap:5px}}
+.hb .scope{{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;background:var(--panel);border:1px solid var(--line);border-radius:8px}}
+.hb .scope .lbl{{font-size:12px;color:var(--faint);letter-spacing:.06em;text-transform:uppercase}}
+.hb .scope .btn{{min-height:32px;padding:0 10px;font-size:12px;color:var(--muted);gap:6px}}
+.hb .scope .btn.on{{background:var(--raised);color:var(--ink);border-color:var(--hazel);font-weight:600}}
+.hb .scope .btn .mono{{color:var(--faint);font-size:11px}}
 .hb .range{{display:flex;gap:4px;flex-wrap:wrap}}
 .hb .range .btn{{min-height:32px;padding:0 10px;font-size:12px;color:var(--muted)}}
 .hb .range .btn.on{{background:var(--raised);color:var(--hazel);border-color:var(--line);font-weight:600}}
@@ -283,12 +293,13 @@ NAV = [
     ("安全防護", "security", "Security.dc.html"),
     ("流量分析", "analytics", "Analytics.dc.html"),
     ("事件與告警", "events", "Events.dc.html"),
+    ("日誌", "logs", "Logs.dc.html"),
     ("身分與存取", "iam", "IAM.dc.html"),
     ("平台設定", "settings", "Settings.dc.html"),
 ]
 GROUPS = [("基礎設施", ["nodes", "docker", "k8s", "storage", "files"]),
           ("應用", ["projects", "store", "db", "ai", "backup", "cron"]),
-          ("入口與安全", ["web", "api", "security", "analytics", "events", "iam", "settings"])]
+          ("入口與安全", ["web", "api", "security", "analytics", "events", "logs", "iam", "settings"])]
 
 
 def nav(current: str, jobs: int = 3, attention: int = 3, mobile_links: bool = True) -> str:
@@ -302,7 +313,8 @@ def nav(current: str, jobs: int = 3, attention: int = 3, mobile_links: bool = Tr
     top = (f'<a class="nv{ov_cls}" href="Overview.dc.html"{ov_cur}>總覽<span class="kbd">G O</span></a>'
            f'<a class="nv{" cur" if current == "jobs" else ""}" href="WorkCenter.dc.html">工作中心'
            f'<span class="cnt" style="color: var(--hazel)">{jobs}</span></a>'
-           f'<a class="nv" href="Overview.dc.html#attention">需要處理<span class="cnt" style="color: var(--warn)">{attention}</span></a>')
+           f'<a class="nv" href="Overview.dc.html#attention">需要處理<span class="cnt" style="color: var(--warn)">{attention}</span></a>'
+           f'<a class="nv{" cur" if current == "terminal" else ""}" href="Terminal.dc.html">終端機<span class="kbd">⌘`</span></a>')
     groups = "".join(
         f'<div class="navgrp">{g}</div><div class="navcol">{"".join(link(k) for k in keys)}</div>'
         for g, keys in GROUPS)
@@ -718,6 +730,25 @@ def tree(items: list) -> str:
         out.append("</ul>"); depth -= 1
     out.append("</ul></div>")
     return "".join(out)
+
+
+def scope_bar(items: list, current: int = 0, label: str = "範圍", extra: str = "") -> str:
+    """範圍列：這一頁在看哪些節點／叢集。items [(label, sub)]；永遠放在頁面標題正下方。"""
+    btns = "".join(f'<button type="button" class="btn{" on" if i == current else ""}" aria-pressed="{"true" if i == current else "false"}">{l}{f"<span class=mono>{sub}</span>" if sub else ""}</button>' for i, (l, sub) in enumerate(items))
+    return f'<div class="scope" role="group" aria-label="{label}"><span class="lbl">{label}</span>{btns}{extra}</div>'
+
+
+def legend(items: list) -> str:
+    """圖例：items [(kind, label)]；kind 是 ok|warn|dng|info（狀態形狀）、color:<css>（色塊）、line:<px>（線寬）。"""
+    out = []
+    for kind, label in items:
+        if kind in ("ok", "warn", "dng", "info"):
+            out.append(f'<span class="st {kind}"><i aria-hidden="true"></i>{label}</span>')
+        elif kind.startswith("color:"):
+            out.append(f'<span><i class="sw" style="background:{kind[6:]}" aria-hidden="true"></i>{label}</span>')
+        elif kind.startswith("line:"):
+            out.append(f'<span><i class="ln" style="height:{kind[5:]}px" aria-hidden="true"></i>{label}</span>')
+    return '<div class="lg" role="list">' + "".join(out) + "</div>"
 
 
 def dc_wrap(title: str, body: str, width: int, height: int, lang="zh-Hant-TW") -> str:

@@ -166,6 +166,16 @@ body{margin:0}
 .hb .chip{display:inline-flex;align-items:center;min-height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line);font-size:11px;color:var(--muted);background:transparent}
 .hb .chip.on{color:var(--hazel);border-color:var(--hazel)}
 .hb .term{background:var(--neutral,#0f0e0c);border:1px solid var(--line);border-radius:8px;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;padding:10px 12px;color:var(--ink);white-space:pre;overflow:auto;min-height:220px}
+.hb .lg{display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted);margin-left:auto}
+.hb .lg span{display:inline-flex;align-items:center;gap:5px}
+.hb .lg i.sw{display:inline-block;width:12px;height:8px;border-radius:2px}
+.hb .lg i.ln{display:inline-block;width:18px;border-radius:2px;background:var(--s1)}
+.hb .lg .st{gap:5px}
+.hb .scope{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;background:var(--panel);border:1px solid var(--line);border-radius:8px}
+.hb .scope .lbl{font-size:12px;color:var(--faint);letter-spacing:.06em;text-transform:uppercase}
+.hb .scope .btn{min-height:32px;padding:0 10px;font-size:12px;color:var(--muted);gap:6px}
+.hb .scope .btn.on{background:var(--raised);color:var(--ink);border-color:var(--hazel);font-weight:600}
+.hb .scope .btn .mono{color:var(--faint);font-size:11px}
 .hb .range{display:flex;gap:4px;flex-wrap:wrap}
 .hb .range .btn{min-height:32px;padding:0 10px;font-size:12px;color:var(--muted)}
 .hb .range .btn.on{background:var(--raised);color:var(--hazel);border-color:var(--line);font-weight:600}
@@ -257,8 +267,8 @@ body{margin:0}
       <span class="mono" style="font-size: 11px; color: var(--faint); margin-left: auto">tw-01</span>
     </div>
     <button type="button" class="inp" style="color: var(--muted); text-align: left"><span>搜尋或下指令</span><span class="kbd">⌘K</span></button>
-    <div class="navcol"><a class="nv" href="Overview.dc.html">總覽<span class="kbd">G O</span></a><a class="nv" href="WorkCenter.dc.html">工作中心<span class="cnt" style="color: var(--hazel)">3</span></a><a class="nv" href="Overview.dc.html#attention">需要處理<span class="cnt" style="color: var(--warn)">3</span></a></div>
-    <div class="navgrp">基礎設施</div><div class="navcol"><a class="nv" href="Nodes.dc.html">主機與節點</a><a class="nv" href="Containers.dc.html">Docker／Podman</a><a class="nv" href="Kubernetes.dc.html">Kubernetes</a><a class="nv" href="Storage.dc.html">儲存</a><a class="nv" href="Files.dc.html">檔案</a></div><div class="navgrp">應用</div><div class="navcol"><a class="nv cur" aria-current="page" href="Projects.dc.html">專案與服務</a><a class="nv" href="AppStore.dc.html">應用商店</a><a class="nv" href="Database.dc.html">資料庫</a><a class="nv" href="AI.dc.html">AI</a><a class="nv" href="Storage.dc.html">備份與還原</a><a class="nv" href="Cron.dc.html">計畫任務</a></div><div class="navgrp">入口與安全</div><div class="navcol"><a class="nv" href="Websites.dc.html">網站與入口</a><a class="nv" href="APIProxy.dc.html">API 代理</a><a class="nv" href="Security.dc.html">安全防護</a><a class="nv" href="Analytics.dc.html">流量分析</a><a class="nv" href="Events.dc.html">事件與告警</a><a class="nv" href="IAM.dc.html">身分與存取</a><a class="nv" href="Settings.dc.html">平台設定</a></div>
+    <div class="navcol"><a class="nv" href="Overview.dc.html">總覽<span class="kbd">G O</span></a><a class="nv" href="WorkCenter.dc.html">工作中心<span class="cnt" style="color: var(--hazel)">3</span></a><a class="nv" href="Overview.dc.html#attention">需要處理<span class="cnt" style="color: var(--warn)">3</span></a><a class="nv" href="Terminal.dc.html">終端機<span class="kbd">⌘`</span></a></div>
+    <div class="navgrp">基礎設施</div><div class="navcol"><a class="nv" href="Nodes.dc.html">主機與節點</a><a class="nv" href="Containers.dc.html">Docker／Podman</a><a class="nv" href="Kubernetes.dc.html">Kubernetes</a><a class="nv" href="Storage.dc.html">儲存</a><a class="nv" href="Files.dc.html">檔案</a></div><div class="navgrp">應用</div><div class="navcol"><a class="nv cur" aria-current="page" href="Projects.dc.html">專案與服務</a><a class="nv" href="AppStore.dc.html">應用商店</a><a class="nv" href="Database.dc.html">資料庫</a><a class="nv" href="AI.dc.html">AI</a><a class="nv" href="Storage.dc.html">備份與還原</a><a class="nv" href="Cron.dc.html">計畫任務</a></div><div class="navgrp">入口與安全</div><div class="navcol"><a class="nv" href="Websites.dc.html">網站與入口</a><a class="nv" href="APIProxy.dc.html">API 代理</a><a class="nv" href="Security.dc.html">安全防護</a><a class="nv" href="Analytics.dc.html">流量分析</a><a class="nv" href="Events.dc.html">事件與告警</a><a class="nv" href="Logs.dc.html">日誌</a><a class="nv" href="IAM.dc.html">身分與存取</a><a class="nv" href="Settings.dc.html">平台設定</a></div>
     <div style="margin-top: auto; display: flex; align-items: center; gap: 8px; padding: 8px 10px 0; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted)">
       <span>tim · 擁有者</span>
       <button type="button" class="btn sm" aria-label="切換淺色或深色" style="margin-left: auto; min-width: 44px">{{themeLabel}}</button>
@@ -270,13 +280,13 @@ body{margin:0}
       <div class="wrap" style="margin-left: auto"><a class="btn" href="Projects.dc.html">取消</a></div>
     </div><div class="panel" style="padding: 12px 14px"><div class="steps"><div class="step done"><b aria-hidden="true"></b><span>連接 GitHub</span><span class="note">GitHub App · hazelnut 組織</span></div><div class="step cur"><b aria-hidden="true"></b><span>選擇倉庫與分支</span><span class="note"></span></div><div class="step todo"><b aria-hidden="true"></b><span>偵測與設定</span><span class="note">compose、環境變數</span></div><div class="step todo"><b aria-hidden="true"></b><span>部署檢查</span><span class="note">預檢後才建立</span></div></div></div><div class="cg">
     <section class="panel" aria-labelledby="h-repo">
-      <div class="ph"><h2 id="h-repo">倉庫 · hazelnut（12）</h2><span class="sub">只列 GitHub App 被授權的倉庫</span><a class="more" href="https://github.com/apps/hazelminx">管理授權 ↗</a></div>
+      <div class="ph"><h2 id="h-repo">倉庫 · hazelnut（12）</h2><a class="more" href="https://github.com/apps/hazelminx">管理授權 ↗</a></div>
       <div style="padding: 10px 14px"><label class="inp"><span class="note">搜尋</span><input value="shop" style="background:transparent;border:0;flex:1;min-width:0" aria-label="搜尋倉庫"></label></div>
       <div class="row hd rrow"><span></span><span>倉庫</span><span class="c3">偵測</span><span class="c4">預設分支</span><span>更新</span></div>
       <label class="row rrow" style="cursor:pointer;background: var(--raised)"><input type="radio" name="repo" checked style="width:18px;height:18px;accent-color: var(--hazel)"><span class="name"><span class="n">hazelnut/shop</span><span class="d">電商主站 · 私有 · 4 個 compose 服務</span></span><span class="c3"><span class="st ok"><i aria-hidden="true"></i>有 compose.yaml</span></span><span class="mono c4">main</span><span class="mono note">2 小時前</span></label>
       <label class="row rrow" style="cursor:pointer;"><input type="radio" name="repo"  style="width:18px;height:18px;accent-color: var(--hazel)"><span class="name"><span class="n">hazelnut/shop-mobile-api</span><span class="d">行動 API · 私有</span></span><span class="c3"><span class="st ok"><i aria-hidden="true"></i>有 compose.yaml</span></span><span class="mono c4">main</span><span class="mono note">3 天前</span></label>
       <label class="row rrow" style="cursor:pointer;"><input type="radio" name="repo"  style="width:18px;height:18px;accent-color: var(--hazel)"><span class="name"><span class="n">hazelnut/shop-legacy</span><span class="d">舊版 PHP · 封存</span></span><span class="c3"><span class="st off"><i aria-hidden="true"></i>未偵測到 compose</span></span><span class="mono c4">master</span><span class="mono note">1 年前</span></label>
-      <div class="note" style="padding: 8px 14px; border-top: 1px solid var(--line)">找不到倉庫？GitHub App 可能沒被授權該倉庫，到「管理授權」加上。</div>
+      
     </section>
     <section class="panel" aria-labelledby="h-br">
       <div class="ph"><h2 id="h-br">hazelnut/shop</h2><span class="sub">分支、路徑與觸發</span></div>
