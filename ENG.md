@@ -83,6 +83,7 @@ scripts/   CI 與發布腳本（簽署清單、依賴檢查）
 | Compose 執行 | Agent 呼叫固定版本的 `docker compose` CLI（Compose v2），以 `--env-file` 傳乾淨環境；Core 以 `compose-go/v2` 解析與合併多檔以產生預覽與差異，不自行實作替換語法 | 15.2、CMP-008。1Panel 走 CLI；Portainer 的 libstack 在行程內使用 `docker/compose/v2` Go 函式庫。CLI 讓 Rust Agent 不必綁 Go 函式庫，且行為與使用者手動操作一致；若需要進度事件再評估 in-process。 |
 | GitHub | GitHub App（manifest 自架）為網頁授權預設，PAT 與 Deploy Key 同等；受控抓取服務在 Core 側（或指定節點的隔離工作）取得固定 commit 後交付內容；連線（Source）與部署綁定分離，多專案以連線 ID 參照 | 15.6、31.6。Portainer 的 Source／Artifact 分離與以 Source 為單位的排程、`singleflight` 去重是可借鏡的結構；其 CE 預設明文存憑證與「ForcePullImage 設定無效」是要避開的坑。 |
 | 時間與容量 | UTC RFC 3339；位元組；排程保存 IANA 時區名稱 | 34.3。 |
+| 容器網路模型 | 每個部署單元或應用有自己的網路（Compose 預設網路）；平台管理的共用服務（資料庫、Ollama、推論 runtime）各自一個 `hzx-*` 網路，宣告依賴才接上；不使用全部互通的共用網路，1Panel 範本的 `1panel-network` 在覆寫層改掉，只有相容模式才加入；Zentinel 是原生 systemd，經受控本機回送 Port 連上游；跨主機與跨單元走增補 04 的內部位址 | 增補 06 第 54.1 節（2026-11-08 使用者核定）、第 40 章「不能只信任整段 Docker 網路」。 |
 
 ## Data flow
 

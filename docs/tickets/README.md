@@ -160,7 +160,7 @@
 
 規格增補 05（`docs/spec/addendum-05-model-hub.md`，內建 Hugging Face 模型 runtime 與模型庫，HFM-001～008、T-221～230），2026-11-08 使用者核定。由票 111 擁有。
 
-規格增補 06（`docs/spec/addendum-06-app-network-mounts.md`，1Panel 商店範本的轉換，以及應用的網路與資料掛載，APX-001～008、T-234～241），2026-11-08 使用者要求；54.1 的網路模型依建議寫入，待使用者確認。由票 112 擁有。
+規格增補 06（`docs/spec/addendum-06-app-network-mounts.md`，1Panel 商店範本的轉換，以及應用的網路與資料掛載，APX-001～008、T-234～241），2026-11-08 使用者核定（含 54.1 網路模型）。由票 112 擁有。
 
 ## 覆蓋檢查
 
