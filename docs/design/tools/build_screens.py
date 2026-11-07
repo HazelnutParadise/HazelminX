@@ -62,7 +62,7 @@ def overview() -> str:
     tiles = '<div class="tiles">' + "".join([
         U.stat_tile("節點", "2", "/3 連線中", "jp-02 狀態過期", False, spark=[3] * 20 + [2, 2, 2, 2], note=""),
         U.stat_tile("服務", "10", "2 專案", "1 部署失敗（staging）", False, spark=[9, 9, 9, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]),
-        U.stat_tile("今日請求（來源站）", U.fmt(sum(REQ_ORIGIN)), "", "較昨日 +8.4%", True, spark=REQ_ORIGIN, note="完整度 99.1%"),
+        U.stat_tile("今日請求（Zentinel 來源站）", U.fmt(sum(REQ_ORIGIN)), "", "較昨日 +8.4%", True, spark=REQ_ORIGIN, note="邊緣完整度 99.1%"),
         U.stat_tile("進行中的工作", "3", "", "1 狀態不明", False, spark=[1, 1, 2, 2, 1, 1, 1, 2, 3, 2, 2, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3]),
     ]) + "</div>"
 
@@ -73,11 +73,11 @@ def overview() -> str:
     ], HOURS, unit="%", vmax=100, markers=[(22, "a3f9c1e 部署")],
         foot='100% = 該節點所有核心 · jp-02 的 <span class="mono">*</span> 為上次觀測（03:41:18） · <a href="#table">表格檢視</a>')
     traffic = U.ts_card("今日請求 · 每小時", [
-        U.Series("邊緣（Zentinel）", REQ_EDGE, "var(--s1)"),
-        U.Series("來源站", REQ_ORIGIN, "var(--s2)"),
+        U.Series("Cloudflare 邊緣", REQ_EDGE, "var(--s1)"),
+        U.Series("Zentinel 來源站", REQ_ORIGIN, "var(--s2)"),
     ], HOURS, unit="", bar=True, fmt_val=lambda v: f"{v / 1000:.1f}K" if v >= 1000 else f"{v:.0f}",
         markers=[(22, "a3f9c1e 部署")],
-        foot='資料完整度 99.1%（0.9% 取樣） · WAF 只偵測：今日 1,204 次命中未阻擋 · <a href="#analytics">流量分析</a>')
+        foot='邊緣 = Cloudflare 收到的請求（含快取直接回應與邊緣阻擋） · 來源站 = 真正抵達 Zentinel 的請求 · 兩者是同一批流量的兩個觀測點，不相加 · 邊緣資料完整度 99.1%（0.9% 取樣） · 本機 WAF 只偵測：今日 1,204 次命中未阻擋 · <a href="#analytics">流量分析</a>')
     charts = f'<div class="cg">{fleet}{traffic}</div>'
 
     def node_row(name, desc, st, cpu, mem, memt, disk, diskt, spark, last, lastcls="", stale=False, last_border=False):
