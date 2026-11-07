@@ -3,8 +3,8 @@ Description=HazelminX host agent
 Documentation=https://github.com/HazelnutParadise/HazelminX
 # Network and time may not be ready yet; the agent retries with backoff
 # instead of trusting these targets alone (spec 8.3).
-After=network-online.target time-sync.target
-Wants=network-online.target
+After=network-online.target time-sync.target hazelminx-privileged.service
+Wants=network-online.target hazelminx-privileged.service
 
 [Service]
 Type=simple
