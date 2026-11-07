@@ -222,7 +222,7 @@ def node_detail() -> str:
     hw = (f'<section class="panel" aria-labelledby="h-hw"><div class="ph"><h2 id="h-hw">硬體</h2><span class="note">03:42:06</span></div><div class="hwg">'
           + U.hw_group("CPU", [("8 核", 37, "37%", "")], "EPYC 7B13 · 3.5 GHz · 負載 2.1")
           + U.hw_group("記憶體", [("RAM", 11.2 / 31.3 * 100, "11G", "/31G"), ("Swap", 6, "0.2G", "/4G")])
-          + U.hw_group("磁碟", [("/mnt/data", 44, "412G", "/931G"), ("/", 31, "29G", "/94G")], "2 個")
+          + U.hw_group("磁碟", [("/mnt/data", 44, "412G", "/931G"), ("/", 31, "29G", "/94G")], "inode 3% · 1%")
           + U.hw_group("GPU 0 · L4", [("核心", 44, "44%", ""), ("顯示記憶體", 14.2 / 24 * 100, "14G", "/24G")], "P0")
           + U.hw_group("網卡", [("eth0", 31, "312 Mb/s", ""), ("eth1", 8, "84 Mb/s", ""), ("docker0", 12, "118 Mb/s", ""), ("wg0", 2, "21 Mb/s", ""), ("ens5f1", 0, "0 Mb/s", "")], "5 個 · 1 Gb/s 為滿格")
           + U.temps([("CPU 封裝", "hwmon", 62, 95), ("CPU 最熱核心 · 5", "hwmon", 68, 95), ("主機板 PCH", "hwmon", 48, 90), ("DIMM A1", "hwmon", 39, 85), ("DIMM B1", "hwmon", 40, 85),
@@ -321,7 +321,7 @@ def projects() -> str:
     tabs = ('<div class="panel"><div class="tabs" role="tablist"><button type="button" class="tab on" role="tab" aria-selected="true">shop · production</button>'
             '<button type="button" class="tab" role="tab" aria-selected="false">shop · staging</button><button type="button" class="tab" role="tab" aria-selected="false">wiki · production</button></div>'
             f'<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr)); gap: 10px 16px; padding: 12px 14px; font-size: 13px">'
-            f'{kv("來源", "github.com/hazelnut/shop · main")}{kv("最近部署", "a3f9c1e · 02:57 · 成功 · Webhook")}{kv("節點", "hazel-tw-01")}{kv("入口", "shop.example.tw · 憑證 11 天後到期")}{kv("自動部署", "已暫停：變更計畫 #418 待批准")}</div></div>')
+            f'{kv("來源", "github.com/hazelnut/shop · main")}{kv("最近部署", "a3f9c1e · 02:57 · 成功 · Webhook")}{kv("節點", "hazel-tw-01")}{kv("入口", "shop.example.tw · 憑證 11 天後到期")}{kv("自動部署", "已暫停：變更計畫 #418 待批准")}</div>' + U.res_strip("HazelminX", "正式", "03:42:06", drift="shop-redis 映像 redis:7.2 → redis:7.4（主機上手動改）") + '</div>')
     svc_topo = U.topology([
         ("入口", [("dom", "shop.example.tw", "Zentinel · 憑證 11 天", "warn")]),
         ("服務", [("api", "shop-api", "8080 · 2 副本", "ok"), ("wrk", "shop-worker", "無對外 Port", "ok")]),
@@ -380,8 +380,9 @@ def containers() -> str:
             '<label class="inp" style="width: auto; min-width: 200px"><span class="note">狀態</span><select style="background:transparent;border:0;flex:1"><option>全部</option><option>執行中</option></select></label>'
             '<label class="inp" style="flex: 1; min-width: 200px"><span class="note">搜尋</span><input placeholder="名稱、映像、標籤" style="background:transparent;border:0;flex:1;min-width:0"></label></div>')
 
-    def crow(name, img, node, st, cpu, mem, memt, net, restarts, ports, gpu=None):
-        return (f'<a class="row crow" href="#c-{name}"><span class="name"><span class="n">{name}</span><span class="d">{img}</span></span><span>{st}</span>'
+    def crow(name, img, node, st, cpu, mem, memt, net, restarts, ports, gpu=None, drift=None):
+        dr = U.attr("diff", f"與平台紀錄不同：{drift}", "", "warn") if drift else ""
+        return (f'<a class="row crow" href="#c-{name}"><span class="name"><span class="n">{name} {dr}</span><span class="d">{img}</span></span><span>{st}</span>'
                 f'<span class="c3">{U.attr("nodes", f"主機 systemd · hazel-{node}", node) if img.startswith("原生") else U.attr("docker", f"Docker（root）· hazel-{node}", node)}</span><span class="c4">{U.meter(cpu, f"{cpu:.1f}%")}</span><span class="c4">{U.meter(mem / memt * 100, f"{mem / 1024:.1f} / {memt / 1024:.1f}G")}</span>'
                 + (f'<span class="c5">{U.meter(gpu[0], f"{gpu[0]}% · {gpu[1]}G", aria=f"GPU 使用率 {gpu[0]}%，顯示記憶體 {gpu[1]} GiB")}</span>' if gpu else '<span class="c5 note">—</span>')
                 + f'<span class="mono c6">{net}</span><span class="mono c5 note">{ports}</span>{U.actions(["log", "term", "restart", "more"])}</a>')
@@ -397,7 +398,7 @@ def containers() -> str:
       {crow("shop-db", "postgres:16.4", "tw-01", U.status("ok", "執行中 · 9 天"), 2.6, 1290, 4096, "0.3 / 0.5", 0, "5432 內部")}
       {crow("zentinel", "原生 systemd（非容器）", "tw-01", U.status("ok", "執行中 · 12 天"), 1.8, 94, 512, "11.9 / 12.1", 0, "80, 443")}
       {crow("wiki-db", "postgres:16.4", "jp-02", U.status("warn", "過期 · 03:41"), 0.9, 540, 2048, "0.1 / 0.1*", 0, "5432 內部")}
-      {crow("shop-redis", "redis:7.2", "tw-01", U.status("info", "重啟中 · 第 1 次"), 0.8, 62, 256, "—", 1, "6379 內部")}
+      {crow("shop-redis", "redis:7.4", "tw-01", U.status("info", "重啟中 · 第 1 次"), 0.8, 62, 256, "—", 1, "6379 內部", drift="映像 redis:7.2 → 7.4（主機上手動改）")}
       <div class="row crow"><span class="name"><span class="n">dev-control-plane</span><span class="d">kindest/node:v1.31.0</span></span><span>{U.status("info", "由 dev 叢集管理")}</span><span class="c3">{U.attr("docker", "Docker（root）· hazel-tw-01", "tw-01")}</span><span class="c4">{U.meter(3.2, "3.2%")}</span><span class="c4">{U.meter(18, "0.7 / 4.0G")}</span><span class="c5 note">—</span><span class="mono c6">0.1 / 0.1</span><span class="mono c5 note">41235 → 6443</span><span class="wrap" style="justify-content:flex-end;flex-wrap:nowrap">{U.attr("lock", "由 kind 叢集 dev 管理，寫入動作停用")}<a class="ib" href="Kubernetes.dc.html" aria-label="到 Kubernetes 頁操作" data-tip="到 Kubernetes 頁操作">{U.icon("k8s")}</a></span></div>
       </div></div>
       <div class="note" style="padding: 8px 14px; border-top: 1px solid var(--line)">* 上次觀測 · 原生 systemd 服務列在同一張表，讓「什麼在哪台、用哪個 Port」一眼看完</div>
@@ -931,10 +932,10 @@ def nodes() -> str:
     engines = f"""
     <section class="panel" aria-labelledby="h-eng">
       <div class="ph"><h2 id="h-eng">元件</h2></div>
-      <div style="padding:12px 14px">{U.matrix(["hazel-tw-01", "hazel-jp-02", "lab-mini"], ["Agent", "Zentinel", "節點憑證"], [
-        [("ok", "0.1.0"), ("ok", "0.6.54"), ("warn", "12 天")],
-        [("warn", "0.1.0 過期"), ("warn", "0.6.50 可更新"), ("ok", "71 天")],
-        [("ok", "0.1.0"), ("none", ""), ("ok", "88 天")],
+      <div style="padding:12px 14px">{U.matrix(["hazel-tw-01", "hazel-jp-02", "lab-mini"], ["Agent", "Zentinel", "節點憑證", "其他管理工具"], [
+        [("ok", "0.1.0"), ("ok", "0.6.54"), ("warn", "12 天"), ("none", "")],
+        [("warn", "0.1.0 過期"), ("warn", "0.6.50 可更新"), ("ok", "71 天"), ("warn", "1Panel 2.4.1 · 3 容器")],
+        [("ok", "0.1.0"), ("none", ""), ("ok", "88 天"), ("none", "")],
       ])}</div>
     </section>"""
     def env(kind, node, owner, endpoint, ver, st, load, acts):
@@ -1866,7 +1867,7 @@ def terminal() -> str:
                 f'<span class="dot {dot}" aria-hidden="true"></span>{U.icon(ic, 14)}<span class="tn">{name}</span><span class="tu">{sub}</span>'
                 f'<button type="button" class="ib" aria-label="關閉 {label}">{U.icon("x", 14)}</button></div>')
     tabs = ('<div class="panel"><div class="ttabs"><div role="tablist" aria-label="終端機分頁" style="display:flex">'
-            + ttab(True, "ok", "nodes", "hazel-tw-01", "root", "hazel-tw-01 root")
+            + ttab(True, "ok", "nodes", "hazel-tw-01", "root " + U.tier("正式"), "hazel-tw-01 root")
             + ttab(False, "ok", "docker", "shop-api", "容器 · tw-01", "shop-api 容器")
             + ttab(False, "info", "nodes", "lab-mini", "deploy", "lab-mini deploy")
             + f'</div><span class="tadd"><button type="button" class="ib" aria-label="新分頁">{U.icon("plus")}</button></span>'

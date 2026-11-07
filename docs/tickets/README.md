@@ -53,6 +53,9 @@
 | [036](036-platform-update.md) | 管理員可以更新 HazelminX，失敗時回到相容舊版本或進入明確復原 | 安裝、更新與卸載 | 013, 008 | [#36](https://github.com/HazelnutParadise/hazelminx/issues/36) | blocked |
 | [037](037-offline-install-uninstall.md) | 管理員可以用離線包安裝，並解除安裝平台而保留應用與移交維護 | 安裝、更新與卸載 | 013 | [#37](https://github.com/HazelnutParadise/hazelminx/issues/37) | blocked |
 | [038](038-recovery-mode.md) | 擁有者可以在資料庫損壞或鎖死時用離線救援方式恢復管理 | 安裝、更新與卸載 | 013 | [#38](https://github.com/HazelnutParadise/hazelminx/issues/38) | blocked |
+| [107](107-resource-state-drift-impact.md) | 維運者可以看到每個資源由誰管理、與平台紀錄差在哪，並在寫入前看到影響範圍 | 基礎建設 | 007, 008, 010 | [#114](https://github.com/HazelnutParadise/hazelminx/issues/114) | blocked |
+
+規格增補 03（`docs/spec/addendum-03-robustness.md`，異常情境的整體處理，ROB-001～010、ROB-012，T-157～169；ROB-011 已併入 MON-004），2026-11-07 使用者核定。ROB-001／002／003／006／012 由票 107 擁有，ROB-004／005／007／008 由 017、ROB-009 由 020、ROB-010 由 024 擁有；027、040、081 另有驗證條目。
 
 ## M2 容器、Compose 與 GitHub
 
@@ -150,6 +153,6 @@
 
 ## 覆蓋檢查
 
-- 規格需求 449 條＋增補 01 的 14 條，已指派擁有票 463 條，未指派 0 條。
-- 驗收案例 186 個＋增補 01 的 9 個，已連到票 195 個。
+- 規格需求 449 條＋增補 01 的 14 條＋增補 02 的 9 條＋增補 03 的 11 條，已指派擁有票 483 條，未指派 0 條。
+- 驗收案例 186 個＋增補 01 的 9 個＋增補 02 的 8 個＋增補 03 的 13 個，已連到票 216 個。
 - 本檔由 `docs/tickets/traceability.json` 同步產生；修改票的需求範圍時同時更新兩者。

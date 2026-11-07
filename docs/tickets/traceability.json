@@ -338,10 +338,18 @@
         "UI-004",
         "UI-007",
         "UI-011",
-        "UI-012"
+        "UI-012",
+        "ROB-004",
+        "ROB-005",
+        "ROB-007",
+        "ROB-008"
       ],
       "acceptance_tests": [
-        "T-119"
+        "T-119",
+        "T-160",
+        "T-161",
+        "T-163",
+        "T-164"
       ],
       "status": "blocked",
       "issue": 17
@@ -422,9 +430,12 @@
         "MON-001",
         "MON-002",
         "MON-003",
-        "MON-005"
+        "MON-005",
+        "ROB-009"
       ],
-      "acceptance_tests": [],
+      "acceptance_tests": [
+        "T-165"
+      ],
       "status": "blocked",
       "issue": 20
     },
@@ -495,11 +506,13 @@
       ],
       "requirements": [
         "SYS-008",
-        "SYS-009"
+        "SYS-009",
+        "ROB-010"
       ],
       "acceptance_tests": [
         "T-037",
-        "T-038"
+        "T-038",
+        "T-167"
       ],
       "status": "blocked",
       "issue": 24
@@ -883,7 +896,8 @@
       "acceptance_tests": [
         "T-015",
         "T-151",
-        "T-153"
+        "T-153",
+        "T-166"
       ],
       "status": "blocked",
       "issue": 40
@@ -1881,7 +1895,9 @@
         "MON-006",
         "MON-007"
       ],
-      "acceptance_tests": [],
+      "acceptance_tests": [
+        "T-168"
+      ],
       "status": "blocked",
       "issue": 80
     },
@@ -2408,6 +2424,34 @@
       ],
       "status": "blocked",
       "issue": 113
+    },
+    {
+      "id": "107",
+      "file": "107-resource-state-drift-impact.md",
+      "title": "維運者可以看到每個資源由誰管理、與平台紀錄差在哪，並在寫入前看到影響範圍",
+      "epic": "foundation",
+      "milestone": "M1",
+      "blocked_by": [
+        "007",
+        "008",
+        "010"
+      ],
+      "requirements": [
+        "ROB-001",
+        "ROB-002",
+        "ROB-003",
+        "ROB-006",
+        "ROB-012"
+      ],
+      "acceptance_tests": [
+        "T-157",
+        "T-158",
+        "T-159",
+        "T-162",
+        "T-169"
+      ],
+      "status": "blocked",
+      "issue": 114
     }
   ]
 }

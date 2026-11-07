@@ -451,6 +451,9 @@ body{{margin:0}}
 .hb .st2{{min-height:30px;padding:0 12px;border-radius:999px;border:1px solid transparent;background:transparent;color:var(--muted);font-size:13px;cursor:pointer}}
 .hb .st2:hover{{color:var(--ink);background:var(--raised)}}.hb .st2.on{{color:var(--ink);background:var(--raised);border-color:var(--line)}}
 @media (max-width:767px){{.hb .subtabs{{flex-wrap:nowrap;overflow-x:auto}}.hb .st2{{flex:none;min-height:44px}}}}
+.hb .rstrip{{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 14px;border-top:1px solid var(--hairline)}}
+.hb .tier{{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:600;border:1px solid currentColor;cursor:help}}
+.hb .tier.dng{{color:var(--danger)}}.hb .tier.info{{color:var(--blue)}}.hb .tier.off{{color:var(--muted)}}
 @media (max-width:1024px){{.hb .tw{{--k5: ;}}}}
 @media (max-width:767px){{.hb .tw{{--k3: ;--k4: ;--k5: ;--k6: ;}}}}
 """
@@ -1138,6 +1141,19 @@ def temps(sensors: list, show: int = 6) -> str:
 def crumbs(items: list) -> str:
     """頁面麵包屑：items [(label, href)]，最後一層是頁面本身，不寫在這裡（由 h1 呈現）。"""
     return '<nav class="pcrumb" aria-label="位置">' + "".join(f'<a href="{href}">{l}</a><span class="sep" aria-hidden="true">/</span>' for l, href in items) + "</nav>"
+
+def tier(t: str) -> str:
+    """用途等級徽章：正式／測試／實驗。"""
+    k = {"正式": "dng", "測試": "info", "實驗": "off"}[t]
+    return f'<span class="tier {k}" data-tip="用途等級：{t}">{t}</span>'
+
+
+def res_strip(owner: str, tier_name: str, observed: str, drift: str = "", lock: str = "") -> str:
+    """資源狀態條：控制者、用途等級、觀測時間、漂移、鎖，全站同一個元件。"""
+    parts = [attr("user", f"控制者：{owner}", owner), tier(tier_name), attr("history", f"觀測時間 {observed}", observed)]
+    parts.append(attr("diff", f"與平台紀錄不同：{drift}", "漂移 1", "warn") + '<button type="button" class="btn sm">比較</button>' if drift else attr("check", "與平台紀錄一致", "一致", "ok"))
+    parts.append(attr("lock", f"鎖：{lock}", lock, "warn") if lock else attr("lock", "目前沒有工作佔用", "無鎖"))
+    return '<div class="rstrip" role="group" aria-label="資源狀態">' + "".join(parts) + "</div>"
 
 def legend(items: list) -> str:
     """圖例：items [(kind, label)]；kind 是 ok|warn|dng|info（狀態形狀）、color:<css>（色塊）、line:<px>（線寬）。"""
