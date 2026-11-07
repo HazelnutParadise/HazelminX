@@ -819,7 +819,8 @@
       "epic": "install",
       "milestone": "M1",
       "blocked_by": [
-        "013"
+        "013",
+        "113"
       ],
       "requirements": [
         "INS-011",
@@ -830,7 +831,12 @@
         "UN-002",
         "UN-003",
         "UN-004",
-        "UN-005"
+        "UN-005",
+        "UNX-003",
+        "UNX-004",
+        "UNX-005",
+        "UNX-006",
+        "UNX-007"
       ],
       "acceptance_tests": [
         "T-002",
@@ -839,7 +845,14 @@
         "DEP-T09",
         "DEP-T10",
         "DEP-T11",
-        "DEP-T12"
+        "DEP-T12",
+        "T-244",
+        "T-245",
+        "T-246",
+        "T-247",
+        "T-248",
+        "T-249",
+        "T-251"
       ],
       "status": "blocked",
       "issue": 37
@@ -2651,6 +2664,25 @@
       ],
       "status": "blocked",
       "issue": 119
+    },
+    {
+      "id": "113",
+      "file": "113-host-change-ledger.md",
+      "title": "平台對主機的每個變更都寫進變更帳本，並在安裝時記錄安裝前快照",
+      "epic": "host",
+      "milestone": "M1",
+      "blocked_by": [
+        "012"
+      ],
+      "requirements": [
+        "UNX-001",
+        "UNX-002"
+      ],
+      "acceptance_tests": [
+        "T-250"
+      ],
+      "status": "ready",
+      "issue": 120
     }
   ]
 }
