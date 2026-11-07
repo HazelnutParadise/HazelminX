@@ -42,6 +42,7 @@ body{{margin:0}}
 .hb .btn.pri{{background:var(--hazel);border-color:var(--hazel);color:var(--hazelink);font-weight:600}}
 .hb .btn.dng{{background:var(--danger);border-color:var(--danger);color:var(--hazelink);font-weight:600}}
 .hb .btn.sm{{min-height:28px;padding:0 8px;font-size:12px;color:var(--muted)}}
+.hb .btn.sm.pri{{color:var(--hazelink)}}
 .hb .btn:active{{transform:translateY(1px)}}
 .hb .panel{{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}}
 .hb .ph{{display:flex;align-items:center;gap:10px;min-height:40px;padding:6px 16px;border-bottom:1px solid var(--hairline);flex-wrap:wrap}}
@@ -60,7 +61,7 @@ body{{margin:0}}
 .hb .hd:hover{{background:transparent}}
 .hb .name{{display:flex;flex-direction:column;gap:2px;min-width:0}}
 .hb .name .n{{font-family:"Geist Mono",ui-monospace,monospace;font-weight:500;overflow-wrap:anywhere;line-height:1.3}}
-.hb .name .d{{font-size:12px;color:var(--faint);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;overflow-wrap:anywhere}}
+.hb .name .d{{font-size:12px;color:var(--faint);display:block;line-height:1.35;word-break:keep-all;overflow-wrap:anywhere}}
 .hb .st>i{{flex:none}}
 .hb .st{{display:inline-flex;align-items:center;gap:6px;max-width:100%;word-break:keep-all;overflow-wrap:anywhere;font-size:11px;line-height:16px;font-weight:500;padding:1px 8px 1px 7px;border-radius:9px;background:color-mix(in srgb,currentColor 13%,transparent)}}
 .hb .lg .st,.hb .mx .st{{padding:1px 7px 1px 6px}}
@@ -75,7 +76,10 @@ body{{margin:0}}
 .hb .nv svg{{flex:none;color:var(--muted)}}.hb .nv.cur svg{{color:var(--hazel)}}
 .hb .nv:hover{{background:var(--raised);color:var(--ink)}}
 .hb .nv.cur{{background:var(--raised);color:var(--hazel);font-weight:600}}
-.hb .nv .cnt{{margin-left:auto;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px}}
+.hb .nv .cnt{{margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:0 7px 0 6px;border-radius:999px;font-family:"Geist Mono",ui-monospace,monospace;font-size:11px;line-height:18px;color:var(--blue);background:color-mix(in srgb,var(--blue) 15%,transparent)}}
+.hb .spin{{width:8px;height:8px;border-radius:50%;border:1.5px solid currentColor;border-top-color:transparent;flex:none}}
+@media (prefers-reduced-motion:no-preference){{.hb .spin{{animation:hx-spin 1s linear infinite}}}}
+@keyframes hx-spin{{to{{transform:rotate(360deg)}}}}
 .hb .kbd{{font-family:"Geist Mono",ui-monospace,monospace;font-size:11px;color:var(--faint);border:1px solid var(--line);border-radius:4px;padding:1px 5px;margin-left:auto}}
 .hb .navgrp{{font-size:12px;color:var(--faint);font-weight:500;padding:8px 12px 2px}}
 .hb .navcol{{display:flex;flex-direction:column;gap:2px}}
@@ -106,7 +110,9 @@ body{{margin:0}}
 .hb .chart .ph{{padding:8px 12px}}
 .hb .chart .unit{{font-size:12px;color:var(--faint)}}
 .hb .chart .legend{{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-left:auto}}
-.hb .legend i{{display:inline-block;width:12px;height:2px;vertical-align:middle;margin-right:5px;border-radius:1px}}
+.hb .legend{{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;font-size:12px;color:var(--muted)}}
+.hb .legend>span{{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}}
+.hb .legend i{{display:inline-block;width:12px;height:2px;border-radius:1px;flex:none}}
 .hb .legend i.rect{{height:8px;border-radius:2px}}
 .hb .chart .body{{padding:6px 10px 8px}}
 .hb .foot{{display:flex;gap:10px;flex-wrap:wrap;padding:6px 12px 8px;font-size:12px;color:var(--faint);border-top:1px solid var(--line)}}
@@ -168,10 +174,11 @@ body{{margin:0}}
 .hb .cal i.o{{background:var(--ok)}}.hb .cal i.f{{background:var(--danger)}}.hb .cal i.r{{background:var(--warn)}}.hb .cal i.n{{background:transparent;border:1px dashed var(--line)}}
 .hb .cal i.f::after{{content:"";position:absolute;inset:3px;background:var(--panel)}}
 .hb .pipe{{display:flex;align-items:stretch;gap:0;overflow-x:auto}}
-.hb .pstage{{display:flex;flex-direction:column;gap:4px;min-width:110px;flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-size:12px;color:var(--muted);position:relative;background:var(--panel)}}
+.hb .pstage{{display:flex;flex-direction:column;gap:4px;min-width:110px;max-width:280px;flex:1 0 auto;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-size:12px;color:var(--muted);position:relative;background:var(--panel)}}
 .hb .pstage+.pstage{{margin-left:18px}}
 .hb .pstage+.pstage::before{{content:"";position:absolute;left:-12px;top:50%;width:6px;height:6px;border-top:2px solid var(--faint);border-right:2px solid var(--faint);transform:translateY(-50%) rotate(45deg)}}
 .hb .pstage .t{{color:var(--ink);font-weight:500;display:flex;align-items:center;gap:6px}}
+.hb .pstage>*{{overflow-wrap:anywhere}}
 .hb .pstage.done{{border-color:var(--ok)}}.hb .pstage.cur{{border-color:var(--blue);background:var(--raised)}}.hb .pstage.fail{{border-color:var(--danger)}}.hb .pstage.wait{{border-color:var(--warn)}}
 .hb .topow{{overflow:auto;max-width:100%}}
 .hb svg.topo{{display:block;font-family:"Geist","Noto Sans TC",sans-serif}}
@@ -374,7 +381,7 @@ body{{margin:0}}
  .hb .hcell{{width:36px;height:36px}}
  .hb .tabs{{flex-wrap:nowrap;overflow-x:auto}}.hb .tab{{white-space:nowrap;flex:none}}
  .hb .ph .wrap{{width:100%}}
- .hb .pstage{{min-width:96px}}
+ .hb .pstage{{min-width:96px;max-width:220px}}
 }}
 .hb .tw{{display:grid;grid-template-columns:var(--tc);overflow-x:auto;align-content:start}}
 .hb .tw>*{{grid-column:1/-1;min-width:0}}
@@ -387,8 +394,8 @@ body{{margin:0}}
 .hb .lg .imp{{width:20px;height:20px;cursor:default;margin-right:2px}}
 .hb .imp.ok{{color:var(--ok)}}.hb .imp.warn{{color:var(--warn)}}.hb .imp.dng{{color:var(--danger)}}
 .hb .imp:focus-visible{{outline:2px solid var(--hazel);outline-offset:2px}}
-.hb .imp[data-tip]:hover,.hb .imp[data-tip]:focus-visible{{anchor-name:--imp}}
-.hb .imp[data-tip]:hover::after,.hb .imp[data-tip]:focus-visible::after{{content:attr(data-tip);position:fixed;position-anchor:--imp;position-area:bottom span-left;position-try-fallbacks:bottom span-right,top span-left;margin:6px 0;z-index:50;white-space:nowrap;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:500;color:var(--ink);background:var(--raised);border:1px solid var(--line);box-shadow:0 4px 12px rgb(0 0 0 / .25);pointer-events:none}}
+.hb [data-tip]:hover,.hb [data-tip]:focus-visible{{anchor-name:--imp}}
+.hb [data-tip]:hover::after,.hb [data-tip]:focus-visible::after{{content:attr(data-tip);position:fixed;position-anchor:--imp;position-area:bottom span-left;position-try-fallbacks:bottom span-right,top span-left;margin:6px 0;z-index:50;white-space:nowrap;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:500;color:var(--ink);background:var(--raised);border:1px solid var(--line);box-shadow:0 4px 12px rgb(0 0 0 / .25);pointer-events:none}}
 .hb .ttabs{{display:flex;align-items:stretch;border-bottom:1px solid var(--line);overflow-x:auto}}
 .hb .ttab{{display:flex;align-items:center;gap:8px;height:40px;padding:0 6px 0 12px;border-right:1px solid var(--hairline);white-space:nowrap;color:var(--muted);font-size:13px;flex:none}}
 .hb .ttab.on{{color:var(--ink);background:var(--raised);box-shadow:inset 0 -2px 0 var(--hazel)}}
@@ -397,8 +404,31 @@ body{{margin:0}}
 .hb .ttab .ib{{min-width:24px;min-height:24px;width:24px;height:24px}}
 .hb .ttabs .tend{{margin-left:auto;display:flex;align-items:center;gap:4px;padding:0 8px;flex:none}}
 .hb .ttabs .tadd{{display:flex;align-items:center;padding:0 6px;flex:none}}
+.hb .ed{{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel);display:flex;flex-direction:column}}
+.hb .ed .ttab .mod{{width:8px;height:8px;border-radius:50%;background:var(--hazel);flex:none}}
+.hb .edtb{{display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:6px 8px;border-bottom:1px solid var(--line)}}
+.hb .edtb .btn.pri{{gap:6px}}.hb .edtb .kbd{{font-size:11px;opacity:.8}}
+.hb .edtb .sep{{width:1px;height:20px;background:var(--line);margin:0 4px}}
+.hb .edb{{font-family:"Geist Mono",ui-monospace,monospace;font-size:13px;line-height:20px;padding:8px 0;overflow-x:auto;background:var(--panel);min-height:240px}}
+.hb .el{{display:grid;grid-template-columns:48px max-content;min-width:100%}}.hb .el.cur{{background:var(--raised)}}
+.hb .el .gn{{text-align:right;padding-right:14px;color:var(--faint);user-select:none}}.hb .el.cur .gn{{color:var(--ink)}}
+.hb .el .gc{{white-space:pre;padding-right:16px}}
+.hb .sx-c{{color:var(--faint)}}.hb .sx-k{{color:var(--blue)}}.hb .sx-o{{color:var(--faint)}}.hb .sx-v{{color:var(--ink)}}.hb .sx-s{{color:var(--ok)}}
+.hb .edsb{{display:flex;flex-wrap:wrap;gap:4px 16px;padding:6px 12px;border-top:1px solid var(--line);background:var(--raised);font-size:12px;color:var(--muted)}}
+.hb .edsb span:first-child{{color:var(--ink)}}
+.hb *{{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--faint) 45%,transparent) transparent}}
+.hb *:hover{{scrollbar-color:var(--faint) transparent}}
+.hb .tw .meter{{min-width:max-content;flex-wrap:nowrap}}
+.hb .gdev{{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr));gap:0;border-top:0}}
+.hb .gdev>div{{border-right:1px solid var(--hairline);border-bottom:1px solid var(--hairline);min-width:0}}
+.hb .gdev h3{{font-size:12px;font-weight:600;color:var(--muted);padding:10px 12px 0;margin:0}}
+@media (max-width:1280px){{.hb .c6{{display:none}}.hb .tw{{--k6: ;}}}}
+.hb .ncard.on{{border-color:var(--hazel);box-shadow:inset 0 0 0 1px var(--hazel)}}
+.hb .opt{{display:flex;align-items:flex-start;gap:8px;font-size:13px;padding:4px 0}}.hb .opt input{{margin-top:3px}}
+.hb .fleet.choices{{grid-template-columns:repeat(auto-fit,minmax(min(250px,100%),1fr))}}
+.hb .row.sel{{background:color-mix(in srgb,var(--hazel) 8%,transparent)}}
 @media (max-width:1024px){{.hb .tw{{--k5: ;}}}}
-@media (max-width:767px){{.hb .tw{{--k3: ;--k4: ;--k5: ;}}}}
+@media (max-width:767px){{.hb .tw{{--k3: ;--k4: ;--k5: ;--k6: ;}}}}
 """
 
 ICONS = {
@@ -438,6 +468,11 @@ ICONS = {
  "box": '<path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5z"/><path d="M3.5 7.5 12 12l8.5-4.5M12 12v9"/>',
  "check": '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
  "x": '<path d="M6 6l12 12M18 6 6 18"/>',
+ "save": '<path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/>',
+ "undo": '<path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>',
+ "wrapline": '<path d="M4 6h16M4 12h13a3 3 0 0 1 0 6h-4"/><path d="m15 16-2 2 2 2M4 18h5"/>',
+ "diff": '<path d="M6 3v12M3 6h6M15 18h6"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/>',
+ "history": '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5M12 7v5l3 2"/>',
  "plus": '<path d="M12 5v14M5 12h14"/>',
  "dock": '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 14h18"/>',
  "max": '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
@@ -512,7 +547,7 @@ def nav(current: str, jobs: int = 3, attention: int = 4, mobile_links: bool = Tr
     ov = ' cur" aria-current="page' if current == "overview" else ""
     jb = ' cur" aria-current="page' if current == "jobs" else ""
     top = (f'<a class="nv{ov}" href="Overview.dc.html">{icon("overview")}<span>總覽</span></a>'
-           f'<a class="nv{jb}" href="WorkCenter.dc.html">{icon("jobs")}<span>工作中心</span><span class="cnt">{jobs}</span></a>')
+           f'<a class="nv{jb}" href="WorkCenter.dc.html" data-tip="{jobs} 個工作進行中">{icon("jobs")}<span>工作中心</span><span class="cnt" aria-label="{jobs} 個工作進行中"><i class="spin" aria-hidden="true"></i>{jobs}</span></a>')
     groups = "".join(f'<div class="navgrp">{g}</div><div class="navcol">{"".join(link(k) for k in keys)}</div>' for g, keys in GROUPS)
     return f"""
   <nav class="side" aria-label="主導覽">
@@ -531,10 +566,10 @@ def topbar(current: str, jobs: int = 3, attention: int = 4, obs: str = "03:42:06
     <button type="button" class="inp search" aria-label="搜尋或下指令">{icon("search")}<span>搜尋或下指令</span><span class="kbd">⌘K</span></button>
     <div class="tright">
       <span class="obs">觀測 <span class="mono">{obs}</span> · 每 10 秒</span>
-      <a class="ib" href="Overview.dc.html#attention" aria-label="需要處理 {attention}">{icon("events")}<b class="badge dng">{attention}</b></a>
-      <a class="ib" href="WorkCenter.dc.html" aria-label="進行中的工作 {jobs}">{icon("jobs")}<b class="badge">{jobs}</b></a>
-      <a class="ib" href="Terminal.dc.html" aria-label="終端機">{icon("terminal")}</a>
-      <button type="button" class="ib" aria-label="切換淺色或深色">{icon("sun")}</button>
+      <a class="ib" href="Overview.dc.html#attention" aria-label="需要處理 {attention}" data-tip="需要處理 · {attention}">{icon("events")}<b class="badge dng">{attention}</b></a>
+      <a class="ib" href="WorkCenter.dc.html" aria-label="進行中的工作 {jobs}" data-tip="進行中的工作 · {jobs}">{icon("jobs")}<b class="badge">{jobs}</b></a>
+      <a class="ib" href="Terminal.dc.html" aria-label="終端機" data-tip="終端機">{icon("terminal")}</a>
+      <button type="button" class="ib" aria-label="切換淺色或深色" data-tip="切換淺色或深色">{icon("sun")}</button>
       <button type="button" class="ib user" aria-label="tim · 擁有者">{icon("user")}<span>tim</span></button>
     </div>
   </header>"""
@@ -767,7 +802,7 @@ def heatgrid(rows: list[str], cols: list[str], values: list[list[float]], vmax: 
     cells = []
     cells.append('<span></span>' + "".join(f'<span class="lab" style="justify-content:center;font-size:11px">{c}</span>' for c in cols))
     for r, row in zip(rows, values):
-        cells.append(f'<span class="lab">{r}</span>' + "".join(
+        cells.append(f'<span class="lab" title="{r}">{r}</span>' + "".join(
             f'<i style="background: {q[min(4, int(v / vmax * 4.999))]}" title="{r} {cols[j]} {v:.0f}%"></i>' for j, v in enumerate(row)))
     return (f'<div class="heatw"><div class="heat" style="grid-template-columns: minmax(120px, 1.4fr) repeat({ncol}, minmax(0, 1fr))" role="img" '
             f'aria-label="容器 × 小時 CPU 熱格，{len(rows)} 個容器、{ncol} 小時">' + "".join(cells) + "</div></div>")
@@ -927,8 +962,8 @@ def topology(columns: list, links: list, w: int = 0, box_w: int = 176, box_h: in
 def flowlist(links: list) -> str:
     """拓撲的手機版：每條連線一列。links [(src_label, dst_label, note)]"""
     return '<div class="flowlist">' + "".join(
-        f'<div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{a}</span><span class="note">→</span>'
-        f'<span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{b}</span><span class="note">{n}</span></div>' for a, b, n in links) + "</div>"
+        f'<div class="fr"><span class="mono" style="overflow-wrap:anywhere">{a}</span><span class="note">→</span>'
+        f'<span class="mono" style="overflow-wrap:anywhere">{b}</span><span class="note">{n}</span></div>' for a, b, n in links) + "</div>"
 
 
 
@@ -963,10 +998,10 @@ def tree(items: list, open_depth: int = 1) -> str:
             out.append("</ul></details></li>"); stack.pop()
         if has_kids:
             is_open = depth <= open_depth or on or i in ancestors
-            out.append(f'<li><details{" open" if is_open else ""}><summary class="{"on" if on else ""}">{icon("chev", 14)}{icon("folder", 16)}<span class="tn">{name}</span><span class="sz">{sz}</span></summary><ul>')
+            out.append(f'<li><details{" open" if is_open else ""}><summary class="{"on" if on else ""}">{icon("chev", 14)}{icon("folder", 16)}<span class="tn" title="{name}">{name}</span><span class="sz">{sz}</span></summary><ul>')
             stack.append(depth)
         else:
-            out.append(f'<li class="leaf {"on" if on else ""}"><span class="pad"></span>{icon("folder" if name.endswith("/") else "file", 16)}<span class="tn">{name}</span><span class="sz">{sz}</span></li>')
+            out.append(f'<li class="leaf {"on" if on else ""}"><span class="pad"></span>{icon("folder" if name.endswith("/") else "file", 16)}<span class="tn" title="{name}">{name}</span><span class="sz">{sz}</span></li>')
     while stack:
         out.append("</ul></details></li>"); stack.pop()
     out.append("</ul></div>")
@@ -1004,6 +1039,32 @@ def impact_legend(kinds: list) -> str:
         ic, col, label = IMPACTS[k]
         out.append(f'<span role="listitem"><span class="imp {col}" aria-hidden="true">{icon(ic, 14)}</span>{label}</span>')
     return '<div class="lg" role="list">' + "".join(out) + "</div>"
+
+
+def code_editor(tabs: list, lines: list, status: list, toolbar_right: str = "") -> str:
+    """程式碼編輯器（對齊 1Panel 檔案管理的 Monaco 編輯器）。
+    tabs: [(name, active, modified)]；lines: 已上色的 HTML 行；status: 狀態列項目。第 cur 行（以 ▸ 開頭標記）為目前行。"""
+    t = "".join(
+        f'<div class="ttab{" on" if on else ""}" role="tab" aria-selected="{"true" if on else "false"}">{icon("file", 14)}<span class="tn">{n}</span>'
+        + (f'<span class="mod" aria-label="未儲存"></span>' if mod else "")
+        + f'<button type="button" class="ib" aria-label="關閉 {n}">{icon("x", 14)}</button></div>' for n, on, mod in tabs)
+    def tb(ic, label, kbd=""):
+        return f'<button type="button" class="ib" aria-label="{label}">{icon(ic)}' + (f'<span class="kbd">{kbd}</span>' if kbd else "") + "</button>"
+    rows = []
+    for i, ln in enumerate(lines, 1):
+        cur = ln.startswith("▸")
+        ln = ln[1:] if cur else ln
+        rows.append(f'<div class="el{" cur" if cur else ""}"><span class="gn">{i}</span><span class="gc">{ln or " "}</span></div>')
+    return ('<div class="ed">'
+            f'<div class="ttabs"><div role="tablist" aria-label="開啟的檔案" style="display:flex">{t}</div></div>'
+            '<div class="edtb">'
+            f'<button type="button" class="btn sm pri" aria-keyshortcuts="Meta+S">{icon("save", 14)}儲存</button>'
+            + tb("undo", "復原") + tb("search", "搜尋與取代") + tb("wrapline", "自動換行") + '<span class="sep"></span>'
+            + tb("history", "版本歷史") + tb("diff", "與上一版比較")
+            + f'<span style="margin-left:auto" class="wrap">{toolbar_right}</span>' + tb("max", "全螢幕")
+            + '</div>'
+            f'<div class="edb" role="textbox" aria-multiline="true" aria-label="檔案內容">{"".join(rows)}</div>'
+            '<div class="edsb">' + "".join(f"<span>{s}</span>" for s in status) + '</div></div>')
 
 
 def legend(items: list) -> str:

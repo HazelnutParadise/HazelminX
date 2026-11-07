@@ -53,6 +53,8 @@
 | Logs | 日誌量、journald 檢視器、稽核、SSH 登入、網站存取 | 四序列長條、終端式檢視器、回應碼段條 |
 | AppInstall | 用 1Panel 市集格式（data.yml formFields）安裝一個應用 | 參數表單、資源與網路、compose 原始檔、安裝前檢查流程段 |
 | HostServices | Webmin 等價的宿主機服務模組：模組 × 節點、BIND zone 與紀錄、套用流程、版本 | 狀態矩陣、表格、流程段 |
+| ContainersEmpty | 節點沒有容器引擎時的 Docker／Podman 頁：選擇卡、預檢、變更計畫、安裝流程 | 選擇卡、檢查清單、流程段 |
+| KubernetesEmpty | 沒有叢集時的 Kubernetes 頁：連接既有叢集或建立 K3s，選節點、預檢 | 選擇卡、表格、檢查清單 |
 | EdgeCases | 12 個意料外情境的畫面 | 虛擬捲動表、超長名稱、衝突 banner、403、半完成流程段、時鐘偏差、續傳、磁碟滿、部分失敗、未知版本、被引用、多分頁 |
 | M-Overview／M-WorkCenter／M-DeployConfirm | 360px 手機版 | 同上，單欄 |
 

@@ -16,14 +16,15 @@ from playwright.async_api import async_playwright
 
 WIDTHS = (360, 768, 1024, 1280, 1440, 1920)
 JS = r"""() => { const out=[];
- const sc = el => { for (let p=el.parentElement; p; p=p.parentElement){ const o=getComputedStyle(p).overflowX; if(o==='auto'||o==='scroll') return true; if(p.classList.contains('panel')||p.classList.contains('tile')||p.classList.contains('ncard')) return false;} return false; };
+ const sc = el => { for (let p=el.parentElement; p; p=p.parentElement){ const o=getComputedStyle(p).overflowX; if(o==='auto'||o==='scroll') return true; if(p.matches('.panel,.tile,.ncard,.card,.row,.pstage,.mx .c,.ttab,.st,.btn,.chip,.edsb,.modal')) return false;} return false; };
  for (const el of document.querySelectorAll('main *')) { const cs=getComputedStyle(el); if(cs.display==='none'||cs.visibility==='hidden') continue; const r=el.getBoundingClientRect(); if(r.width===0||r.height===0) continue;
-   const box = el.parentElement.closest('.panel,.tile,.ncard,.row,.card'); const b=box?box.getBoundingClientRect():null;
+   const box = el.parentElement.closest('.panel,.tile,.ncard,.card,.row,.pstage,.mx .c,.ttab,.st,.btn,.chip,.edsb,.modal'); const b=box?box.getBoundingClientRect():null;
    if (b && (r.right>b.right+1 || r.left<b.left-1) && !sc(el)) { const t=(el.innerText||el.textContent||'').trim().slice(0,30); out.push(t||el.tagName); }
    if (el.textContent.trim() && el.scrollWidth>el.clientWidth+2 && (cs.overflow==='hidden'||cs.overflowX==='hidden'||cs.overflowX==='clip') && !el.matches('.panel,.tiles,.hb,main,.ncard') && !sc(el)) out.push('CLIP:'+el.textContent.trim().slice(0,30));
  }
  if (innerWidth>=1024) for (const el of document.querySelectorAll('main .row .st, main .row .mono, main .row .num, main .mx .st')) { const cs=getComputedStyle(el); if(cs.display==='none') continue; const lh=parseFloat(cs.lineHeight)||16; const leaf=[...el.children].every(c=>c.tagName==='I'||c.tagName==='WBR'); if (leaf && el.getBoundingClientRect().height > lh*1.7 && el.textContent.trim().length<40) out.push('WRAP:'+el.textContent.trim().slice(0,30)); }
  if (innerWidth>=1024) for (const t of document.querySelectorAll('main .tw, main .mxw')) if (t.scrollWidth>t.clientWidth+1) out.push('HSCROLL:'+(t.closest('.panel')?.querySelector('h2,h3')?.textContent||'?').slice(0,24)+' +'+(t.scrollWidth-t.clientWidth));
+ for (const lg of document.querySelectorAll('main .legend, main .lg')) { const kids=[...lg.children].filter(c=>getComputedStyle(c).display!=='none'); for (let k=1;k<kids.length;k++){ const a=kids[k-1].getBoundingClientRect(), b=kids[k].getBoundingClientRect(); if (Math.abs(a.top-b.top)<4 && b.left-a.right<8) { out.push('LEGEND-GAP:'+kids[k].textContent.trim().slice(0,12)); break; } } }
  return [...new Set(out)].slice(0,12); }"""
 
 

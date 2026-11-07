@@ -18,6 +18,11 @@
 - [ ] **SYS-009** 維運者可以管理主機防火牆及容器對外暴露。 — 完成條件：顯示系統規則、Docker／Podman／K3s 規則的責任邊界，不清空引擎管理的鏈。[S09](#source-S09)
 - [ ] 連通性未確認時依逾時規則恢復可逆設定
 - [ ] Docker 發布的連接埠被 UFW 顯示拒絕時，外部測試能發現實際暴露
+- [ ] （SYS-009 細化，2026-11-07 使用者決定）維運者可以封鎖或限制容器發布到外部的 Port：完全封鎖外部、只允許指定來源、或改綁 127.0.0.1（後者要重建容器，走工作）。
+- [ ] 攔截規則只寫在引擎留給使用者的位置：Docker iptables 後端用 `DOCKER-USER` 鏈；Docker nftables 後端（29 起實驗）用平台自己的 nftables 表與 forward hook；firewalld 用 policy。不修改、不清空 Docker 自己的鏈。
+- [ ] 規則帶平台標記可追溯；Docker 重啟、容器重建後仍有效；套用後從外部重測，畫面顯示實測結果而不是「已封鎖」的假設。
+- [ ] 新部署預設發布 Port 綁 127.0.0.1、對外只走 Zentinel；要直接開放主機 Port 必須明確選擇。
+- [ ] rootless Podman 的 Port 由使用者空間轉發、會經過主機防火牆，畫面標示攔截方式為「主機防火牆」；K3s NodePort／ServiceLB 先顯示與外部實測，攔截導向 K8s 頁。
 
 ## Acceptance tests（第 42 章）
 
