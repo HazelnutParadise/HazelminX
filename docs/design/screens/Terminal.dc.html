@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<title>HazelminX 終端機</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+body{margin:0}
+.hb{--bg:#161412;--panel:#1D1B18;--raised:#262320;--line:#35312B;--ink:#ECE6DA;--muted:#A79E8E;--faint:#9A917F;--hazel:#D9A066;--hazelink:#1A1410;--blue:#8DB4F2;--warn:#F0B35B;--danger:#F28B82;--ok:#9BD3A4;--s1:#AF711F;--s2:#5682BB;--s3:#47AA62;--s4:#B55B9A;--q1:#2A241C;--q2:#4A3A22;--q3:#6E5228;--q4:#9A6F33;--q5:#D9A066;--scrim:rgba(0,0,0,.45);font-family:"Geist","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;font-synthesis:none;line-break:strict;color:var(--ink);background:var(--bg);font-size:14px;line-height:1.5;color-scheme:dark}
+.hb.theme-light{--bg:#F6F2EA;--panel:#FFFDF8;--raised:#EFE9DE;--line:#D9D1C2;--ink:#1B1814;--muted:#5E574C;--faint:#6B6457;--hazel:#8F5B23;--hazelink:#FFFFFF;--blue:#2E5FA8;--warn:#9A5A0B;--danger:#B4382E;--ok:#2F6B3C;--s1:#7C4B02;--s2:#2E598F;--s3:#218A45;--s4:#883170;--q1:#F3E6D3;--q2:#E3C9A4;--q3:#CFA772;--q4:#B38347;--q5:#8F5B23;--scrim:rgba(0,0,0,.25);color-scheme:light}
+.hb *{box-sizing:border-box}
+.hb .mono{font-family:"Geist Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+.hb a{color:var(--ink);text-decoration:none}.hb a:hover{color:var(--hazel)}
+.hb button,.hb input,.hb select{font:inherit;color:inherit}
+.hb button{cursor:pointer}
+.hb :is(a,button,input,select,[tabindex]):focus-visible{outline:2px solid var(--hazel);outline-offset:2px}
+.hb h1{margin:0;font-size:20px;font-weight:600;line-height:1.3}
+.hb h2{margin:0;font-size:14px;font-weight:600;line-height:1.4}
+.hb p{margin:0}
+.hb .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:0 12px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--ink);font-size:13px;white-space:nowrap}
+.hb .btn.pri{background:var(--hazel);border-color:var(--hazel);color:var(--hazelink);font-weight:600}
+.hb .btn.dng{background:var(--danger);border-color:var(--danger);color:var(--hazelink);font-weight:600}
+.hb .btn.sm{min-height:32px;padding:0 10px;font-size:12px;color:var(--muted)}
+.hb .btn:active{transform:translateY(1px)}
+.hb .panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.hb .ph{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.hb .ph .sub{font-size:12px;color:var(--muted)}
+.hb .ph .more{margin-left:auto;font-size:13px;color:var(--hazel)}
+.hb .card{background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.hb .row{display:grid;gap:12px;align-items:center;min-height:44px;padding:0 14px;border-bottom:1px solid var(--line)}
+.hb .row:hover{background:var(--raised)}
+.hb .row:last-child{border-bottom:0}
+.hb .hd{font-size:11px;color:var(--faint);letter-spacing:.06em;text-transform:uppercase;min-height:34px;font-weight:500}
+.hb .hd:hover{background:transparent}
+.hb .name{display:flex;flex-direction:column;gap:2px;min-width:0}
+.hb .name .n{font-family:"Geist Mono",ui-monospace,monospace;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb .name .d{font-size:12px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb .st{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.hb .st i{display:inline-block;width:8px;height:8px;flex:none}
+.hb .st.ok{color:var(--ok)}.hb .st.ok i{border-radius:50%;background:var(--ok)}
+.hb .st.warn{color:var(--warn)}.hb .st.warn i{border-radius:50%;border:2px solid var(--warn)}
+.hb .st.dng{color:var(--danger)}.hb .st.dng i{background:var(--danger)}
+.hb .st.info{color:var(--blue)}.hb .st.info i{background:var(--blue)}
+.hb .st.off{color:var(--muted)}.hb .st.off i{border-radius:50%;border:2px solid var(--muted);border-style:dashed}
+.hb .nv{display:flex;align-items:center;gap:10px;min-height:40px;padding:0 10px;border-radius:6px;font-size:14px;color:var(--ink)}
+.hb .nv:hover{background:var(--raised);color:var(--ink)}
+.hb .nv.cur{background:var(--raised);color:var(--hazel);font-weight:600}
+.hb .nv .cnt{margin-left:auto;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px}
+.hb .kbd{font-family:"Geist Mono",ui-monospace,monospace;font-size:11px;color:var(--faint);border:1px solid var(--line);border-radius:4px;padding:1px 5px;margin-left:auto}
+.hb .navgrp{font-size:11px;color:var(--faint);letter-spacing:.06em;padding:6px 10px 0}
+.hb .navcol{display:flex;flex-direction:column;gap:2px}
+.hb .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(170px,100%),1fr));gap:10px}
+.hb .tile{display:flex;flex-direction:column;gap:4px;padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:8px;min-width:0}
+.hb .tile .l{font-size:12px;color:var(--muted)}
+.hb .tile .v{font-size:28px;font-weight:600;line-height:1.1;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.hb .tile .v small{font-size:12px;font-weight:400;color:var(--muted)}
+.hb .tile .dl{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hb .up{color:var(--ok)}.hb .dn{color:var(--danger)}
+.hb .meter{display:flex;align-items:center;gap:8px;min-width:0}
+.hb .meter .tr{flex:1;height:6px;border-radius:4px;background:var(--q2);overflow:hidden;min-width:40px}
+.hb .meter .fl{height:100%;border-radius:4px;background:var(--hazel)}
+.hb .meter .fl.warn{background:var(--warn)}.hb .meter .fl.dng{background:var(--danger)}
+.hb .meter .num{font-family:"Geist Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;font-size:12px;white-space:nowrap}
+.hb .cg{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(440px,100%),1fr));gap:12px}
+.hb .chart{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;min-width:0}
+.hb .chart .ph{padding:8px 12px}
+.hb .chart .unit{font-size:12px;color:var(--faint)}
+.hb .chart .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-left:auto}
+.hb .legend i{display:inline-block;width:12px;height:2px;vertical-align:middle;margin-right:5px;border-radius:1px}
+.hb .legend i.rect{height:8px;border-radius:2px}
+.hb .chart .body{padding:6px 10px 8px}
+.hb .foot{display:flex;gap:10px;flex-wrap:wrap;padding:6px 12px 8px;font-size:12px;color:var(--faint);border-top:1px solid var(--line)}
+.hb .chart .foot a{color:var(--hazel)}
+.hb svg.ch{display:block;width:100%;height:auto;font-family:"Geist Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.hb svg.ch text{font-size:11px;fill:var(--faint)}
+.hb .grid{stroke:var(--line);stroke-width:1}
+.hb .hit .xh,.hb .hit .tip{opacity:0;transition:opacity .08s}
+.hb .hit:hover .xh,.hb .hit:hover .tip,.hb .hit:focus-within .xh,.hb .hit:focus-within .tip{opacity:1}
+.hb .tip rect{fill:var(--raised);stroke:var(--line)}
+.hb .tip text{fill:var(--ink)}
+.hb .tip text.k{fill:var(--muted)}
+.hb .ch-m{display:none}
+.hb .ranks{display:flex;flex-direction:column;gap:6px;padding:10px 14px}
+.hb .rank{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,2fr) auto;gap:10px;align-items:center;font-size:13px;min-height:28px}
+.hb .rank .bar{height:8px;border-radius:4px;background:var(--q2);overflow:hidden}
+.hb .rank .bar i{display:block;height:100%;border-radius:4px;background:var(--s1)}
+.hb .timeline{display:flex;gap:2px;height:10px}
+.hb .timeline i{flex:1;border-radius:2px;background:var(--ok)}
+.hb .timeline i.f{background:var(--danger)}.hb .timeline i.r{background:var(--warn)}.hb .timeline i.p{background:var(--blue)}.hb .timeline i.e{background:var(--q2)}
+.hb .seg{display:flex;gap:2px;height:8px;border-radius:4px;overflow:hidden}
+.hb .seg i{display:block;height:100%}
+.hb .steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+.hb .step{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+.hb .step b{display:block;height:6px;border-radius:3px;background:var(--q2)}
+.hb .step.done b{background:var(--ok)}.hb .step.cur b{background:var(--blue)}.hb .step.wait b{background:var(--warn)}.hb .step.fail b{background:var(--danger)}
+.hb .step.cur{color:var(--ink)}
+.hb .heat{display:grid;gap:2px}
+.hb .heat i{display:block;aspect-ratio:1.6;border-radius:2px;min-height:14px}
+.hb .heat .lab{font-size:12px;color:var(--muted);display:block;line-height:22px;font-family:"Geist Mono",ui-monospace,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb .fleet{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(250px,100%),1fr));gap:12px;padding:12px 14px}
+.hb .ncard{display:flex;flex-direction:column;gap:10px;padding:12px;background:var(--raised);border:1px solid var(--line);border-radius:8px;min-width:0;color:var(--ink)}
+.hb .ncard .nh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hb .ncard .nh .n{font-family:"Geist Mono",ui-monospace,monospace;font-weight:500}
+.hb .ncard .nh .d{font-size:12px;color:var(--faint);width:100%}
+.hb .rings{display:flex;gap:10px;justify-content:space-between}
+.hb .ring{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--faint);min-width:0}
+.hb .ring svg{display:block}
+.hb .ring .v{font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;fill:var(--ink)}
+.hb .ncard .ft{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.hb .ncard .ft .seg{flex:1;min-width:60px}
+.hb .hmap{display:flex;flex-direction:column;gap:10px;padding:12px 14px}
+.hb .hgrp{display:flex;flex-direction:column;gap:6px}
+.hb .hgrp .lab{display:flex;gap:8px;align-items:baseline;font-size:12px;color:var(--muted)}
+.hb .hgrp .lab b{font-family:"Geist Mono",ui-monospace,monospace;font-weight:500;color:var(--ink)}
+.hb .hcells{display:flex;flex-wrap:wrap;gap:3px}
+.hb .hcell{position:relative;width:26px;height:26px;border-radius:3px;display:flex;align-items:center;justify-content:center;border:1px solid transparent}
+.hb .hcell.off{background:transparent;border:1px dashed var(--line)}
+.hb .hcell.bad{border-color:var(--danger)}
+.hb .hcell.bad::after{content:"";width:8px;height:8px;background:var(--danger)}
+.hb .hcell.stale::after{content:"";width:8px;height:8px;border-radius:50%;border:2px solid var(--warn);box-sizing:border-box}
+.hb .scale{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--faint)}
+.hb .scale i{display:block;width:14px;height:10px;border-radius:2px}
+.hb .tall{display:flex;gap:2px;height:28px;border-radius:4px;overflow:hidden}
+.hb .tall i{display:flex;align-items:center;justify-content:center;height:100%;font-size:11px;font-family:"Geist Mono",ui-monospace,monospace;color:var(--ink);overflow:hidden;white-space:nowrap}
+.hb .cal{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,12px);gap:2px}
+.hb .cal i{display:block;width:12px;height:12px;border-radius:2px;background:var(--q1);position:relative}
+.hb .cal i.o{background:var(--ok)}.hb .cal i.f{background:var(--danger)}.hb .cal i.r{background:var(--warn)}.hb .cal i.n{background:transparent;border:1px dashed var(--line)}
+.hb .cal i.f::after{content:"";position:absolute;inset:3px;background:var(--panel)}
+.hb .pipe{display:flex;align-items:stretch;gap:0;overflow-x:auto}
+.hb .pstage{display:flex;flex-direction:column;gap:4px;min-width:110px;flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-size:12px;color:var(--muted);position:relative;background:var(--panel)}
+.hb .pstage+.pstage{margin-left:18px}
+.hb .pstage+.pstage::before{content:"";position:absolute;left:-12px;top:50%;width:6px;height:6px;border-top:2px solid var(--faint);border-right:2px solid var(--faint);transform:translateY(-50%) rotate(45deg)}
+.hb .pstage .t{color:var(--ink);font-weight:500;display:flex;align-items:center;gap:6px}
+.hb .pstage.done{border-color:var(--ok)}.hb .pstage.cur{border-color:var(--blue);background:var(--raised)}.hb .pstage.fail{border-color:var(--danger)}.hb .pstage.wait{border-color:var(--warn)}
+.hb svg.topo{display:block;width:100%;height:auto;font-family:"Geist","Noto Sans TC",sans-serif}
+.hb svg.topo text{font-size:12px;fill:var(--ink)}
+.hb svg.topo text.sub{font-size:11px;fill:var(--faint);font-family:"Geist Mono",ui-monospace,monospace}
+.hb svg.topo text.col{font-size:11px;fill:var(--faint);letter-spacing:.06em;text-transform:uppercase}
+.hb svg.topo .box{fill:var(--raised);stroke:var(--line)}
+.hb svg.topo .box.danger{stroke:var(--danger)}.hb svg.topo .box.warn{stroke:var(--warn)}
+.hb svg.topo .lnk{fill:none;stroke:var(--s1);stroke-opacity:.55;stroke-linecap:round}
+.hb svg.topo .lnk.danger{stroke:var(--danger)}.hb svg.topo .lnk.dim{stroke:var(--q3)}
+.hb .flowlist{display:flex;flex-direction:column;gap:6px;font-size:13px}
+.hb .flowlist .fr{display:grid;grid-template-columns:minmax(0,1fr) 16px minmax(0,1fr) auto;gap:6px;align-items:center}
+.hb .mx{display:grid;gap:2px;font-size:12px}
+.hb .mx .c{min-height:32px;display:flex;align-items:center;justify-content:center;gap:4px;background:var(--raised);border-radius:4px;padding:0 6px;text-align:center}
+.hb .mx .c.empty{background:transparent;border:1px dashed var(--line);color:var(--faint)}
+.hb .mx .rl{display:flex;align-items:center;font-family:"Geist Mono",ui-monospace,monospace;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:32px}
+.hb .mx .cl{display:flex;align-items:flex-end;justify-content:center;font-size:11px;color:var(--faint);padding-bottom:4px;text-align:center}
+.hb .tree{font-family:"Geist Mono",ui-monospace,monospace;font-size:13px}
+.hb .tree ul{list-style:none;margin:0;padding-left:16px;border-left:1px solid var(--line)}
+.hb .tree>ul{padding-left:0;border-left:0}
+.hb .tree li{display:flex;align-items:center;gap:8px;min-height:30px}
+.hb .tree li .sz{margin-left:auto;color:var(--faint);font-size:12px}
+.hb .tree li.on{color:var(--hazel)}
+.hb .appcard{display:flex;gap:10px;padding:12px;background:var(--raised);border:1px solid var(--line);border-radius:8px;min-width:0;color:var(--ink);align-items:flex-start}
+.hb .appcard .ic{width:40px;height:40px;border-radius:8px;background:var(--q2);display:flex;align-items:center;justify-content:center;font-family:"Geist Mono",ui-monospace,monospace;font-weight:600;color:var(--hazel);flex:none}
+.hb .appcard .bd{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+.hb .appcard .bd .n{font-weight:500}
+.hb .appcard .bd .d{font-size:12px;color:var(--faint)}
+.hb .chip{display:inline-flex;align-items:center;min-height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line);font-size:11px;color:var(--muted);background:transparent}
+.hb .chip.on{color:var(--hazel);border-color:var(--hazel)}
+.hb .term{background:var(--neutral,#0f0e0c);border:1px solid var(--line);border-radius:8px;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;padding:10px 12px;color:var(--ink);white-space:pre;overflow:auto;min-height:220px}
+.hb .range{display:flex;gap:4px;flex-wrap:wrap}
+.hb .range .btn{min-height:32px;padding:0 10px;font-size:12px;color:var(--muted)}
+.hb .range .btn.on{background:var(--raised);color:var(--hazel);border-color:var(--line);font-weight:600}
+.hb .field{display:flex;flex-direction:column;gap:6px}
+.hb .field label{font-size:12px;color:var(--muted)}
+.hb .inp{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 10px;background:var(--raised);border:1px solid var(--line);border-radius:6px;color:var(--ink);width:100%}
+.hb .inp.err{border-color:var(--danger)}
+.hb .help{font-size:12px;color:var(--faint)}
+.hb .errt{font-size:12px;color:var(--danger)}
+.hb .skel{background:var(--raised);border-radius:4px;position:relative;overflow:hidden}
+.hb .skel::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent)}
+@media (prefers-reduced-motion:no-preference){.hb .skel::after{animation:hx-sh 1.4s infinite}}
+@keyframes hx-sh{to{transform:translateX(100%)}}
+.hb .dim{opacity:.45}
+.hb .banner{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:var(--raised);font-size:13px}
+.hb .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);padding:0 14px}
+.hb .tab{min-height:40px;display:inline-flex;align-items:center;padding:0 10px;border-bottom:2px solid transparent;color:var(--muted);font-size:13px;background:transparent;border-top:0;border-left:0;border-right:0}
+.hb .tab.on{color:var(--hazel);border-bottom-color:var(--hazel);font-weight:600}
+.hb .diff{overflow-x:auto;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;display:flex;flex-direction:column}
+.hb .diff div{display:grid;grid-template-columns:36px 36px 1fr;gap:0;padding:0 14px;white-space:pre}
+.hb .diff .ln{color:var(--faint);text-align:right;padding-right:10px}
+.hb .diff .add{background:color-mix(in oklab,var(--ok) 14%,transparent)}
+.hb .diff .del{background:color-mix(in oklab,var(--danger) 14%,transparent)}
+.hb .diff .hot{outline:1px solid var(--danger);outline-offset:-1px}
+.hb .check{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:10px;align-items:start;padding:10px 14px;border-bottom:1px solid var(--line);font-size:13px}
+.hb .check:last-child{border-bottom:0}
+.hb .check .mk{width:16px;height:16px;border-radius:50%;margin-top:2px}
+.hb .check .mk.ok{background:var(--ok)}.hb .check .mk.warn{border:3px solid var(--warn)}.hb .check .mk.dng{background:var(--danger);border-radius:2px}
+.hb .check .ev{font-size:12px;color:var(--muted);font-family:"Geist Mono",ui-monospace,monospace}
+.hb .modal{background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:10px;max-width:520px}
+.hb .scrim{background:var(--scrim);padding:24px;display:flex;justify-content:center}
+.hb .list{display:flex;flex-direction:column;gap:8px}
+.hb .job{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border:1px solid var(--line);border-radius:8px}
+.hb .job .t{display:flex;justify-content:space-between;gap:8px}
+.hb .job .s{font-size:12px;color:var(--muted)}
+.hb .prog{height:4px;background:var(--q2);border-radius:2px;overflow:hidden}
+.hb .prog i{display:block;height:100%;background:var(--blue)}
+.hb .prog.pulse i{width:30%;background:repeating-linear-gradient(90deg,var(--blue) 0 8px,transparent 8px 12px)}
+.hb .note{font-size:12px;color:var(--faint)}
+.hb .wrap{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.hb .scroll{overflow-x:auto}
+.hb .aside{width:340px;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:18px;padding:18px 16px 24px}
+.hb .main{flex:999 1 560px;min-width:0;display:flex;flex-direction:column;gap:22px;padding:18px 24px 40px}
+.hb .side{width:232px;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:14px;padding:14px 10px 20px}
+.hb .nrow{grid-template-columns:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) 110px minmax(0,.8fr)}
+.hb .prow{grid-template-columns:minmax(0,1.2fr) minmax(0,1.5fr) minmax(0,.5fr) minmax(0,.6fr) minmax(0,1fr) minmax(0,1.1fr)}
+.hb .srow{grid-template-columns:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) 110px minmax(0,.7fr)}
+.hb .crow{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,.4fr) minmax(0,.7fr)}
+.hb .drow{grid-template-columns:minmax(0,.8fr) minmax(0,1.6fr) minmax(0,.6fr) minmax(0,1.4fr) minmax(0,.8fr)}
+.hb .gprow{grid-template-columns:minmax(0,1.4fr) minmax(0,.9fr) minmax(0,.5fr) minmax(0,1.2fr)}
+.hb .garow{grid-template-columns:minmax(0,.8fr) minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,1.4fr)}
+.hb .dprow{grid-template-columns:minmax(0,.5fr) minmax(0,1.6fr) minmax(0,.7fr) minmax(0,.7fr) minmax(0,1.4fr)}
+.hb .hrow{grid-template-columns:minmax(0,1.6fr) minmax(0,.8fr) minmax(0,.7fr) minmax(0,1.4fr)}
+.hb .rrow{grid-template-columns:24px minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,.5fr) minmax(0,.6fr)}
+@media (max-width:1100px){.hb .aside{width:100%;border-left:0;border-top:1px solid var(--line)}}
+@media (max-width:767px){
+ .hb .side{width:100%;border-right:0;border-bottom:1px solid var(--line);padding-bottom:10px}
+ .hb .navcol{flex-direction:row;flex-wrap:wrap}.hb .side .nv{flex:none;white-space:nowrap}.hb .side .navcol:not(:first-of-type){flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px}.hb .navgrp{display:none}.hb .side .nv{min-height:44px}
+ .hb .main{padding:14px 16px 32px;gap:16px}.hb .aside{padding:14px 16px 24px}
+ .hb .c3,.hb .c4,.hb .c5,.hb .kbd{display:none}
+ .hb .ch-d{display:none}.hb .ch-m{display:block}
+ .hb .heat i{min-height:18px}
+ .hb .steps{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .hb .btn{min-height:44px}.hb .btn.sm{min-height:40px}.hb .range .btn{min-height:40px}
+ .hb .nrow{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,.9fr)}
+ .hb .prow{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}
+ .hb .srow{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,.8fr)}
+ .hb .crow{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}
+ .hb .drow{grid-template-columns:minmax(0,.9fr) minmax(0,1.2fr) minmax(0,1.3fr)}
+ .hb .gprow{grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr) minmax(0,1fr)}
+ .hb .garow{grid-template-columns:minmax(0,.8fr) minmax(0,1.4fr) minmax(0,1.2fr)}
+ .hb .dprow{grid-template-columns:minmax(0,.5fr) minmax(0,1.4fr) minmax(0,1.3fr)}
+ .hb .hrow{grid-template-columns:minmax(0,1.4fr) minmax(0,.7fr) minmax(0,1.2fr)}
+ .hb .rrow{grid-template-columns:24px minmax(0,1.6fr) minmax(0,.8fr)}
+ .hb .tile .v{font-size:24px}
+ .hb .rings svg{width:52px;height:52px}
+ .hb .hcell{width:36px;height:36px}
+ .hb .tabs{flex-wrap:nowrap;overflow-x:auto}.hb .tab{white-space:nowrap;flex:none}
+ .hb .ph .wrap{width:100%}
+ .hb .pstage{min-width:96px}
+}
+</style>
+</helmet>
+<div class="hb theme-{{theme}}" style="min-height: 100vh; display: flex; flex-wrap: wrap; align-items: stretch">
+  <nav class="side" aria-label="主導覽">
+    <div style="display: flex; align-items: center; gap: 10px; padding: 4px 10px 10px; border-bottom: 1px solid var(--line)">
+      <span aria-hidden="true" style="width: 22px; height: 22px; border-radius: 50%; background: var(--hazel); display: inline-block; box-shadow: inset 0 0 0 5px var(--panel), inset 0 0 0 7px var(--hazel)"></span>
+      <span style="font-weight: 600; font-size: 15px">HazelminX</span>
+      <span class="mono" style="font-size: 11px; color: var(--faint); margin-left: auto">tw-01</span>
+    </div>
+    <button type="button" class="inp" style="color: var(--muted); text-align: left"><span>搜尋或下指令</span><span class="kbd">⌘K</span></button>
+    <div class="navcol"><a class="nv" href="Overview.dc.html">總覽<span class="kbd">G O</span></a><a class="nv" href="WorkCenter.dc.html">工作中心<span class="cnt" style="color: var(--hazel)">3</span></a><a class="nv" href="Overview.dc.html#attention">需要處理<span class="cnt" style="color: var(--warn)">3</span></a></div>
+    <div class="navgrp">基礎設施</div><div class="navcol"><a class="nv cur" aria-current="page" href="Nodes.dc.html">主機與節點</a><a class="nv" href="Containers.dc.html">Docker／Podman</a><a class="nv" href="Kubernetes.dc.html">Kubernetes</a><a class="nv" href="Storage.dc.html">儲存</a><a class="nv" href="Files.dc.html">檔案</a></div><div class="navgrp">應用</div><div class="navcol"><a class="nv" href="Projects.dc.html">專案與服務</a><a class="nv" href="AppStore.dc.html">應用商店</a><a class="nv" href="Database.dc.html">資料庫</a><a class="nv" href="AI.dc.html">AI</a><a class="nv" href="Storage.dc.html">備份與還原</a><a class="nv" href="Cron.dc.html">計畫任務</a></div><div class="navgrp">入口與安全</div><div class="navcol"><a class="nv" href="Websites.dc.html">網站與入口</a><a class="nv" href="APIProxy.dc.html">API 代理</a><a class="nv" href="Security.dc.html">安全防護</a><a class="nv" href="Analytics.dc.html">流量分析</a><a class="nv" href="Events.dc.html">事件與告警</a><a class="nv" href="IAM.dc.html">身分與存取</a><a class="nv" href="Settings.dc.html">平台設定</a></div>
+    <div style="margin-top: auto; display: flex; align-items: center; gap: 8px; padding: 8px 10px 0; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted)">
+      <span>tim · 擁有者</span>
+      <button type="button" class="btn sm" aria-label="切換淺色或深色" style="margin-left: auto; min-width: 44px">{{themeLabel}}</button>
+    </div>
+  </nav><main class="main">
+    <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 14px">
+      <h1>終端機</h1>
+      <span style="font-size: 13px; color: var(--muted)">觀測時間 <span class="mono">03:42:06</span> UTC+8</span>
+      <div class="wrap" style="margin-left: auto"><button type="button" class="btn pri">新連線</button><button type="button" class="btn">快捷指令</button><button type="button" class="btn">設定</button></div>
+    </div><div class="panel"><div class="tabs" role="tablist"><button type="button" class="tab on" role="tab" aria-selected="true">hazel-tw-01 · root</button><button type="button" class="tab" role="tab" aria-selected="false">shop-api（容器）</button><button type="button" class="tab" role="tab" aria-selected="false">lab-mini · deploy</button><button type="button" class="tab" role="tab" aria-selected="false">＋</button><span style="margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:10px"><span class="st dng"><i aria-hidden="true"></i>這個終端機代表 root@hazel-tw-01 · 稽核：完整錄製</span><span class="chip">縮到底部 Dock</span><span class="chip">全螢幕</span></span></div></div>
+    <section class="panel" aria-labelledby="h-tm">
+      <div class="ph"><h2 id="h-tm">hazel-tw-01 · root · 會話 #3 · 開始 03:36 · 心跳正常</h2><span class="sub">經 Agent，不走 sshd；切到別的頁面回來輸出仍完整</span></div>
+      <div style="padding:10px 14px"><div class="term" style="min-height:300px">root@hazel-tw-01:~# docker ps --format 'table {{.Names}}	{{.Status}}'
+NAMES             STATUS
+shop-api-1        Up 46 minutes (healthy)
+shop-api-2        Up 46 minutes (healthy)
+shop-worker       Up 46 minutes
+shop-db           Up 9 days (healthy)
+shop-redis        Restarting (1) 12 seconds ago
+ollama            Up 3 days
+root@hazel-tw-01:~# journalctl -u hazelminx-agent -n 2 --no-pager
+Nov 07 03:42:06 hazel-tw-01 hazelminx-agent[912]: INFO heartbeat ok seq=51204 rtt=3ms
+Nov 07 03:42:16 hazel-tw-01 hazelminx-agent[912]: INFO heartbeat ok seq=51205 rtt=3ms
+root@hazel-tw-01:~# <span style="background:var(--ink);color:var(--panel)"> </span></div></div>
+    </section><div class="cg">
+    <section class="panel" aria-labelledby="h-hs">
+      <div class="ph"><h2 id="h-hs">連線目標</h2><span class="sub">節點經 Agent；外部主機用 SSH 資產（金鑰在機密庫）</span></div>
+      <div class="row hd srow"><span>目標</span><span>狀態</span><span class="c3">方式</span><span class="c4">身分</span><span class="c4">稽核</span><span class="c5"></span><span></span></div>
+      <a class="row srow" href="#h1"><span class="name"><span class="n">hazel-tw-01</span><span class="d">節點</span></span><span><span class="st ok"><i aria-hidden="true"></i>連線中</span></span><span class="c3 note">Agent</span><span class="mono c4">root · tim 可</span><span class="c4 note">完整錄製</span><span class="c5"></span><span><button type="button" class="btn sm">開啟</button></span></a>
+      <a class="row srow" href="#h2"><span class="name"><span class="n">hazel-jp-02</span><span class="d">節點</span></span><span><span class="st warn"><i aria-hidden="true"></i>狀態過期</span></span><span class="c3 note">Agent</span><span class="mono c4">root</span><span class="c4 note">完整錄製</span><span class="c5"></span><span><button type="button" class="btn sm">開啟</button></span></a>
+      <a class="row srow" href="#h3"><span class="name"><span class="n">lab-mini</span><span class="d">節點 · rootless</span></span><span><span class="st info"><i aria-hidden="true"></i>維護中</span></span><span class="c3 note">Agent</span><span class="mono c4">deploy（非 root）</span><span class="c4 note">指令紀錄</span><span class="c5"></span><span><button type="button" class="btn sm">開啟</button></span></a>
+      <a class="row srow" href="#h4"><span class="name"><span class="n">nas.example.tw</span><span class="d">外部 SSH 資產</span></span><span><span class="st ok"><i aria-hidden="true"></i>可達</span></span><span class="c3 note">SSH · 金鑰 id_nas</span><span class="mono c4">backup</span><span class="c4 note">指令紀錄</span><span class="c5"></span><span><button type="button" class="btn sm">開啟</button></span></a>
+      <a class="row srow" href="#h5"><span class="name"><span class="n">shop-api（容器）</span><span class="d">tw-01 · docker exec</span></span><span><span class="st ok"><i aria-hidden="true"></i>執行中</span></span><span class="c3 note">Agent · exec</span><span class="mono c4">node（容器內）</span><span class="c4 note">指令紀錄</span><span class="c5"></span><span><button type="button" class="btn sm">開啟</button></span></a>
+    </section>
+    <section class="panel" aria-labelledby="h-qc">
+      <div class="ph"><h2 id="h-qc">快捷指令 · 6</h2><span class="sub">可匯入；高風險指令要二次確認</span></div>
+      <div class="ranks"><div class="rank"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">docker ps（健康欄）</span><span class="bar" aria-hidden="true"><i style="width: 91%"></i></span><span class="mono" style="font-size:12px">41 次</span></div><div class="rank"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">journalctl -u hazelminx-agent -f</span><span class="bar" aria-hidden="true"><i style="width: 40%"></i></span><span class="mono" style="font-size:12px">18 次</span></div><div class="rank"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">df -h /mnt/data</span><span class="bar" aria-hidden="true"><i style="width: 27%"></i></span><span class="mono" style="font-size:12px">12 次</span></div><div class="rank"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">pg_isready -h shop-db</span><span class="bar" aria-hidden="true"><i style="width: 16%"></i></span><span class="mono" style="font-size:12px">7 次</span></div><div class="rank"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">systemctl restart zentinel ⚠</span><span class="bar" aria-hidden="true"><i style="width: 7%"></i></span><span class="mono" style="font-size:12px">3 次</span></div><div class="rank"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">apt list --upgradable</span><span class="bar" aria-hidden="true"><i style="width: 4%"></i></span><span class="mono" style="font-size:12px">2 次</span></div></div>
+    </section></div>
+    <section class="panel" aria-labelledby="h-tp">
+      <div class="ph"><h2 id="h-tp">稽核政策與設定</h2></div>
+      <div class="fleet" style="grid-template-columns:repeat(auto-fill,minmax(min(220px,100%),1fr))">
+        <span class="ncard" style="display:flex;flex-direction:column;gap:2px"><span class="note">root 終端機</span><span>完整錄製（輸入＋輸出）· 保留 90 天</span></span><span class="ncard" style="display:flex;flex-direction:column;gap:2px"><span class="note">一般帳號</span><span>指令紀錄 · 保留 30 天</span></span><span class="ncard" style="display:flex;flex-direction:column;gap:2px"><span class="note">容器終端機</span><span>指令紀錄 · 只有容器唯讀權限的人不能開宿主機 root</span></span>
+        <span class="ncard" style="display:flex;flex-direction:column;gap:2px"><span class="note">外觀</span><span>Geist Mono 13px · 行高 1.4 · 深色</span></span><span class="ncard" style="display:flex;flex-direction:column;gap:2px"><span class="note">預設連線</span><span>hazel-tw-01 · root</span></span><span class="ncard" style="display:flex;flex-direction:column;gap:2px"><span class="note">AI 輔助</span><span>關閉（可選 ops-assistant 解釋輸出）</span></span>
+      </div>
+    </section></main></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"light":{"editor":"boolean","default":false,"section":"主題"},"$preview":{"width":1440,"height":1800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const light = this.props.light ?? false;
+    return { theme: light ? 'light' : 'dark', themeLabel: light ? '深色' : '淺色' };
+  }
+}
+</script>
+</body>
+</html>

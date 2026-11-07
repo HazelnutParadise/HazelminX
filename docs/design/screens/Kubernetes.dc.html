@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<title>HazelminX Kubernetes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+body{margin:0}
+.hb{--bg:#161412;--panel:#1D1B18;--raised:#262320;--line:#35312B;--ink:#ECE6DA;--muted:#A79E8E;--faint:#9A917F;--hazel:#D9A066;--hazelink:#1A1410;--blue:#8DB4F2;--warn:#F0B35B;--danger:#F28B82;--ok:#9BD3A4;--s1:#AF711F;--s2:#5682BB;--s3:#47AA62;--s4:#B55B9A;--q1:#2A241C;--q2:#4A3A22;--q3:#6E5228;--q4:#9A6F33;--q5:#D9A066;--scrim:rgba(0,0,0,.45);font-family:"Geist","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;font-synthesis:none;line-break:strict;color:var(--ink);background:var(--bg);font-size:14px;line-height:1.5;color-scheme:dark}
+.hb.theme-light{--bg:#F6F2EA;--panel:#FFFDF8;--raised:#EFE9DE;--line:#D9D1C2;--ink:#1B1814;--muted:#5E574C;--faint:#6B6457;--hazel:#8F5B23;--hazelink:#FFFFFF;--blue:#2E5FA8;--warn:#9A5A0B;--danger:#B4382E;--ok:#2F6B3C;--s1:#7C4B02;--s2:#2E598F;--s3:#218A45;--s4:#883170;--q1:#F3E6D3;--q2:#E3C9A4;--q3:#CFA772;--q4:#B38347;--q5:#8F5B23;--scrim:rgba(0,0,0,.25);color-scheme:light}
+.hb *{box-sizing:border-box}
+.hb .mono{font-family:"Geist Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+.hb a{color:var(--ink);text-decoration:none}.hb a:hover{color:var(--hazel)}
+.hb button,.hb input,.hb select{font:inherit;color:inherit}
+.hb button{cursor:pointer}
+.hb :is(a,button,input,select,[tabindex]):focus-visible{outline:2px solid var(--hazel);outline-offset:2px}
+.hb h1{margin:0;font-size:20px;font-weight:600;line-height:1.3}
+.hb h2{margin:0;font-size:14px;font-weight:600;line-height:1.4}
+.hb p{margin:0}
+.hb .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:0 12px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--ink);font-size:13px;white-space:nowrap}
+.hb .btn.pri{background:var(--hazel);border-color:var(--hazel);color:var(--hazelink);font-weight:600}
+.hb .btn.dng{background:var(--danger);border-color:var(--danger);color:var(--hazelink);font-weight:600}
+.hb .btn.sm{min-height:32px;padding:0 10px;font-size:12px;color:var(--muted)}
+.hb .btn:active{transform:translateY(1px)}
+.hb .panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.hb .ph{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.hb .ph .sub{font-size:12px;color:var(--muted)}
+.hb .ph .more{margin-left:auto;font-size:13px;color:var(--hazel)}
+.hb .card{background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.hb .row{display:grid;gap:12px;align-items:center;min-height:44px;padding:0 14px;border-bottom:1px solid var(--line)}
+.hb .row:hover{background:var(--raised)}
+.hb .row:last-child{border-bottom:0}
+.hb .hd{font-size:11px;color:var(--faint);letter-spacing:.06em;text-transform:uppercase;min-height:34px;font-weight:500}
+.hb .hd:hover{background:transparent}
+.hb .name{display:flex;flex-direction:column;gap:2px;min-width:0}
+.hb .name .n{font-family:"Geist Mono",ui-monospace,monospace;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb .name .d{font-size:12px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb .st{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.hb .st i{display:inline-block;width:8px;height:8px;flex:none}
+.hb .st.ok{color:var(--ok)}.hb .st.ok i{border-radius:50%;background:var(--ok)}
+.hb .st.warn{color:var(--warn)}.hb .st.warn i{border-radius:50%;border:2px solid var(--warn)}
+.hb .st.dng{color:var(--danger)}.hb .st.dng i{background:var(--danger)}
+.hb .st.info{color:var(--blue)}.hb .st.info i{background:var(--blue)}
+.hb .st.off{color:var(--muted)}.hb .st.off i{border-radius:50%;border:2px solid var(--muted);border-style:dashed}
+.hb .nv{display:flex;align-items:center;gap:10px;min-height:40px;padding:0 10px;border-radius:6px;font-size:14px;color:var(--ink)}
+.hb .nv:hover{background:var(--raised);color:var(--ink)}
+.hb .nv.cur{background:var(--raised);color:var(--hazel);font-weight:600}
+.hb .nv .cnt{margin-left:auto;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px}
+.hb .kbd{font-family:"Geist Mono",ui-monospace,monospace;font-size:11px;color:var(--faint);border:1px solid var(--line);border-radius:4px;padding:1px 5px;margin-left:auto}
+.hb .navgrp{font-size:11px;color:var(--faint);letter-spacing:.06em;padding:6px 10px 0}
+.hb .navcol{display:flex;flex-direction:column;gap:2px}
+.hb .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(170px,100%),1fr));gap:10px}
+.hb .tile{display:flex;flex-direction:column;gap:4px;padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:8px;min-width:0}
+.hb .tile .l{font-size:12px;color:var(--muted)}
+.hb .tile .v{font-size:28px;font-weight:600;line-height:1.1;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.hb .tile .v small{font-size:12px;font-weight:400;color:var(--muted)}
+.hb .tile .dl{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hb .up{color:var(--ok)}.hb .dn{color:var(--danger)}
+.hb .meter{display:flex;align-items:center;gap:8px;min-width:0}
+.hb .meter .tr{flex:1;height:6px;border-radius:4px;background:var(--q2);overflow:hidden;min-width:40px}
+.hb .meter .fl{height:100%;border-radius:4px;background:var(--hazel)}
+.hb .meter .fl.warn{background:var(--warn)}.hb .meter .fl.dng{background:var(--danger)}
+.hb .meter .num{font-family:"Geist Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;font-size:12px;white-space:nowrap}
+.hb .cg{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(440px,100%),1fr));gap:12px}
+.hb .chart{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;min-width:0}
+.hb .chart .ph{padding:8px 12px}
+.hb .chart .unit{font-size:12px;color:var(--faint)}
+.hb .chart .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-left:auto}
+.hb .legend i{display:inline-block;width:12px;height:2px;vertical-align:middle;margin-right:5px;border-radius:1px}
+.hb .legend i.rect{height:8px;border-radius:2px}
+.hb .chart .body{padding:6px 10px 8px}
+.hb .foot{display:flex;gap:10px;flex-wrap:wrap;padding:6px 12px 8px;font-size:12px;color:var(--faint);border-top:1px solid var(--line)}
+.hb .chart .foot a{color:var(--hazel)}
+.hb svg.ch{display:block;width:100%;height:auto;font-family:"Geist Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.hb svg.ch text{font-size:11px;fill:var(--faint)}
+.hb .grid{stroke:var(--line);stroke-width:1}
+.hb .hit .xh,.hb .hit .tip{opacity:0;transition:opacity .08s}
+.hb .hit:hover .xh,.hb .hit:hover .tip,.hb .hit:focus-within .xh,.hb .hit:focus-within .tip{opacity:1}
+.hb .tip rect{fill:var(--raised);stroke:var(--line)}
+.hb .tip text{fill:var(--ink)}
+.hb .tip text.k{fill:var(--muted)}
+.hb .ch-m{display:none}
+.hb .ranks{display:flex;flex-direction:column;gap:6px;padding:10px 14px}
+.hb .rank{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,2fr) auto;gap:10px;align-items:center;font-size:13px;min-height:28px}
+.hb .rank .bar{height:8px;border-radius:4px;background:var(--q2);overflow:hidden}
+.hb .rank .bar i{display:block;height:100%;border-radius:4px;background:var(--s1)}
+.hb .timeline{display:flex;gap:2px;height:10px}
+.hb .timeline i{flex:1;border-radius:2px;background:var(--ok)}
+.hb .timeline i.f{background:var(--danger)}.hb .timeline i.r{background:var(--warn)}.hb .timeline i.p{background:var(--blue)}.hb .timeline i.e{background:var(--q2)}
+.hb .seg{display:flex;gap:2px;height:8px;border-radius:4px;overflow:hidden}
+.hb .seg i{display:block;height:100%}
+.hb .steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+.hb .step{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+.hb .step b{display:block;height:6px;border-radius:3px;background:var(--q2)}
+.hb .step.done b{background:var(--ok)}.hb .step.cur b{background:var(--blue)}.hb .step.wait b{background:var(--warn)}.hb .step.fail b{background:var(--danger)}
+.hb .step.cur{color:var(--ink)}
+.hb .heat{display:grid;gap:2px}
+.hb .heat i{display:block;aspect-ratio:1.6;border-radius:2px;min-height:14px}
+.hb .heat .lab{font-size:12px;color:var(--muted);display:block;line-height:22px;font-family:"Geist Mono",ui-monospace,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb .fleet{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(250px,100%),1fr));gap:12px;padding:12px 14px}
+.hb .ncard{display:flex;flex-direction:column;gap:10px;padding:12px;background:var(--raised);border:1px solid var(--line);border-radius:8px;min-width:0;color:var(--ink)}
+.hb .ncard .nh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hb .ncard .nh .n{font-family:"Geist Mono",ui-monospace,monospace;font-weight:500}
+.hb .ncard .nh .d{font-size:12px;color:var(--faint);width:100%}
+.hb .rings{display:flex;gap:10px;justify-content:space-between}
+.hb .ring{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--faint);min-width:0}
+.hb .ring svg{display:block}
+.hb .ring .v{font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;fill:var(--ink)}
+.hb .ncard .ft{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.hb .ncard .ft .seg{flex:1;min-width:60px}
+.hb .hmap{display:flex;flex-direction:column;gap:10px;padding:12px 14px}
+.hb .hgrp{display:flex;flex-direction:column;gap:6px}
+.hb .hgrp .lab{display:flex;gap:8px;align-items:baseline;font-size:12px;color:var(--muted)}
+.hb .hgrp .lab b{font-family:"Geist Mono",ui-monospace,monospace;font-weight:500;color:var(--ink)}
+.hb .hcells{display:flex;flex-wrap:wrap;gap:3px}
+.hb .hcell{position:relative;width:26px;height:26px;border-radius:3px;display:flex;align-items:center;justify-content:center;border:1px solid transparent}
+.hb .hcell.off{background:transparent;border:1px dashed var(--line)}
+.hb .hcell.bad{border-color:var(--danger)}
+.hb .hcell.bad::after{content:"";width:8px;height:8px;background:var(--danger)}
+.hb .hcell.stale::after{content:"";width:8px;height:8px;border-radius:50%;border:2px solid var(--warn);box-sizing:border-box}
+.hb .scale{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--faint)}
+.hb .scale i{display:block;width:14px;height:10px;border-radius:2px}
+.hb .tall{display:flex;gap:2px;height:28px;border-radius:4px;overflow:hidden}
+.hb .tall i{display:flex;align-items:center;justify-content:center;height:100%;font-size:11px;font-family:"Geist Mono",ui-monospace,monospace;color:var(--ink);overflow:hidden;white-space:nowrap}
+.hb .cal{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,12px);gap:2px}
+.hb .cal i{display:block;width:12px;height:12px;border-radius:2px;background:var(--q1);position:relative}
+.hb .cal i.o{background:var(--ok)}.hb .cal i.f{background:var(--danger)}.hb .cal i.r{background:var(--warn)}.hb .cal i.n{background:transparent;border:1px dashed var(--line)}
+.hb .cal i.f::after{content:"";position:absolute;inset:3px;background:var(--panel)}
+.hb .pipe{display:flex;align-items:stretch;gap:0;overflow-x:auto}
+.hb .pstage{display:flex;flex-direction:column;gap:4px;min-width:110px;flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-size:12px;color:var(--muted);position:relative;background:var(--panel)}
+.hb .pstage+.pstage{margin-left:18px}
+.hb .pstage+.pstage::before{content:"";position:absolute;left:-12px;top:50%;width:6px;height:6px;border-top:2px solid var(--faint);border-right:2px solid var(--faint);transform:translateY(-50%) rotate(45deg)}
+.hb .pstage .t{color:var(--ink);font-weight:500;display:flex;align-items:center;gap:6px}
+.hb .pstage.done{border-color:var(--ok)}.hb .pstage.cur{border-color:var(--blue);background:var(--raised)}.hb .pstage.fail{border-color:var(--danger)}.hb .pstage.wait{border-color:var(--warn)}
+.hb svg.topo{display:block;width:100%;height:auto;font-family:"Geist","Noto Sans TC",sans-serif}
+.hb svg.topo text{font-size:12px;fill:var(--ink)}
+.hb svg.topo text.sub{font-size:11px;fill:var(--faint);font-family:"Geist Mono",ui-monospace,monospace}
+.hb svg.topo text.col{font-size:11px;fill:var(--faint);letter-spacing:.06em;text-transform:uppercase}
+.hb svg.topo .box{fill:var(--raised);stroke:var(--line)}
+.hb svg.topo .box.danger{stroke:var(--danger)}.hb svg.topo .box.warn{stroke:var(--warn)}
+.hb svg.topo .lnk{fill:none;stroke:var(--s1);stroke-opacity:.55;stroke-linecap:round}
+.hb svg.topo .lnk.danger{stroke:var(--danger)}.hb svg.topo .lnk.dim{stroke:var(--q3)}
+.hb .flowlist{display:flex;flex-direction:column;gap:6px;font-size:13px}
+.hb .flowlist .fr{display:grid;grid-template-columns:minmax(0,1fr) 16px minmax(0,1fr) auto;gap:6px;align-items:center}
+.hb .mx{display:grid;gap:2px;font-size:12px}
+.hb .mx .c{min-height:32px;display:flex;align-items:center;justify-content:center;gap:4px;background:var(--raised);border-radius:4px;padding:0 6px;text-align:center}
+.hb .mx .c.empty{background:transparent;border:1px dashed var(--line);color:var(--faint)}
+.hb .mx .rl{display:flex;align-items:center;font-family:"Geist Mono",ui-monospace,monospace;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:32px}
+.hb .mx .cl{display:flex;align-items:flex-end;justify-content:center;font-size:11px;color:var(--faint);padding-bottom:4px;text-align:center}
+.hb .tree{font-family:"Geist Mono",ui-monospace,monospace;font-size:13px}
+.hb .tree ul{list-style:none;margin:0;padding-left:16px;border-left:1px solid var(--line)}
+.hb .tree>ul{padding-left:0;border-left:0}
+.hb .tree li{display:flex;align-items:center;gap:8px;min-height:30px}
+.hb .tree li .sz{margin-left:auto;color:var(--faint);font-size:12px}
+.hb .tree li.on{color:var(--hazel)}
+.hb .appcard{display:flex;gap:10px;padding:12px;background:var(--raised);border:1px solid var(--line);border-radius:8px;min-width:0;color:var(--ink);align-items:flex-start}
+.hb .appcard .ic{width:40px;height:40px;border-radius:8px;background:var(--q2);display:flex;align-items:center;justify-content:center;font-family:"Geist Mono",ui-monospace,monospace;font-weight:600;color:var(--hazel);flex:none}
+.hb .appcard .bd{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+.hb .appcard .bd .n{font-weight:500}
+.hb .appcard .bd .d{font-size:12px;color:var(--faint)}
+.hb .chip{display:inline-flex;align-items:center;min-height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line);font-size:11px;color:var(--muted);background:transparent}
+.hb .chip.on{color:var(--hazel);border-color:var(--hazel)}
+.hb .term{background:var(--neutral,#0f0e0c);border:1px solid var(--line);border-radius:8px;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;padding:10px 12px;color:var(--ink);white-space:pre;overflow:auto;min-height:220px}
+.hb .range{display:flex;gap:4px;flex-wrap:wrap}
+.hb .range .btn{min-height:32px;padding:0 10px;font-size:12px;color:var(--muted)}
+.hb .range .btn.on{background:var(--raised);color:var(--hazel);border-color:var(--line);font-weight:600}
+.hb .field{display:flex;flex-direction:column;gap:6px}
+.hb .field label{font-size:12px;color:var(--muted)}
+.hb .inp{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 10px;background:var(--raised);border:1px solid var(--line);border-radius:6px;color:var(--ink);width:100%}
+.hb .inp.err{border-color:var(--danger)}
+.hb .help{font-size:12px;color:var(--faint)}
+.hb .errt{font-size:12px;color:var(--danger)}
+.hb .skel{background:var(--raised);border-radius:4px;position:relative;overflow:hidden}
+.hb .skel::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent)}
+@media (prefers-reduced-motion:no-preference){.hb .skel::after{animation:hx-sh 1.4s infinite}}
+@keyframes hx-sh{to{transform:translateX(100%)}}
+.hb .dim{opacity:.45}
+.hb .banner{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:var(--raised);font-size:13px}
+.hb .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);padding:0 14px}
+.hb .tab{min-height:40px;display:inline-flex;align-items:center;padding:0 10px;border-bottom:2px solid transparent;color:var(--muted);font-size:13px;background:transparent;border-top:0;border-left:0;border-right:0}
+.hb .tab.on{color:var(--hazel);border-bottom-color:var(--hazel);font-weight:600}
+.hb .diff{overflow-x:auto;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;display:flex;flex-direction:column}
+.hb .diff div{display:grid;grid-template-columns:36px 36px 1fr;gap:0;padding:0 14px;white-space:pre}
+.hb .diff .ln{color:var(--faint);text-align:right;padding-right:10px}
+.hb .diff .add{background:color-mix(in oklab,var(--ok) 14%,transparent)}
+.hb .diff .del{background:color-mix(in oklab,var(--danger) 14%,transparent)}
+.hb .diff .hot{outline:1px solid var(--danger);outline-offset:-1px}
+.hb .check{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:10px;align-items:start;padding:10px 14px;border-bottom:1px solid var(--line);font-size:13px}
+.hb .check:last-child{border-bottom:0}
+.hb .check .mk{width:16px;height:16px;border-radius:50%;margin-top:2px}
+.hb .check .mk.ok{background:var(--ok)}.hb .check .mk.warn{border:3px solid var(--warn)}.hb .check .mk.dng{background:var(--danger);border-radius:2px}
+.hb .check .ev{font-size:12px;color:var(--muted);font-family:"Geist Mono",ui-monospace,monospace}
+.hb .modal{background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:10px;max-width:520px}
+.hb .scrim{background:var(--scrim);padding:24px;display:flex;justify-content:center}
+.hb .list{display:flex;flex-direction:column;gap:8px}
+.hb .job{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border:1px solid var(--line);border-radius:8px}
+.hb .job .t{display:flex;justify-content:space-between;gap:8px}
+.hb .job .s{font-size:12px;color:var(--muted)}
+.hb .prog{height:4px;background:var(--q2);border-radius:2px;overflow:hidden}
+.hb .prog i{display:block;height:100%;background:var(--blue)}
+.hb .prog.pulse i{width:30%;background:repeating-linear-gradient(90deg,var(--blue) 0 8px,transparent 8px 12px)}
+.hb .note{font-size:12px;color:var(--faint)}
+.hb .wrap{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.hb .scroll{overflow-x:auto}
+.hb .aside{width:340px;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:18px;padding:18px 16px 24px}
+.hb .main{flex:999 1 560px;min-width:0;display:flex;flex-direction:column;gap:22px;padding:18px 24px 40px}
+.hb .side{width:232px;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:14px;padding:14px 10px 20px}
+.hb .nrow{grid-template-columns:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) 110px minmax(0,.8fr)}
+.hb .prow{grid-template-columns:minmax(0,1.2fr) minmax(0,1.5fr) minmax(0,.5fr) minmax(0,.6fr) minmax(0,1fr) minmax(0,1.1fr)}
+.hb .srow{grid-template-columns:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) 110px minmax(0,.7fr)}
+.hb .crow{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,.4fr) minmax(0,.7fr)}
+.hb .drow{grid-template-columns:minmax(0,.8fr) minmax(0,1.6fr) minmax(0,.6fr) minmax(0,1.4fr) minmax(0,.8fr)}
+.hb .gprow{grid-template-columns:minmax(0,1.4fr) minmax(0,.9fr) minmax(0,.5fr) minmax(0,1.2fr)}
+.hb .garow{grid-template-columns:minmax(0,.8fr) minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,1.4fr)}
+.hb .dprow{grid-template-columns:minmax(0,.5fr) minmax(0,1.6fr) minmax(0,.7fr) minmax(0,.7fr) minmax(0,1.4fr)}
+.hb .hrow{grid-template-columns:minmax(0,1.6fr) minmax(0,.8fr) minmax(0,.7fr) minmax(0,1.4fr)}
+.hb .rrow{grid-template-columns:24px minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,.5fr) minmax(0,.6fr)}
+@media (max-width:1100px){.hb .aside{width:100%;border-left:0;border-top:1px solid var(--line)}}
+@media (max-width:767px){
+ .hb .side{width:100%;border-right:0;border-bottom:1px solid var(--line);padding-bottom:10px}
+ .hb .navcol{flex-direction:row;flex-wrap:wrap}.hb .side .nv{flex:none;white-space:nowrap}.hb .side .navcol:not(:first-of-type){flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px}.hb .navgrp{display:none}.hb .side .nv{min-height:44px}
+ .hb .main{padding:14px 16px 32px;gap:16px}.hb .aside{padding:14px 16px 24px}
+ .hb .c3,.hb .c4,.hb .c5,.hb .kbd{display:none}
+ .hb .ch-d{display:none}.hb .ch-m{display:block}
+ .hb .heat i{min-height:18px}
+ .hb .steps{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .hb .btn{min-height:44px}.hb .btn.sm{min-height:40px}.hb .range .btn{min-height:40px}
+ .hb .nrow{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,.9fr)}
+ .hb .prow{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}
+ .hb .srow{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,.8fr)}
+ .hb .crow{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}
+ .hb .drow{grid-template-columns:minmax(0,.9fr) minmax(0,1.2fr) minmax(0,1.3fr)}
+ .hb .gprow{grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr) minmax(0,1fr)}
+ .hb .garow{grid-template-columns:minmax(0,.8fr) minmax(0,1.4fr) minmax(0,1.2fr)}
+ .hb .dprow{grid-template-columns:minmax(0,.5fr) minmax(0,1.4fr) minmax(0,1.3fr)}
+ .hb .hrow{grid-template-columns:minmax(0,1.4fr) minmax(0,.7fr) minmax(0,1.2fr)}
+ .hb .rrow{grid-template-columns:24px minmax(0,1.6fr) minmax(0,.8fr)}
+ .hb .tile .v{font-size:24px}
+ .hb .rings svg{width:52px;height:52px}
+ .hb .hcell{width:36px;height:36px}
+ .hb .tabs{flex-wrap:nowrap;overflow-x:auto}.hb .tab{white-space:nowrap;flex:none}
+ .hb .ph .wrap{width:100%}
+ .hb .pstage{min-width:96px}
+}
+</style>
+</helmet>
+<div class="hb theme-{{theme}}" style="min-height: 100vh; display: flex; flex-wrap: wrap; align-items: stretch">
+  <nav class="side" aria-label="主導覽">
+    <div style="display: flex; align-items: center; gap: 10px; padding: 4px 10px 10px; border-bottom: 1px solid var(--line)">
+      <span aria-hidden="true" style="width: 22px; height: 22px; border-radius: 50%; background: var(--hazel); display: inline-block; box-shadow: inset 0 0 0 5px var(--panel), inset 0 0 0 7px var(--hazel)"></span>
+      <span style="font-weight: 600; font-size: 15px">HazelminX</span>
+      <span class="mono" style="font-size: 11px; color: var(--faint); margin-left: auto">tw-01</span>
+    </div>
+    <button type="button" class="inp" style="color: var(--muted); text-align: left"><span>搜尋或下指令</span><span class="kbd">⌘K</span></button>
+    <div class="navcol"><a class="nv" href="Overview.dc.html">總覽<span class="kbd">G O</span></a><a class="nv" href="WorkCenter.dc.html">工作中心<span class="cnt" style="color: var(--hazel)">3</span></a><a class="nv" href="Overview.dc.html#attention">需要處理<span class="cnt" style="color: var(--warn)">3</span></a></div>
+    <div class="navgrp">基礎設施</div><div class="navcol"><a class="nv" href="Nodes.dc.html">主機與節點</a><a class="nv" href="Containers.dc.html">Docker／Podman</a><a class="nv cur" aria-current="page" href="Kubernetes.dc.html">Kubernetes</a><a class="nv" href="Storage.dc.html">儲存</a><a class="nv" href="Files.dc.html">檔案</a></div><div class="navgrp">應用</div><div class="navcol"><a class="nv" href="Projects.dc.html">專案與服務</a><a class="nv" href="AppStore.dc.html">應用商店</a><a class="nv" href="Database.dc.html">資料庫</a><a class="nv" href="AI.dc.html">AI</a><a class="nv" href="Storage.dc.html">備份與還原</a><a class="nv" href="Cron.dc.html">計畫任務</a></div><div class="navgrp">入口與安全</div><div class="navcol"><a class="nv" href="Websites.dc.html">網站與入口</a><a class="nv" href="APIProxy.dc.html">API 代理</a><a class="nv" href="Security.dc.html">安全防護</a><a class="nv" href="Analytics.dc.html">流量分析</a><a class="nv" href="Events.dc.html">事件與告警</a><a class="nv" href="IAM.dc.html">身分與存取</a><a class="nv" href="Settings.dc.html">平台設定</a></div>
+    <div style="margin-top: auto; display: flex; align-items: center; gap: 8px; padding: 8px 10px 0; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted)">
+      <span>tim · 擁有者</span>
+      <button type="button" class="btn sm" aria-label="切換淺色或深色" style="margin-left: auto; min-width: 44px">{{themeLabel}}</button>
+    </div>
+  </nav><main class="main">
+    <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 14px">
+      <h1>Kubernetes</h1>
+      <span style="font-size: 13px; color: var(--muted)">觀測時間 <span class="mono">03:42:06</span> UTC+8</span>
+      <div class="wrap" style="margin-left: auto"><button type="button" class="btn pri">部署工作負載</button><button type="button" class="btn">安裝 Helm Chart</button><button type="button" class="btn">YAML 匯入</button><button type="button" class="btn">加入節點</button></div>
+    </div><div class="tiles"><div class="tile"><span class="l">叢集</span><span class="v">lab-k3s</span><span class="dl"><span class="">K3s 1.31.2 · 1 控制 · 1 工作 · 單控制節點（非 HA）</span></span></div><div class="tile"><span class="l">工作負載</span><span class="v">9</span><span class="dl"><span class="dn">8 就緒 · 1 CrashLoop</span></span></div><div class="tile"><span class="l">Pod</span><span class="v">23<small>/24 就緒</small></span><span class="dl"><span class="dn">1 Pending：節點資源不足</span></span><svg class="sp" width="120" height="26" viewBox="0 0 120 26" aria-hidden="true" style="display:block;max-width:100%"><path d="M1.0,24.0 L11.7,24.0 L22.5,13.0 L33.2,13.0 L43.9,2.0 L54.6,2.0 L65.4,2.0 L76.1,13.0 L86.8,13.0 L97.5,13.0" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><path d="M97.5,13.0 L108.3,13.0 L119.0,13.0" fill="none" stroke="var(--hazel)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="119.0" cy="13.0" r="3" fill="var(--hazel)"/></svg></div><div class="tile"><span class="l">PVC</span><span class="v">6</span><span class="dl"><span class="">已綁定 6 · local-path 5 · nfs 1</span></span></div></div>
+    <section class="panel" aria-labelledby="h-kt">
+      <div class="ph"><h2 id="h-kt">叢集怎麼接</h2><span class="sub">Zentinel 負責對外 TLS 與 WAF，Traefik 負責叢集內路由：責任寫死，不重疊</span></div>
+      <div style="padding:10px 14px 6px"><div class="ch-d"><svg class="topo" viewBox="0 0 1140 204" role="img" aria-label="拓撲：入口→Namespace→節點"><path class="lnk " stroke-width="6.9" d="M220,81.0 C120,81.0 120,139.0 20,139.0"/><path class="lnk " stroke-width="5.7" d="M220,139.0 C345,139.0 345,52.0 470,52.0"/><path class="lnk " stroke-width="2.7" d="M220,139.0 C345,139.0 345,110.0 470,110.0"/><path class="lnk danger" stroke-width="2.1" d="M220,139.0 C345,139.0 345,168.0 470,168.0"/><path class="lnk " stroke-width="5.7" d="M670,52.0 C795,52.0 795,81.0 920,81.0"/><path class="lnk " stroke-width="2.7" d="M670,110.0 C795,110.0 795,81.0 920,81.0"/><path class="lnk danger" stroke-width="2.1" d="M670,168.0 C795,168.0 795,81.0 920,81.0"/><path class="lnk dim" stroke-width="1.8" d="M670,52.0 C795,52.0 795,139.0 920,139.0"/><text class="col" x="20" y="14">入口</text><rect class="box " x="20.0" y="59.0" width="200" height="44" rx="6"/><circle cx="32.0" cy="81.0" r="4" fill="var(--ok)"/><text x="42.0" y="77.0">Zentinel @ lab-mini</text><text class="sub" x="42.0" y="92.0">80／443 → Traefik</text><rect class="box " x="20.0" y="117.0" width="200" height="44" rx="6"/><circle cx="32.0" cy="139.0" r="4" fill="var(--ok)"/><text x="42.0" y="135.0">Traefik（K3s 內建）</text><text class="sub" x="42.0" y="150.0">Ingress · 2 規則</text><text class="col" x="470" y="14">Namespace</text><rect class="box " x="470.0" y="30.0" width="200" height="44" rx="6"/><circle cx="482.0" cy="52.0" r="4" fill="var(--ok)"/><text x="492.0" y="48.0">wiki</text><text class="sub" x="492.0" y="63.0">4 工作負載</text><rect class="box " x="470.0" y="88.0" width="200" height="44" rx="6"/><circle cx="482.0" cy="110.0" r="4" fill="var(--ok)"/><text x="492.0" y="106.0">monitoring</text><text class="sub" x="492.0" y="121.0">3 工作負載</text><rect class="box danger" x="470.0" y="146.0" width="200" height="44" rx="6"/><rect x="478.0" y="164.0" width="8" height="8" fill="var(--danger)"/><text x="492.0" y="164.0">shop-stg</text><text class="sub" x="492.0" y="179.0">1 CrashLoop</text><text class="col" x="920" y="14">節點</text><rect class="box warn" x="920.0" y="59.0" width="200" height="44" rx="6"/><circle cx="932.0" cy="81.0" r="4" fill="var(--panel)" stroke="var(--warn)" stroke-width="2"/><text x="942.0" y="77.0">lab-mini（控制＋工作）</text><text class="sub" x="942.0" y="92.0">4 核 · 8 GiB · 23 Pod</text><rect class="box danger" x="920.0" y="117.0" width="200" height="44" rx="6"/><rect x="928.0" y="135.0" width="8" height="8" fill="var(--danger)"/><text x="942.0" y="135.0">lab-pi-01（工作）</text><text class="sub" x="942.0" y="150.0">4 核 · 4 GiB · 0 Pod · NotReady</text></svg></div><div class="ch-m"><div class="flowlist"><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Zentinel</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Traefik</span><span class="note">80/443</span></div><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Traefik</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">wiki</span><span class="note">4 工作負載</span></div><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Traefik</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-stg</span><span class="note">CrashLoop</span></div><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">wiki</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">lab-mini</span><span class="note">23 Pod</span></div><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">lab-pi-01</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">NotReady</span><span class="note">0 Pod</span></div></div></div></div>
+    </section><div class="cg">
+    <section class="panel" aria-labelledby="h-rsv">
+      <div class="ph"><h2 id="h-rsv">節點資源保留</h2><span class="sub">requests vs 可配置；Pending 的原因就在這</span></div>
+      <div style="padding:12px 14px;display:flex;flex-direction:column;gap:12px">
+        <div><div style="display:flex;justify-content:space-between"><span class="mono">lab-mini</span><span class="note">4 核 · 7.6 GiB 可配置</span></div>
+          <div style="display:flex;gap:24px;flex-wrap:wrap;margin-top:6px"><span class="ring"><svg width="64" height="64" viewBox="0 0 64 64" role="meter" aria-valuenow="88" aria-valuemin="0" aria-valuemax="100" aria-label="CPU requests /4"><circle cx="32.0" cy="32.0" r="28.0" fill="none" stroke="var(--q2)" stroke-width="6"/><circle cx="32.0" cy="32.0" r="28.0" fill="none" stroke="var(--warn)" stroke-width="6" stroke-linecap="round" stroke-dasharray="154.8 175.9" transform="rotate(-90 32.0 32.0)"/><text x="50%" y="50%" dy="0.35em" text-anchor="middle" class="v">3.5</text></svg><span>CPU requests /4</span></span><span class="ring"><svg width="64" height="64" viewBox="0 0 64 64" role="meter" aria-valuenow="79" aria-valuemin="0" aria-valuemax="100" aria-label="記憶體 requests /7.6"><circle cx="32.0" cy="32.0" r="28.0" fill="none" stroke="var(--q2)" stroke-width="6"/><circle cx="32.0" cy="32.0" r="28.0" fill="none" stroke="var(--warn)" stroke-width="6" stroke-linecap="round" stroke-dasharray="139.0 175.9" transform="rotate(-90 32.0 32.0)"/><text x="50%" y="50%" dy="0.35em" text-anchor="middle" class="v">6.0G</text></svg><span>記憶體 requests /7.6</span></span><span class="ring"><svg width="64" height="64" viewBox="0 0 64 64" role="meter" aria-valuenow="96" aria-valuemin="0" aria-valuemax="100" aria-label="Pod /24 上限"><circle cx="32.0" cy="32.0" r="28.0" fill="none" stroke="var(--q2)" stroke-width="6"/><circle cx="32.0" cy="32.0" r="28.0" fill="none" stroke="var(--danger)" stroke-width="6" stroke-linecap="round" stroke-dasharray="168.9 175.9" transform="rotate(-90 32.0 32.0)"/><text x="50%" y="50%" dy="0.35em" text-anchor="middle" class="v">23</text></svg><span>Pod /24 上限</span></span>
+          <div style="display:flex;flex-direction:column;gap:4px;justify-content:center"><span class="note">實際使用</span><span class="meter" role="meter" aria-valuenow="41" aria-valuemin="0" aria-valuemax="100" aria-label="CPU 41%"><span class="tr" aria-hidden="true"><span class="fl" style="width: 41%"></span></span><span class="num">CPU 41%</span></span><span class="meter" role="meter" aria-valuenow="62" aria-valuemin="0" aria-valuemax="100" aria-label="記憶體 62%"><span class="tr" aria-hidden="true"><span class="fl" style="width: 62%"></span></span><span class="num">記憶體 62%</span></span></div></div></div>
+        <div><div style="display:flex;justify-content:space-between"><span class="mono">lab-pi-01</span><span class="st dng"><i aria-hidden="true"></i>NotReady 18 分</span></div><span class="note">最後心跳 03:24 · 標籤 arch=arm64 · 污點 node.kubernetes.io/unreachable</span></div>
+      </div>
+    </section>
+    <section class="panel" aria-labelledby="h-kpv">
+      <div class="ph"><h2 id="h-kpv">儲存類別與 PVC</h2></div>
+      <div style="padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+        <div><span class="note">local-path（lab-mini /mnt/data）· 118 GiB</span><span class="tall" aria-hidden="true"><i style="width:35.6%;background:var(--q5)" title="wiki-db 42G">42G</i><i style="width:6.8%;background:var(--q4)" title="wiki-media 8G"></i><i style="width:2.5%;background:var(--q3)" title="prometheus 3G"></i><i style="width:55.1%;background:var(--q1);color:var(--muted)" title="可用 65G">65G</i></span></div>
+        <div><span class="note">nfs（hazel-tw-01 /mnt/data/nfs）· 200 GiB</span><span class="tall" aria-hidden="true"><i style="width:9.5%;background:var(--q5)" title="wiki-backup 19G">19G</i><i style="width:90.5%;background:var(--q1);color:var(--muted)" title="可用 181G">181G</i></span></div>
+        <div class="note">RWO 5 · RWX 1 · 快照：local-path 不支援，nfs 由節點端快照代替</div>
+      </div>
+    </section></div>
+    <section class="panel" aria-labelledby="h-wl">
+      <div class="ph"><h2 id="h-wl">工作負載 · 9</h2><div class="wrap" style="margin-left:auto"><span class="chip on">全部</span><span class="chip">Deployment 5</span><span class="chip">StatefulSet 2</span><span class="chip">DaemonSet 1</span><span class="chip">CronJob 1</span></div></div>
+      <div class="row hd srow"><span>名稱</span><span>狀態</span><span class="c3">就緒副本</span><span class="c4">診斷</span><span class="c4"></span><span class="c5"></span><span></span></div>
+      <a class="row srow" href="#wl"><span class="name"><span class="n">wiki-app</span><span class="d">wiki · Deployment · ghcr.io/hazelnut/wiki:7d02b4a</span></span><span><span class="st ok"><i aria-hidden="true"></i>就緒</span></span><span class="c3"><span class="meter" role="meter" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" aria-label="2/2"><span class="tr" aria-hidden="true"><span class="fl" style="width: 100%"></span></span><span class="num">2/2</span></span></span><span class="c4 note">—</span><span class="c4"></span><span class="c5"></span><span></span></a>
+      <a class="row srow" href="#wl"><span class="name"><span class="n">wiki-db</span><span class="d">wiki · StatefulSet · postgres:16.4</span></span><span><span class="st ok"><i aria-hidden="true"></i>就緒</span></span><span class="c3"><span class="meter" role="meter" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" aria-label="1/1"><span class="tr" aria-hidden="true"><span class="fl" style="width: 100%"></span></span><span class="num">1/1</span></span></span><span class="c4 note">PVC local-path 42G</span><span class="c4"></span><span class="c5"></span><span></span></a>
+      <a class="row srow" href="#wl"><span class="name"><span class="n">shop-api</span><span class="d">shop-stg · Deployment · ghcr.io/hazelnut/shop-api:c91e0d7</span></span><span><span class="st dng"><i aria-hidden="true"></i>CrashLoopBackOff</span></span><span class="c3"><span class="meter" role="meter" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="0/1"><span class="tr" aria-hidden="true"><span class="fl" style="width: 0%"></span></span><span class="num">0/1</span></span></span><span class="c4 note">探針失敗：/healthz 500 · migration 不相容</span><span class="c4"></span><span class="c5"></span><span></span></a>
+      <a class="row srow" href="#wl"><span class="name"><span class="n">node-exporter</span><span class="d">monitoring · DaemonSet · prom/node-exporter:1.8</span></span><span><span class="st warn"><i aria-hidden="true"></i>部分</span></span><span class="c3"><span class="meter" role="meter" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" aria-label="1/2"><span class="tr" aria-hidden="true"><span class="fl" style="width: 50%"></span></span><span class="num">1/2</span></span></span><span class="c4 note">lab-pi-01 NotReady</span><span class="c4"></span><span class="c5"></span><span></span></a>
+      <a class="row srow" href="#wl"><span class="name"><span class="n">wiki-backup</span><span class="d">wiki · CronJob · hazelminx/backup-runner</span></span><span><span class="st ok"><i aria-hidden="true"></i>上次 03:00 成功</span></span><span class="c3"><span class="meter" role="meter" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" aria-label="1/1"><span class="tr" aria-hidden="true"><span class="fl" style="width: 100%"></span></span><span class="num">1/1</span></span></span><span class="c4 note">下次 11/08 03:00</span><span class="c4"></span><span class="c5"></span><span></span></a>
+      <div class="note" style="padding:8px 14px;border-top:1px solid var(--line)">診斷欄把排程、映像拉取、探針、掛載、DNS 的失敗原因寫成白話，原始事件可展開</div>
+    </section><div class="cg">
+    <section class="panel" aria-labelledby="h-helm">
+      <div class="ph"><h2 id="h-helm">Helm Release · 3</h2><a class="more" href="#helm">全部 →</a></div>
+      <div class="row hd srow"><span>Release</span><span>狀態</span><span class="c3">Chart</span><span class="c4">版本</span><span class="c4"></span><span class="c5"></span><span></span></div>
+      <a class="row srow" href="#h1"><span class="name"><span class="n">kube-prometheus</span><span class="d">monitoring</span></span><span><span class="st ok"><i aria-hidden="true"></i>deployed</span></span><span class="mono c3">prometheus-community</span><span class="mono c4">65.1 → 66.2 可更新</span><span class="c4"></span><span class="c5"></span><span></span></a>
+      <a class="row srow" href="#h2"><span class="name"><span class="n">cert-manager</span><span class="d">cert-manager</span></span><span><span class="st ok"><i aria-hidden="true"></i>deployed</span></span><span class="mono c3">jetstack</span><span class="mono c4">1.16.1</span><span class="c4"></span><span class="c5"></span><span></span></a>
+      <a class="row srow" href="#h3"><span class="name"><span class="n">traefik</span><span class="d">kube-system（K3s 內建）</span></span><span><span class="st info"><i aria-hidden="true"></i>K3s 管理</span></span><span class="mono c3">—</span><span class="mono c4">27.0.2</span><span class="c4"></span><span class="c5"></span><span></span></a>
+    </section>
+    <section class="panel" aria-labelledby="h-km">
+      <div class="ph"><h2 id="h-km">維護：升級 K3s 1.31.2 → 1.31.4</h2><span class="sub">單控制節點會中斷控制平面；工作負載照常跑</span></div>
+      <div style="padding:12px 14px"><div class="pipe"><div class="pstage done"><span class="t"><span aria-hidden="true" style="color:var(--ok)">●</span>備份 datastore</span><span class="mono">48 秒</span><span>sqlite → S3</span></div><div class="pstage todo"><span class="t"><span aria-hidden="true" style="color:var(--faint)">·</span>cordon + drain</span><span class="mono">預估 2 分</span><span>PDB 允許</span></div><div class="pstage todo"><span class="t"><span aria-hidden="true" style="color:var(--faint)">·</span>升級 agent</span><span class="mono">預估 3 分</span><span>lab-pi-01 先</span></div><div class="pstage todo"><span class="t"><span aria-hidden="true" style="color:var(--faint)">·</span>升級 server</span><span class="mono">預估 4 分</span><span>控制平面中斷</span></div><div class="pstage todo"><span class="t"><span aria-hidden="true" style="color:var(--faint)">·</span>驗證</span><span class="mono">—</span><span>探針＋Ingress</span></div></div></div>
+    </section></div></main></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"light":{"editor":"boolean","default":false,"section":"主題"},"$preview":{"width":1440,"height":2200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const light = this.props.light ?? false;
+    return { theme: light ? 'light' : 'dark', themeLabel: light ? '深色' : '淺色' };
+  }
+}
+</script>
+</body>
+</html>

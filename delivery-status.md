@@ -7,7 +7,8 @@ M0 基礎與設計：規格已整併、票務已切好、GitHub issue 已開；�
 完成 `DESIGN.md` 與主要畫面原型並通過設計審查，讓票 003、004、005、007 可以在一致的視覺與互動基準上開工；M0 結束時 Core、Agent、Web 骨架可建置並在 CI 通過。
 
 ## Active Workstreams
-- 設計系統與原型（票 002）→ `DESIGN.md`、`docs/design/`、`DESIGN-REVIEW.md`。
+- 設計系統與原型（票 002）→ `DESIGN.md`、`docs/design/`（30 個畫板，19 個主導覽項全部有畫面）、`DESIGN-REVIEW.md`（三輪）。
+- 後端 M0 票並行開工：008 工作引擎、009 IAM、011 機密與主金鑰（基底 `ticket/003-core-skeleton`）、012 高權限執行器（基底 `ticket/004-agent-skeleton`），各自獨立 session 與分支，PR 堆疊在骨架 PR 上。
 - 1Panel 功能基線盤點（票 092）→ `docs/baseline/`。
 - Core／Agent 骨架補完（票 003、004，PR #100、#101）與基線對照表填寫（票 092，PR #99）。
 

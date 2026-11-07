@@ -147,6 +147,25 @@ body{margin:0}
 .hb svg.topo .lnk.danger{stroke:var(--danger)}.hb svg.topo .lnk.dim{stroke:var(--q3)}
 .hb .flowlist{display:flex;flex-direction:column;gap:6px;font-size:13px}
 .hb .flowlist .fr{display:grid;grid-template-columns:minmax(0,1fr) 16px minmax(0,1fr) auto;gap:6px;align-items:center}
+.hb .mx{display:grid;gap:2px;font-size:12px}
+.hb .mx .c{min-height:32px;display:flex;align-items:center;justify-content:center;gap:4px;background:var(--raised);border-radius:4px;padding:0 6px;text-align:center}
+.hb .mx .c.empty{background:transparent;border:1px dashed var(--line);color:var(--faint)}
+.hb .mx .rl{display:flex;align-items:center;font-family:"Geist Mono",ui-monospace,monospace;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:32px}
+.hb .mx .cl{display:flex;align-items:flex-end;justify-content:center;font-size:11px;color:var(--faint);padding-bottom:4px;text-align:center}
+.hb .tree{font-family:"Geist Mono",ui-monospace,monospace;font-size:13px}
+.hb .tree ul{list-style:none;margin:0;padding-left:16px;border-left:1px solid var(--line)}
+.hb .tree>ul{padding-left:0;border-left:0}
+.hb .tree li{display:flex;align-items:center;gap:8px;min-height:30px}
+.hb .tree li .sz{margin-left:auto;color:var(--faint);font-size:12px}
+.hb .tree li.on{color:var(--hazel)}
+.hb .appcard{display:flex;gap:10px;padding:12px;background:var(--raised);border:1px solid var(--line);border-radius:8px;min-width:0;color:var(--ink);align-items:flex-start}
+.hb .appcard .ic{width:40px;height:40px;border-radius:8px;background:var(--q2);display:flex;align-items:center;justify-content:center;font-family:"Geist Mono",ui-monospace,monospace;font-weight:600;color:var(--hazel);flex:none}
+.hb .appcard .bd{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+.hb .appcard .bd .n{font-weight:500}
+.hb .appcard .bd .d{font-size:12px;color:var(--faint)}
+.hb .chip{display:inline-flex;align-items:center;min-height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line);font-size:11px;color:var(--muted);background:transparent}
+.hb .chip.on{color:var(--hazel);border-color:var(--hazel)}
+.hb .term{background:var(--neutral,#0f0e0c);border:1px solid var(--line);border-radius:8px;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;padding:10px 12px;color:var(--ink);white-space:pre;overflow:auto;min-height:220px}
 .hb .range{display:flex;gap:4px;flex-wrap:wrap}
 .hb .range .btn{min-height:32px;padding:0 10px;font-size:12px;color:var(--muted)}
 .hb .range .btn.on{background:var(--raised);color:var(--hazel);border-color:var(--line);font-weight:600}
@@ -224,6 +243,8 @@ body{margin:0}
  .hb .tile .v{font-size:24px}
  .hb .rings svg{width:52px;height:52px}
  .hb .hcell{width:36px;height:36px}
+ .hb .tabs{flex-wrap:nowrap;overflow-x:auto}.hb .tab{white-space:nowrap;flex:none}
+ .hb .ph .wrap{width:100%}
  .hb .pstage{min-width:96px}
 }
 </style>
@@ -237,7 +258,7 @@ body{margin:0}
     </div>
     <button type="button" class="inp" style="color: var(--muted); text-align: left"><span>搜尋或下指令</span><span class="kbd">⌘K</span></button>
     <div class="navcol"><a class="nv" href="Overview.dc.html">總覽<span class="kbd">G O</span></a><a class="nv" href="WorkCenter.dc.html">工作中心<span class="cnt" style="color: var(--hazel)">3</span></a><a class="nv" href="Overview.dc.html#attention">需要處理<span class="cnt" style="color: var(--warn)">3</span></a></div>
-    <div class="navgrp">基礎設施</div><div class="navcol"><a class="nv" href="NodeDetail.dc.html">主機與節點</a><a class="nv" href="Containers.dc.html">Docker／Podman</a><a class="nv" href="#k8s">Kubernetes</a><a class="nv cur" aria-current="page" href="Storage.dc.html">儲存</a><a class="nv" href="#files">檔案</a></div><div class="navgrp">應用</div><div class="navcol"><a class="nv" href="Projects.dc.html">專案與服務</a><a class="nv" href="#store">應用商店</a><a class="nv" href="#db">資料庫</a><a class="nv" href="#ai">AI</a><a class="nv" href="Storage.dc.html">備份與還原</a><a class="nv" href="#cron">計畫任務</a></div><div class="navgrp">入口與安全</div><div class="navcol"><a class="nv" href="Websites.dc.html">網站與入口</a><a class="nv" href="#api">API 代理</a><a class="nv" href="#security">安全防護</a><a class="nv" href="#analytics">流量分析</a><a class="nv" href="Events.dc.html">事件與告警</a><a class="nv" href="#iam">身分與存取</a><a class="nv" href="#settings">平台設定</a></div>
+    <div class="navgrp">基礎設施</div><div class="navcol"><a class="nv" href="Nodes.dc.html">主機與節點</a><a class="nv" href="Containers.dc.html">Docker／Podman</a><a class="nv" href="Kubernetes.dc.html">Kubernetes</a><a class="nv cur" aria-current="page" href="Storage.dc.html">儲存</a><a class="nv" href="Files.dc.html">檔案</a></div><div class="navgrp">應用</div><div class="navcol"><a class="nv" href="Projects.dc.html">專案與服務</a><a class="nv" href="AppStore.dc.html">應用商店</a><a class="nv" href="Database.dc.html">資料庫</a><a class="nv" href="AI.dc.html">AI</a><a class="nv" href="Storage.dc.html">備份與還原</a><a class="nv" href="Cron.dc.html">計畫任務</a></div><div class="navgrp">入口與安全</div><div class="navcol"><a class="nv" href="Websites.dc.html">網站與入口</a><a class="nv" href="APIProxy.dc.html">API 代理</a><a class="nv" href="Security.dc.html">安全防護</a><a class="nv" href="Analytics.dc.html">流量分析</a><a class="nv" href="Events.dc.html">事件與告警</a><a class="nv" href="IAM.dc.html">身分與存取</a><a class="nv" href="Settings.dc.html">平台設定</a></div>
     <div style="margin-top: auto; display: flex; align-items: center; gap: 8px; padding: 8px 10px 0; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted)">
       <span>tim · 擁有者</span>
       <button type="button" class="btn sm" aria-label="切換淺色或深色" style="margin-left: auto; min-width: 44px">{{themeLabel}}</button>

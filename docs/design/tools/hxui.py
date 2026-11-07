@@ -163,6 +163,25 @@ body{{margin:0}}
 .hb svg.topo .lnk.danger{{stroke:var(--danger)}}.hb svg.topo .lnk.dim{{stroke:var(--q3)}}
 .hb .flowlist{{display:flex;flex-direction:column;gap:6px;font-size:13px}}
 .hb .flowlist .fr{{display:grid;grid-template-columns:minmax(0,1fr) 16px minmax(0,1fr) auto;gap:6px;align-items:center}}
+.hb .mx{{display:grid;gap:2px;font-size:12px}}
+.hb .mx .c{{min-height:32px;display:flex;align-items:center;justify-content:center;gap:4px;background:var(--raised);border-radius:4px;padding:0 6px;text-align:center}}
+.hb .mx .c.empty{{background:transparent;border:1px dashed var(--line);color:var(--faint)}}
+.hb .mx .rl{{display:flex;align-items:center;font-family:"Geist Mono",ui-monospace,monospace;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:32px}}
+.hb .mx .cl{{display:flex;align-items:flex-end;justify-content:center;font-size:11px;color:var(--faint);padding-bottom:4px;text-align:center}}
+.hb .tree{{font-family:"Geist Mono",ui-monospace,monospace;font-size:13px}}
+.hb .tree ul{{list-style:none;margin:0;padding-left:16px;border-left:1px solid var(--line)}}
+.hb .tree>ul{{padding-left:0;border-left:0}}
+.hb .tree li{{display:flex;align-items:center;gap:8px;min-height:30px}}
+.hb .tree li .sz{{margin-left:auto;color:var(--faint);font-size:12px}}
+.hb .tree li.on{{color:var(--hazel)}}
+.hb .appcard{{display:flex;gap:10px;padding:12px;background:var(--raised);border:1px solid var(--line);border-radius:8px;min-width:0;color:var(--ink);align-items:flex-start}}
+.hb .appcard .ic{{width:40px;height:40px;border-radius:8px;background:var(--q2);display:flex;align-items:center;justify-content:center;font-family:"Geist Mono",ui-monospace,monospace;font-weight:600;color:var(--hazel);flex:none}}
+.hb .appcard .bd{{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}}
+.hb .appcard .bd .n{{font-weight:500}}
+.hb .appcard .bd .d{{font-size:12px;color:var(--faint)}}
+.hb .chip{{display:inline-flex;align-items:center;min-height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line);font-size:11px;color:var(--muted);background:transparent}}
+.hb .chip.on{{color:var(--hazel);border-color:var(--hazel)}}
+.hb .term{{background:var(--neutral,#0f0e0c);border:1px solid var(--line);border-radius:8px;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;padding:10px 12px;color:var(--ink);white-space:pre;overflow:auto;min-height:220px}}
 .hb .range{{display:flex;gap:4px;flex-wrap:wrap}}
 .hb .range .btn{{min-height:32px;padding:0 10px;font-size:12px;color:var(--muted)}}
 .hb .range .btn.on{{background:var(--raised);color:var(--hazel);border-color:var(--line);font-weight:600}}
@@ -240,30 +259,32 @@ body{{margin:0}}
  .hb .tile .v{{font-size:24px}}
  .hb .rings svg{{width:52px;height:52px}}
  .hb .hcell{{width:36px;height:36px}}
+ .hb .tabs{{flex-wrap:nowrap;overflow-x:auto}}.hb .tab{{white-space:nowrap;flex:none}}
+ .hb .ph .wrap{{width:100%}}
  .hb .pstage{{min-width:96px}}
 }}
 """
 
 NAV = [
     ("總覽", "overview", "Overview.dc.html"),
-    ("主機與節點", "nodes", "NodeDetail.dc.html"),
+    ("主機與節點", "nodes", "Nodes.dc.html"),
     ("專案與服務", "projects", "Projects.dc.html"),
     ("Docker／Podman", "docker", "Containers.dc.html"),
-    ("Kubernetes", "k8s", None),
-    ("應用商店", "store", None),
+    ("Kubernetes", "k8s", "Kubernetes.dc.html"),
+    ("應用商店", "store", "AppStore.dc.html"),
     ("網站與入口", "web", "Websites.dc.html"),
-    ("API 代理", "api", None),
-    ("資料庫", "db", None),
-    ("AI", "ai", None),
-    ("檔案", "files", None),
+    ("API 代理", "api", "APIProxy.dc.html"),
+    ("資料庫", "db", "Database.dc.html"),
+    ("AI", "ai", "AI.dc.html"),
+    ("檔案", "files", "Files.dc.html"),
     ("儲存", "storage", "Storage.dc.html"),
     ("備份與還原", "backup", "Storage.dc.html"),
-    ("計畫任務", "cron", None),
-    ("安全防護", "security", None),
-    ("流量分析", "analytics", None),
+    ("計畫任務", "cron", "Cron.dc.html"),
+    ("安全防護", "security", "Security.dc.html"),
+    ("流量分析", "analytics", "Analytics.dc.html"),
     ("事件與告警", "events", "Events.dc.html"),
-    ("身分與存取", "iam", None),
-    ("平台設定", "settings", None),
+    ("身分與存取", "iam", "IAM.dc.html"),
+    ("平台設定", "settings", "Settings.dc.html"),
 ]
 GROUPS = [("基礎設施", ["nodes", "docker", "k8s", "storage", "files"]),
           ("應用", ["projects", "store", "db", "ai", "backup", "cron"]),
@@ -667,6 +688,36 @@ def flowlist(links: list) -> str:
     return '<div class="flowlist">' + "".join(
         f'<div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{a}</span><span class="note">→</span>'
         f'<span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{b}</span><span class="note">{n}</span></div>' for a, b, n in links) + "</div>"
+
+
+
+def matrix(rows: list, cols: list, cells: list, first_col: str = "minmax(110px,1.2fr)") -> str:
+    """狀態矩陣：cells[r][c] 為 (kind ok|warn|dng|info|none, text)；kind none 畫虛線空格。"""
+    out = ['<span></span>'] + [f'<span class="cl">{c}</span>' for c in cols]
+    for r, row in zip(rows, cells):
+        out.append(f'<span class="rl">{r}</span>')
+        for kind, txt in row:
+            if kind == "none":
+                out.append(f'<span class="c empty">{txt or "—"}</span>')
+            else:
+                out.append(f'<span class="c"><span class="st {kind}"><i aria-hidden="true"></i>{txt}</span></span>')
+    return f'<div class="mx" style="grid-template-columns:{first_col} repeat({len(cols)},minmax(0,1fr))">' + "".join(out) + "</div>"
+
+
+def tree(items: list) -> str:
+    """items: [(depth, name, size_text, on)]"""
+    out = ['<div class="tree"><ul>']
+    depth = 0
+    for d, name, sz, on in items:
+        while depth < d:
+            out.append("<ul>"); depth += 1
+        while depth > d:
+            out.append("</ul>"); depth -= 1
+        out.append(f'<li class="{"on" if on else ""}"><span>{name}</span><span class="sz">{sz}</span></li>')
+    while depth > 0:
+        out.append("</ul>"); depth -= 1
+    out.append("</ul></div>")
+    return "".join(out)
 
 
 def dc_wrap(title: str, body: str, width: int, height: int, lang="zh-Hant-TW") -> str:

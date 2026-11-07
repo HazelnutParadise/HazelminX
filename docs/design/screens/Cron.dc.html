@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<title>HazelminX 計畫任務</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+body{margin:0}
+.hb{--bg:#161412;--panel:#1D1B18;--raised:#262320;--line:#35312B;--ink:#ECE6DA;--muted:#A79E8E;--faint:#9A917F;--hazel:#D9A066;--hazelink:#1A1410;--blue:#8DB4F2;--warn:#F0B35B;--danger:#F28B82;--ok:#9BD3A4;--s1:#AF711F;--s2:#5682BB;--s3:#47AA62;--s4:#B55B9A;--q1:#2A241C;--q2:#4A3A22;--q3:#6E5228;--q4:#9A6F33;--q5:#D9A066;--scrim:rgba(0,0,0,.45);font-family:"Geist","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;font-synthesis:none;line-break:strict;color:var(--ink);background:var(--bg);font-size:14px;line-height:1.5;color-scheme:dark}
+.hb.theme-light{--bg:#F6F2EA;--panel:#FFFDF8;--raised:#EFE9DE;--line:#D9D1C2;--ink:#1B1814;--muted:#5E574C;--faint:#6B6457;--hazel:#8F5B23;--hazelink:#FFFFFF;--blue:#2E5FA8;--warn:#9A5A0B;--danger:#B4382E;--ok:#2F6B3C;--s1:#7C4B02;--s2:#2E598F;--s3:#218A45;--s4:#883170;--q1:#F3E6D3;--q2:#E3C9A4;--q3:#CFA772;--q4:#B38347;--q5:#8F5B23;--scrim:rgba(0,0,0,.25);color-scheme:light}
+.hb *{box-sizing:border-box}
+.hb .mono{font-family:"Geist Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+.hb a{color:var(--ink);text-decoration:none}.hb a:hover{color:var(--hazel)}
+.hb button,.hb input,.hb select{font:inherit;color:inherit}
+.hb button{cursor:pointer}
+.hb :is(a,button,input,select,[tabindex]):focus-visible{outline:2px solid var(--hazel);outline-offset:2px}
+.hb h1{margin:0;font-size:20px;font-weight:600;line-height:1.3}
+.hb h2{margin:0;font-size:14px;font-weight:600;line-height:1.4}
+.hb p{margin:0}
+.hb .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:0 12px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--ink);font-size:13px;white-space:nowrap}
+.hb .btn.pri{background:var(--hazel);border-color:var(--hazel);color:var(--hazelink);font-weight:600}
+.hb .btn.dng{background:var(--danger);border-color:var(--danger);color:var(--hazelink);font-weight:600}
+.hb .btn.sm{min-height:32px;padding:0 10px;font-size:12px;color:var(--muted)}
+.hb .btn:active{transform:translateY(1px)}
+.hb .panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.hb .ph{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.hb .ph .sub{font-size:12px;color:var(--muted)}
+.hb .ph .more{margin-left:auto;font-size:13px;color:var(--hazel)}
+.hb .card{background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.hb .row{display:grid;gap:12px;align-items:center;min-height:44px;padding:0 14px;border-bottom:1px solid var(--line)}
+.hb .row:hover{background:var(--raised)}
+.hb .row:last-child{border-bottom:0}
+.hb .hd{font-size:11px;color:var(--faint);letter-spacing:.06em;text-transform:uppercase;min-height:34px;font-weight:500}
+.hb .hd:hover{background:transparent}
+.hb .name{display:flex;flex-direction:column;gap:2px;min-width:0}
+.hb .name .n{font-family:"Geist Mono",ui-monospace,monospace;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb .name .d{font-size:12px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb .st{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.hb .st i{display:inline-block;width:8px;height:8px;flex:none}
+.hb .st.ok{color:var(--ok)}.hb .st.ok i{border-radius:50%;background:var(--ok)}
+.hb .st.warn{color:var(--warn)}.hb .st.warn i{border-radius:50%;border:2px solid var(--warn)}
+.hb .st.dng{color:var(--danger)}.hb .st.dng i{background:var(--danger)}
+.hb .st.info{color:var(--blue)}.hb .st.info i{background:var(--blue)}
+.hb .st.off{color:var(--muted)}.hb .st.off i{border-radius:50%;border:2px solid var(--muted);border-style:dashed}
+.hb .nv{display:flex;align-items:center;gap:10px;min-height:40px;padding:0 10px;border-radius:6px;font-size:14px;color:var(--ink)}
+.hb .nv:hover{background:var(--raised);color:var(--ink)}
+.hb .nv.cur{background:var(--raised);color:var(--hazel);font-weight:600}
+.hb .nv .cnt{margin-left:auto;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px}
+.hb .kbd{font-family:"Geist Mono",ui-monospace,monospace;font-size:11px;color:var(--faint);border:1px solid var(--line);border-radius:4px;padding:1px 5px;margin-left:auto}
+.hb .navgrp{font-size:11px;color:var(--faint);letter-spacing:.06em;padding:6px 10px 0}
+.hb .navcol{display:flex;flex-direction:column;gap:2px}
+.hb .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(170px,100%),1fr));gap:10px}
+.hb .tile{display:flex;flex-direction:column;gap:4px;padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:8px;min-width:0}
+.hb .tile .l{font-size:12px;color:var(--muted)}
+.hb .tile .v{font-size:28px;font-weight:600;line-height:1.1;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.hb .tile .v small{font-size:12px;font-weight:400;color:var(--muted)}
+.hb .tile .dl{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hb .up{color:var(--ok)}.hb .dn{color:var(--danger)}
+.hb .meter{display:flex;align-items:center;gap:8px;min-width:0}
+.hb .meter .tr{flex:1;height:6px;border-radius:4px;background:var(--q2);overflow:hidden;min-width:40px}
+.hb .meter .fl{height:100%;border-radius:4px;background:var(--hazel)}
+.hb .meter .fl.warn{background:var(--warn)}.hb .meter .fl.dng{background:var(--danger)}
+.hb .meter .num{font-family:"Geist Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;font-size:12px;white-space:nowrap}
+.hb .cg{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(440px,100%),1fr));gap:12px}
+.hb .chart{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;min-width:0}
+.hb .chart .ph{padding:8px 12px}
+.hb .chart .unit{font-size:12px;color:var(--faint)}
+.hb .chart .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-left:auto}
+.hb .legend i{display:inline-block;width:12px;height:2px;vertical-align:middle;margin-right:5px;border-radius:1px}
+.hb .legend i.rect{height:8px;border-radius:2px}
+.hb .chart .body{padding:6px 10px 8px}
+.hb .foot{display:flex;gap:10px;flex-wrap:wrap;padding:6px 12px 8px;font-size:12px;color:var(--faint);border-top:1px solid var(--line)}
+.hb .chart .foot a{color:var(--hazel)}
+.hb svg.ch{display:block;width:100%;height:auto;font-family:"Geist Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.hb svg.ch text{font-size:11px;fill:var(--faint)}
+.hb .grid{stroke:var(--line);stroke-width:1}
+.hb .hit .xh,.hb .hit .tip{opacity:0;transition:opacity .08s}
+.hb .hit:hover .xh,.hb .hit:hover .tip,.hb .hit:focus-within .xh,.hb .hit:focus-within .tip{opacity:1}
+.hb .tip rect{fill:var(--raised);stroke:var(--line)}
+.hb .tip text{fill:var(--ink)}
+.hb .tip text.k{fill:var(--muted)}
+.hb .ch-m{display:none}
+.hb .ranks{display:flex;flex-direction:column;gap:6px;padding:10px 14px}
+.hb .rank{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,2fr) auto;gap:10px;align-items:center;font-size:13px;min-height:28px}
+.hb .rank .bar{height:8px;border-radius:4px;background:var(--q2);overflow:hidden}
+.hb .rank .bar i{display:block;height:100%;border-radius:4px;background:var(--s1)}
+.hb .timeline{display:flex;gap:2px;height:10px}
+.hb .timeline i{flex:1;border-radius:2px;background:var(--ok)}
+.hb .timeline i.f{background:var(--danger)}.hb .timeline i.r{background:var(--warn)}.hb .timeline i.p{background:var(--blue)}.hb .timeline i.e{background:var(--q2)}
+.hb .seg{display:flex;gap:2px;height:8px;border-radius:4px;overflow:hidden}
+.hb .seg i{display:block;height:100%}
+.hb .steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+.hb .step{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+.hb .step b{display:block;height:6px;border-radius:3px;background:var(--q2)}
+.hb .step.done b{background:var(--ok)}.hb .step.cur b{background:var(--blue)}.hb .step.wait b{background:var(--warn)}.hb .step.fail b{background:var(--danger)}
+.hb .step.cur{color:var(--ink)}
+.hb .heat{display:grid;gap:2px}
+.hb .heat i{display:block;aspect-ratio:1.6;border-radius:2px;min-height:14px}
+.hb .heat .lab{font-size:12px;color:var(--muted);display:block;line-height:22px;font-family:"Geist Mono",ui-monospace,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb .fleet{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(250px,100%),1fr));gap:12px;padding:12px 14px}
+.hb .ncard{display:flex;flex-direction:column;gap:10px;padding:12px;background:var(--raised);border:1px solid var(--line);border-radius:8px;min-width:0;color:var(--ink)}
+.hb .ncard .nh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hb .ncard .nh .n{font-family:"Geist Mono",ui-monospace,monospace;font-weight:500}
+.hb .ncard .nh .d{font-size:12px;color:var(--faint);width:100%}
+.hb .rings{display:flex;gap:10px;justify-content:space-between}
+.hb .ring{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--faint);min-width:0}
+.hb .ring svg{display:block}
+.hb .ring .v{font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;fill:var(--ink)}
+.hb .ncard .ft{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.hb .ncard .ft .seg{flex:1;min-width:60px}
+.hb .hmap{display:flex;flex-direction:column;gap:10px;padding:12px 14px}
+.hb .hgrp{display:flex;flex-direction:column;gap:6px}
+.hb .hgrp .lab{display:flex;gap:8px;align-items:baseline;font-size:12px;color:var(--muted)}
+.hb .hgrp .lab b{font-family:"Geist Mono",ui-monospace,monospace;font-weight:500;color:var(--ink)}
+.hb .hcells{display:flex;flex-wrap:wrap;gap:3px}
+.hb .hcell{position:relative;width:26px;height:26px;border-radius:3px;display:flex;align-items:center;justify-content:center;border:1px solid transparent}
+.hb .hcell.off{background:transparent;border:1px dashed var(--line)}
+.hb .hcell.bad{border-color:var(--danger)}
+.hb .hcell.bad::after{content:"";width:8px;height:8px;background:var(--danger)}
+.hb .hcell.stale::after{content:"";width:8px;height:8px;border-radius:50%;border:2px solid var(--warn);box-sizing:border-box}
+.hb .scale{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--faint)}
+.hb .scale i{display:block;width:14px;height:10px;border-radius:2px}
+.hb .tall{display:flex;gap:2px;height:28px;border-radius:4px;overflow:hidden}
+.hb .tall i{display:flex;align-items:center;justify-content:center;height:100%;font-size:11px;font-family:"Geist Mono",ui-monospace,monospace;color:var(--ink);overflow:hidden;white-space:nowrap}
+.hb .cal{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,12px);gap:2px}
+.hb .cal i{display:block;width:12px;height:12px;border-radius:2px;background:var(--q1);position:relative}
+.hb .cal i.o{background:var(--ok)}.hb .cal i.f{background:var(--danger)}.hb .cal i.r{background:var(--warn)}.hb .cal i.n{background:transparent;border:1px dashed var(--line)}
+.hb .cal i.f::after{content:"";position:absolute;inset:3px;background:var(--panel)}
+.hb .pipe{display:flex;align-items:stretch;gap:0;overflow-x:auto}
+.hb .pstage{display:flex;flex-direction:column;gap:4px;min-width:110px;flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-size:12px;color:var(--muted);position:relative;background:var(--panel)}
+.hb .pstage+.pstage{margin-left:18px}
+.hb .pstage+.pstage::before{content:"";position:absolute;left:-12px;top:50%;width:6px;height:6px;border-top:2px solid var(--faint);border-right:2px solid var(--faint);transform:translateY(-50%) rotate(45deg)}
+.hb .pstage .t{color:var(--ink);font-weight:500;display:flex;align-items:center;gap:6px}
+.hb .pstage.done{border-color:var(--ok)}.hb .pstage.cur{border-color:var(--blue);background:var(--raised)}.hb .pstage.fail{border-color:var(--danger)}.hb .pstage.wait{border-color:var(--warn)}
+.hb svg.topo{display:block;width:100%;height:auto;font-family:"Geist","Noto Sans TC",sans-serif}
+.hb svg.topo text{font-size:12px;fill:var(--ink)}
+.hb svg.topo text.sub{font-size:11px;fill:var(--faint);font-family:"Geist Mono",ui-monospace,monospace}
+.hb svg.topo text.col{font-size:11px;fill:var(--faint);letter-spacing:.06em;text-transform:uppercase}
+.hb svg.topo .box{fill:var(--raised);stroke:var(--line)}
+.hb svg.topo .box.danger{stroke:var(--danger)}.hb svg.topo .box.warn{stroke:var(--warn)}
+.hb svg.topo .lnk{fill:none;stroke:var(--s1);stroke-opacity:.55;stroke-linecap:round}
+.hb svg.topo .lnk.danger{stroke:var(--danger)}.hb svg.topo .lnk.dim{stroke:var(--q3)}
+.hb .flowlist{display:flex;flex-direction:column;gap:6px;font-size:13px}
+.hb .flowlist .fr{display:grid;grid-template-columns:minmax(0,1fr) 16px minmax(0,1fr) auto;gap:6px;align-items:center}
+.hb .mx{display:grid;gap:2px;font-size:12px}
+.hb .mx .c{min-height:32px;display:flex;align-items:center;justify-content:center;gap:4px;background:var(--raised);border-radius:4px;padding:0 6px;text-align:center}
+.hb .mx .c.empty{background:transparent;border:1px dashed var(--line);color:var(--faint)}
+.hb .mx .rl{display:flex;align-items:center;font-family:"Geist Mono",ui-monospace,monospace;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:32px}
+.hb .mx .cl{display:flex;align-items:flex-end;justify-content:center;font-size:11px;color:var(--faint);padding-bottom:4px;text-align:center}
+.hb .tree{font-family:"Geist Mono",ui-monospace,monospace;font-size:13px}
+.hb .tree ul{list-style:none;margin:0;padding-left:16px;border-left:1px solid var(--line)}
+.hb .tree>ul{padding-left:0;border-left:0}
+.hb .tree li{display:flex;align-items:center;gap:8px;min-height:30px}
+.hb .tree li .sz{margin-left:auto;color:var(--faint);font-size:12px}
+.hb .tree li.on{color:var(--hazel)}
+.hb .appcard{display:flex;gap:10px;padding:12px;background:var(--raised);border:1px solid var(--line);border-radius:8px;min-width:0;color:var(--ink);align-items:flex-start}
+.hb .appcard .ic{width:40px;height:40px;border-radius:8px;background:var(--q2);display:flex;align-items:center;justify-content:center;font-family:"Geist Mono",ui-monospace,monospace;font-weight:600;color:var(--hazel);flex:none}
+.hb .appcard .bd{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+.hb .appcard .bd .n{font-weight:500}
+.hb .appcard .bd .d{font-size:12px;color:var(--faint)}
+.hb .chip{display:inline-flex;align-items:center;min-height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line);font-size:11px;color:var(--muted);background:transparent}
+.hb .chip.on{color:var(--hazel);border-color:var(--hazel)}
+.hb .term{background:var(--neutral,#0f0e0c);border:1px solid var(--line);border-radius:8px;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;padding:10px 12px;color:var(--ink);white-space:pre;overflow:auto;min-height:220px}
+.hb .range{display:flex;gap:4px;flex-wrap:wrap}
+.hb .range .btn{min-height:32px;padding:0 10px;font-size:12px;color:var(--muted)}
+.hb .range .btn.on{background:var(--raised);color:var(--hazel);border-color:var(--line);font-weight:600}
+.hb .field{display:flex;flex-direction:column;gap:6px}
+.hb .field label{font-size:12px;color:var(--muted)}
+.hb .inp{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 10px;background:var(--raised);border:1px solid var(--line);border-radius:6px;color:var(--ink);width:100%}
+.hb .inp.err{border-color:var(--danger)}
+.hb .help{font-size:12px;color:var(--faint)}
+.hb .errt{font-size:12px;color:var(--danger)}
+.hb .skel{background:var(--raised);border-radius:4px;position:relative;overflow:hidden}
+.hb .skel::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent)}
+@media (prefers-reduced-motion:no-preference){.hb .skel::after{animation:hx-sh 1.4s infinite}}
+@keyframes hx-sh{to{transform:translateX(100%)}}
+.hb .dim{opacity:.45}
+.hb .banner{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:var(--raised);font-size:13px}
+.hb .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);padding:0 14px}
+.hb .tab{min-height:40px;display:inline-flex;align-items:center;padding:0 10px;border-bottom:2px solid transparent;color:var(--muted);font-size:13px;background:transparent;border-top:0;border-left:0;border-right:0}
+.hb .tab.on{color:var(--hazel);border-bottom-color:var(--hazel);font-weight:600}
+.hb .diff{overflow-x:auto;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;display:flex;flex-direction:column}
+.hb .diff div{display:grid;grid-template-columns:36px 36px 1fr;gap:0;padding:0 14px;white-space:pre}
+.hb .diff .ln{color:var(--faint);text-align:right;padding-right:10px}
+.hb .diff .add{background:color-mix(in oklab,var(--ok) 14%,transparent)}
+.hb .diff .del{background:color-mix(in oklab,var(--danger) 14%,transparent)}
+.hb .diff .hot{outline:1px solid var(--danger);outline-offset:-1px}
+.hb .check{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:10px;align-items:start;padding:10px 14px;border-bottom:1px solid var(--line);font-size:13px}
+.hb .check:last-child{border-bottom:0}
+.hb .check .mk{width:16px;height:16px;border-radius:50%;margin-top:2px}
+.hb .check .mk.ok{background:var(--ok)}.hb .check .mk.warn{border:3px solid var(--warn)}.hb .check .mk.dng{background:var(--danger);border-radius:2px}
+.hb .check .ev{font-size:12px;color:var(--muted);font-family:"Geist Mono",ui-monospace,monospace}
+.hb .modal{background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:10px;max-width:520px}
+.hb .scrim{background:var(--scrim);padding:24px;display:flex;justify-content:center}
+.hb .list{display:flex;flex-direction:column;gap:8px}
+.hb .job{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border:1px solid var(--line);border-radius:8px}
+.hb .job .t{display:flex;justify-content:space-between;gap:8px}
+.hb .job .s{font-size:12px;color:var(--muted)}
+.hb .prog{height:4px;background:var(--q2);border-radius:2px;overflow:hidden}
+.hb .prog i{display:block;height:100%;background:var(--blue)}
+.hb .prog.pulse i{width:30%;background:repeating-linear-gradient(90deg,var(--blue) 0 8px,transparent 8px 12px)}
+.hb .note{font-size:12px;color:var(--faint)}
+.hb .wrap{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.hb .scroll{overflow-x:auto}
+.hb .aside{width:340px;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:18px;padding:18px 16px 24px}
+.hb .main{flex:999 1 560px;min-width:0;display:flex;flex-direction:column;gap:22px;padding:18px 24px 40px}
+.hb .side{width:232px;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:14px;padding:14px 10px 20px}
+.hb .nrow{grid-template-columns:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) 110px minmax(0,.8fr)}
+.hb .prow{grid-template-columns:minmax(0,1.2fr) minmax(0,1.5fr) minmax(0,.5fr) minmax(0,.6fr) minmax(0,1fr) minmax(0,1.1fr)}
+.hb .srow{grid-template-columns:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) 110px minmax(0,.7fr)}
+.hb .crow{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,.4fr) minmax(0,.7fr)}
+.hb .drow{grid-template-columns:minmax(0,.8fr) minmax(0,1.6fr) minmax(0,.6fr) minmax(0,1.4fr) minmax(0,.8fr)}
+.hb .gprow{grid-template-columns:minmax(0,1.4fr) minmax(0,.9fr) minmax(0,.5fr) minmax(0,1.2fr)}
+.hb .garow{grid-template-columns:minmax(0,.8fr) minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,1.4fr)}
+.hb .dprow{grid-template-columns:minmax(0,.5fr) minmax(0,1.6fr) minmax(0,.7fr) minmax(0,.7fr) minmax(0,1.4fr)}
+.hb .hrow{grid-template-columns:minmax(0,1.6fr) minmax(0,.8fr) minmax(0,.7fr) minmax(0,1.4fr)}
+.hb .rrow{grid-template-columns:24px minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,.5fr) minmax(0,.6fr)}
+@media (max-width:1100px){.hb .aside{width:100%;border-left:0;border-top:1px solid var(--line)}}
+@media (max-width:767px){
+ .hb .side{width:100%;border-right:0;border-bottom:1px solid var(--line);padding-bottom:10px}
+ .hb .navcol{flex-direction:row;flex-wrap:wrap}.hb .side .nv{flex:none;white-space:nowrap}.hb .side .navcol:not(:first-of-type){flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px}.hb .navgrp{display:none}.hb .side .nv{min-height:44px}
+ .hb .main{padding:14px 16px 32px;gap:16px}.hb .aside{padding:14px 16px 24px}
+ .hb .c3,.hb .c4,.hb .c5,.hb .kbd{display:none}
+ .hb .ch-d{display:none}.hb .ch-m{display:block}
+ .hb .heat i{min-height:18px}
+ .hb .steps{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .hb .btn{min-height:44px}.hb .btn.sm{min-height:40px}.hb .range .btn{min-height:40px}
+ .hb .nrow{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,.9fr)}
+ .hb .prow{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}
+ .hb .srow{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,.8fr)}
+ .hb .crow{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}
+ .hb .drow{grid-template-columns:minmax(0,.9fr) minmax(0,1.2fr) minmax(0,1.3fr)}
+ .hb .gprow{grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr) minmax(0,1fr)}
+ .hb .garow{grid-template-columns:minmax(0,.8fr) minmax(0,1.4fr) minmax(0,1.2fr)}
+ .hb .dprow{grid-template-columns:minmax(0,.5fr) minmax(0,1.4fr) minmax(0,1.3fr)}
+ .hb .hrow{grid-template-columns:minmax(0,1.4fr) minmax(0,.7fr) minmax(0,1.2fr)}
+ .hb .rrow{grid-template-columns:24px minmax(0,1.6fr) minmax(0,.8fr)}
+ .hb .tile .v{font-size:24px}
+ .hb .rings svg{width:52px;height:52px}
+ .hb .hcell{width:36px;height:36px}
+ .hb .tabs{flex-wrap:nowrap;overflow-x:auto}.hb .tab{white-space:nowrap;flex:none}
+ .hb .ph .wrap{width:100%}
+ .hb .pstage{min-width:96px}
+}
+</style>
+</helmet>
+<div class="hb theme-{{theme}}" style="min-height: 100vh; display: flex; flex-wrap: wrap; align-items: stretch">
+  <nav class="side" aria-label="主導覽">
+    <div style="display: flex; align-items: center; gap: 10px; padding: 4px 10px 10px; border-bottom: 1px solid var(--line)">
+      <span aria-hidden="true" style="width: 22px; height: 22px; border-radius: 50%; background: var(--hazel); display: inline-block; box-shadow: inset 0 0 0 5px var(--panel), inset 0 0 0 7px var(--hazel)"></span>
+      <span style="font-weight: 600; font-size: 15px">HazelminX</span>
+      <span class="mono" style="font-size: 11px; color: var(--faint); margin-left: auto">tw-01</span>
+    </div>
+    <button type="button" class="inp" style="color: var(--muted); text-align: left"><span>搜尋或下指令</span><span class="kbd">⌘K</span></button>
+    <div class="navcol"><a class="nv" href="Overview.dc.html">總覽<span class="kbd">G O</span></a><a class="nv" href="WorkCenter.dc.html">工作中心<span class="cnt" style="color: var(--hazel)">3</span></a><a class="nv" href="Overview.dc.html#attention">需要處理<span class="cnt" style="color: var(--warn)">3</span></a></div>
+    <div class="navgrp">基礎設施</div><div class="navcol"><a class="nv" href="Nodes.dc.html">主機與節點</a><a class="nv" href="Containers.dc.html">Docker／Podman</a><a class="nv" href="Kubernetes.dc.html">Kubernetes</a><a class="nv" href="Storage.dc.html">儲存</a><a class="nv" href="Files.dc.html">檔案</a></div><div class="navgrp">應用</div><div class="navcol"><a class="nv" href="Projects.dc.html">專案與服務</a><a class="nv" href="AppStore.dc.html">應用商店</a><a class="nv" href="Database.dc.html">資料庫</a><a class="nv" href="AI.dc.html">AI</a><a class="nv" href="Storage.dc.html">備份與還原</a><a class="nv cur" aria-current="page" href="Cron.dc.html">計畫任務</a></div><div class="navgrp">入口與安全</div><div class="navcol"><a class="nv" href="Websites.dc.html">網站與入口</a><a class="nv" href="APIProxy.dc.html">API 代理</a><a class="nv" href="Security.dc.html">安全防護</a><a class="nv" href="Analytics.dc.html">流量分析</a><a class="nv" href="Events.dc.html">事件與告警</a><a class="nv" href="IAM.dc.html">身分與存取</a><a class="nv" href="Settings.dc.html">平台設定</a></div>
+    <div style="margin-top: auto; display: flex; align-items: center; gap: 8px; padding: 8px 10px 0; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted)">
+      <span>tim · 擁有者</span>
+      <button type="button" class="btn sm" aria-label="切換淺色或深色" style="margin-left: auto; min-width: 44px">{{themeLabel}}</button>
+    </div>
+  </nav><main class="main">
+    <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 14px">
+      <h1>計畫任務</h1>
+      <span style="font-size: 13px; color: var(--muted)">觀測時間 <span class="mono">03:42:06</span> UTC+8</span>
+      <div class="wrap" style="margin-left: auto"><button type="button" class="btn pri">新增任務</button><button type="button" class="btn">腳本庫</button><button type="button" class="btn">匯入</button></div>
+    </div><div class="tiles"><div class="tile"><span class="l">任務</span><span class="v">9</span><span class="dl"><span class="">8 啟用 · 1 暫停</span></span></div><div class="tile"><span class="l">今天執行</span><span class="v">27</span><span class="dl"><span class="">成功 25 · 失敗 1 · 略過 1</span></span><svg class="sp" width="120" height="26" viewBox="0 0 120 26" aria-hidden="true" style="display:block;max-width:100%"><path d="M1.0,16.7 L6.1,24.0 L11.3,9.3 L16.4,16.7 L21.5,16.7 L26.7,2.0 L31.8,24.0 L36.9,16.7 L42.0,9.3 L47.2,16.7 L52.3,16.7 L57.4,24.0 L62.6,16.7 L67.7,9.3 L72.8,16.7 L78.0,24.0 L83.1,16.7 L88.2,2.0 L93.3,9.3 L98.5,16.7 L103.6,24.0 L108.7,16.7" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><path d="M108.7,16.7 L113.9,9.3 L119.0,16.7" fill="none" stroke="var(--hazel)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="119.0" cy="16.7" r="3" fill="var(--hazel)"/></svg></div><div class="tile"><span class="l">下一個</span><span class="v">03:45</span><span class="dl"><span class="">清理日誌 @ tw-01（3 分後）</span></span></div><div class="tile"><span class="l">時鐘偏差</span><span class="v">+3<small>ms</small></span><span class="dl"><span class="">三個節點都在 NTP 同步；jp-02 上次觀測</span></span></div></div>
+    <section class="panel" aria-labelledby="h-sch">
+      <div class="ph"><h2 id="h-sch">24 小時排程 · 任務 × 小時</h2><span class="sub">深格＝有執行；重疊政策：同任務上一輪沒結束就「略過並記錄」</span></div>
+      <div style="padding:12px 14px"><div class="heat" style="grid-template-columns: minmax(80px, 1.2fr) repeat(24, minmax(0, 1fr))" role="img" aria-label="容器 × 小時 CPU 熱格，9 個容器、24 小時"><span></span><span class="lab" style="justify-content:center;font-size:11px">04</span><span class="lab" style="justify-content:center;font-size:11px">05</span><span class="lab" style="justify-content:center;font-size:11px">06</span><span class="lab" style="justify-content:center;font-size:11px">07</span><span class="lab" style="justify-content:center;font-size:11px">08</span><span class="lab" style="justify-content:center;font-size:11px">09</span><span class="lab" style="justify-content:center;font-size:11px">10</span><span class="lab" style="justify-content:center;font-size:11px">11</span><span class="lab" style="justify-content:center;font-size:11px">12</span><span class="lab" style="justify-content:center;font-size:11px">13</span><span class="lab" style="justify-content:center;font-size:11px">14</span><span class="lab" style="justify-content:center;font-size:11px">15</span><span class="lab" style="justify-content:center;font-size:11px">16</span><span class="lab" style="justify-content:center;font-size:11px">17</span><span class="lab" style="justify-content:center;font-size:11px">18</span><span class="lab" style="justify-content:center;font-size:11px">19</span><span class="lab" style="justify-content:center;font-size:11px">20</span><span class="lab" style="justify-content:center;font-size:11px">21</span><span class="lab" style="justify-content:center;font-size:11px">22</span><span class="lab" style="justify-content:center;font-size:11px">23</span><span class="lab" style="justify-content:center;font-size:11px">00</span><span class="lab" style="justify-content:center;font-size:11px">01</span><span class="lab" style="justify-content:center;font-size:11px">02</span><span class="lab" style="justify-content:center;font-size:11px">03</span><span class="lab">wiki-db 備份</span><i style="background: var(--q1)" title="wiki-db 備份 04 0%"></i><i style="background: var(--q1)" title="wiki-db 備份 05 0%"></i><i style="background: var(--q1)" title="wiki-db 備份 06 0%"></i><i style="background: var(--q1)" title="wiki-db 備份 07 0%"></i><i style="background: var(--q1)" title="wiki-db 備份 08 0%"></i><i style="background: var(--q1)" title="wiki-db 備份 09 0%"></i><i style="background: var(--q1)" title="wiki-db 備份 10 0%"></i><i style="background: var(--q1)" title="wiki-db 備份 11 0%"></i><i style="background: var(--q1)" title="wiki-db 備份 12 0%"></i><i style="background: var(--q1)" title="wiki-db 備份 13 0%"></i><i style="background: var(--q1)" title="wiki-db 備份 14 0%"></i><i style="background: var(--q1)" title="wiki-db 備份 15 0%"></i><i style="background: var(--q1)" title="wiki-db 備份 16 0%"></i><i style="background: var(--q1)" title="wiki-db 備份 17 0%"></i><i style="background: var(--q1)" title="wiki-db 備份 18 0%"></i><i style="background: var(--q1)" title="wiki-db 備份 19 0%"></i><i style="background: var(--q1)" title="wiki-db 備份 20 0%"></i><i style="background: var(--q1)" title="wiki-db 備份 21 0%"></i><i style="background: var(--q1)" title="wiki-db 備份 22 0%"></i><i style="background: var(--q1)" title="wiki-db 備份 23 0%"></i><i style="background: var(--q1)" title="wiki-db 備份 00 0%"></i><i style="background: var(--q1)" title="wiki-db 備份 01 0%"></i><i style="background: var(--q1)" title="wiki-db 備份 02 0%"></i><i style="background: var(--q5)" title="wiki-db 備份 03 100%"></i><span class="lab">shop-db 備份</span><i style="background: var(--q1)" title="shop-db 備份 04 0%"></i><i style="background: var(--q1)" title="shop-db 備份 05 0%"></i><i style="background: var(--q1)" title="shop-db 備份 06 0%"></i><i style="background: var(--q1)" title="shop-db 備份 07 0%"></i><i style="background: var(--q1)" title="shop-db 備份 08 0%"></i><i style="background: var(--q1)" title="shop-db 備份 09 0%"></i><i style="background: var(--q1)" title="shop-db 備份 10 0%"></i><i style="background: var(--q1)" title="shop-db 備份 11 0%"></i><i style="background: var(--q1)" title="shop-db 備份 12 0%"></i><i style="background: var(--q1)" title="shop-db 備份 13 0%"></i><i style="background: var(--q1)" title="shop-db 備份 14 0%"></i><i style="background: var(--q1)" title="shop-db 備份 15 0%"></i><i style="background: var(--q1)" title="shop-db 備份 16 0%"></i><i style="background: var(--q1)" title="shop-db 備份 17 0%"></i><i style="background: var(--q1)" title="shop-db 備份 18 0%"></i><i style="background: var(--q1)" title="shop-db 備份 19 0%"></i><i style="background: var(--q1)" title="shop-db 備份 20 0%"></i><i style="background: var(--q1)" title="shop-db 備份 21 0%"></i><i style="background: var(--q1)" title="shop-db 備份 22 0%"></i><i style="background: var(--q1)" title="shop-db 備份 23 0%"></i><i style="background: var(--q1)" title="shop-db 備份 00 0%"></i><i style="background: var(--q1)" title="shop-db 備份 01 0%"></i><i style="background: var(--q1)" title="shop-db 備份 02 0%"></i><i style="background: var(--q5)" title="shop-db 備份 03 100%"></i><span class="lab">平台快照</span><i style="background: var(--q1)" title="平台快照 04 0%"></i><i style="background: var(--q1)" title="平台快照 05 0%"></i><i style="background: var(--q1)" title="平台快照 06 0%"></i><i style="background: var(--q1)" title="平台快照 07 0%"></i><i style="background: var(--q1)" title="平台快照 08 0%"></i><i style="background: var(--q1)" title="平台快照 09 0%"></i><i style="background: var(--q1)" title="平台快照 10 0%"></i><i style="background: var(--q1)" title="平台快照 11 0%"></i><i style="background: var(--q1)" title="平台快照 12 0%"></i><i style="background: var(--q1)" title="平台快照 13 0%"></i><i style="background: var(--q1)" title="平台快照 14 0%"></i><i style="background: var(--q1)" title="平台快照 15 0%"></i><i style="background: var(--q1)" title="平台快照 16 0%"></i><i style="background: var(--q1)" title="平台快照 17 0%"></i><i style="background: var(--q1)" title="平台快照 18 0%"></i><i style="background: var(--q1)" title="平台快照 19 0%"></i><i style="background: var(--q1)" title="平台快照 20 0%"></i><i style="background: var(--q1)" title="平台快照 21 0%"></i><i style="background: var(--q1)" title="平台快照 22 0%"></i><i style="background: var(--q1)" title="平台快照 23 0%"></i><i style="background: var(--q1)" title="平台快照 00 0%"></i><i style="background: var(--q1)" title="平台快照 01 0%"></i><i style="background: var(--q1)" title="平台快照 02 0%"></i><i style="background: var(--q1)" title="平台快照 03 0%"></i><span class="lab">清理日誌</span><i style="background: var(--q1)" title="清理日誌 04 0%"></i><i style="background: var(--q1)" title="清理日誌 05 0%"></i><i style="background: var(--q1)" title="清理日誌 06 0%"></i><i style="background: var(--q5)" title="清理日誌 07 100%"></i><i style="background: var(--q1)" title="清理日誌 08 0%"></i><i style="background: var(--q1)" title="清理日誌 09 0%"></i><i style="background: var(--q1)" title="清理日誌 10 0%"></i><i style="background: var(--q1)" title="清理日誌 11 0%"></i><i style="background: var(--q1)" title="清理日誌 12 0%"></i><i style="background: var(--q5)" title="清理日誌 13 100%"></i><i style="background: var(--q1)" title="清理日誌 14 0%"></i><i style="background: var(--q1)" title="清理日誌 15 0%"></i><i style="background: var(--q1)" title="清理日誌 16 0%"></i><i style="background: var(--q1)" title="清理日誌 17 0%"></i><i style="background: var(--q1)" title="清理日誌 18 0%"></i><i style="background: var(--q5)" title="清理日誌 19 100%"></i><i style="background: var(--q1)" title="清理日誌 20 0%"></i><i style="background: var(--q1)" title="清理日誌 21 0%"></i><i style="background: var(--q1)" title="清理日誌 22 0%"></i><i style="background: var(--q1)" title="清理日誌 23 0%"></i><i style="background: var(--q1)" title="清理日誌 00 0%"></i><i style="background: var(--q5)" title="清理日誌 01 100%"></i><i style="background: var(--q1)" title="清理日誌 02 0%"></i><i style="background: var(--q1)" title="清理日誌 03 0%"></i><span class="lab">憑證續期檢查</span><i style="background: var(--q5)" title="憑證續期檢查 04 100%"></i><i style="background: var(--q1)" title="憑證續期檢查 05 0%"></i><i style="background: var(--q1)" title="憑證續期檢查 06 0%"></i><i style="background: var(--q1)" title="憑證續期檢查 07 0%"></i><i style="background: var(--q1)" title="憑證續期檢查 08 0%"></i><i style="background: var(--q1)" title="憑證續期檢查 09 0%"></i><i style="background: var(--q1)" title="憑證續期檢查 10 0%"></i><i style="background: var(--q1)" title="憑證續期檢查 11 0%"></i><i style="background: var(--q1)" title="憑證續期檢查 12 0%"></i><i style="background: var(--q1)" title="憑證續期檢查 13 0%"></i><i style="background: var(--q1)" title="憑證續期檢查 14 0%"></i><i style="background: var(--q1)" title="憑證續期檢查 15 0%"></i><i style="background: var(--q5)" title="憑證續期檢查 16 100%"></i><i style="background: var(--q1)" title="憑證續期檢查 17 0%"></i><i style="background: var(--q1)" title="憑證續期檢查 18 0%"></i><i style="background: var(--q1)" title="憑證續期檢查 19 0%"></i><i style="background: var(--q1)" title="憑證續期檢查 20 0%"></i><i style="background: var(--q1)" title="憑證續期檢查 21 0%"></i><i style="background: var(--q1)" title="憑證續期檢查 22 0%"></i><i style="background: var(--q1)" title="憑證續期檢查 23 0%"></i><i style="background: var(--q1)" title="憑證續期檢查 00 0%"></i><i style="background: var(--q1)" title="憑證續期檢查 01 0%"></i><i style="background: var(--q1)" title="憑證續期檢查 02 0%"></i><i style="background: var(--q1)" title="憑證續期檢查 03 0%"></i><span class="lab">套件安全更新</span><i style="background: var(--q1)" title="套件安全更新 04 0%"></i><i style="background: var(--q1)" title="套件安全更新 05 0%"></i><i style="background: var(--q1)" title="套件安全更新 06 0%"></i><i style="background: var(--q1)" title="套件安全更新 07 0%"></i><i style="background: var(--q1)" title="套件安全更新 08 0%"></i><i style="background: var(--q1)" title="套件安全更新 09 0%"></i><i style="background: var(--q1)" title="套件安全更新 10 0%"></i><i style="background: var(--q1)" title="套件安全更新 11 0%"></i><i style="background: var(--q1)" title="套件安全更新 12 0%"></i><i style="background: var(--q1)" title="套件安全更新 13 0%"></i><i style="background: var(--q1)" title="套件安全更新 14 0%"></i><i style="background: var(--q1)" title="套件安全更新 15 0%"></i><i style="background: var(--q1)" title="套件安全更新 16 0%"></i><i style="background: var(--q1)" title="套件安全更新 17 0%"></i><i style="background: var(--q1)" title="套件安全更新 18 0%"></i><i style="background: var(--q1)" title="套件安全更新 19 0%"></i><i style="background: var(--q1)" title="套件安全更新 20 0%"></i><i style="background: var(--q1)" title="套件安全更新 21 0%"></i><i style="background: var(--q1)" title="套件安全更新 22 0%"></i><i style="background: var(--q1)" title="套件安全更新 23 0%"></i><i style="background: var(--q1)" title="套件安全更新 00 0%"></i><i style="background: var(--q1)" title="套件安全更新 01 0%"></i><i style="background: var(--q1)" title="套件安全更新 02 0%"></i><i style="background: var(--q5)" title="套件安全更新 03 100%"></i><span class="lab">ClamAV 掃描</span><i style="background: var(--q1)" title="ClamAV 掃描 04 0%"></i><i style="background: var(--q1)" title="ClamAV 掃描 05 0%"></i><i style="background: var(--q1)" title="ClamAV 掃描 06 0%"></i><i style="background: var(--q1)" title="ClamAV 掃描 07 0%"></i><i style="background: var(--q1)" title="ClamAV 掃描 08 0%"></i><i style="background: var(--q1)" title="ClamAV 掃描 09 0%"></i><i style="background: var(--q1)" title="ClamAV 掃描 10 0%"></i><i style="background: var(--q1)" title="ClamAV 掃描 11 0%"></i><i style="background: var(--q1)" title="ClamAV 掃描 12 0%"></i><i style="background: var(--q1)" title="ClamAV 掃描 13 0%"></i><i style="background: var(--q1)" title="ClamAV 掃描 14 0%"></i><i style="background: var(--q1)" title="ClamAV 掃描 15 0%"></i><i style="background: var(--q1)" title="ClamAV 掃描 16 0%"></i><i style="background: var(--q1)" title="ClamAV 掃描 17 0%"></i><i style="background: var(--q1)" title="ClamAV 掃描 18 0%"></i><i style="background: var(--q1)" title="ClamAV 掃描 19 0%"></i><i style="background: var(--q1)" title="ClamAV 掃描 20 0%"></i><i style="background: var(--q1)" title="ClamAV 掃描 21 0%"></i><i style="background: var(--q1)" title="ClamAV 掃描 22 0%"></i><i style="background: var(--q1)" title="ClamAV 掃描 23 0%"></i><i style="background: var(--q1)" title="ClamAV 掃描 00 0%"></i><i style="background: var(--q1)" title="ClamAV 掃描 01 0%"></i><i style="background: var(--q1)" title="ClamAV 掃描 02 0%"></i><i style="background: var(--q1)" title="ClamAV 掃描 03 0%"></i><span class="lab">shop 報表</span><i style="background: var(--q1)" title="shop 報表 04 0%"></i><i style="background: var(--q1)" title="shop 報表 05 0%"></i><i style="background: var(--q1)" title="shop 報表 06 0%"></i><i style="background: var(--q1)" title="shop 報表 07 0%"></i><i style="background: var(--q1)" title="shop 報表 08 0%"></i><i style="background: var(--q1)" title="shop 報表 09 0%"></i><i style="background: var(--q1)" title="shop 報表 10 0%"></i><i style="background: var(--q1)" title="shop 報表 11 0%"></i><i style="background: var(--q1)" title="shop 報表 12 0%"></i><i style="background: var(--q1)" title="shop 報表 13 0%"></i><i style="background: var(--q1)" title="shop 報表 14 0%"></i><i style="background: var(--q1)" title="shop 報表 15 0%"></i><i style="background: var(--q1)" title="shop 報表 16 0%"></i><i style="background: var(--q1)" title="shop 報表 17 0%"></i><i style="background: var(--q1)" title="shop 報表 18 0%"></i><i style="background: var(--q1)" title="shop 報表 19 0%"></i><i style="background: var(--q1)" title="shop 報表 20 0%"></i><i style="background: var(--q1)" title="shop 報表 21 0%"></i><i style="background: var(--q1)" title="shop 報表 22 0%"></i><i style="background: var(--q1)" title="shop 報表 23 0%"></i><i style="background: var(--q5)" title="shop 報表 00 100%"></i><i style="background: var(--q1)" title="shop 報表 01 0%"></i><i style="background: var(--q1)" title="shop 報表 02 0%"></i><i style="background: var(--q1)" title="shop 報表 03 0%"></i><span class="lab">健康探測</span><i style="background: var(--q3)" title="健康探測 04 60%"></i><i style="background: var(--q3)" title="健康探測 05 60%"></i><i style="background: var(--q3)" title="健康探測 06 60%"></i><i style="background: var(--q3)" title="健康探測 07 60%"></i><i style="background: var(--q3)" title="健康探測 08 60%"></i><i style="background: var(--q3)" title="健康探測 09 60%"></i><i style="background: var(--q3)" title="健康探測 10 60%"></i><i style="background: var(--q3)" title="健康探測 11 60%"></i><i style="background: var(--q3)" title="健康探測 12 60%"></i><i style="background: var(--q3)" title="健康探測 13 60%"></i><i style="background: var(--q3)" title="健康探測 14 60%"></i><i style="background: var(--q3)" title="健康探測 15 60%"></i><i style="background: var(--q3)" title="健康探測 16 60%"></i><i style="background: var(--q3)" title="健康探測 17 60%"></i><i style="background: var(--q3)" title="健康探測 18 60%"></i><i style="background: var(--q3)" title="健康探測 19 60%"></i><i style="background: var(--q3)" title="健康探測 20 60%"></i><i style="background: var(--q3)" title="健康探測 21 60%"></i><i style="background: var(--q3)" title="健康探測 22 60%"></i><i style="background: var(--q3)" title="健康探測 23 60%"></i><i style="background: var(--q3)" title="健康探測 00 60%"></i><i style="background: var(--q3)" title="健康探測 01 60%"></i><i style="background: var(--q3)" title="健康探測 02 60%"></i><i style="background: var(--q3)" title="健康探測 03 60%"></i></div></div>
+      <div class="foot"><span>平台快照與 ClamAV 是每週；健康探測每 5 分鐘</span><span>夏令時間與時鐘偏差：以 UTC 排程、使用者時區顯示</span></div>
+    </section>
+    <section class="panel" aria-labelledby="h-tk">
+      <div class="ph"><h2 id="h-tk">任務 · 9</h2><span class="sub">橫條＝近 24 次結果；政策欄＝重疊／錯過／重試</span></div>
+      <div class="row hd srow"><span>任務</span><span>狀態</span><span class="c3">近 24 次</span><span class="c4">上次</span><span class="c4">政策</span><span class="c5"></span><span></span></div>
+      <a class="row srow" href="#t"><span class="name"><span class="n">wiki-db 備份</span><span class="d">備份 · tw-01 · 每天 03:00</span></span><span><span class="st ok"><i aria-hidden="true"></i>啟用</span></span><span class="c3"><div class="timeline" role="img" aria-label="部署歷史：24 成功、0 失敗、0 回滾"><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i></div></span><span class="c4 note">今天 03:00 · 2 分 50 秒</span><span class="c4 note">略過 · 補跑 · 重試 2</span><span class="c5"></span><span></span></a>
+      <a class="row srow" href="#t"><span class="name"><span class="n">shop-db 備份</span><span class="d">備份 · tw-01 · 每天 03:30</span></span><span><span class="st ok"><i aria-hidden="true"></i>啟用</span></span><span class="c3"><div class="timeline" role="img" aria-label="部署歷史：23 成功、1 失敗、0 回滾"><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="f" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i></div></span><span class="c4 note">今天 03:30 · 1 分 10 秒</span><span class="c4 note">略過 · 補跑 · 重試 2</span><span class="c5"></span><span></span></a>
+      <a class="row srow" href="#t"><span class="name"><span class="n">清理日誌</span><span class="d">清理 · 全部節點 · 每 6 小時</span></span><span><span class="st ok"><i aria-hidden="true"></i>啟用</span></span><span class="c3"><div class="timeline" role="img" aria-label="部署歷史：24 成功、0 失敗、0 回滾"><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i></div></span><span class="c4 note">03:00 · 釋出 1.8 GiB</span><span class="c4 note">排隊 · 不補跑 · 不重試</span><span class="c5"></span><span></span></a>
+      <a class="row srow" href="#t"><span class="name"><span class="n">憑證續期檢查</span><span class="d">維護 · zentinel · 每 12 小時</span></span><span><span class="st warn"><i aria-hidden="true"></i>上次失敗</span></span><span class="c3"><div class="timeline" role="img" aria-label="部署歷史：22 成功、2 失敗、0 回滾"><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="f" title=""></i><i class="f" title=""></i></div></span><span class="c4 note">02:58 · DNS 驗證逾時</span><span class="c4 note">略過 · 補跑 · 重試 3</span><span class="c5"></span><span></span></a>
+      <a class="row srow" href="#t"><span class="name"><span class="n">套件安全更新</span><span class="d">維護 · jp-02、lab-mini · 每天 03:00（維護時段）</span></span><span><span class="st warn"><i aria-hidden="true"></i>狀態不明</span></span><span class="c3"><div class="timeline" role="img" aria-label="部署歷史：23 成功、0 失敗、0 回滾"><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="p" title=""></i></div></span><span class="c4 note">03:38 · apt 進行到一半</span><span class="c4 note">排隊 · 不補跑 · 需批准</span><span class="c5"></span><span></span></a>
+      <a class="row srow" href="#t"><span class="name"><span class="n">shop 報表</span><span class="d">腳本 · 腳本庫 v3 · tw-01 · 每天 20:00</span></span><span><span class="st ok"><i aria-hidden="true"></i>啟用</span></span><span class="c3"><div class="timeline" role="img" aria-label="部署歷史：24 成功、0 失敗、0 回滾"><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i></div></span><span class="c4 note">昨天 20:00 · 41 秒</span><span class="c4 note">略過 · 補跑 · 重試 1</span><span class="c5"></span><span></span></a>
+      <a class="row srow" href="#t"><span class="name"><span class="n">健康探測</span><span class="d">URL · jp-02 · 每 5 分鐘</span></span><span><span class="st warn"><i aria-hidden="true"></i>過期</span></span><span class="c3"><div class="timeline" role="img" aria-label="部署歷史：20 成功、0 失敗、0 回滾"><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="e" title=""></i><i class="e" title=""></i><i class="e" title=""></i><i class="e" title=""></i></div></span><span class="c4 note">03:41 上次觀測</span><span class="c4 note">節點離線時本地續跑</span><span class="c5"></span><span></span></a>
+      <a class="row srow" href="#t"><span class="name"><span class="n">ClamAV 掃描</span><span class="d">維護 · tw-01 · 每週日 05:00</span></span><span><span class="st ok"><i aria-hidden="true"></i>啟用</span></span><span class="c3"><div class="timeline" role="img" aria-label="部署歷史：24 成功、0 失敗、0 回滾"><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i></div></span><span class="c4 note">11/02 · 0 感染</span><span class="c4 note">略過 · 補跑</span><span class="c5"></span><span></span></a>
+      <a class="row srow" href="#t"><span class="name"><span class="n">舊報表歸檔</span><span class="d">腳本 · tw-01 · 每月 1 日</span></span><span><span class="st info"><i aria-hidden="true"></i>暫停</span></span><span class="c3"><div class="timeline" role="img" aria-label="部署歷史：24 成功、0 失敗、0 回滾"><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i><i class="" title=""></i></div></span><span class="c4 note">10/01</span><span class="c4 note">—</span><span class="c5"></span><span></span></a>
+    </section><div class="cg">
+    <section class="panel" aria-labelledby="h-dep">
+      <div class="ph"><h2 id="h-dep">任務依賴 · 備份鏈</h2><span class="sub">上游失敗時下游略過並記錄原因，不靜默</span></div>
+      <div style="padding:10px 14px 6px"><div class="ch-d"><svg class="topo" viewBox="0 0 560 142" role="img" aria-label="拓撲：先→再→最後"><path class="lnk " stroke-width="5.1" d="M170,51.0 C188,51.0 188,51.0 205,51.0"/><path class="lnk " stroke-width="5.1" d="M170,107.0 C188,107.0 188,51.0 205,51.0"/><path class="lnk dim" stroke-width="3.3" d="M355,51.0 C280,51.0 280,107.0 205,107.0"/><path class="lnk " stroke-width="5.1" d="M355,51.0 C372,51.0 372,79.0 390,79.0"/><path class="lnk dim" stroke-width="2.7" d="M355,107.0 C372,107.0 372,79.0 390,79.0"/><text class="col" x="20" y="14">先</text><rect class="box " x="20.0" y="30.0" width="150" height="42" rx="6"/><circle cx="32.0" cy="51.0" r="4" fill="var(--ok)"/><text x="42.0" y="48.0">wiki-db 備份</text><text class="sub" x="42.0" y="63.0">03:00</text><rect class="box " x="20.0" y="86.0" width="150" height="42" rx="6"/><circle cx="32.0" cy="107.0" r="4" fill="var(--ok)"/><text x="42.0" y="104.0">shop-db 備份</text><text class="sub" x="42.0" y="119.0">03:30</text><text class="col" x="205" y="14">再</text><rect class="box " x="205.0" y="30.0" width="150" height="42" rx="6"/><circle cx="217.0" cy="51.0" r="4" fill="var(--ok)"/><text x="227.0" y="48.0">校驗與保留</text><text class="sub" x="227.0" y="63.0">成功才跑</text><rect class="box " x="205.0" y="86.0" width="150" height="42" rx="6"/><circle cx="217.0" cy="107.0" r="4" fill="none" stroke="var(--faint)" stroke-width="1.5"/><text x="227.0" y="104.0">還原測試</text><text class="sub" x="227.0" y="119.0">每週 · lab-mini</text><text class="col" x="390" y="14">最後</text><rect class="box " x="390.0" y="58.0" width="150" height="42" rx="6"/><circle cx="402.0" cy="79.0" r="4" fill="var(--ok)"/><text x="412.0" y="76.0">通知 Telegram</text><text class="sub" x="412.0" y="91.0">失敗立刻 · 成功彙整</text></svg></div><div class="ch-m"><div class="flowlist"><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">wiki-db 備份</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">校驗與保留</span><span class="note">成功才跑</span></div><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">shop-db 備份</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">校驗與保留</span><span class="note">成功才跑</span></div><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">校驗與保留</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">還原測試</span><span class="note">每週</span></div><div class="fr"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">校驗與保留</span><span class="note">→</span><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">通知</span><span class="note">失敗立刻</span></div></div></div></div>
+    </section>
+    <section class="panel" aria-labelledby="h-run">
+      <div class="ph"><h2 id="h-run">執行紀錄 · shop-db 備份 · 昨天 03:30</h2><span class="sub">每次執行都有進度、輸出與結果；產出的備份檔可直接還原</span></div>
+      <div style="padding:12px 14px"><div class="pipe"><div class="pstage done"><span class="t"><span aria-hidden="true" style="color:var(--ok)">●</span>預檢</span><span class="mono">2 秒</span><span>空間足夠</span></div><div class="pstage done"><span class="t"><span aria-hidden="true" style="color:var(--ok)">●</span>dump</span><span class="mono">48 秒</span><span>1.3 GiB</span></div><div class="pstage fail"><span class="t"><span aria-hidden="true" style="color:var(--danger)">■</span>傳輸</span><span class="mono">逾時 60 秒</span><span>S3 tokyo 無回應</span></div><div class="pstage done"><span class="t"><span aria-hidden="true" style="color:var(--ok)">●</span>重試 1/2</span><span class="mono">51 秒</span><span>成功</span></div><div class="pstage done"><span class="t"><span aria-hidden="true" style="color:var(--ok)">●</span>校驗</span><span class="mono">6 秒</span><span>sha256 相符</span></div></div>
+      <div class="term" style="margin-top:10px;min-height:90px">03:30:02 preflight ok (free 519G)
+03:30:50 pg_dump done 1.3G
+03:31:50 upload timeout after 60s (S3 tokyo)
+03:31:51 retry 1/2
+03:32:42 upload ok · sha256 verified</div></div>
+    </section></div>
+    <section class="panel" aria-labelledby="h-lib">
+      <div class="ph"><h2 id="h-lib">腳本庫 · 4</h2><span class="sub">有版本；任務綁定特定版本，不會被改壞</span></div>
+      <div class="row hd srow"><span>腳本</span><span>版本</span><span class="c3">被誰用</span><span class="c4">最後修改</span><span class="c4"></span><span class="c5"></span><span></span></div>
+      <div class="row srow"><span class="name"><span class="n">shop-report.sh</span><span class="d">產生每日報表並上傳</span></span><span class="mono">v3</span><span class="c3 note">shop 報表</span><span class="mono c4">10/20 · tim</span><span class="c4"><button type="button" class="btn sm">立即執行</button></span><span class="c5"></span><span></span></div>
+      <div class="row srow"><span class="name"><span class="n">archive-old.sh</span><span class="d">把 90 天前的報表壓縮歸檔</span></span><span class="mono">v1</span><span class="c3 note">舊報表歸檔</span><span class="mono c4">9/01 · tim</span><span class="c4"><button type="button" class="btn sm">立即執行</button></span><span class="c5"></span><span></span></div>
+      <div class="row srow"><span class="name"><span class="n">clean-docker.sh</span><span class="d">清理無標籤映像</span></span><span class="mono">v2</span><span class="c3 note">未綁定</span><span class="mono c4">10/30 · tim</span><span class="c4"><button type="button" class="btn sm">立即執行</button></span><span class="c5"></span><span></span></div>
+    </section></main></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"light":{"editor":"boolean","default":false,"section":"主題"},"$preview":{"width":1440,"height":2600}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const light = this.props.light ?? false;
+    return { theme: light ? 'light' : 'dark', themeLabel: light ? '深色' : '淺色' };
+  }
+}
+</script>
+</body>
+</html>
