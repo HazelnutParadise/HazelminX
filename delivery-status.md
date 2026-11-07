@@ -1,7 +1,7 @@
 # Delivery Status
 
 ## Current Phase
-M0 基礎與設計：Core 與 Agent 後端骨架（票 003、004、008、009、011、012）已合併進 `main`；設計系統與 UI/UX 原型（票 002）進行中。
+M0 基礎與設計：Core 與 Agent 後端骨架（票 003、004、008、009、011、012）已合併進 `main`；Core↔Agent 通道（票 007）在 PR 等審查；設計系統與 UI/UX 原型（票 002）進行中。
 
 ## Stage Objective
 完成 `DESIGN.md` 與主要畫面原型並通過設計審查，讓票 003、004、005、007 可以在一致的視覺與互動基準上開工；M0 結束時 Core、Agent、Web 骨架可建置並在 CI 通過。
@@ -9,7 +9,8 @@ M0 基礎與設計：Core 與 Agent 後端骨架（票 003、004、008、009、0
 ## Active Workstreams
 - 設計系統與原型（票 002，PR #102）→ `DESIGN.md`、`docs/design/`、`DESIGN-REVIEW.md`。
 - 1Panel 功能基線盤點（票 092，PR #99）→ `docs/baseline/`。
-- 已在 `main` 但驗收未完成：票 003 等 CI（票 006）；票 004 缺 Komodo Periphery 改造起點的 crate 與授權清單、閒置 CPU 與記憶體量測；票 008 的 ENG-003 Agent 端等票 004、007。
+- Core↔Agent 通道（票 007，分支 `ticket/007-core-agent-protocol`）→ `docs/contracts/`、`agent/crates/protocol`、Agent 連線與持久步驟紀錄、`core/internal/protocol`、`core/internal/nodes`。SEC-011 的升級路徑等票 036，其餘驗收已附證據。
+- 已在 `main` 但驗收未完成：票 003 等 CI（票 006）；票 004 缺 Komodo Periphery 改造起點的 crate 與授權清單、閒置 CPU 與記憶體量測。票 008 的 ENG-003 Agent 端已由票 007 接上，008 改為 done。
 - 參考專案研究收尾 → `docs/research/`（1Panel 後端／前端、Komodo Periphery、Portainer Git Stack、Beszel 報告待補）。
 
 ## Milestones
@@ -26,10 +27,10 @@ M0 基礎與設計：Core 與 Agent 後端骨架（票 003、004、008、009、0
 None。
 
 ## Next Verifiable Output
-票 007 Core↔Agent 協定：Agent 以 mTLS WebSocket 連上 Core，交換協定版本與能力，Core 與 Agent 用同一組黃金 JSON 樣本通過契約測試。PR #102（票 002）合併後，票 005 依 `DESIGN.md` token 建立 `web/` 骨架。
+票 019 節點註冊：一次性註冊碼換節點憑證（用票 007 的 `nodes.PKI.IssueNodeCertificate`），寫入 Agent 的 `node.crt`／`core-ca.crt`，並以節點紀錄實作 `nodes.Authorizer` 的撤銷。PR #102（票 002）合併後，票 005 依 `DESIGN.md` token 建立 `web/` 骨架。
 
 ## Next Ticket
-007 Core 與 Agent 協定（ready）。005 前端骨架仍等票 002 完成。另外 014、022、023、026 的前置票都已 done，狀態改為 ready；010、013、024、025 還在等 003、004 或 008 完成驗收。
+007 合併後 019 才能開工（還等 007 done）；票 008 done 後 024、025 的前置票都已 done，改為 ready。005 前端骨架仍等票 002 完成。另外 014、022、023、026 的前置票都已 done，狀態改為 ready；010、013、024、025 還在等 003、004 或 008 完成驗收。
 
 ## Decision Log
 | decision | rationale | timestamp | impacted_ticket_ids |
@@ -50,6 +51,9 @@ None。
 | `/management/v1/jobs` 掛在 IAM 驗證之後：讀取要全域 `platform:read`，提交與取消要全域 `platform:write`；各工作種類的權限與範圍由票 010 定 | 合併 008 與 009 時工作 API 原本不需登入；AGENTS.md 要求危險操作在後端驗權 | 2026-11-07 | 008、009、010 |
 | 003、004、008 驗收未完成仍先合併進 `main`，狀態維持 in_progress | 使用者決定（2026-11-07）；003 的 CI 條件要等 006，而 006 需要 003 先合併 | 2026-11-07 | 003、004、006、008 |
 | 主金鑰存 `<data-dir>/master.key`（多世代、舊世代永不刪）；SQLite 改 `synchronous=FULL`；`master.key` 存在而 `core.db` 不在視為遺失而非全新安裝 | 35.2 主金鑰不與資料庫同放、輪替後舊備份須可解密；DAT-002 已確認交易不可丟；T-012 不冒用空白庫 | 2026-11-07 | 011、078、013 |
+| Core↔Agent 通道：Agent 撥出到 Core 的 TLS 1.3 WebSocket（預設 `:9801`）；Core 有自己的 Ed25519 CA，私鑰存機密服務；雙方在握手時各自簽雙方 nonce、協定版本、節點指紋與 session ID；直連時另要求 TLS 用戶端憑證與握手身分一致；HTTP Header 一律不當身分 | NOD-002 不開節點入站埠；T-024 經終止 TLS 的代理仍要有獨立節點身分；Komodo 的 Noise 握手在 Go 端沒有相容實作 | 2026-11-08 | 007、019 |
+| Agent 每個步驟開始前與結束後先寫 append-only `journal.jsonl` 並 fsync 才回報；同一工作步驟有完成或失敗紀錄就重送紀錄不重跑；重開機時中斷的步驟只有 Core 對帳後送來、且標記可重試時才再跑 | ENG-003 不把執行中工作重設成功或重跑；可重試步驟若一律拒絕，對帳後的重跑會永遠卡住 | 2026-11-08 | 007、008 |
+| 握手五種訊息寬鬆解碼（忽略未知欄位），握手後訊息嚴格解碼（未知欄位、未知類型都不執行） | NOD-011 不以未知欄位猜測執行；不相容的新舊版本仍要能互相說出支援範圍（T-021） | 2026-11-08 | 007 |
 
 ## Source Links
 - 架構決策：`ENG.md`

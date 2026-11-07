@@ -1,0 +1,15 @@
+{
+  "agentNonce": "nPLF4d_bF4hEwTJ3tS1W7meg6nSE-FaxACLGGEfKzIY",
+  "agentProof": "fJC4ov7O/9qlrEpObmzzBlIVFdctGZeI8GexEb5+v8RUZNwwLx0CHGDWzqRyt+rgPAI5s/HaHVg8wql8n1o2CQ==",
+  "agentTranscript": "hazelminx-session-v1\nagent\nnPLF4d_bF4hEwTJ3tS1W7meg6nSE-FaxACLGGEfKzIY\nDSU2f4ZIlXX9xHB6z1FTziOjqHV_L74zDoIaJ23nt6E\n1\ne0a56a32d47e84d38d4efc694da4e0dc90cf2e44ba0f5b1606b62af4a2087659\nses_fixture0001\n",
+  "coreNonce": "DSU2f4ZIlXX9xHB6z1FTziOjqHV_L74zDoIaJ23nt6E",
+  "coreProof": "rj2Co7cGFWqUqAXu5Dg76y5DoHz7oQTSpDKWC3njviDr/nqGf3McH+8PD4yOsxmbmId7m1/FuYzbXq2ZcPmYCw==",
+  "coreSeedHex": "c89f132b2fce662d66155952969e805d0ce43531acb77b339ee523463473e860",
+  "coreTranscript": "hazelminx-session-v1\ncore\nnPLF4d_bF4hEwTJ3tS1W7meg6nSE-FaxACLGGEfKzIY\nDSU2f4ZIlXX9xHB6z1FTziOjqHV_L74zDoIaJ23nt6E\n1\ne0a56a32d47e84d38d4efc694da4e0dc90cf2e44ba0f5b1606b62af4a2087659\nses_fixture0001\n",
+  "nodeFingerprint": "e0a56a32d47e84d38d4efc694da4e0dc90cf2e44ba0f5b1606b62af4a2087659",
+  "nodePublicKeyHex": "2e9a6aec19fedafd319cf9b75a3fd1293295bea671e3bfd3d2f3f1f765a83e8b",
+  "nodeSeedHex": "38f3be8f86d4d698fdec8a50eaaa764b7d1ff095a91ec70738ae6cb6acc605d8",
+  "note": "Test-only keys derived from public seeds. Never deploy.",
+  "protocolVersion": 1,
+  "sessionId": "ses_fixture0001"
+}

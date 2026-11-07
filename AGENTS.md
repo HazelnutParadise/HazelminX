@@ -50,3 +50,6 @@
 ## Follow-ups
 
 - 第一次正式發版前，把 `core/internal/store/migrations/` 的所有 migration 合併成單一個 `0001` 檔，`store` 的連號檢查與 schema 版本相關測試一起更新。已經有使用者安裝的版本發出去之後，就不能再這樣合併。
+- `core/internal/api/iam_routes.go` 的 `setSessionCookies` 用牆上時鐘 `time.Until(sess.ExpiresAt)` 算 Cookie 壽命，與 IAM 服務的時鐘不同源；`internal/api` 測試的固定時鐘（2026-11-07T00:00Z）因此從 2026-11-07T12:00Z 起讓 5 個登入相關測試失敗。改成用 IAM 服務的時鐘算剩餘秒數。
+- Agent 的 `journal.jsonl` 只增不減，`Journal` 也把所有紀錄留在記憶體；長期運作前要加壓縮：Core 確認過、而且工作已是終態的步驟紀錄可以移到封存檔，保留最近的完成紀錄供重送。
+- `nodes.LoadOrCreatePKI` 第一次建立時依序寫入 `node-pki/ca`、`node-pki/core` 兩筆機密，第二筆失敗會留下半套，之後啟動一律拒絕；要改成同一個交易建立兩筆，或提供清除半套的復原指令。

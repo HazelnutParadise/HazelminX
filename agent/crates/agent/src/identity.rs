@@ -62,6 +62,12 @@ impl Identity {
         Ok(Identity { signing, dir })
     }
 
+    /// Signs `msg` with the node key (handshake proof).
+    pub fn sign(&self, msg: &[u8]) -> [u8; 64] {
+        use ed25519_dalek::Signer;
+        self.signing.sign(msg).to_bytes()
+    }
+
     pub fn verifying_key(&self) -> VerifyingKey {
         self.signing.verifying_key()
     }

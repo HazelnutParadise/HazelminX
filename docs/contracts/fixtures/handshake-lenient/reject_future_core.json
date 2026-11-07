@@ -1,0 +1,10 @@
+{
+  "type": "reject",
+  "code": "PROTOCOL_INCOMPATIBLE",
+  "message": "core speaks 4..5",
+  "supported": {
+    "min": 4,
+    "max": 5
+  },
+  "upgradeHint": "https://example.invalid/upgrade"
+}

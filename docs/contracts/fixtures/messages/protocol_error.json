@@ -1,0 +1,5 @@
+{
+  "type": "protocol_error",
+  "code": "UNKNOWN_MESSAGE",
+  "message": "message type \"step_teleport\" is not part of protocol 1"
+}

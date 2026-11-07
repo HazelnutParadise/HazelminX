@@ -17,6 +17,10 @@ import (
 type Config struct {
 	// ListenAddr is the management HTTP listener, e.g. "127.0.0.1:9800".
 	ListenAddr string
+	// AgentListenAddr is the TLS listener agents dial (ticket 007). Agents
+	// connect out to it, so nodes need no inbound port; this one port on the
+	// Core is reachable from the nodes.
+	AgentListenAddr string
 	// DataDir holds the platform database, job records and state (37 章：/var/lib/hazelminx).
 	DataDir string
 	// LogFormat is "json" (default) or "text".
@@ -25,9 +29,10 @@ type Config struct {
 
 // Defaults match the install layout in ENG.md and spec chapter 37.
 var Defaults = Config{
-	ListenAddr: "127.0.0.1:9800",
-	DataDir:    "/var/lib/hazelminx",
-	LogFormat:  "json",
+	ListenAddr:      "127.0.0.1:9800",
+	AgentListenAddr: "0.0.0.0:9801",
+	DataDir:         "/var/lib/hazelminx",
+	LogFormat:       "json",
 }
 
 // Load parses args (without the program name) and the environment.
@@ -35,6 +40,9 @@ func Load(args []string, getenv func(string) string) (Config, error) {
 	cfg := Defaults
 	if v := getenv("HAZELMINX_LISTEN_ADDR"); v != "" {
 		cfg.ListenAddr = v
+	}
+	if v := getenv("HAZELMINX_AGENT_LISTEN"); v != "" {
+		cfg.AgentListenAddr = v
 	}
 	if v := getenv("HAZELMINX_DATA_DIR"); v != "" {
 		cfg.DataDir = v
@@ -45,6 +53,7 @@ func Load(args []string, getenv func(string) string) (Config, error) {
 
 	fs := flag.NewFlagSet("hazelminx-core", flag.ContinueOnError)
 	fs.StringVar(&cfg.ListenAddr, "listen", cfg.ListenAddr, "management HTTP listen address")
+	fs.StringVar(&cfg.AgentListenAddr, "agent-listen", cfg.AgentListenAddr, "agent channel TLS listen address")
 	fs.StringVar(&cfg.DataDir, "data-dir", cfg.DataDir, "platform data directory")
 	fs.StringVar(&cfg.LogFormat, "log-format", cfg.LogFormat, "log format: json or text")
 	if err := fs.Parse(args); err != nil {
@@ -57,6 +66,12 @@ func (c Config) validate() error {
 	var errs []error
 	if !strings.Contains(c.ListenAddr, ":") {
 		errs = append(errs, fmt.Errorf("listen address %q must be host:port", c.ListenAddr))
+	}
+	if !strings.Contains(c.AgentListenAddr, ":") {
+		errs = append(errs, fmt.Errorf("agent listen address %q must be host:port", c.AgentListenAddr))
+	}
+	if c.AgentListenAddr == c.ListenAddr {
+		errs = append(errs, fmt.Errorf("agent listen address %q must differ from the management listener", c.AgentListenAddr))
 	}
 	if !filepath.IsAbs(c.DataDir) {
 		errs = append(errs, fmt.Errorf("data dir %q must be an absolute path", c.DataDir))

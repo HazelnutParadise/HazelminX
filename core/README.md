@@ -20,14 +20,15 @@ go test ./...
 | 設定 | 旗標 | 環境變數 | 預設 |
 |---|---|---|---|
 | 管理 API 監聽位址 | `-listen` | `HAZELMINX_LISTEN_ADDR` | `127.0.0.1:9800` |
+| Agent 通道監聽位址（TLS） | `-agent-listen` | `HAZELMINX_AGENT_LISTEN` | `0.0.0.0:9801` |
 | 資料目錄 | `-data-dir` | `HAZELMINX_DATA_DIR` | `/var/lib/hazelminx` |
 | 日誌格式 | `-log-format` | `HAZELMINX_LOG_FORMAT` | `json` |
 
-端點：`GET /healthz`（含資料庫健康）、`GET /management/v1`（操作總覽，列出所有操作與已註冊的工作種類）、`/management/v1/jobs`（工作：列出、提交、取得、事件接續、取消）。完整契約見票 010。
+端點：`GET /healthz`（含資料庫健康）、`GET /management/v1`（操作總覽，列出所有操作與已註冊的工作種類）、`/management/v1/jobs`（工作：列出、提交、取得、事件接續、取消）、`GET /management/v1/agent-connections`（已連線的 Agent 與最近被拒絕的連線，含雙方協定範圍）。完整契約見票 010。
 
 ## 工作引擎
 
-長操作一律建立工作（`POST /management/v1/jobs`，回 `202` 與工作 ID），工作不隨 HTTP 連線消失。每個工作種類向引擎註冊一個 `jobs.Handler`，自己定義步驟規劃、執行前再檢查、執行、復原、對帳與完成檢查；沒有註冊的種類不能提交。目前執行檔內沒有註冊任何種類，Agent 相關的種類隨票 004／007 進來。
+長操作一律建立工作（`POST /management/v1/jobs`，回 `202` 與工作 ID），工作不隨 HTTP 連線消失。每個工作種類向引擎註冊一個 `jobs.Handler`，自己定義步驟規劃、執行前再檢查、執行、復原、對帳與完成檢查；沒有註冊的種類不能提交。目前註冊的種類只有 `node.inspect`（唯讀：問指定節點的 Agent 是誰，完成檢查是回答者的指紋等於工作指定的節點）。
 
 - 狀態依規格 33.1，表格在 `internal/jobs/state.go`；終態不可再改。
 - 同一 `requestId` 相同內容回同一工作，不同內容回 `409 REQUEST_ID_CONFLICT`。
@@ -36,6 +37,15 @@ go test ./...
 - 失敗若所有已執行步驟都有復原方法則自動復原為 `rolled_back`；復原失敗為 `needs_attention`；執行端斷線或 Core 中途停止為 `unknown`，由 `Engine.Reconcile` 以執行端紀錄接續，不重跑不可逆步驟。
 - 預算：每類並行上限（`jobs.Options.Budgets`）與資料目錄空間保留（`ReserveBytes`）。
 - 工作端點掛在 IAM 驗證之後：讀取要全域 `platform:read`，提交與取消要全域 `platform:write`；各工作種類自己的權限與範圍隨票 010 接上。
+
+## Agent 通道（票 007）
+
+Agent 主動連到 `-agent-listen` 的 `/agent/v1/connect`（TLS 1.3 上的 WebSocket），節點不需要開任何入站連接埠。訊息格式、握手與版本規則在 `docs/contracts/README.md`，Go 型別在 `internal/protocol`。
+
+- 第一次啟動時在機密服務建立節點 CA 與 Core 身分（`node-pki/ca`、`node-pki/core`，私鑰加密存放）。節點憑證由 `nodes.PKI.IssueNodeCertificate` 簽發，註冊流程（票 019）會用它；Agent 要釘選的 CA 是 `PKI.CACertificatePEM()`。
+- 每次連線雙方都要證明身分：Core 驗節點憑證鏈、用途、指紋，以及節點私鑰對握手內容的簽章；直連時 TLS 用戶端憑證必須是同一節點。Agent 驗 Core 憑證鏈、`core.hazelminx.internal` 名稱與 Core 的簽章，不看 IP 或主機名。HTTP Header 一律不當身分，所以經會終止 TLS 的代理時仍有獨立的節點身分證明。
+- 協定版本沒有交集時拒絕連線並記錄雙方範圍；同一節點已有連線時拒絕第二條（複製的虛擬機）；`Authorizer` 回 `ErrNodeRevoked` 時拒絕（撤銷清單在票 019）。
+- 工作步驟經 `nodes.StepRunner` 送到節點：Agent 沒宣告的能力不送；節點不在線是已知失敗（沒送出任何東西）；送出後斷線是 `unknown`。Agent 重連時 `nodes.Reconciler` 先向 Agent 查持久紀錄再交給引擎對帳，已完成的步驟不重跑。
 
 ## 首次登入與權限（票 009）
 
@@ -56,6 +66,8 @@ go test ./...
 | `internal/store` | SQLite 開啟、WAL、`synchronous=FULL`、開檔前 `quick_check`、只升不降的 migration（`migrations/NNNN_name.sql`） |
 | `internal/api` | Gin 路由、健康檢查、總覽、工作 API、介面靜態檔；`iam_routes.go` 是工作階段、CSRF 與授權中介層（`RequireGlobal`、`RequireScoped`）與 IAM 端點 |
 | `internal/jobs` | 工作引擎：狀態機、冪等鍵、資源鎖、預算、事件序號、診斷、SQLite 儲存 |
+| `internal/protocol` | Core↔Agent 訊息型別、嚴格與寬鬆解碼、版本協商、握手簽章內容；`fixturegen/` 重產 `docs/contracts/fixtures` 的確定性樣本 |
+| `internal/nodes` | 節點 PKI、Agent 連線 hub（握手、會話、心跳）、步驟執行器、重連對帳、`node.inspect` 工作種類 |
 | `internal/iam` | 帳號、角色與資源範圍、密碼雜湊、工作階段、預設拒絕的授權判定、稽核紀錄、登入嘗試限制 |
 | `internal/secrets` | 機密參照（加密值、版本、使用範圍、到期、變更紀錄）、主金鑰檔與輪替、Token 雜湊查驗 |
 | `web` | 嵌入式前端（`embedweb` build tag） |
