@@ -478,10 +478,22 @@ body{margin:0}
     <section class="panel" aria-labelledby="h-h">
       <div class="ph"><h2 id="h-h">設定版本 · example.tw</h2></div>
       <div class="tw" style="--tc:minmax(min(160px,34%),1fr) auto var(--k3,auto) var(--k4,auto) auto"><div class="row hd cols-5"><span class=""><span class="sortable on">版本 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg></span></span><span class=""><span class="sortable">結果 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span><span class="c3"><span class="sortable">誰 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span><span class="c4"><span class="sortable">時間 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span><span class=""></span></div>
-      <div class="row  cols-5"><span class="name"><span class="n">v7</span><span class="d">新增 wiki CNAME</span></span><span><span class="st ok"><i aria-hidden="true"></i>目前</span></span><span class="c3">tim</span><span class="mono c4">11/07 02:10</span><span><button type="button" class="btn sm">看差異</button></span></div>
-      <div class="row  cols-5"><span class="name"><span class="n">v6</span><span class="d">改 shop A</span></span><span><span class="st ok"><i aria-hidden="true"></i>套用成功</span></span><span class="c3">tim</span><span class="mono c4">11/04 21:30</span><span><button type="button" class="btn sm">回滾到此版</button></span></div>
+      <div class="row  cols-5"><span class="name"><span class="n">v7</span><span class="d">新增 wiki CNAME</span></span><span><span class="st ok"><i aria-hidden="true"></i>目前</span></span><span class="c3">tim</span><span class="mono c4">11/07 02:10</span><span><button type="button" class="btn sm">與上一版比較</button></span></div>
+      <div class="row sel cols-5"><span class="name"><span class="n">v6</span><span class="d">改 shop A</span></span><span><span class="st ok"><i aria-hidden="true"></i>套用成功</span></span><span class="c3">tim</span><span class="mono c4">11/04 21:30</span><span><button type="button" class="btn sm on" aria-pressed="true">與目前比較</button></span></div>
       <div class="row  cols-5"><span class="name"><span class="n">v5</span><span class="d">MX 改 mail</span></span><span><span class="st dng"><i aria-hidden="true"></i>checkzone 失敗 · 未套用</span></span><span class="c3">ops-ann</span><span class="mono c4">10/30 11:02</span><span><button type="button" class="btn sm">看輸出</button></span></div></div>
     </section></div>
+    <section class="panel" aria-labelledby="h-rd">
+      <div class="ph"><h2 id="h-rd">回滾到 v6 會改變的內容 · db.example.tw</h2><span class="note">v7（目前）→ v8（內容同 v6）</span><div class="wrap" style="margin-left:auto"><button type="button" class="btn sm">關閉</button><button type="button" class="btn sm pri">回滾到 v6</button></div></div>
+      <div class="diff" style="padding:8px 0">
+        <div><span class="ln">1</span><span class="ln">1</span><span>  $TTL 3600</span></div>
+        <div class="del"><span class="ln">2</span><span class="ln"></span><span>- @  IN SOA ns1.example.tw. hostmaster.example.tw. 2026110702 3600 900 1209600 300</span></div>
+        <div class="add"><span class="ln"></span><span class="ln">2</span><span>+ @  IN SOA ns1.example.tw. hostmaster.example.tw. 2026110703 3600 900 1209600 300</span></div>
+        <div><span class="ln">14</span><span class="ln">14</span><span>  shop   IN A      203.0.113.10</span></div>
+        <div class="del"><span class="ln">15</span><span class="ln"></span><span>- wiki   IN CNAME  hazel-jp-02.example.tw.</span></div>
+        <div><span class="ln">16</span><span class="ln">15</span><span>  @      IN MX 10  mail.example.tw.</span></div>
+      </div>
+      <div class="wrap" style="padding:10px 14px;border-top:1px solid var(--line)"><span class="note">影響</span><span class="st dng"><i aria-hidden="true"></i>wiki.example.tw 停止解析</span><span class="st info"><i aria-hidden="true"></i>序號 2026110702 → 2026110703</span><span class="st info"><i aria-hidden="true"></i>通知次要 DNS ns2.example.tw</span></div>
+    </section>
     <section class="chart" aria-label="移除模組確認範例"><div class="ph"><h2>移除模組</h2></div>
       <div class="body" style="padding:12px 14px"><div class="modal" role="alertdialog" aria-labelledby="h-rm" style="max-width:none">
         <h2 id="h-rm" style="font-size:16px">移除 BIND DNS @ <span class="mono">hazel-tw-01</span>？</h2>

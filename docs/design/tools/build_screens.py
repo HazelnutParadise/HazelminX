@@ -330,7 +330,7 @@ def projects() -> str:
       <div style="padding: 12px 14px; display: flex; flex-direction: column; gap: 8px">{U.state_timeline("oooooooofoooooooooooooro" , [f"#{380 + i}" for i in range(24)])}<div class="note" style="display:flex;justify-content:space-between"><span>#380 · 10 月 21 日</span><span>#403 · a3f9c1e · 02:57 今天</span></div></div>
       <div class="row hd dprow"><span>部署</span><span>commit</span><span class="c3">觸發</span><span class="c4">時長</span><span>結果</span></div>
       <div class="row dprow"><span>#403</span><span class="mono">a3f9c1e 修正結帳逾時</span><span class="c3">Webhook</span><span class="mono c4">1 分 48 秒</span><span>{U.status("ok", "成功")} <span class="note">02:57</span></span></div>
-      <div class="row dprow"><span>#402</span><span class="mono">88b1d02 升級 redis 7.4</span><span class="c3">手動 · tim</span><span class="mono c4">3 分 12 秒</span><span>{U.status("warn", "回滾")} <button type="button" class="btn sm">回到這版</button></span></div>
+      <div class="row dprow"><span>#402</span><span class="mono">88b1d02 升級 redis 7.4</span><span class="c3">手動 · tim</span><span class="mono c4">3 分 12 秒</span><span>{U.status("warn", "回滾")} <a class="btn sm" href="DeployCheck.dc.html">與目前比較</a></span></div>
       <div class="row dprow"><span>#401</span><span class="mono">4e7a9c0 新增 webhook 重試</span><span class="c3">Webhook</span><span class="mono c4">1 分 51 秒</span><span>{U.status("ok", "成功")} <span class="note">昨天 18:02</span></span></div>
     </section>"""
 
@@ -2050,9 +2050,22 @@ def host_services() -> str:
     <section class="panel" aria-labelledby="h-h">
       <div class="ph"><h2 id="h-h">設定版本 · example.tw</h2></div>
       <div class="row hd srow"><span>版本</span><span>結果</span><span class="c3">誰</span><span class="c4">時間</span><span class="c4"></span><span class="c5"></span><span></span></div>
-      <div class="row srow"><span class="name"><span class="n">v7</span><span class="d">新增 wiki CNAME</span></span><span>{U.status("ok", "目前")}</span><span class="c3">tim</span><span class="mono c4">11/07 02:10</span><span class="c4"></span><span class="c5"></span><span><button type="button" class="btn sm">看差異</button></span></div>
-      <div class="row srow"><span class="name"><span class="n">v6</span><span class="d">改 shop A</span></span><span>{U.status("ok", "套用成功")}</span><span class="c3">tim</span><span class="mono c4">11/04 21:30</span><span class="c4"></span><span class="c5"></span><span><button type="button" class="btn sm">回滾到此版</button></span></div>
+      <div class="row srow"><span class="name"><span class="n">v7</span><span class="d">新增 wiki CNAME</span></span><span>{U.status("ok", "目前")}</span><span class="c3">tim</span><span class="mono c4">11/07 02:10</span><span class="c4"></span><span class="c5"></span><span><button type="button" class="btn sm">與上一版比較</button></span></div>
+      <div class="row srow sel"><span class="name"><span class="n">v6</span><span class="d">改 shop A</span></span><span>{U.status("ok", "套用成功")}</span><span class="c3">tim</span><span class="mono c4">11/04 21:30</span><span class="c4"></span><span class="c5"></span><span><button type="button" class="btn sm on" aria-pressed="true">與目前比較</button></span></div>
       <div class="row srow"><span class="name"><span class="n">v5</span><span class="d">MX 改 mail</span></span><span>{U.status("dng", "checkzone 失敗 · 未套用")}</span><span class="c3">ops-ann</span><span class="mono c4">10/30 11:02</span><span class="c4"></span><span class="c5"></span><span><button type="button" class="btn sm">看輸出</button></span></div>
+    </section>"""
+    rdiff = f"""
+    <section class="panel" aria-labelledby="h-rd">
+      <div class="ph"><h2 id="h-rd">回滾到 v6 會改變的內容 · db.example.tw</h2><span class="note">v7（目前）→ v8（內容同 v6）</span><div class="wrap" style="margin-left:auto"><button type="button" class="btn sm">關閉</button><button type="button" class="btn sm pri">回滾到 v6</button></div></div>
+      <div class="diff" style="padding:8px 0">
+        <div><span class="ln">1</span><span class="ln">1</span><span>  $TTL 3600</span></div>
+        <div class="del"><span class="ln">2</span><span class="ln"></span><span>- @  IN SOA ns1.example.tw. hostmaster.example.tw. 2026110702 3600 900 1209600 300</span></div>
+        <div class="add"><span class="ln"></span><span class="ln">2</span><span>+ @  IN SOA ns1.example.tw. hostmaster.example.tw. 2026110703 3600 900 1209600 300</span></div>
+        <div><span class="ln">14</span><span class="ln">14</span><span>  shop   IN A      203.0.113.10</span></div>
+        <div class="del"><span class="ln">15</span><span class="ln"></span><span>- wiki   IN CNAME  hazel-jp-02.example.tw.</span></div>
+        <div><span class="ln">16</span><span class="ln">15</span><span>  @      IN MX 10  mail.example.tw.</span></div>
+      </div>
+      <div class="wrap" style="padding:10px 14px;border-top:1px solid var(--line)"><span class="note">影響</span>{U.status("dng", "wiki.example.tw 停止解析")}{U.status("info", "序號 2026110702 → 2026110703")}{U.status("info", "通知次要 DNS ns2.example.tw")}</div>
     </section>"""
     def mrow(mod, node, ver, svc, boot, acts):
         return (f'<div class="row mrow"><span class="name"><span class="n">{mod}</span><span class="d mono">{node}</span></span><span class="mono c3">{ver}</span>'
@@ -2084,7 +2097,7 @@ def host_services() -> str:
         <div class="field"><label for="rmc">輸入 <span class="mono">bind@hazel-tw-01</span> 以確認</label><div class="inp"><input id="rmc" style="background:transparent;border:0;flex:1"></div></div>
         <div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">取消</button><button type="button" class="btn dng" disabled aria-disabled="true" style="opacity:.6">移除</button></div>
       </div></div></section>"""
-    main = head + scope + tiles + modules + installed + zones + records + f'<div class="cg">{apply}{history}</div>' + remove
+    main = head + scope + tiles + modules + installed + zones + records + f'<div class="cg">{apply}{history}</div>' + rdiff + remove
     return U.shell("svcmod", main)
 
 
