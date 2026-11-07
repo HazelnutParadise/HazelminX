@@ -7,6 +7,7 @@
 | `design-brief.md` | 三個方向的共同輸入：產品、讀者、核心資訊、主導覽、情感基調、硬性限制、示例資料（假設） |
 | `research-dashboards.md` | 現代 dashboard 與控制台的圖表做法調查（Beszel、Coolify、Railway、Netdata、Grafana、Datadog 等）與各畫面的圖表配置決定 |
 | `directions/` | 第一輪三個方向的總覽頁（A 星圖、B 航站、C 榛果）。已選定 B |
+| `ux-walkthrough.md` | 認知走查（六個任務）與啟發式掃描，以及市面面板版面慣例對照 |
 | `gap-analysis.md` | 規格 vs 畫面、參考專案 vs 我們的缺口盤點，與「圖形為主」第二輪的改動清單 |
 | `screens/` | 方向 B 定稿的 30 個畫板（Claude Design 畫布格式 `.dc.html`），由 `tools/build_screens.py` 產生 |
 | `tools/hxui.py` | 共用 token CSS、導覽、圖表元件（純 SVG，CSS hover，不用 JavaScript） |

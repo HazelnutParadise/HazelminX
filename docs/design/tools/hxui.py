@@ -44,33 +44,36 @@ body{{margin:0}}
 .hb .btn.sm{{min-height:32px;padding:0 10px;font-size:12px;color:var(--muted)}}
 .hb .btn:active{{transform:translateY(1px)}}
 .hb .panel{{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}}
-.hb .ph{{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}}
+.hb .ph{{display:flex;align-items:center;gap:10px;min-height:46px;padding:8px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}}
 .hb .ph .sub{{font-size:12px;color:var(--muted)}}
 .hb .ph .more{{margin-left:auto;font-size:13px;color:var(--hazel)}}
-.hb .card{{background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:6px}}
-.hb .row{{display:grid;gap:12px;align-items:center;min-height:44px;padding:0 14px;border-bottom:1px solid var(--line)}}
+.hb .card{{background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:8px}}
+.hb .row{{display:grid;gap:12px;align-items:center;min-height:44px;padding:0 16px;border-bottom:1px solid var(--line)}}
+.hb a.row{{cursor:pointer}}
 .hb .row:hover{{background:var(--raised)}}
 .hb .row:last-child{{border-bottom:0}}
 .hb .hd{{font-size:11px;color:var(--faint);letter-spacing:.06em;text-transform:uppercase;min-height:34px;font-weight:500}}
 .hb .hd:hover{{background:transparent}}
 .hb .name{{display:flex;flex-direction:column;gap:2px;min-width:0}}
-.hb .name .n{{font-family:"Geist Mono",ui-monospace,monospace;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
-.hb .name .d{{font-size:12px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
-.hb .st{{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}}
+.hb .name .n{{font-family:"Geist Mono",ui-monospace,monospace;font-weight:500;overflow-wrap:anywhere;line-height:1.3}}
+.hb .name .d{{font-size:12px;color:var(--faint);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;overflow-wrap:anywhere}}
+.hb .st{{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:12px;font-weight:500;padding:2px 8px 2px 7px;border-radius:999px;background:color-mix(in srgb,currentColor 13%,transparent)}}
+.hb .lg .st,.hb .mx .st{{padding:1px 7px 1px 6px}}
 .hb .st i{{display:inline-block;width:8px;height:8px;flex:none}}
 .hb .st.ok{{color:var(--ok)}}.hb .st.ok i{{border-radius:50%;background:var(--ok)}}
 .hb .st.warn{{color:var(--warn)}}.hb .st.warn i{{border-radius:50%;border:2px solid var(--warn)}}
 .hb .st.dng{{color:var(--danger)}}.hb .st.dng i{{background:var(--danger)}}
 .hb .st.info{{color:var(--blue)}}.hb .st.info i{{background:var(--blue)}}
 .hb .st.off{{color:var(--muted)}}.hb .st.off i{{border-radius:50%;border:2px solid var(--muted);border-style:dashed}}
-.hb .nv{{display:flex;align-items:center;gap:10px;min-height:40px;padding:0 10px;border-radius:6px;font-size:14px;color:var(--ink)}}
+.hb .nv{{display:flex;align-items:center;gap:10px;min-height:38px;padding:0 10px;border-radius:6px;font-size:13.5px;color:var(--ink);border:0;background:transparent;width:100%;text-align:left}}
+.hb .nv svg{{flex:none;color:var(--muted)}}.hb .nv.cur svg{{color:var(--hazel)}}
 .hb .nv:hover{{background:var(--raised);color:var(--ink)}}
 .hb .nv.cur{{background:var(--raised);color:var(--hazel);font-weight:600}}
 .hb .nv .cnt{{margin-left:auto;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px}}
 .hb .kbd{{font-family:"Geist Mono",ui-monospace,monospace;font-size:11px;color:var(--faint);border:1px solid var(--line);border-radius:4px;padding:1px 5px;margin-left:auto}}
 .hb .navgrp{{font-size:11px;color:var(--faint);letter-spacing:.06em;padding:6px 10px 0}}
 .hb .navcol{{display:flex;flex-direction:column;gap:2px}}
-.hb .tiles{{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(170px,100%),1fr));gap:10px}}
+.hb .tiles{{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(170px,100%),1fr));gap:12px}}
 .hb .tile{{display:flex;flex-direction:column;gap:4px;padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:8px;min-width:0}}
 .hb .tile .l{{font-size:12px;color:var(--muted)}}
 .hb .tile .v{{font-size:28px;font-weight:600;line-height:1.1;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}}
@@ -82,7 +85,7 @@ body{{margin:0}}
 .hb .meter .fl{{height:100%;border-radius:4px;background:var(--hazel)}}
 .hb .meter .fl.warn{{background:var(--warn)}}.hb .meter .fl.dng{{background:var(--danger)}}
 .hb .meter .num{{font-family:"Geist Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;font-size:12px;white-space:nowrap}}
-.hb .cg{{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(440px,100%),1fr));gap:12px}}
+.hb .cg{{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(440px,100%),1fr));gap:16px}}
 .hb .chart{{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;min-width:0}}
 .hb .chart .ph{{padding:8px 12px}}
 .hb .chart .unit{{font-size:12px;color:var(--faint)}}
@@ -234,12 +237,40 @@ body{{margin:0}}
 .hb .wrap{{display:flex;flex-wrap:wrap;gap:8px;align-items:center}}
 .hb .scroll{{overflow-x:auto}}
 .hb .aside{{width:340px;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:18px;padding:18px 16px 24px}}
-.hb .main{{flex:999 1 560px;min-width:0;display:flex;flex-direction:column;gap:22px;padding:18px 24px 40px}}
-.hb .side{{width:232px;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:14px;padding:14px 10px 20px}}
+.hb .main{{flex:999 1 560px;min-width:0;display:flex;flex-direction:column;gap:16px;padding:20px 24px 40px}}
+.hb .body{{display:flex;flex-wrap:wrap;align-items:stretch;flex:1}}
+.hb .side{{width:220px;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:10px;padding:12px 10px 16px}}
+.hb .side .coll{{margin-top:auto;color:var(--muted)}}
+.hb .top{{display:flex;align-items:center;gap:14px;min-height:56px;padding:0 16px 0 0;border-bottom:1px solid var(--line);background:var(--panel)}}
+.hb .brand{{display:flex;align-items:center;gap:10px;width:220px;padding:0 16px;font-weight:600;font-size:15px;border-right:1px solid var(--line);align-self:stretch}}
+.hb .logo{{width:22px;height:22px;border-radius:50%;background:var(--hazel);display:inline-block;box-shadow:inset 0 0 0 5px var(--panel),inset 0 0 0 7px var(--hazel);flex:none}}
+.hb .crumb{{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;white-space:nowrap}}
+.hb .crumb .sep{{color:var(--faint)}}
+.hb .top .search{{width:auto;flex:1 1 220px;max-width:420px;min-height:36px;color:var(--muted);gap:8px;margin-left:auto}}
+.hb .top .search .kbd{{margin-left:auto}}
+.hb .tright{{display:flex;align-items:center;gap:4px;margin-left:auto}}
+.hb .obs{{font-size:12px;color:var(--muted);margin-right:8px;white-space:nowrap}}
+.hb .ib{{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:36px;min-height:36px;padding:0 8px;border-radius:6px;border:0;background:transparent;color:var(--muted);font-size:13px}}
+.hb .ib:hover{{background:var(--raised);color:var(--ink)}}
+.hb .ib.user{{padding-right:10px}}
+.hb .badge{{position:absolute;top:3px;right:3px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--hazel);color:var(--hazelink);font-size:10px;font-weight:600;font-family:"Geist Mono",ui-monospace,monospace;display:flex;align-items:center;justify-content:center}}
+.hb .badge.dng{{background:var(--danger)}}
+.hb .acts{{display:inline-flex;gap:2px;justify-content:flex-end}}
+.hb .acts .ib{{min-width:32px;min-height:32px;padding:0}}
+.hb .phead{{display:flex;flex-wrap:wrap;align-items:center;gap:12px;min-height:40px}}
 .hb .nrow{{grid-template-columns:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) 110px minmax(0,.8fr)}}
 .hb .prow{{grid-template-columns:minmax(0,1.2fr) minmax(0,1.5fr) minmax(0,.5fr) minmax(0,.6fr) minmax(0,1fr) minmax(0,1.1fr)}}
 .hb .srow{{grid-template-columns:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) 110px minmax(0,.7fr)}}
-.hb .crow{{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,.4fr) minmax(0,.7fr)}}
+.hb .crow{{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,.4fr) minmax(0,.7fr) 130px}}
+.hb .row.cols-3{{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr)}}
+.hb .row.cols-4{{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}}
+.hb .row.cols-5{{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}}
+.hb .row.cols-6{{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}}
+.hb .row.acts-end{{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.2fr) 130px}}
+.hb .rank{{grid-template-columns:minmax(0,1.7fr) minmax(0,2fr) auto}}
+.hb .rank .mono,.hb .flowlist .mono{{white-space:normal!important;overflow-wrap:anywhere;line-height:1.3}}
+.hb .mxw,.hb .heatw{{overflow-x:auto}}
+.hb .row > span:last-child:has(> .btn),.hb .row > .acts{{justify-self:end}}
 .hb .drow{{grid-template-columns:minmax(0,.8fr) minmax(0,1.6fr) minmax(0,.6fr) minmax(0,1.4fr) minmax(0,.8fr)}}
 .hb .gprow{{grid-template-columns:minmax(0,1.4fr) minmax(0,.9fr) minmax(0,.5fr) minmax(0,1.2fr)}}
 .hb .garow{{grid-template-columns:minmax(0,.8fr) minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,1.4fr)}}
@@ -248,10 +279,17 @@ body{{margin:0}}
 .hb .rrow{{grid-template-columns:24px minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,.5fr) minmax(0,.6fr)}}
 @media (max-width:1100px){{.hb .aside{{width:100%;border-left:0;border-top:1px solid var(--line)}}}}
 @media (max-width:767px){{
- .hb .side{{width:100%;border-right:0;border-bottom:1px solid var(--line);padding-bottom:10px}}
- .hb .navcol{{flex-direction:row;flex-wrap:wrap}}.hb .side .nv{{flex:none;white-space:nowrap}}.hb .side .navcol:not(:first-of-type){{flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px}}.hb .navgrp{{display:none}}.hb .side .nv{{min-height:44px}}
+ .hb .side{{width:100%;border-right:0;border-bottom:1px solid var(--line);flex-direction:row;flex-wrap:nowrap;overflow-x:auto;gap:4px;padding:8px 12px}}
+ .hb .navgrp{{display:none}}.hb .navcol{{flex-direction:row;flex:none;gap:4px}}.hb .side .nv{{width:auto;min-height:36px;padding:0 10px;white-space:nowrap;font-size:13px}}.hb .side .nv .cnt{{margin-left:4px}}
  .hb .main{{padding:14px 16px 32px;gap:16px}}.hb .aside{{padding:14px 16px 24px}}
  .hb .c3,.hb .c4,.hb .c5,.hb .kbd{{display:none}}
+ .hb .top{{flex-wrap:wrap;padding:8px 12px;gap:8px;min-height:0}}.hb .brand{{width:auto;border:0;padding:0}}.hb .crumb{{display:none}}.hb .top .search{{order:3;flex:1 1 100%;max-width:none;margin:0}}.hb .obs{{display:none}}.hb .ib.user span{{display:none}}
+ .hb .side .coll{{display:none}}.hb .nv svg{{display:none}}
+ .hb .row[class*="cols-"],.hb .row.acts-end{{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) auto}}
+ .hb .acts .ib:nth-child(n+3){{display:none}}
+ .hb .rank{{grid-template-columns:minmax(0,1fr) auto;row-gap:4px}}.hb .rank .bar{{grid-column:1/-1}}
+ .hb .mx{{min-width:620px}}.hb .heat{{min-width:720px}}
+ .hb .mx .rl{{white-space:normal}}
  .hb .ch-d{{display:none}}.hb .ch-m{{display:block}}
  .hb .heat i{{min-height:18px}}
  .hb .steps{{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -274,6 +312,54 @@ body{{margin:0}}
  .hb .pstage{{min-width:96px}}
 }}
 """
+
+ICONS = {
+ "overview": '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+ "jobs": '<path d="M3 12h4l2-6 4 12 2-6h6"/>',
+ "attention": '<path d="M12 3 2.5 20h19L12 3z"/><path d="M12 9v5"/><circle cx="12" cy="17" r=".6"/>',
+ "terminal": '<path d="m5 7 5 5-5 5"/><path d="M12 19h7"/>',
+ "nodes": '<rect x="3" y="4" width="18" height="7" rx="1.5"/><rect x="3" y="13" width="18" height="7" rx="1.5"/><circle cx="7" cy="7.5" r=".7"/><circle cx="7" cy="16.5" r=".7"/>',
+ "docker": '<path d="M12 3 3 7.5v9L12 21l9-4.5v-9L12 3z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/>',
+ "k8s": '<path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7L12 2.5z"/><circle cx="12" cy="12" r="3"/>',
+ "storage": '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 13h18"/><circle cx="7" cy="16" r=".7"/>',
+ "files": '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>',
+ "projects": '<path d="m12 3 9 5-9 5-9-5 9-5z"/><path d="m3 13 9 5 9-5"/><path d="m3 17 9 5 9-5"/>',
+ "store": '<path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
+ "db": '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+ "ai": '<rect x="6" y="6" width="12" height="12" rx="2"/><rect x="10" y="10" width="4" height="4"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/>',
+ "backup": '<path d="M12 4v10"/><path d="m8 10 4 4 4-4"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/>',
+ "cron": '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+ "web": '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+ "api": '<path d="M7 7h10M7 12h7M7 17h10"/><path d="m16 5 2 2-2 2M8 15l-2 2 2 2"/>',
+ "security": '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6l-8-3z"/><path d="m9 12 2 2 4-4"/>',
+ "analytics": '<path d="M4 20h16"/><path d="M6 16v-5M11 16V8M16 16v-3M21 16V5"/>',
+ "events": '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4l2-2z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+ "logs": '<path d="M6 3h8l4 4v14H6V3z"/><path d="M14 3v4h4M9 12h6M9 16h6"/>',
+ "iam": '<circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15 15a4 4 0 0 1 6 5"/>',
+ "settings": '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>',
+ "search": '<circle cx="11" cy="11" r="6"/><path d="m20 20-4-4"/>',
+ "sun": '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5"/>',
+ "user": '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+ "chevron": '<path d="m9 6 6 6-6 6"/>',
+ "collapse": '<path d="m14 7-5 5 5 5"/><path d="M4 4v16"/>',
+ "log": '<path d="M6 3h8l4 4v14H6V3z"/><path d="M9 13h6M9 17h6"/>',
+ "term": '<path d="m5 7 5 5-5 5"/><path d="M12 19h7"/>',
+ "restart": '<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/>',
+ "more": '<circle cx="6" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18" cy="12" r="1.2"/>',
+ "stop": '<rect x="6" y="6" width="12" height="12" rx="1.5"/>',
+}
+
+
+def icon(name: str, size: int = 16) -> str:
+    return (f'<svg viewBox="0 0 24 24" width="{size}" height="{size}" fill="none" stroke="currentColor" stroke-width="1.8" '
+            f'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{ICONS[name]}</svg>')
+
+
+def actions(keys: list) -> str:
+    """列尾快速動作：icon 按鈕，aria-label 是文字。keys 例 ["log","term","restart","more"]"""
+    lab = {"log": "日誌", "term": "終端機", "restart": "重啟", "more": "更多", "stop": "停止"}
+    return '<span class="acts">' + "".join(f'<button type="button" class="ib" aria-label="{lab[k]}" title="{lab[k]}">{icon(k)}</button>' for k in keys) + "</span>"
+
 
 NAV = [
     ("總覽", "overview", "Overview.dc.html"),
@@ -302,50 +388,53 @@ GROUPS = [("基礎設施", ["nodes", "docker", "k8s", "storage", "files"]),
           ("入口與安全", ["web", "api", "security", "analytics", "events", "logs", "iam", "settings"])]
 
 
-def nav(current: str, jobs: int = 3, attention: int = 3, mobile_links: bool = True) -> str:
+def nav(current: str, jobs: int = 3, attention: int = 4, mobile_links: bool = True) -> str:
     def link(key: str) -> str:
         label, k, file = next(n for n in NAV if n[1] == key)
         href = file if file else f"#{k}"
         cur = ' cur" aria-current="page' if k == current else ""
-        return f'<a class="nv{cur}" href="{href}">{label}</a>'
-    ov_cls = " cur" if current == "overview" else ""
-    ov_cur = ' aria-current="page"' if current == "overview" else ""
-    top = (f'<a class="nv{ov_cls}" href="Overview.dc.html"{ov_cur}>總覽<span class="kbd">G O</span></a>'
-           f'<a class="nv{" cur" if current == "jobs" else ""}" href="WorkCenter.dc.html">工作中心'
-           f'<span class="cnt" style="color: var(--hazel)">{jobs}</span></a>'
-           f'<a class="nv" href="Overview.dc.html#attention">需要處理<span class="cnt" style="color: var(--warn)">{attention}</span></a>'
-           f'<a class="nv{" cur" if current == "terminal" else ""}" href="Terminal.dc.html">終端機<span class="kbd">⌘`</span></a>')
-    groups = "".join(
-        f'<div class="navgrp">{g}</div><div class="navcol">{"".join(link(k) for k in keys)}</div>'
-        for g, keys in GROUPS)
+        return f'<a class="nv{cur}" href="{href}">{icon(k)}<span>{label}</span></a>'
+    ov = ' cur" aria-current="page' if current == "overview" else ""
+    jb = ' cur" aria-current="page' if current == "jobs" else ""
+    top = (f'<a class="nv{ov}" href="Overview.dc.html">{icon("overview")}<span>總覽</span></a>'
+           f'<a class="nv{jb}" href="WorkCenter.dc.html">{icon("jobs")}<span>工作中心</span><span class="cnt">{jobs}</span></a>')
+    groups = "".join(f'<div class="navgrp">{g}</div><div class="navcol">{"".join(link(k) for k in keys)}</div>' for g, keys in GROUPS)
     return f"""
   <nav class="side" aria-label="主導覽">
-    <div style="display: flex; align-items: center; gap: 10px; padding: 4px 10px 10px; border-bottom: 1px solid var(--line)">
-      <span aria-hidden="true" style="width: 22px; height: 22px; border-radius: 50%; background: var(--hazel); display: inline-block; box-shadow: inset 0 0 0 5px var(--panel), inset 0 0 0 7px var(--hazel)"></span>
-      <span style="font-weight: 600; font-size: 15px">HazelminX</span>
-      <span class="mono" style="font-size: 11px; color: var(--faint); margin-left: auto">tw-01</span>
-    </div>
-    <button type="button" class="inp" style="color: var(--muted); text-align: left"><span>搜尋或下指令</span><span class="kbd">⌘K</span></button>
     <div class="navcol">{top}</div>
     {groups}
-    <div style="margin-top: auto; display: flex; align-items: center; gap: 8px; padding: 8px 10px 0; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted)">
-      <span>tim · 擁有者</span>
-      <button type="button" class="btn sm" aria-label="切換淺色或深色" style="margin-left: auto; min-width: 44px">{{{{themeLabel}}}}</button>
-    </div>
+    <button type="button" class="nv coll" aria-label="收合側欄">{icon("collapse")}<span>收合</span></button>
   </nav>"""
+
+
+def topbar(current: str, jobs: int = 3, attention: int = 4, obs: str = "03:42:06") -> str:
+    label = next((n[0] for n in NAV if n[1] == current), {"jobs": "工作中心", "terminal": "終端機", "logs": "日誌"}.get(current, "總覽"))
+    return f"""
+  <header class="top">
+    <a class="brand" href="Overview.dc.html"><span class="logo" aria-hidden="true"></span><span>HazelminX</span></a>
+    <div class="crumb"><span class="note">tw-01</span><span class="sep">/</span><span>{label}</span></div>
+    <button type="button" class="inp search" aria-label="搜尋或下指令">{icon("search")}<span>搜尋或下指令</span><span class="kbd">⌘K</span></button>
+    <div class="tright">
+      <span class="obs">觀測 <span class="mono">{obs}</span> · 每 10 秒</span>
+      <a class="ib" href="Overview.dc.html#attention" aria-label="需要處理 {attention}">{icon("events")}<b class="badge dng">{attention}</b></a>
+      <a class="ib" href="WorkCenter.dc.html" aria-label="進行中的工作 {jobs}">{icon("jobs")}<b class="badge">{jobs}</b></a>
+      <a class="ib" href="Terminal.dc.html" aria-label="終端機">{icon("terminal")}</a>
+      <button type="button" class="ib" aria-label="切換淺色或深色">{icon("sun")}</button>
+      <button type="button" class="ib user" aria-label="tim · 擁有者">{icon("user")}<span>tim</span></button>
+    </div>
+  </header>"""
 
 
 def shell(current: str, main: str, aside: str | None = None, **kw) -> str:
     aside_html = f'<aside class="aside" aria-label="需要處理與進行中的工作">{aside}</aside>' if aside else ""
-    return (f'<div class="hb theme-{{{{theme}}}}" style="min-height: 100vh; display: flex; flex-wrap: wrap; align-items: stretch">'
-            f'{nav(current, **kw)}<main class="main">{main}</main>{aside_html}</div>')
+    return (f'<div class="hb theme-{{{{theme}}}}" style="min-height: 100vh; display: flex; flex-direction: column">'
+            f'{topbar(current, **kw)}<div class="body">{nav(current, **kw)}<main class="main">{main}</main>{aside_html}</div></div>')
 
 
 def page_head(title: str, obs: str = "03:42:06", actions: str = "", extra: str = "") -> str:
     return f"""
-    <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 14px">
+    <div class="phead">
       <h1>{title}</h1>
-      <span style="font-size: 13px; color: var(--muted)">觀測時間 <span class="mono">{obs}</span> UTC+8{extra}</span>
       <div class="wrap" style="margin-left: auto">{actions}</div>
     </div>"""
 
@@ -538,8 +627,8 @@ def ts_card(title, series, x_labels, unit="%", foot="", wide=False, **kw) -> str
 def ranked(items: list[tuple[str, float, str]], vmax: float | None = None) -> str:
     vmax = vmax or max(v for _, v, _ in items) or 1
     rows = "".join(
-        f'<div class="rank"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{n}</span>'
-        f'<span class="bar" aria-hidden="true"><i style="width: {v / vmax * 100:.0f}%"></i></span><span class="mono" style="font-size:12px">{t}</span></div>'
+        f'<div class="rank"><span class="mono">{n}</span>'
+        f'<span class="bar" aria-hidden="true"><i style="width: {v / vmax * 100:.0f}%"></i></span><span class="mono" style="font-size:12px;white-space:nowrap!important">{t}</span></div>'
         for n, v, t in items)
     return f'<div class="ranks">{rows}</div>'
 
@@ -565,8 +654,8 @@ def heatgrid(rows: list[str], cols: list[str], values: list[list[float]], vmax: 
     for r, row in zip(rows, values):
         cells.append(f'<span class="lab">{r}</span>' + "".join(
             f'<i style="background: {q[min(4, int(v / vmax * 4.999))]}" title="{r} {cols[j]} {v:.0f}%"></i>' for j, v in enumerate(row)))
-    return (f'<div class="heat" style="grid-template-columns: minmax(80px, 1.2fr) repeat({ncol}, minmax(0, 1fr))" role="img" '
-            f'aria-label="容器 × 小時 CPU 熱格，{len(rows)} 個容器、{ncol} 小時">' + "".join(cells) + "</div>")
+    return (f'<div class="heatw"><div class="heat" style="grid-template-columns: minmax(80px, 1.2fr) repeat({ncol}, minmax(0, 1fr))" role="img" '
+            f'aria-label="容器 × 小時 CPU 熱格，{len(rows)} 個容器、{ncol} 小時">' + "".join(cells) + "</div></div>")
 
 
 def steps(items: list[tuple[str, str, str]]) -> str:
@@ -713,7 +802,7 @@ def matrix(rows: list, cols: list, cells: list, first_col: str = "minmax(110px,1
                 out.append(f'<span class="c empty">{txt or "—"}</span>')
             else:
                 out.append(f'<span class="c"><span class="st {kind}"><i aria-hidden="true"></i>{txt}</span></span>')
-    return f'<div class="mx" style="grid-template-columns:{first_col} repeat({len(cols)},minmax(0,1fr))">' + "".join(out) + "</div>"
+    return f'<div class="mxw"><div class="mx" style="grid-template-columns:{first_col} repeat({len(cols)},minmax(0,1fr))">' + "".join(out) + "</div></div>"
 
 
 def tree(items: list) -> str:
