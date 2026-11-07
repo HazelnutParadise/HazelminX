@@ -71,7 +71,9 @@ func newJobsHarness(t *testing.T) (http.Handler, *jobs.Engine, *blockingHandler,
 	}
 	e.Start(ctx)
 	t.Cleanup(func() { cancel(); e.Stop(); st.Close() })
-	hs := &harness{t: t, clock: time.Date(2026, 11, 7, 0, 0, 0, 0, time.UTC)}
+	// Cookie lifetimes are computed against the wall clock, so the IAM
+	// clock starts at the real current time rather than a fixed date.
+	hs := &harness{t: t, clock: time.Now().UTC().Truncate(time.Second)}
 	svc, err := iam.New(st.DB, iam.Config{PasswordParams: iam.TestPasswordParams, Now: func() time.Time { return hs.clock }})
 	if err != nil {
 		t.Fatal(err)
