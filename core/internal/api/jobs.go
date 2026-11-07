@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/HazelnutParadise/hazelminx/core/internal/iam"
 	"github.com/HazelnutParadise/hazelminx/core/internal/jobs"
 )
 
@@ -16,16 +17,22 @@ import (
 // 36.2; ticket 008). Long operations are submitted here and answered with
 // 202 and the job record; the record outlives the request (ENG-001).
 //
-// Authentication and the full contract (pagination, If-Match, OpenAPI) are
-// tickets 009 and 010; nothing here is an authorized write path yet.
+// The routes sit on the authenticated group from MountIAM (ticket 009), so
+// MountIAM must run first. Until job kinds declare their own action and
+// scope (ticket 010), reading needs platform:read and submitting or
+// cancelling needs platform:write, both on the global scope.
 func (s *Server) RegisterJobs(e *jobs.Engine) {
+	if s.protected == nil {
+		panic("api: RegisterJobs called before MountIAM; job routes must not be unauthenticated")
+	}
 	h := &jobsHandler{engine: e}
-	g := s.engine.Group("/management/v1/jobs")
-	g.GET("", h.list)
-	g.POST("", h.submit)
-	g.GET("/:id", h.get)
-	g.GET("/:id/events", h.events)
-	g.POST("/:id/cancel", h.cancel)
+	g := s.protected.Group("/jobs")
+	read, write := s.RequireGlobal(iam.ActionPlatformRead), s.RequireGlobal(iam.ActionPlatformWrite)
+	g.GET("", read, h.list)
+	g.POST("", write, h.submit)
+	g.GET("/:id", read, h.get)
+	g.GET("/:id/events", read, h.events)
+	g.POST("/:id/cancel", write, h.cancel)
 	s.addOperation("GET", "/management/v1/jobs", "list jobs; ?state=a,b&kind=&limit=")
 	s.addOperation("POST", "/management/v1/jobs", "submit a job {requestId, kind, params, resources, node, requiredBytes}; 202 + job, same requestId replays the same job, changed content is 409")
 	s.addOperation("GET", "/management/v1/jobs/{id}", "job record: state, steps, progress, diagnostics, completion checks, cancellable")
@@ -41,16 +48,6 @@ type jobsHandler struct {
 // maxSubmitBody bounds a submit request; params belong to the job, bulk
 // data goes through uploads (spec 36.2).
 const maxSubmitBody = 1 << 20
-
-// apiError is the error shape of spec 36.2 (code / message / retryable …).
-type apiError struct {
-	Code             string   `json:"code"`
-	Message          string   `json:"message"`
-	RequestID        string   `json:"requestId,omitempty"`
-	JobID            string   `json:"jobId,omitempty"`
-	Retryable        bool     `json:"retryable"`
-	SuggestedActions []string `json:"suggestedActions,omitempty"`
-}
 
 func (h *jobsHandler) fail(c *gin.Context, err error, requestID string) {
 	e := apiError{RequestID: requestID, Message: err.Error()}

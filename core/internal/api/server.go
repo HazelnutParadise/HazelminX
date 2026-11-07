@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/HazelnutParadise/hazelminx/core/internal/iam"
 	"github.com/gin-gonic/gin"
 )
 
@@ -36,6 +37,9 @@ type Server struct {
 	operations []gin.H
 	// extras are extra overview fields contributed by features (job kinds…).
 	extras []func() gin.H
+
+	iam       *iam.Service     // set by MountIAM
+	protected *gin.RouterGroup // authenticated /management/v1 group
 }
 
 // New builds the router. ui may be nil when no interface is embedded.

@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/HazelnutParadise/hazelminx/core/internal/iam"
 	"github.com/HazelnutParadise/hazelminx/core/internal/jobs"
 	"github.com/HazelnutParadise/hazelminx/core/internal/store"
 )
@@ -45,7 +46,15 @@ func (b *blockingHandler) Verify(context.Context, *jobs.Job) (jobs.CompletionRep
 	return jobs.CompletionReport{Checks: []jobs.Check{{Name: "installed", Required: true, Passed: true}}}, nil
 }
 
+// newJobsServer mounts IAM and the job routes on a real store and returns a
+// handler that sends every request as the logged-in owner, plus the harness
+// for tests that need other accounts.
 func newJobsServer(t *testing.T) (http.Handler, *jobs.Engine, *blockingHandler) {
+	h, e, bh, _ := newJobsHarness(t)
+	return h, e, bh
+}
+
+func newJobsHarness(t *testing.T) (http.Handler, *jobs.Engine, *blockingHandler, *harness) {
 	t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
 	st, err := store.Open(ctx, filepath.Join(t.TempDir(), "core.db"))
@@ -62,9 +71,28 @@ func newJobsServer(t *testing.T) (http.Handler, *jobs.Engine, *blockingHandler) 
 	}
 	e.Start(ctx)
 	t.Cleanup(func() { cancel(); e.Stop(); st.Close() })
+	hs := &harness{t: t, clock: time.Date(2026, 11, 7, 0, 0, 0, 0, time.UTC)}
+	svc, err := iam.New(st.DB, iam.Config{PasswordParams: iam.TestPasswordParams, Now: func() time.Time { return hs.clock }})
+	if err != nil {
+		t.Fatal(err)
+	}
 	s := New(st, nil)
+	s.MountIAM(svc, IAMOptions{})
 	s.RegisterJobs(e)
-	return s.Handler(), e, bh
+	hs.h, hs.svc, hs.srv = s.Handler(), svc, s
+	owner := hs.bootstrap()
+	asOwner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.RemoteAddr = owner.ip + ":4321"
+		r.Host = "panel.example.test"
+		for _, ck := range owner.cookies {
+			r.AddCookie(ck)
+		}
+		if r.Method != http.MethodGet {
+			r.Header.Set(CSRFHeader, owner.csrf)
+		}
+		hs.h.ServeHTTP(w, r)
+	})
+	return asOwner, e, bh, hs
 }
 
 func do(t *testing.T, h http.Handler, method, path, body string) (*httptest.ResponseRecorder, map[string]any) {
@@ -185,5 +213,43 @@ func TestJobsAPIErrors(t *testing.T) {
 	}
 	if !found || body["jobKinds"] == nil {
 		t.Fatalf("overview must list job operations and kinds: %v", body)
+	}
+}
+
+// TestJobsRequireAuthorization: the job routes inherit the IAM session
+// requirement and default-deny authorization (IAM-001, T-013).
+func TestJobsRequireAuthorization(t *testing.T) {
+	_, _, bh, hs := newJobsHarness(t)
+	defer close(bh.release)
+	submit := map[string]any{"requestId": "authz-1", "kind": "demo.install"}
+
+	anon := hs.client("10.0.0.9")
+	if r := anon.do(http.MethodGet, "/management/v1/jobs", nil, nil); r.Code != http.StatusUnauthorized {
+		t.Fatalf("anonymous list must be 401: %+v", r)
+	}
+	if r := anon.do(http.MethodPost, "/management/v1/jobs", submit, nil); r.Code != http.StatusUnauthorized {
+		t.Fatalf("anonymous submit must be 401: %+v", r)
+	}
+
+	owner := hs.client("10.0.0.1")
+	if r := owner.login("owner", ownerPW); r.Code != http.StatusOK {
+		t.Fatalf("owner login: %+v", r)
+	}
+	auditor := hs.createUser(owner, "auditor", iam.RoleAuditor, iam.Global, "10.0.0.2")
+	if r := auditor.do(http.MethodGet, "/management/v1/jobs", nil, nil); r.Code != http.StatusOK {
+		t.Fatalf("global auditor may read jobs: %+v", r)
+	}
+	if r := auditor.do(http.MethodPost, "/management/v1/jobs", submit, nil); r.Code != http.StatusForbidden {
+		t.Fatalf("read-only account must not submit: %+v", r)
+	}
+	projectAdmin := hs.createUser(owner, "alice", iam.RoleProjectAdmin, iam.Scope{Kind: iam.ScopeProject, ID: "proj-a"}, "10.0.0.3")
+	if r := projectAdmin.do(http.MethodGet, "/management/v1/jobs", nil, nil); r.Code != http.StatusForbidden {
+		t.Fatalf("scoped account must not list platform-wide jobs: %+v", r)
+	}
+	if r := owner.do(http.MethodPost, "/management/v1/jobs", submit, map[string]string{CSRFHeader: ""}); r.Code != http.StatusForbidden {
+		t.Fatalf("cookie submit without CSRF token must be refused: %+v", r)
+	}
+	if r := owner.do(http.MethodPost, "/management/v1/jobs", submit, nil); r.Code != http.StatusAccepted {
+		t.Fatalf("owner submit: %+v", r)
 	}
 }

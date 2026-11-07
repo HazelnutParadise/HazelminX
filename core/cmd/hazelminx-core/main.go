@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/HazelnutParadise/hazelminx/core/internal/api"
 	"github.com/HazelnutParadise/hazelminx/core/internal/config"
+	"github.com/HazelnutParadise/hazelminx/core/internal/iam"
 	"github.com/HazelnutParadise/hazelminx/core/internal/jobs"
 	"github.com/HazelnutParadise/hazelminx/core/internal/store"
 	"github.com/HazelnutParadise/hazelminx/core/web"
@@ -60,10 +62,20 @@ func run(args []string) error {
 	engine.Start(ctx)
 	defer engine.Stop()
 
-	apiServer := api.New(st, web.FS())
-	apiServer.RegisterJobs(engine)
+	identity, err := iam.New(st.DB, iam.Config{})
+	if err != nil {
+		return err
+	}
+	router := api.New(st, web.FS())
+	router.MountIAM(identity, api.IAMOptions{})
+	// Jobs mount on the authenticated group, so MountIAM must run first.
+	router.RegisterJobs(engine)
+	if err := announceSetup(ctx, identity, os.Stdout); err != nil {
+		return err
+	}
+
 	srv := &http.Server{
-		Handler:           apiServer.Handler(),
+		Handler:           router.Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	ln, err := net.Listen("tcp", cfg.ListenAddr)
@@ -87,6 +99,21 @@ func run(args []string) error {
 		}
 		return err
 	}
+}
+
+// announceSetup prints the one-time owner setup code to the installer's
+// stdout when no owner exists yet (39.1, INS-005). It deliberately bypasses
+// slog so the code never lands in shared log files.
+func announceSetup(ctx context.Context, identity *iam.Service, out io.Writer) error {
+	code, expires, err := identity.SetupCode(ctx)
+	if err != nil {
+		return fmt.Errorf("setup code: %w", err)
+	}
+	if code == "" {
+		return nil
+	}
+	_, err = fmt.Fprintf(out, "HazelminX first-run setup\n  POST /management/v1/setup with {\"setupCode\": \"%s\", \"username\": ..., \"password\": ...}\n  code expires at %s\n", code, expires.UTC().Format(time.RFC3339))
+	return err
 }
 
 func setupLogging(format string) {
