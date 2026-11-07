@@ -136,6 +136,8 @@
 
 規格增補 01（`docs/spec/addendum-01-host-service-modules.md`），2026-11-07 使用者核定納入。
 
+規格增補 02（`docs/spec/addendum-02-multi-environment.md`，同一台主機上的多個引擎環境，ENV-001～009、T-149～156），2026-11-07 使用者核定，驗收條件併入票 039、040、042、086。
+
 | 票 | 使用者可以做什麼 | Epic | Blocked by | Issue | 狀態 |
 |---|---|---|---|---|---|
 | [100](100-host-service-module-framework.md) | 維運者可以在通用框架裡看模組狀態、結構化或原始編輯設定、套用前驗證並回滾 | 宿主機服務模組 | 022, 012, 029 | [#107](https://github.com/HazelnutParadise/hazelminx/issues/107) | blocked |
