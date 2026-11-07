@@ -25,7 +25,7 @@ type AuditEvent struct {
 	Message      string         `json:"message,omitempty"`
 	Before       map[string]any `json:"before,omitempty"`
 	After        map[string]any `json:"after,omitempty"`
-	RequestID    string         `json:"requestId,omitempty"`
+	TraceID      string         `json:"traceId,omitempty"`
 	SourceIP     string         `json:"sourceIp,omitempty"`
 }
 

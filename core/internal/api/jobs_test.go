@@ -136,6 +136,10 @@ func TestJobsAPISubmitGetCancelFlow(t *testing.T) {
 	if rec.Code != http.StatusConflict || body["code"] != "REQUEST_ID_CONFLICT" {
 		t.Fatalf("conflict: %d %v", rec.Code, body)
 	}
+	// requestId names the operation; traceId names this HTTP call.
+	if trace, _ := body["traceId"].(string); body["requestId"] != "ui-1" || trace == "" || rec.Header().Get(TraceIDHdr) != trace {
+		t.Fatalf("conflict must carry the operation requestId and the call's traceId: %v %v", body, rec.Header())
+	}
 	// The caller is gone; the job keeps running.
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -180,6 +184,9 @@ func TestJobsAPIErrors(t *testing.T) {
 	rec, body := do(t, h, http.MethodGet, "/management/v1/jobs/job_nope", "")
 	if rec.Code != http.StatusNotFound || body["code"] != "JOB_NOT_FOUND" {
 		t.Fatalf("404: %d %v", rec.Code, body)
+	}
+	if _, ok := body["requestId"]; ok || body["traceId"] == nil {
+		t.Fatalf("a read error has no operation requestId but does have a traceId: %v", body)
 	}
 	rec, body = do(t, h, http.MethodPost, "/management/v1/jobs", `{"requestId":"x","kind":"not.registered"}`)
 	if rec.Code != http.StatusBadRequest || body["code"] != "JOB_KIND_UNKNOWN" {

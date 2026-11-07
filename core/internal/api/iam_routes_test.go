@@ -199,7 +199,7 @@ func TestLoginErrorsDoNotRevealAccounts(t *testing.T) {
 	if unknown.Code != http.StatusUnauthorized || wrong.Code != http.StatusUnauthorized {
 		t.Fatalf("codes %d %d", unknown.Code, wrong.Code)
 	}
-	strip := func(r resp) string { delete(r.Body, "requestId"); b, _ := json.Marshal(r.Body); return string(b) }
+	strip := func(r resp) string { delete(r.Body, "traceId"); b, _ := json.Marshal(r.Body); return string(b) }
 	if strip(unknown) != strip(wrong) {
 		t.Fatalf("bodies differ:\n%s\n%s", unknown.Raw, wrong.Raw)
 	}
@@ -292,7 +292,7 @@ func TestT014GuessedResourceIDsDoNotLeak(t *testing.T) {
 	if r := alice.do(http.MethodPost, "/management/v1/projects/proj-a/deploy", nil, nil); r.Code != http.StatusOK {
 		t.Fatalf("own deploy: %+v", r)
 	}
-	strip := func(r resp) string { delete(r.Body, "requestId"); b, _ := json.Marshal(r.Body); return string(b) }
+	strip := func(r resp) string { delete(r.Body, "traceId"); b, _ := json.Marshal(r.Body); return string(b) }
 	for _, path := range []string{"/projects/%s", "/projects/%s/download", "/projects/%s/events"} {
 		b := alice.do(http.MethodGet, "/management/v1"+strings.Replace(path, "%s", "proj-b", 1), nil, nil)
 		ghost := alice.do(http.MethodGet, "/management/v1"+strings.Replace(path, "%s", "proj-zzz", 1), nil, nil)
@@ -387,7 +387,7 @@ func TestLoginThrottleBoundedAndTrustedSource(t *testing.T) {
 func TestAuditLedgerLinksChangeAndMasksSecrets(t *testing.T) {
 	hs := newHarness(t)
 	owner := hs.bootstrap()
-	r := owner.do(http.MethodPost, "/management/v1/users", map[string]string{"username": "dave", "password": "dave-password-123"}, map[string]string{RequestIDHdr: "req-dave"})
+	r := owner.do(http.MethodPost, "/management/v1/users", map[string]string{"username": "dave", "password": "dave-password-123"}, map[string]string{TraceIDHdr: "trace-dave"})
 	daveID := r.Body["user"].(map[string]any)["id"].(string)
 	evs := owner.do(http.MethodGet, "/management/v1/audit-events?resourceId="+daveID, nil, nil).Body["events"].([]any)
 	if len(evs) != 1 {
@@ -395,7 +395,7 @@ func TestAuditLedgerLinksChangeAndMasksSecrets(t *testing.T) {
 	}
 	ev := evs[0].(map[string]any)
 	after := ev["after"].(map[string]any)
-	if ev["action"] != "user.create" || ev["actorName"] != "owner" || ev["requestId"] != "req-dave" || ev["sourceIp"] != "10.0.0.1" || after["password"] != "***" {
+	if ev["action"] != "user.create" || ev["actorName"] != "owner" || ev["traceId"] != "trace-dave" || ev["requestId"] != nil || ev["sourceIp"] != "10.0.0.1" || after["password"] != "***" {
 		t.Fatalf("event: %+v", ev)
 	}
 	// Pagination cursor and page cap.
@@ -420,5 +420,27 @@ func TestOverviewListsIAMOperations(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("overview must list IAM operations: %s", r.Raw)
+	}
+}
+
+// TestErrorsCarryTraceIDNotRequestID: requestId is reserved for the
+// operation's request identifier (spec 33, 36.1). The per-HTTP-call trace
+// identifier travels as X-Trace-ID and traceId.
+func TestErrorsCarryTraceIDNotRequestID(t *testing.T) {
+	hs := newHarness(t)
+	c := hs.client("10.0.0.7")
+	r := c.do(http.MethodGet, "/management/v1/users", nil, map[string]string{TraceIDHdr: "trace-42"})
+	if r.Code != http.StatusUnauthorized {
+		t.Fatalf("anonymous: %+v", r)
+	}
+	if r.Body["traceId"] != "trace-42" || r.Hdr.Get(TraceIDHdr) != "trace-42" {
+		t.Fatalf("trace id must be echoed in body and header: %s %v", r.Raw, r.Hdr)
+	}
+	if _, ok := r.Body["requestId"]; ok {
+		t.Fatalf("HTTP trace id must not be reported as requestId: %s", r.Raw)
+	}
+	r = c.do(http.MethodGet, "/management/v1/users", nil, nil)
+	if id, _ := r.Body["traceId"].(string); id == "" || r.Hdr.Get(TraceIDHdr) != id {
+		t.Fatalf("a trace id is generated when the client sends none: %s %v", r.Raw, r.Hdr)
 	}
 }

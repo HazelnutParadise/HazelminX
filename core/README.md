@@ -44,6 +44,7 @@ go test ./...
 - `/management/v1` 下除了 `setup` 與 `auth/login`，沒有工作階段一律 `401`。角色表在 `GET /management/v1/roles`；沒有對應授權的呼叫回 `403`，猜到別人範圍的資源 ID 一律回 `404`（與不存在的資源回應完全相同）。
 - 登入失敗依帳號與來源分別限制（帳號冷卻最長 15 分鐘、來源 15 分鐘內 20 次即封鎖 15 分鐘）；曾成功登入該帳號的來源不受帳號冷卻影響，所以攻擊者無法永久鎖死管理員。不存在的帳號也套同一規則，不洩漏帳號存在與否。
 - 每次登入、建帳號、指派或撤銷角色、拒絕存取都寫入 `audit_events`（`GET /management/v1/audit-events`，只回有 `audit:read` 的範圍）。寫入前會遮罩 `password`、`token`、`secret`、`key` 這類鍵。
+- 每個 `/management/v1` 回應都帶 `X-Trace-ID`（呼叫端有送就沿用，沒送就產生），錯誤內容與稽核事件以 `traceId` 記錄同一個值。`requestId` 只用來指使用者操作的請求識別碼，也就是工作重送去重用的那個。
 - `X-Forwarded-For` 預設不信任（`api.IAMOptions.TrustedProxies` 為空），來源 IP 取連線位址；接 Zentinel 後由票 065 設定可信代理。
 
 ## 目錄

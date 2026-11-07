@@ -50,4 +50,3 @@
 ## Follow-ups
 
 - 第一次正式發版前，把 `core/internal/store/migrations/` 的所有 migration 合併成單一個 `0001` 檔，`store` 的連號檢查與 schema 版本相關測試一起更新。已經有使用者安裝的版本發出去之後，就不能再這樣合併。
-- 票 010 訂錯誤格式時統一 `requestId` 的意思：`core/internal/api/jobs.go` 放的是使用者操作的請求識別碼（規格 33 章重送去重用的那個），`core/internal/api/iam_routes.go` 放的是 `X-Request-ID` 的 HTTP 追蹤碼。`requestId` 只保留規格的意思，HTTP 追蹤碼改用另一個欄位名稱，兩邊的測試一起更新。
