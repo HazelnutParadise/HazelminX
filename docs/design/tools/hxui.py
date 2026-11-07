@@ -77,6 +77,8 @@ body{{margin:0}}
 .hb .nv:hover{{background:var(--raised);color:var(--ink)}}
 .hb .nv.cur{{background:var(--raised);color:var(--hazel);font-weight:600}}
 .hb .nv .cnt{{margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:0 7px 0 6px;border-radius:999px;font-family:"Geist Mono",ui-monospace,monospace;font-size:11px;line-height:18px;color:var(--blue);background:color-mix(in srgb,var(--blue) 15%,transparent)}}
+.hb .nv .cnt.dng{{color:var(--danger);background:color-mix(in srgb,var(--danger) 15%,transparent)}}
+.hb .grp{{display:flex;align-items:baseline;gap:10px;margin:10px 0 -4px;font-size:15px;font-weight:600}}.hb .grp .note{{font-weight:400}}
 .hb .spin{{width:8px;height:8px;border-radius:50%;border:1.5px solid currentColor;border-top-color:transparent;flex:none}}
 @media (prefers-reduced-motion:no-preference){{.hb .spin{{animation:hx-spin 1s linear infinite}}}}
 @keyframes hx-spin{{to{{transform:rotate(360deg)}}}}
@@ -120,11 +122,7 @@ body{{margin:0}}
 .hb svg.ch{{display:block;width:100%;height:auto;font-family:"Geist Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}}
 .hb svg.ch text{{font-size:11px;fill:var(--faint)}}
 .hb .grid{{stroke:var(--line);stroke-width:1}}
-.hb .hit .xh,.hb .hit .tip{{opacity:0;transition:opacity .08s}}
-.hb .hit:hover .xh,.hb .hit:hover .tip,.hb .hit:focus-within .xh,.hb .hit:focus-within .tip{{opacity:1}}
-.hb .tip rect{{fill:var(--raised);stroke:var(--line)}}
-.hb .tip text{{fill:var(--ink)}}
-.hb .tip text.k{{fill:var(--muted)}}
+.hb .ts{{position:relative;font-family:"Geist Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;font-size:11px;color:var(--faint);padding:8px 8px 20px 46px}}.hb .ts .pa{{position:relative;height:100%}}.hb .ts .plot{{display:block;width:100%;height:100%;overflow:visible}}.hb .ts .yl{{position:absolute;left:0;width:40px;top:8px;bottom:20px}}.hb .ts .yl span{{position:absolute;right:0;transform:translateY(-50%);white-space:nowrap}}.hb .ts .xl{{position:absolute;left:46px;right:8px;bottom:0;height:16px}}.hb .ts .xl span{{position:absolute;transform:translateX(-50%);white-space:nowrap}}.hb .ts .xl .a0{{transform:none}}.hb .ts .xl .a1{{transform:translateX(-100%)}}.hb .ts .mk{{position:absolute;top:0;color:var(--muted);white-space:nowrap;line-height:1}}.hb .ts .sdot{{position:absolute;width:9px;height:9px;border-radius:50%;background:var(--panel);border:2px solid;transform:translate(-50%,-50%)}}.hb .ts .hits{{position:absolute;inset:0}}.hb .ts .hit{{position:absolute;top:0;bottom:0;outline:none}}.hb .ts .xh{{position:absolute;top:0;bottom:0;width:1px;background:var(--muted);opacity:0}}.hb .ts .tip{{position:absolute;top:0;left:calc(100% + 6px);z-index:5;display:none;grid-template-columns:auto auto;gap:3px 14px;min-width:120px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--raised);color:var(--ink);white-space:nowrap;opacity:0;pointer-events:none;box-shadow:0 4px 12px rgb(0 0 0/.2)}}.hb .ts .hit.flip .tip{{left:auto;right:calc(100% + 6px)}}.hb .ts .tip .k{{color:var(--muted);display:flex;align-items:center;gap:6px}}.hb .ts .tip .k i{{width:8px;height:8px;border-radius:2px}}.hb .ts .tip b{{font-weight:500;text-align:right}}.hb .ts .hit:hover .xh,.hb .ts .hit:focus-visible .xh{{opacity:1}}.hb .ts .hit:hover .tip,.hb .ts .hit:focus-visible .tip{{display:grid;opacity:1}}
 .hb .ch-m{{display:none}}
 .hb .ranks{{display:flex;flex-direction:column;gap:6px;padding:10px 14px}}
 .hb .rank{{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,2fr) auto;gap:10px;align-items:center;font-size:13px;min-height:28px}}
@@ -173,7 +171,7 @@ body{{margin:0}}
 .hb .cal i{{display:block;width:12px;height:12px;border-radius:2px;background:var(--q1);position:relative}}
 .hb .cal i.o{{background:var(--ok)}}.hb .cal i.f{{background:var(--danger)}}.hb .cal i.r{{background:var(--warn)}}.hb .cal i.n{{background:transparent;border:1px dashed var(--line)}}
 .hb .cal i.f::after{{content:"";position:absolute;inset:3px;background:var(--panel)}}
-.hb .pipe{{display:flex;align-items:stretch;gap:0;overflow-x:auto}}
+.hb .pipe{{display:flex;flex-wrap:wrap;align-items:stretch;row-gap:10px}}
 .hb .pstage{{display:flex;flex-direction:column;gap:4px;min-width:110px;max-width:280px;flex:1 0 auto;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-size:12px;color:var(--muted);position:relative;background:var(--panel)}}
 .hb .pstage+.pstage{{margin-left:18px}}
 .hb .pstage+.pstage::before{{content:"";position:absolute;left:-12px;top:50%;width:6px;height:6px;border-top:2px solid var(--faint);border-right:2px solid var(--faint);transform:translateY(-50%) rotate(45deg)}}
@@ -302,7 +300,7 @@ body{{margin:0}}
 .hb .scroll{{overflow-x:auto}}
 .hb .aside{{width:340px;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:18px;padding:18px 16px 24px}}
 .hb .main{{flex:999 1 560px;min-width:0;display:flex;flex-direction:column;gap:16px;padding:16px 24px 40px}}
-.hb .body{{display:flex;flex-wrap:wrap;align-items:stretch;flex:1}}
+.hb .layout{{display:flex;flex-wrap:wrap;align-items:stretch;flex:1}}
 .hb .side{{width:220px;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:10px;padding:12px 10px 16px}}
 .hb .side .coll{{margin-top:auto;color:var(--muted)}}
 .hb .top{{display:flex;align-items:center;gap:14px;min-height:48px;padding:0 16px 0 0;border-bottom:1px solid var(--line);background:var(--panel)}}
@@ -546,7 +544,7 @@ NAV = [
     ("總覽", "overview", "Overview.dc.html"),
     ("主機與節點", "nodes", "Nodes.dc.html"),
     ("專案與服務", "projects", "Projects.dc.html"),
-    ("Docker／Podman", "docker", "Containers.dc.html"),
+    ("容器", "docker", "Containers.dc.html"),
     ("Kubernetes", "k8s", "Kubernetes.dc.html"),
     ("服務模組", "svcmod", "HostServices.dc.html"),
     ("應用商店", "store", "AppStore.dc.html"),
@@ -555,8 +553,7 @@ NAV = [
     ("資料庫", "db", "Database.dc.html"),
     ("AI", "ai", "AI.dc.html"),
     ("檔案", "files", "Files.dc.html"),
-    ("儲存", "storage", "Storage.dc.html"),
-    ("備份與還原", "backup", "Storage.dc.html"),
+    ("儲存與備份", "storage", "Storage.dc.html"),
     ("計畫任務", "cron", "Cron.dc.html"),
     ("安全防護", "security", "Security.dc.html"),
     ("流量分析", "analytics", "Analytics.dc.html"),
@@ -565,12 +562,17 @@ NAV = [
     ("身分與存取", "iam", "IAM.dc.html"),
     ("平台設定", "settings", "Settings.dc.html"),
 ]
-GROUPS = [("基礎設施", ["nodes", "docker", "k8s", "svcmod", "storage", "files"]),
-          ("應用", ["projects", "store", "db", "ai", "backup", "cron"]),
-          ("入口與安全", ["web", "api", "security", "analytics", "events", "logs", "iam", "settings"])]
+# 側欄只放「跨節點的資源」。單一主機才有意義的（系統、服務模組、檔案、程序）收進節點頁分頁；
+# 全站都會用到的（工作、告警、終端機、搜尋）放頂列與最上方。
+GROUPS = [("應用", ["projects", "store", "web", "db", "ai", "api"]),
+          ("基礎設施", ["nodes", "docker", "k8s", "storage", "cron"]),
+          ("安全與紀錄", ["security", "analytics", "logs"]),
+          ("管理", ["iam", "settings"])]
+NAV_ALIAS = {"svcmod": "nodes", "files": "nodes"}  # 這些頁屬於「主機與節點」底下
 
 
 def nav(current: str, jobs: int = 3, attention: int = 4, mobile_links: bool = True) -> str:
+    current = NAV_ALIAS.get(current, current)
     def link(key: str) -> str:
         label, k, file = next(n for n in NAV if n[1] == key)
         href = file if file else f"#{k}"
@@ -578,8 +580,10 @@ def nav(current: str, jobs: int = 3, attention: int = 4, mobile_links: bool = Tr
         return f'<a class="nv{cur}" href="{href}">{icon(k)}<span>{label}</span></a>'
     ov = ' cur" aria-current="page' if current == "overview" else ""
     jb = ' cur" aria-current="page' if current == "jobs" else ""
+    ev = ' cur" aria-current="page' if current == "events" else ""
     top = (f'<a class="nv{ov}" href="Overview.dc.html">{icon("overview")}<span>總覽</span></a>'
-           f'<a class="nv{jb}" href="WorkCenter.dc.html" data-tip="{jobs} 個工作進行中">{icon("jobs")}<span>工作中心</span><span class="cnt" aria-label="{jobs} 個工作進行中"><i class="spin" aria-hidden="true"></i>{jobs}</span></a>')
+           f'<a class="nv{jb}" href="WorkCenter.dc.html" data-tip="{jobs} 個工作進行中">{icon("jobs")}<span>工作中心</span><span class="cnt" aria-label="{jobs} 個工作進行中"><i class="spin" aria-hidden="true"></i>{jobs}</span></a>'
+           f'<a class="nv{ev}" href="Events.dc.html">{icon("events")}<span>事件與告警</span><span class="cnt dng" aria-label="{attention} 件需要處理">{attention}</span></a>')
     groups = "".join(f'<div class="navgrp">{g}</div><div class="navcol">{"".join(link(k) for k in keys)}</div>' for g, keys in GROUPS)
     return f"""
   <nav class="side" aria-label="主導覽">
@@ -597,7 +601,7 @@ def topbar(current: str, jobs: int = 3, attention: int = 4, obs: str = "03:42:06
     <button type="button" class="inp search" aria-label="搜尋或下指令">{icon("search")}<span>搜尋或下指令</span><span class="kbd">⌘K</span></button>
     <div class="tright">
       <span class="obs">觀測 <span class="mono">{obs}</span> · 每 10 秒</span>
-      <a class="ib" href="Overview.dc.html#attention" aria-label="需要處理 {attention}" data-tip="需要處理 · {attention}">{icon("events")}<b class="badge dng">{attention}</b></a>
+      <a class="ib" href="Events.dc.html" aria-label="需要處理 {attention}" data-tip="需要處理 · {attention}">{icon("events")}<b class="badge dng">{attention}</b></a>
       <a class="ib" href="WorkCenter.dc.html" aria-label="進行中的工作 {jobs}" data-tip="進行中的工作 · {jobs}">{icon("jobs")}<b class="badge">{jobs}</b></a>
       <a class="ib" href="Terminal.dc.html" aria-label="終端機" data-tip="終端機">{icon("terminal")}</a>
       <button type="button" class="ib" aria-label="切換淺色或深色" data-tip="切換淺色或深色">{icon("sun")}</button>
@@ -609,7 +613,7 @@ def topbar(current: str, jobs: int = 3, attention: int = 4, obs: str = "03:42:06
 def shell(current: str, main: str, aside: str | None = None, **kw) -> str:
     aside_html = f'<aside class="aside" aria-label="需要處理與進行中的工作">{aside}</aside>' if aside else ""
     return (f'<div class="hb theme-{{{{theme}}}}" style="min-height: 100vh; display: flex; flex-direction: column">'
-            f'{topbar(current, **kw)}<div class="body">{nav(current, **kw)}<main class="main">{main}</main>{aside_html}</div></div>')
+            f'{topbar(current, **kw)}<div class="layout">{nav(current, **kw)}<main class="main">{main}</main>{aside_html}</div></div>')
 
 
 def page_head(title: str, obs: str = "03:42:06", actions: str = "", extra: str = "") -> str:
@@ -697,94 +701,77 @@ def _ticks(vmax: float, n: int = 4):
 def timeseries(series: list[Series], x_labels: list[str], unit: str = "%", w: int = 560, h: int = 180,
                vmax: float | None = None, markers: list[tuple[int, str]] | None = None, stacked: bool = False,
                tip_labels: list[str] | None = None, bar: bool = False, fmt_val=None) -> str:
-    """折線／面積／長條時間圖。所有序列共用一個 Y 軸。CSS hover 顯示每個 X 的所有序列。"""
+    """折線／面積／長條時間圖，寬度隨容器流動：圖形在 0–1000 × 0–100 的座標裡拉伸、線寬不變（non-scaling-stroke），
+    座標軸文字、部署標記、過期點、滑鼠提示都是疊在上面的 HTML，所以任何寬度字都一樣大。w 只保留給舊呼叫，不再影響版面。"""
     fmt_val = fmt_val or (lambda v: f"{v:.0f}{unit}")
     n = len(series[0].vals)
-    padl, padr, padt, padb = 44, 10, 10, 22
-    x0, x1, y0, y1 = padl, w - padr, padt, h - padb
     if stacked:
-        tops = [sum(s.vals[i] for s in series) for i in range(n)]
-        vmax = vmax or max(tops) * 1.1
+        vmax = vmax or max(sum(s.vals[i] for s in series) for i in range(n)) * 1.1
     else:
         vmax = vmax or max(max(s.vals) for s in series) * 1.15
     vmax = max(vmax, 1e-9)
-    out = [f'<svg class="ch" viewBox="0 0 {w} {h}" role="img" aria-label="{"、".join(s.name for s in series)}">']
-    for t in _ticks(vmax):
-        y = y1 - (y1 - y0) * t / vmax
-        out.append(f'<line class="grid" x1="{x0}" y1="{y:.1f}" x2="{x1}" y2="{y:.1f}"/>')
-        out.append(f'<text x="{x0 - 6}" y="{y + 4:.1f}" text-anchor="end">{fmt_val(t)}</text>')
+    X, Y = 1000.0, 100.0
     if bar:
-        step = (x1 - x0) / n
-        xpos = lambda i: x0 + step * (i + 0.5)
+        step = X / n
+        xpos = lambda i: step * (i + 0.5)
     else:
-        step = (x1 - x0) / (n - 1) if n > 1 else 0
-        xpos = lambda i: x0 + step * i
-    lab_every = max(1, round(n / 6))
-    label_idx = list(range(0, n, lab_every))
-    if n - 1 - label_idx[-1] >= lab_every * 0.6:
-        label_idx.append(n - 1)
-    for i in label_idx:
-        x = xpos(i)
-        anchor = "start" if (i == 0 and not bar) else ("end" if (i == n - 1 and not bar) else "middle")
-        out.append(f'<text x="{x:.1f}" y="{h - 6}" text-anchor="{anchor}">{x_labels[i]}</text>')
-    # marks
+        step = X / (n - 1) if n > 1 else X
+        xpos = lambda i: step * i
+    yp = lambda v: Y - Y * v / vmax
+    pct = lambda x: f"{x / X * 100:.2f}%"
+    svg = [f'<svg class="plot" viewBox="0 0 {X:.0f} {Y:.0f}" preserveAspectRatio="none" aria-hidden="true">']
+    ticks = _ticks(vmax)
+    for t in ticks:
+        svg.append(f'<line class="grid" x1="0" y1="{yp(t):.2f}" x2="{X:.0f}" y2="{yp(t):.2f}" vector-effect="non-scaling-stroke"/>')
+    over = []
     if bar:
-        bw = min(24, (step - 2) / len(series))
-        for si, s in enumerate(series):
-            for i, v in enumerate(s.vals):
-                bh = (y1 - y0) * v / vmax
-                x = xpos(i) - (bw * len(series)) / 2 + si * bw + 1
-                y = y1 - bh
-                if bh < 0.5:
+        bw = step * 0.78 / len(series)
+        for si, s_ in enumerate(series):
+            for i, v in enumerate(s_.vals):
+                if v <= 0:
                     continue
-                r = min(4, bh / 2)
-                out.append(f'<path d="M{x:.1f},{y1} V{y + r:.1f} Q{x:.1f},{y:.1f} {x + r:.1f},{y:.1f} H{x + bw - 2 - r:.1f} Q{x + bw - 2:.1f},{y:.1f} {x + bw - 2:.1f},{y + r:.1f} V{y1} Z" fill="{s.color}"/>')
+                x = xpos(i) - bw * len(series) / 2 + si * bw
+                svg.append(f'<rect x="{x:.2f}" y="{yp(v):.2f}" width="{bw * 0.9:.2f}" height="{Y - yp(v):.2f}" fill="{s_.color}"/>')
     elif stacked:
         base = [0.0] * n
-        for s in series:
-            top = [base[i] + s.vals[i] for i in range(n)]
-            p_top = _poly(top, x0, x1, y0, y1, vmax)
-            p_base = _poly(base, x0, x1, y0, y1, vmax)
-            d = _path(p_top) + " L" + " L".join(f"{x:.1f},{y:.1f}" for x, y in reversed(p_base)) + " Z"
-            out.append(f'<path d="{d}" fill="{s.color}" fill-opacity=".25" stroke="var(--panel)" stroke-width="2"/>')
-            out.append(f'<path d="{_path(p_top)}" fill="none" stroke="{s.color}" stroke-width="2" stroke-linejoin="round"/>')
+        for s_ in series:
+            top = [base[i] + s_.vals[i] for i in range(n)]
+            up = " L".join(f"{xpos(i):.2f},{yp(top[i]):.2f}" for i in range(n))
+            dn = " L".join(f"{xpos(i):.2f},{yp(base[i]):.2f}" for i in reversed(range(n)))
+            svg.append(f'<path d="M{up} L{dn} Z" fill="{s_.color}" fill-opacity=".25"/>')
+            svg.append(f'<path d="M{up}" fill="none" stroke="{s_.color}" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>')
             base = top
     else:
-        for s in series:
-            pts = _poly(s.vals, x0, x1, y0, y1, vmax)
-            live = pts if s.stale_from is None else pts[: s.stale_from + 1]
-            if s.kind == "area":
-                d = _path(live) + f" L{live[-1][0]:.1f},{y1} L{live[0][0]:.1f},{y1} Z"
-                out.append(f'<path d="{d}" fill="{s.color}" fill-opacity=".10"/>')
-            out.append(f'<path d="{_path(live)}" fill="none" stroke="{s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>')
-            if s.stale_from is not None:
-                x, y = pts[s.stale_from]
-                out.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="4" fill="var(--panel)" stroke="{s.color}" stroke-width="2"/>')
+        for s_ in series:
+            last = n - 1 if s_.stale_from is None else s_.stale_from
+            pts = " L".join(f"{xpos(i):.2f},{yp(s_.vals[i]):.2f}" for i in range(last + 1))
+            if s_.kind == "area":
+                svg.append(f'<path d="M{pts} L{xpos(last):.2f},{Y:.0f} L0,{Y:.0f} Z" fill="{s_.color}" fill-opacity=".10"/>')
+            svg.append(f'<path d="M{pts}" fill="none" stroke="{s_.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>')
+            if s_.stale_from is not None:
+                over.append(f'<i class="sdot" style="left:{pct(xpos(last))};top:{yp(s_.vals[last]):.2f}%;border-color:{s_.color}" aria-hidden="true"></i>')
     for i, label in (markers or []):
-        x = xpos(i)
-        out.append(f'<line x1="{x:.1f}" y1="{y0}" x2="{x:.1f}" y2="{y1}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3"/>')
-        flip = x + 4 + 7 * len(label) > x1
-        out.append(f'<text x="{(x - 4) if flip else (x + 4):.1f}" y="{y0 + 9}" text-anchor="{"end" if flip else "start"}" style="fill: var(--muted)">{label}</text>')
-    # hover layer
-    tw = 150
-    th = 16 + 14 * len(series)
+        svg.append(f'<line x1="{xpos(i):.2f}" y1="0" x2="{xpos(i):.2f}" y2="{Y:.0f}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>')
+        side = "right" if xpos(i) > X * 0.6 else "left"
+        off = f"right:calc(100% - {pct(xpos(i))} + 4px)" if side == "right" else f"left:calc({pct(xpos(i))} + 4px)"
+        over.append(f'<span class="mk" style="{off}">{label}</span>')
+    svg.append("</svg>")
+    ylab = "".join(f'<span style="top:{yp(t):.2f}%">{fmt_val(t)}</span>' for t in ticks)
+    lab_every = max(1, round(n / 6))
+    idx = list(range(0, n, lab_every))
+    if n - 1 - idx[-1] >= lab_every * 0.6:
+        idx.append(n - 1)
+    xlab = "".join(
+        f'<span class="{"a0" if (i == 0 and not bar) else ("a1" if (i == n - 1 and not bar) else "")}" style="left:{pct(xpos(i))}">{x_labels[i]}</span>' for i in idx)
+    hits = []
     for i in range(n):
-        x = xpos(i)
-        hx = max(x0, x - step / 2)
-        hw = min(x1, x + step / 2) - hx
-        tx = x + 8 if x + 8 + tw < w else x - 8 - tw
-        rows = "".join(
-            f'<text class="k" x="{tx + 8}" y="{th - 6 - 14 * (len(series) - 1 - k)}">{s.name}</text>'
-            f'<text x="{tx + tw - 8}" y="{th - 6 - 14 * (len(series) - 1 - k)}" text-anchor="end" style="font-weight:500">'
-            f'{fmt_val(s.vals[i])}{"*" if s.stale_from is not None and i > s.stale_from else ""}</text>'
-            for k, s in enumerate(series))
-        lab = (tip_labels or x_labels)[i]
-        out.append(f'<g class="hit" tabindex="0"><rect x="{hx:.1f}" y="{y0}" width="{hw:.1f}" height="{y1 - y0}" fill="transparent"/>'
-                   f'<line class="xh" x1="{x:.1f}" y1="{y0}" x2="{x:.1f}" y2="{y1}" stroke="var(--muted)" stroke-width="1"/>'
-                   f'<g class="tip"><rect x="{tx}" y="{y0}" width="{tw}" height="{th}" rx="4"/>'
-                   f'<text class="k" x="{tx + 8}" y="{y0 + 12}">{lab}</text>{rows}</g></g>')
-    out.append("</svg>")
-    return "".join(out)
+        lo, hi = max(0.0, xpos(i) - step / 2), min(X, xpos(i) + step / 2)
+        rows = "".join(f'<span class="k"><i style="background:{s_.color}"></i>{s_.name}</span><b>{fmt_val(s_.vals[i])}{"*" if s_.stale_from is not None and i > s_.stale_from else ""}</b>' for s_ in series)
+        flip = " flip" if xpos(i) > X * 0.5 else ""
+        hits.append(f'<span class="hit{flip}" tabindex="0" style="left:{pct(lo)};width:{pct(hi - lo)}"><i class="xh" style="left:{(xpos(i) - lo) / max(hi - lo, 1e-9) * 100:.1f}%"></i>'
+                    f'<span class="tip"><span class="k">{(tip_labels or x_labels)[i]}</span><span></span>{rows}</span></span>')
+    return (f'<div class="ts" role="img" aria-label="{"、".join(s_.name for s_ in series)}" style="height:{h}px">'
+            f'<div class="yl">{ylab}</div><div class="pa">{"".join(svg)}{"".join(over)}<div class="hits">{"".join(hits)}</div></div><div class="xl">{xlab}</div></div>')
 
 
 def chart_card(title: str, body_desktop: str, body_mobile: str, series: list[Series] | None = None,
@@ -795,14 +782,13 @@ def chart_card(title: str, body_desktop: str, body_mobile: str, series: list[Ser
             f'<span><i class="{"rect" if legend_rect else ""}" style="background: {s.color}"></i>{s.name}</span>' for s in series) + "</div>"
     unit_html = f'<span class="unit">{unit}</span>' if unit else ""
     foot_html = f'<div class="foot">{foot}</div>' if foot else ""
-    return (f'<section class="chart"><div class="ph"><h2>{title}</h2>{unit_html}{legend}</div>'
-            f'<div class="body"><div class="ch-d">{body_desktop}</div><div class="ch-m">{body_mobile}</div></div>{foot_html}</section>')
+    body = (f'<div class="body"><div class="ch-d">{body_desktop}</div><div class="ch-m">{body_mobile}</div></div>' if body_mobile else f'<div class="body">{body_desktop}</div>')
+    return f'<section class="chart"><div class="ph"><h2>{title}</h2>{unit_html}{legend}</div>{body}{foot_html}</section>'
 
 
 def ts_card(title, series, x_labels, unit="%", foot="", wide=False, **kw) -> str:
-    d = timeseries(series, x_labels, unit=unit, w=1140 if wide else 560, h=200 if wide else 180, **kw)
-    m = timeseries(series, x_labels, unit=unit, w=328, h=160, **kw)
-    return chart_card(title, d, m, series, unit=kw.get("unit_label", ""), foot=foot, legend_rect=kw.get("bar", False))
+    d = timeseries(series, x_labels, unit=unit, h=220 if wide else 190, **kw)
+    return chart_card(title, d, "", series, unit=kw.get("unit_label", ""), foot=foot, legend_rect=kw.get("bar", False))
 
 
 def ranked(items: list[tuple[str, float, str]], vmax: float | None = None) -> str:
@@ -1032,7 +1018,9 @@ def tree(items: list, open_depth: int = 1) -> str:
             out.append(f'<li><details{" open" if is_open else ""}><summary class="{"on" if on else ""}">{icon("chev", 14)}{icon("folder", 16)}<span class="tn" title="{name}">{name}</span><span class="sz">{sz}</span></summary><ul>')
             stack.append(depth)
         else:
-            out.append(f'<li class="leaf {"on" if on else ""}"><span class="pad"></span>{icon("folder" if name.endswith("/") else "file", 16)}<span class="tn" title="{name}">{name}</span><span class="sz">{sz}</span></li>')
+            # 目錄樹只有資料夾；子層還沒讀取的也是可展開的資料夾（展開時才向 Agent 讀取）
+            out.append(f'<li><details><summary class="{"on" if on else ""}">{icon("chev", 14)}{icon("folder", 16)}<span class="tn" title="{name}">{name}</span><span class="sz">{sz}</span></summary>'
+                       f'<ul><li class="leaf"><span class="pad"></span><span class="note">讀取中…</span></li></ul></details></li>')
     while stack:
         out.append("</ul></details></li>"); stack.pop()
     out.append("</ul></div>")
