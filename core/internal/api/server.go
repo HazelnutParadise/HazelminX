@@ -122,7 +122,18 @@ func (s *Server) serveUI(c *gin.Context) {
 	if name != "" && name != "index.html" {
 		if f, err := s.ui.Open(name); err == nil {
 			f.Close()
+			// Vite fingerprints assets/; everything else (boot.js, favicon) keeps its name across releases.
+			if strings.HasPrefix(name, "assets/") {
+				c.Header("Cache-Control", "public, max-age=31536000, immutable")
+			} else {
+				c.Header("Cache-Control", "no-cache")
+			}
 			c.FileFromFS(name, http.FS(s.ui))
+			return
+		}
+		if strings.HasPrefix(name, "assets/") {
+			// A build artifact from another release: answering with index.html would make the browser run HTML as a script.
+			c.JSON(http.StatusNotFound, gin.H{"code": "NOT_FOUND", "message": "no such interface asset", "path": p})
 			return
 		}
 	}
