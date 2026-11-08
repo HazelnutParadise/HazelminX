@@ -38,7 +38,7 @@
 - **T-279** repo 根目錄沒有 Compose 檔，`apps/web/compose.yaml` 與 `apps/api/docker-compose.yml` 各有一份。 → 匯入頁兩份都列出，依目錄分組，不預先選；可以選一份，或建立成兩個單元。只剩 `apps/web/compose.yaml` 一份時仍然要使用者選，不自動帶入。
 - **T-280** repo 的 `.env` 有 `COMPOSE_FILE=compose.yaml:compose.prod.yaml`，單元指定的是 `compose.yaml`。 → 部署只用單元指定的檔案；預檢列出「COMPOSE_FILE 不採用」；按「照 COMPOSE_FILE 帶入」後，`compose.yaml`、`compose.prod.yaml` 依序帶入，確認後才儲存。
 - **T-281** web 單元的主檔是 `deploy/compose.yaml`，再勾選根目錄的 `compose.override.yaml`；override 第 8 行把 `./src` 掛進 shop-api。 → 預檢提示「compose.override.yaml 第 8 行 ./src → deploy/src」，不擋下；合併預覽顯示的掛載來源是 `deploy/src`。
-- **T-282** `deploy/compose.yaml` 有 `include: [../db/compose.yaml]`，`db/compose.yaml` 定義 `shop-db`；之後新 commit 把 `db/compose.yaml` 刪掉。 → 候選清單裡 `db/compose.yaml` 掛在 `deploy/compose.yaml` 底下，標「由 include 帶入」，不能勾選；刪掉後預檢擋下部署並寫出是哪份 include 不見了。
+- **T-282** `deploy/compose.yaml` 有 `include: [../db/compose.yaml]`，`db/compose.yaml` 定義 `shop-db`；之後新 commit 把 `db/compose.yaml` 刪掉。 → 候選清單裡 `db/compose.yaml` 掛在 `deploy/compose.yaml` 底下，標「由 include 帶入」，勾選框固定為已勾選、不能取消；刪掉後預檢擋下部署並寫出是哪份 include 不見了。
 - **T-283** n8n-stack 的 production 單元已經用 `compose.yml` 部署在 tw-01；從同一個 repo 建立 staging 單元，也指定 `compose.yml`、也部署到 tw-01。 → 預檢列出「production 的 n8n 單元也用這份主檔」，`container_name: n8n` 與 Port 5678 標擋下並寫出行號；staging 改部署到 lab-mini 時只剩提示。
 
 ## Delivery record

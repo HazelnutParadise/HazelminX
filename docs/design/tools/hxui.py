@@ -234,7 +234,7 @@ body{{margin:0}}
 .hb .fm{{grid-template-columns:240px minmax(0,1fr) 280px}}
 .hb .frow.sel{{background:color-mix(in srgb,var(--hazel) 12%,transparent)}}
 .hb .ck{{display:inline-flex;align-items:center;justify-content:center;width:28px;min-height:28px}}
-.hb .ck input{{width:16px;height:16px;accent-color:var(--hazel);margin:0}}
+.hb .ck input{{width:16px;height:16px;accent-color:var(--hazel);margin:0}}.hb input.lockck{{accent-color:var(--hazel);pointer-events:none;cursor:not-allowed;opacity:.75}}
 .hb .hd .sortable{{display:inline-flex;align-items:center;gap:4px;cursor:pointer}}
 .hb .hd .sortable svg{{color:var(--faint);opacity:.5}}
 .hb .hd .sortable.on svg{{color:var(--hazel);opacity:1}}

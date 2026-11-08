@@ -260,7 +260,7 @@
 合併多份檔案時，另外照下面三條處理。依據是 Docker 文件〈Merge Compose files〉與〈Include〉（2026-11-08 讀取）：
 
 - **跨目錄合併**：Compose 以主檔所在的目錄解析所有合併檔案裡的相對路徑，不是以各檔案自己的位置。勾選的檔案不在主檔的目錄時，預檢逐條列出它裡面的相對路徑和實際會解析成的路徑，例如「compose.override.yaml 第 8 行 ./src → deploy/src」。只提示，不擋下，因為有些 repo 是刻意這樣寫的。
-- **`include:`**：主檔或合併的檔案用頂層 `include:` 帶入的檔案，掛在帶入它的那份檔案底下，標「由 include 帶入」，不能另外勾選。被帶入的檔案各自以自己的目錄解析相對路徑；它定義的資源跟其他檔案同名時，Compose 直接報錯，預檢在部署前列出衝突的名稱。被帶入的檔案在新 commit 不見時，跟指定的檔案一樣擋下部署；內容改變時算這個單元的變更，會觸發這個單元的部署。
+- **`include:`**：主檔或合併的檔案用頂層 `include:` 帶入的檔案，掛在帶入它的那份檔案底下，標「由 include 帶入」，勾選框固定為已勾選、不能取消。被帶入的檔案各自以自己的目錄解析相對路徑；它定義的資源跟其他檔案同名時，Compose 直接報錯，預檢在部署前列出衝突的名稱。被帶入的檔案在新 commit 不見時，跟指定的檔案一樣擋下部署；內容改變時算這個單元的變更，會觸發這個單元的部署。
 - **同一份主檔被多個單元使用**：同一個 repo 的同一份主檔已經被其他單元使用時（不分專案環境），預檢列出那些單元。部署到同一個引擎環境時，會衝突的主機 Port 與 `container_name` 擋下並寫出是哪一行；部署到不同引擎環境時只提示。
 
 ## 52.6 部署：每次建置，建置完才無縫替換
@@ -374,7 +374,7 @@
 | T-279 | repo 根目錄沒有 Compose 檔，`apps/web/compose.yaml` 與 `apps/api/docker-compose.yml` 各有一份。 | 匯入頁兩份都列出，依目錄分組，不預先選；可以選一份，或建立成兩個單元。只剩 `apps/web/compose.yaml` 一份時仍然要使用者選，不自動帶入。 |
 | T-280 | repo 的 `.env` 有 `COMPOSE_FILE=compose.yaml:compose.prod.yaml`，單元指定的是 `compose.yaml`。 | 部署只用單元指定的檔案；預檢列出「COMPOSE_FILE 不採用」；按「照 COMPOSE_FILE 帶入」後，`compose.yaml`、`compose.prod.yaml` 依序帶入，確認後才儲存。 |
 | T-281 | web 單元的主檔是 `deploy/compose.yaml`，再勾選根目錄的 `compose.override.yaml`；override 第 8 行把 `./src` 掛進 shop-api。 | 預檢提示「compose.override.yaml 第 8 行 ./src → deploy/src」，不擋下；合併預覽顯示的掛載來源是 `deploy/src`。 |
-| T-282 | `deploy/compose.yaml` 有 `include: [../db/compose.yaml]`，`db/compose.yaml` 定義 `shop-db`；之後新 commit 把 `db/compose.yaml` 刪掉。 | 候選清單裡 `db/compose.yaml` 掛在 `deploy/compose.yaml` 底下，標「由 include 帶入」，不能勾選；刪掉後預檢擋下部署並寫出是哪份 include 不見了。 |
+| T-282 | `deploy/compose.yaml` 有 `include: [../db/compose.yaml]`，`db/compose.yaml` 定義 `shop-db`；之後新 commit 把 `db/compose.yaml` 刪掉。 | 候選清單裡 `db/compose.yaml` 掛在 `deploy/compose.yaml` 底下，標「由 include 帶入」，勾選框固定為已勾選、不能取消；刪掉後預檢擋下部署並寫出是哪份 include 不見了。 |
 | T-283 | n8n-stack 的 production 單元已經用 `compose.yml` 部署在 tw-01；從同一個 repo 建立 staging 單元，也指定 `compose.yml`、也部署到 tw-01。 | 預檢列出「production 的 n8n 單元也用這份主檔」，`container_name: n8n` 與 Port 5678 標擋下並寫出行號；staging 改部署到 lab-mini 時只剩提示。 |
 
 ## 52.9 不納入的部分

@@ -3238,8 +3238,12 @@ def _seg(opts, on=0, label="選項"):
     return f'<div class="range" role="group" aria-label="{label}" style="flex-wrap:wrap">{btns}</div>'
 
 
-def _cb(label, on=True, note=""):
+def _cb(label, on=True, note="", locked=""):
+    """locked：一定包含、不能取消的項目，顯示為已勾選加停用，滑過去說明原因。"""
     n = f' <span class="note">{note}</span>' if note else ""
+    if locked:
+        return (f'<label style="display:flex;gap:8px;align-items:center;min-height:32px"><span tabindex="0" data-tip="{locked}">'
+                f'<input type="checkbox" class="lockck" checked aria-disabled="true" tabindex="-1" aria-label="{label}（{locked}）"></span>{label}{n}</label>')
     return f'<label style="display:flex;gap:8px;align-items:center;min-height:32px"><input type="checkbox"{" checked" if on else ""}>{label}{n}</label>'
 
 
@@ -3822,9 +3826,10 @@ def connection_panel() -> str:
 # ---------- 單元設定 ----------
 def unit_config() -> str:
     head = _form_head([("專案與服務", "Projects.dc.html"), ("shop", "ProjectDetail.dc.html"), ("production", "ProjectDetail.dc.html")], "單元 web · 設定", '<a class="btn" href="ProjectDetail.dc.html">取消</a><button type="button" class="btn pri">儲存</button>')
-    def f(path, on, order, src, note, ok=True):
+    def f(path, on, order, src, note, ok=True, ok_tip="隨主檔一起載入，不能單獨取消"):
         box = (f'<input type="checkbox"{" checked" if on else ""} aria-label="使用 {path}">' if ok
-               else f'<input type="checkbox" disabled aria-label="{path} 不能選">')
+               else (f'<span tabindex="0" data-tip="{ok_tip}"><input type="checkbox" class="lockck" checked aria-disabled="true" tabindex="-1" aria-label="{path}：{ok_tip}"></span>' if on
+                     else f'<input type="checkbox" disabled aria-label="{path} 不能選">'))
         return (f'<div class="row"><span class="wrap" style="flex-wrap:nowrap">{box}<span class="mono">{path}</span></span>'
                 f'<span class="mono">{order}</span><span>{src}</span><span class="c3">{note}</span><span>{U.actions(["more"])}</span></div>')
     hint = U.status("info", "Compose 預設會用")
@@ -3844,7 +3849,7 @@ def unit_config() -> str:
       sub="掃描整個 repo 的 compose.yaml、compose.yml、docker-compose.yml、docker-compose.yaml 與對應的 override 檔；一定要指定主檔")
     prof = _fp("Profile", f"""
       <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px">
-        <div class="wrap">{_cb("預設（沒有 profile 的服務）", True)}{_cb("debug", False)}{_cb("metrics", True)}</div>
+        <div class="wrap">{_cb("預設（沒有 profile 的服務）", True, locked="沒有 profile 的服務一定會啟動")}{_cb("debug", False)}{_cb("metrics", True)}</div>
         <div class="wrap">{U.status("info", "shop-debug 不會啟動 · profile debug 未啟用")}</div>
       </div>""")
     swap = _fp("替換方式", f"""
