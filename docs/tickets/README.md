@@ -12,7 +12,7 @@
 | [002](002-design-system.md) | 設計師與開發者可以依 DESIGN.md 與互動原型審查主要畫面 | 設計系統 | — | [#2](https://github.com/HazelnutParadise/hazelminx/issues/2) | in_progress |
 | [003](003-core-skeleton.md) | 管理員可以啟動 hazelminx-core 並通過健康檢查 | 基礎建設 | 001 | [#3](https://github.com/HazelnutParadise/hazelminx/issues/3) | done |
 | [004](004-agent-skeleton.md) | 管理員可以在主機上以 systemd 執行 hazelminx-agent 並回報身分 | 節點與 Agent | 001 | [#4](https://github.com/HazelnutParadise/hazelminx/issues/4) | done |
-| [005](005-web-skeleton.md) | 使用者可以開啟 React 介面並切換語言與淺深色 | 基礎建設 | 001, 002 | [#5](https://github.com/HazelnutParadise/hazelminx/issues/5) | blocked |
+| [005](005-web-skeleton.md) | 使用者可以開啟 React 介面並切換語言與淺深色 | 基礎建設 | 001, 002 | [#5](https://github.com/HazelnutParadise/hazelminx/issues/5) | in_progress |
 | [006](006-ci-pipeline.md) | 維護者可以在 CI 建置、測試並產生各架構成品 | 發布與供應鏈 | 003, 004, 005 | [#6](https://github.com/HazelnutParadise/hazelminx/issues/6) | in_progress |
 | [007](007-core-agent-protocol.md) | Core 與 Agent 可以用版本化、雙向驗證的通道交換能力與工作事件 | 節點與 Agent | 003, 004 | [#7](https://github.com/HazelnutParadise/hazelminx/issues/7) | done |
 | [008](008-job-engine.md) | 使用者可以提交工作後關閉頁面，之後仍能查到進度、證據與結果 | 基礎建設 | 003 | [#8](https://github.com/HazelnutParadise/hazelminx/issues/8) | done |
