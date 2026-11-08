@@ -135,3 +135,46 @@ func (t *lockTable) release(jobID string) {
 func keyString(k lockKey) string {
 	return strings.Join([]string{k.node, k.kind, k.device, k.mount, k.p}, "\x00")
 }
+
+// ResourcesOverlap reports whether any resource of a conflicts with any of
+// b under the lock identity rules of spec 33.2 (same device, same mount,
+// parent and child paths, same kind and id on the same node).
+func ResourcesOverlap(a, b []ResourceRef) bool {
+	for _, x := range a {
+		for _, kx := range keysFor(x) {
+			for _, y := range b {
+				for _, ky := range keysFor(y) {
+					if conflicts(kx, ky) {
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
+}
+
+// holders returns the ids of jobs holding a lock that conflicts with res,
+// sorted, without reserving anything (dryRun previews).
+func (t *lockTable) holders(res []ResourceRef) []string {
+	var keys []lockKey
+	for _, r := range res {
+		keys = append(keys, keysFor(r)...)
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	var out []string
+	for other, held := range t.held {
+	scan:
+		for _, h := range held {
+			for _, k := range keys {
+				if conflicts(h, k) {
+					out = append(out, other)
+					break scan
+				}
+			}
+		}
+	}
+	sort.Strings(out)
+	return out
+}

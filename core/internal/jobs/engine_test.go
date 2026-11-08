@@ -27,6 +27,7 @@ type fakeHandler struct {
 
 	mu         sync.Mutex
 	executed   []int
+	executedBy map[string][]int
 	rolledBack []int
 }
 
@@ -43,6 +44,10 @@ func (f *fakeHandler) Recheck(_ context.Context, _ *Job, s *Step) error {
 func (f *fakeHandler) Execute(ctx context.Context, j *Job, s *Step, rep Reporter) error {
 	f.mu.Lock()
 	f.executed = append(f.executed, s.Index)
+	if f.executedBy == nil {
+		f.executedBy = map[string][]int{}
+	}
+	f.executedBy[j.ID] = append(f.executedBy[j.ID], s.Index)
 	f.mu.Unlock()
 	if f.execute != nil {
 		return f.execute(ctx, j, s, rep)
@@ -75,6 +80,14 @@ func (f *fakeHandler) executedSteps() []int {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return append([]int(nil), f.executed...)
+}
+
+// executedStepsOf returns the steps executed for one job only, for tests
+// where another job on the same handler may run meanwhile.
+func (f *fakeHandler) executedStepsOf(jobID string) []int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return append([]int(nil), f.executedBy[jobID]...)
 }
 
 // waitOn blocks until ch is closed or ctx ends, so a failing test never
@@ -782,11 +795,6 @@ func TestRecoverAfterRestartDoesNotResetOrRerun(t *testing.T) {
 	// Locks are rebuilt: a conflicting job waits.
 	other := env2.submit(SubmitRequest{RequestID: "o", Kind: "k", Resources: []ResourceRef{{Kind: "database", ID: "d"}}})
 	env2.waitState(other.ID, StateQueued)
-	// Cancel it once it is seen waiting, so the only steps that could run
-	// below are the reconciled job's.
-	if _, err := env2.engine.Cancel(env2.ctx, other.ID); err != nil {
-		t.Fatal(err)
-	}
 	// Reconcile says step b completed: continue to verification.
 	if _, err := env2.engine.Reconcile(env2.ctx, j.ID, []StepReport{{Index: 1, Started: true, Completed: true}}); err != nil {
 		t.Fatal(err)
@@ -794,7 +802,9 @@ func TestRecoverAfterRestartDoesNotResetOrRerun(t *testing.T) {
 	if env2.waitFinished(j.ID).State != StateSucceeded {
 		t.Fatal("reconciled job must finish")
 	}
-	if len(h2.executedSteps()) != 0 {
+	// The queued job may start once j releases the lock, so only j's own
+	// steps are checked.
+	if len(h2.executedStepsOf(j.ID)) != 0 {
 		t.Fatal("reconciled step must not be executed again")
 	}
 }

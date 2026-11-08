@@ -18,6 +18,7 @@ import (
 
 	"github.com/HazelnutParadise/hazelminx/core/internal/api"
 	"github.com/HazelnutParadise/hazelminx/core/internal/config"
+	"github.com/HazelnutParadise/hazelminx/core/internal/confirm"
 	"github.com/HazelnutParadise/hazelminx/core/internal/iam"
 	"github.com/HazelnutParadise/hazelminx/core/internal/jobs"
 	"github.com/HazelnutParadise/hazelminx/core/internal/nodes"
@@ -69,7 +70,16 @@ func run(args []string) error {
 		return err
 	}
 
-	// Job engine (ticket 008).
+	identity, err := iam.New(st.DB, iam.Config{})
+	if err != nil {
+		return err
+	}
+	// Background list queries are a Core-side job kind; handlers register
+	// before Recover so an interrupted query is reconciled, not orphaned.
+	listQueries := api.NewListQueries(st.DB, identity, engine)
+	if err := engine.Register(listQueries); err != nil {
+		return err
+	}
 	rec, err := engine.Recover(ctx)
 	if err != nil {
 		return fmt.Errorf("recover jobs: %w", err)
@@ -78,15 +88,14 @@ func run(args []string) error {
 	engine.Start(ctx)
 	defer engine.Stop()
 
-	identity, err := iam.New(st.DB, iam.Config{})
-	if err != nil {
-		return err
-	}
 	router := api.New(st, web.FS())
 	router.MountIAM(identity, api.IAMOptions{})
 	// Jobs mount on the authenticated group, so MountIAM must run first.
 	router.RegisterJobs(engine)
 	router.RegisterAgentConnections(hub)
+	router.MountListQueries(listQueries)
+	go listQueries.RunPurger(ctx, time.Hour)
+	router.MountConfirmations(confirm.New(st.DB, nil))
 	if err := announceSetup(ctx, identity, os.Stdout); err != nil {
 		return err
 	}
@@ -94,6 +103,8 @@ func run(args []string) error {
 	srv := &http.Server{
 		Handler:           router.Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
+		// Records when each connection opened, for ROB-010 confirmations.
+		ConnContext: api.ConnContext,
 	}
 	ln, err := net.Listen("tcp", cfg.ListenAddr)
 	if err != nil {

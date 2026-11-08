@@ -50,7 +50,10 @@
 ## Follow-ups
 
 - 第一次正式發版前，把 `core/internal/store/migrations/` 的所有 migration 合併成單一個 `0001` 檔，`store` 的連號檢查與 schema 版本相關測試一起更新。已經有使用者安裝的版本發出去之後，就不能再這樣合併。
-- `core/internal/api/iam_routes.go` 的 `setSessionCookies` 用牆上時鐘 `time.Until(sess.ExpiresAt)` 算 Cookie 壽命，與 IAM 服務的時鐘不同源；`internal/api` 測試的固定時鐘（2026-11-07T00:00Z）因此從 2026-11-07T12:00Z 起讓 5 個登入相關測試失敗。改成用 IAM 服務的時鐘算剩餘秒數。
+- `jobs` 與 `iam` 的時間欄位用 `time.RFC3339Nano` 寫入，小數尾端的 0 會被去掉，所以同一秒內的文字排序不一定等於時間順序（`…05.12Z` 會排在 `…05.123Z` 後面）。列表照 `createdAt`、`at` 排序時可能有少量順序錯誤，keyset 翻頁本身不受影響。要改成固定 9 位小數，並為既有資料做一次轉換；`confirm` 與 `list_queries` 已經用固定格式。
+- 背景列表查詢在執行期間會輪流佔用唯一的 SQLite 連線（`store` 設 `SetMaxOpenConns(1)`），大型稽核表上沒有索引的篩選會拖慢其他 API。加讀取用的第二個連線池時，背景查詢要改用它。
+- IAM 的寫入端點（建帳號、改帳號、指派與撤銷角色）還沒經過 `Server.writeBlockers`，平台資料庫唯讀時會回 `INTERNAL` 而不是 `PLATFORM_DEGRADED`。票 017 接上降級偵測時一起處理。
+- ROB-010 確認比對的 `Host` 是用戶端送來的標頭。瀏覽器無法偽造，但腳本或 API Token 可以從舊入口送新的 Host，確認一個其實連不到的網域變更。票 024 決定是否改比 TLS SNI，或限制網域變更只接受瀏覽器工作階段確認。
 - Agent 的 `journal.jsonl` 只增不減，`Journal` 也把所有紀錄留在記憶體；長期運作前要加壓縮：Core 確認過、而且工作已是終態的步驟紀錄可以移到封存檔，保留最近的完成紀錄供重送。
 - `nodes.LoadOrCreatePKI` 第一次建立時依序寫入 `node-pki/ca`、`node-pki/core` 兩筆機密，第二筆失敗會留下半套，之後啟動一律拒絕；要改成同一個交易建立兩筆，或提供清除半套的復原指令。
 - `jobs.Engine.Reconcile` 對「開始過、沒結束、可重試」的步驟每次都重跑，沒有次數上限；Agent 磁碟只剩一點空間時（開始紀錄寫得進去、結束紀錄寫不進去）會一直重跑同一步驟。要在引擎加對帳重跑次數上限，超過就轉「需要處理」。

@@ -1,7 +1,7 @@
 # Delivery Status
 
 ## Current Phase
-M0 基礎與設計：Core 與 Agent 後端骨架（票 003、004、008、009、011、012）已合併進 `main`；Core↔Agent 通道（票 007）驗收完成，在草稿 PR #125 等合併；設計系統與 UI/UX 原型（票 002）進行中。
+M0 基礎與設計：Core 與 Agent 後端骨架（票 003、004、008、009、011、012）與管理 API 共用契約（票 010）已合併進 `main`；Core↔Agent 通道（票 007）驗收完成，在草稿 PR #125 等合併；設計系統與 UI/UX 原型（票 002）進行中。
 
 ## Stage Objective
 完成 `DESIGN.md` 與主要畫面原型並通過設計審查，讓票 003、004、005、007 可以在一致的視覺與互動基準上開工；M0 結束時 Core、Agent、Web 骨架可建置並在 CI 通過。
@@ -30,7 +30,7 @@ None。
 票 019 節點註冊：一次性註冊碼換節點憑證（用票 007 的 `nodes.PKI.IssueNodeCertificate`），寫入 Agent 的 `node.crt`／`core-ca.crt`，並以節點紀錄實作 `nodes.Authorizer` 的撤銷。PR #102（票 002）合併後，票 005 依 `DESIGN.md` token 建立 `web/` 骨架。
 
 ## Next Ticket
-007 合併後 019 才能開工（還等 007 done）；票 008 done 後 024、025 的前置票都已 done，改為 ready。005 前端骨架仍等票 002 完成。另外 014、022、023、026 的前置票都已 done，狀態改為 ready；010、013、024、025 還在等 003、004 或 008 完成驗收。
+票 007 在 PR #125 等合併；019 還等 004 完成驗收。票 008 done 與 010 合併後，016、024、025、047 的前置票都已 done，改為 ready。005 前端骨架仍等票 002 完成。另外 014、015、022、023、026 的前置票都已 done，狀態為 ready；013 還在等 003、004 完成驗收。
 
 ## Decision Log
 | decision | rationale | timestamp | impacted_ticket_ids |
@@ -51,6 +51,10 @@ None。
 | `/management/v1/jobs` 掛在 IAM 驗證之後：讀取要全域 `platform:read`，提交與取消要全域 `platform:write`；各工作種類的權限與範圍由票 010 定 | 合併 008 與 009 時工作 API 原本不需登入；AGENTS.md 要求危險操作在後端驗權 | 2026-11-07 | 008、009、010 |
 | 003、004、008 驗收未完成仍先合併進 `main`，狀態維持 in_progress | 使用者決定（2026-11-07）；003 的 CI 條件要等 006，而 006 需要 003 先合併 | 2026-11-07 | 003、004、006、008 |
 | 主金鑰存 `<data-dir>/master.key`（多世代、舊世代永不刪）；SQLite 改 `synchronous=FULL`；`master.key` 存在而 `core.db` 不在視為遺失而非全新安裝 | 35.2 主金鑰不與資料庫同放、輪替後舊備份須可解密；DAT-002 已確認交易不可丟；T-012 不冒用空白庫 | 2026-11-07 | 011、078、013 |
+| `/management/v1` 列表統一回 `{items, page}`、以 keyset 游標翻頁；`INVALID_REQUEST`、`JOB_KIND_UNKNOWN` 併入 `VALIDATION_FAILED`，`JOB_NOT_FOUND` 併入 `NOT_FOUND`，`CONFLICT` 改名 `ALREADY_EXISTS` | 使用者決定（2026-11-08）；尚未發版，統一後前端只需處理一套格式 | 2026-11-08 | 010、005、017 |
+| 版本過期回 `412 VERSION_MISMATCH`，缺少或 `*` 回 `428 VERSION_REQUIRED`；`409` 只用於資源狀態擋下 | 使用者決定（2026-11-08）；RFC 9110 13.1.1 | 2026-11-08 | 010、015、016 |
+| 背景列表查詢結果存獨立表，最多 100,000 筆、保存 7 天 | 使用者決定（2026-11-08）；大結果放在工作紀錄會拖慢工作列表 | 2026-11-08 | 010、017 |
+| ROB-010 確認只接受套用者本人、從套用後才建立的連線送出；有反向代理時不成立，前提是管理入口直連 Core | 使用者決定（2026-11-08）；瀏覽器會同時開多條連線，只比連線 ID 不夠 | 2026-11-08 | 010、024、065 |
 | Core↔Agent 通道：Agent 撥出到 Core 的 TLS 1.3 WebSocket（預設 `:9801`）；Core 有自己的 Ed25519 CA，私鑰存機密服務；雙方在握手時各自簽雙方 nonce、雙方 X25519 公鑰、協定版本、節點指紋與 session ID；之後每則訊息帶方向序號與 HMAC；直連時另要求 TLS 用戶端憑證與握手身分一致；HTTP Header 一律不當身分 | NOD-002 不開節點入站埠；T-024 經終止 TLS 的代理仍要有獨立節點身分，而且代理不能在握手後插入或改寫訊息（規格 32 章「之後每次收命令也要確認」）；Komodo 的 Noise 握手在 Go 端沒有相容實作 | 2026-11-08 | 007、019 |
 | Agent 每個步驟開始前與結束後先寫 append-only `journal.jsonl` 並 fsync 才回報；同一工作步驟有完成或失敗紀錄就重送紀錄不重跑；重開機時中斷的步驟只有 Core 對帳後送來、且標記可重試時才再跑 | ENG-003 不把執行中工作重設成功或重跑；可重試步驟若一律拒絕，對帳後的重跑會永遠卡住 | 2026-11-08 | 007、008 |
 | 握手五種訊息寬鬆解碼（忽略未知欄位），握手後訊息嚴格解碼（未知欄位、未知類型都不執行） | NOD-011 不以未知欄位猜測執行；不相容的新舊版本仍要能互相說出支援範圍（T-021） | 2026-11-08 | 007 |
@@ -61,7 +65,7 @@ None。
 - 規格：`docs/spec/HazelminX_Spec_v1.1_zh-TW.md`
 - 票務：`docs/tickets/README.md`、GitHub issues #1–#98（milestone M0–M5）
 - 草稿 PR：#99（092 基線盤點）、#102（002 設計方向）、#125（007 Core↔Agent 通道）
-- 已合併 PR：#100（003）、#101（004）、#103（011）、#104（009）、#105（008）、#106（012）
+- 已合併 PR：#100（003）、#101（004）、#103（011）、#104（009）、#105（008）、#106（012）、#121（010）
 - 設計畫布：<https://claude.ai/artifact/NBXgFGYEiZVnKLraoa7Nt8>（第一頁三個方向、第二頁方向 B 定稿 12 畫板，私人）
 - 研究：`docs/research/`
 - 工作規則：`AGENTS.md`
@@ -71,3 +75,5 @@ None。
 - 參考專案原始碼放在本機暫存目錄，不進 repo；研究報告是線索，實作前以固定 commit 重新核對。
 - Vite+ 的 `vp` 尚未安裝在開發機；票 005 開工時先裝全域 CLI（`curl -fsSL https://vite.plus | bash`）。
 - 在 `/Volumes/SSD` 上 `cargo build` 需設 `CARGO_TARGET_DIR` 到支援檔案鎖的磁碟（project memory 有紀錄）。
+- 票 010 新增 migration `0006_management_contract.sql`。其他平行分支若也新增 `0006`，後合併的一方要改號，並同步更新票檔裡的引用。
+- `core/internal/api` 的 IAM 測試時鐘原本寫死在 2026-11-07，從 2026-11-08 起整批失敗。票 010（PR #121）已經修正，同時修了 `TestRecoverAfterRestartDoesNotResetOrRerun` 約三成機率失敗的問題。

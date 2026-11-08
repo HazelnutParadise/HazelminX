@@ -24,19 +24,36 @@ go test ./...
 | 資料目錄 | `-data-dir` | `HAZELMINX_DATA_DIR` | `/var/lib/hazelminx` |
 | 日誌格式 | `-log-format` | `HAZELMINX_LOG_FORMAT` | `json` |
 
-端點：`GET /healthz`（含資料庫健康）、`GET /management/v1`（操作總覽，列出所有操作與已註冊的工作種類）、`/management/v1/jobs`（工作：列出、提交、取得、事件接續、取消）、`GET /management/v1/agent-connections`（已連線的 Agent 與最近被拒絕的連線，含雙方協定範圍）。完整契約見票 010。
+端點：`GET /healthz`（含資料庫健康）、`GET /management/v1`（操作總覽：每個操作都連到 OpenAPI 裡的說明，另列已註冊的工作種類）、`GET /management/v1/openapi.json`（OpenAPI 3.1，由路由註冊表產生）、`GET /management/v1/agent-connections`（已連線的 Agent 與最近被拒絕的連線，含雙方協定範圍）。共用契約見下一節。
 
 ## 工作引擎
 
-長操作一律建立工作（`POST /management/v1/jobs`，回 `202` 與工作 ID），工作不隨 HTTP 連線消失。每個工作種類向引擎註冊一個 `jobs.Handler`，自己定義步驟規劃、執行前再檢查、執行、復原、對帳與完成檢查；沒有註冊的種類不能提交。目前註冊的種類只有 `node.inspect`（唯讀：問指定節點的 Agent 是誰，完成檢查是回答者的指紋等於工作指定的節點）。
+長操作一律建立工作（`POST /management/v1/jobs`，回 `202` 與工作 ID），工作不隨 HTTP 連線消失。每個工作種類向引擎註冊一個 `jobs.Handler`，自己定義步驟規劃、執行前再檢查、執行、復原、對帳與完成檢查；沒有註冊的種類不能提交，會回 `400 VALIDATION_FAILED`，`fields` 指出 `kind`。Agent 執行的種類目前只有 `node.inspect`（唯讀：問指定節點的 Agent 是誰，完成檢查是回答者的指紋等於工作指定的節點）。
 
 - 狀態依規格 33.1，表格在 `internal/jobs/state.go`；終態不可再改。
 - 同一 `requestId` 相同內容回同一工作，不同內容回 `409 REQUEST_ID_CONFLICT`。
+- Core 自己的工作種類只有 `list.query`（背景列表查詢，見下一節），Agent 相關的種類隨票 004／007 進來。
 - 資源鎖以裝置身分、掛載與正規化路徑比對，父子路徑與同磁碟都算衝突；鎖在 Core 重啟後由未完成工作重建。
 - 取消：未開始的立即取消；執行中可取消步驟中斷，不可逆步驟做完才停，狀態 `cancel_requested` 期間步驟帶 `waitReason`。
 - 失敗若所有已執行步驟都有復原方法則自動復原為 `rolled_back`；復原失敗為 `needs_attention`；執行端斷線或 Core 中途停止為 `unknown`，由 `Engine.Reconcile` 以執行端紀錄接續，不重跑不可逆步驟。
 - 預算：每類並行上限（`jobs.Options.Budgets`）與資料目錄空間保留（`ReserveBytes`）。
-- 工作端點掛在 IAM 驗證之後：讀取要全域 `platform:read`，提交與取消要全域 `platform:write`；各工作種類自己的權限與範圍隨票 010 接上。
+- 工作端點掛在 IAM 驗證之後：讀取要全域 `platform:read`，提交與取消要全域 `platform:write`。需要較窄權限的工作種類各自開端點，例如背景列表查詢只要該列表的讀取權限。
+
+## 管理 API 共用契約（票 010）
+
+每個 `/management/v1` 端點都經 `Server.handle` 註冊一筆 `Operation`（`internal/api/operations.go`），總覽、OpenAPI 與實際路由都由同一份資料產生，`TestRoutesMatchOperations` 檢查三者一致。新資源端點照下列方式套用，不另寫一套：
+
+- **錯誤**：代碼表在 `internal/api/errcodes.go`，每個代碼固定一個 HTTP 狀態、預設可否重試與白話說明。回應一律是同一個錯誤物件：`code`、`message`、`traceId`、`retryable`，視情況加 `requestId`、`jobId`、`resourceId`、`fields`（同步驗證沒過的欄位）、`details`（代碼專屬資料，例如 `currentVersion`、`mode`）、`evidence`、`suggestedActions`、`alsoBlockedBy`。用 `respond(c, newError(code, msg))` 回，不要自己寫狀態碼。
+- **同時被多個理由擋下**：依 `blockingOrder` 回最前面的一個，其餘列在 `alsoBlockedBy`。順序是：未登入 → CSRF／來源 → 不支援的 dryRun → 不存在或看不到 → 無權 → 輸入錯誤 → 內容太大 → 缺版本條件 → requestId 重送判定 → 平台降級 → 節點或引擎降級 → 控制者衝突 → 資源唯讀 → 等待確認 → 版本不符 → 被引用 → 預檢沒過。前五項不透露資源是否存在。資源狀態擋下時，版本對了也不能寫，所以排在版本之前。
+- **寫入閘門**：`ResourceState`（控制者、接管狀態、控制者衝突、所在節點或引擎的降級、待確認變更）交給 `WriteBlockers`，回 `RESOURCE_READ_ONLY`、`CONTROLLER_CONFLICT`、`SCOPE_DEGRADED`、`CONFIRMATION_REQUIRED`。增補 03「控制者與能不能寫入」表只寫在這個函式裡，畫面的停用按鈕也要問同一個函式。`Server.writeBlockers` 另外加上平台降級（`SetPlatformState`，偵測由票 017 接上）與 ROB-010 待確認變更。
+- **列表**：回 `{items, page}`。`page` 有 `limit`（每頁筆數）、`queryCap`（查詢上限）、`timeoutSeconds`（逾時）、`nextCursor`、`total`（逾時時為 `null`，即總數未知）、`capped`（超過查詢上限，只能看前 `queryCap` 筆）、`timedOut`、`sort`，以及 `capped` 或 `timedOut` 時才有的 `backgroundQuery`。預設每頁 50、最多 200、查詢上限 10,000、逾時 15 秒。游標記住最後一筆的排序值，翻頁期間前面插進新資料也不會重複或漏筆。游標有伺服器簽章，改過的游標回 400。Core 重啟後舊游標失效，要從第一頁重新開始。查詢參數只接受 `limit`、`cursor`、`sort` 與該列表宣告的篩選，其他參數一律 400。宣告方式是一個 `ListSpec` 加一個 `ListSource`。SQL 的排序與「在這一筆之後」條件由 `internal/paging` 產生。
+- **背景列表查詢**：把 `backgroundQuery` 加上 `requestId` 送到 `POST /management/v1/list-queries`，回 202 與工作。權限與該列表的讀取權限相同，執行時會重新確認提出者還有沒有權限。結果最多存 100,000 筆，放在 `list_query_items`，不放進工作紀錄。7 天後由每小時一次的清理刪除，之後讀取回 `410 LIST_QUERY_EXPIRED`。只有提出者看得到，而且提出者的可見範圍要和執行時相同，權限縮小或擴大後舊結果一律回 `404`。每個帳號最多同時保存 10 筆，超過回 `409 LIST_QUERY_LIMIT_REACHED`。
+- **版本條件**：可修改的資源帶 `version`，GET 回 `ETag: "v<version>"`。寫入要帶 `If-Match: "v<version>"`。沒帶或帶 `*` 回 `428 VERSION_REQUIRED`，版本過期回 `412 VERSION_MISMATCH`（`details.currentVersion`）。成功的寫入回新的 `ETag`。目前示範在 `PATCH /management/v1/users/{id}`。角色指派與撤銷也會讓使用者版本加一，這兩個操作的 `If-Match` 可帶可不帶。
+- **requestId**：工作的 requester 一律是登入的帳號。別的帳號用過的 requestId 回 `409 REQUEST_ID_CONFLICT`，不會把那個工作交出去。
+- **長操作**：用 `acceptJob` 回 `202`、`Location` 與 `{jobId, job, links: {self, events, cancel}, deduplicated}`。
+- **dryRun**：會改變受管資源的端點在 `Operation` 標 `DryRun: true`，收到 `?dryRun=true` 時回 `200 DryRunResult`（`ok`、`blockers`、`impact.direct`、`impact.indirect`、`preview`），不建立、不保留任何東西。權限照真實寫入檢查。沒標的寫入端點收到 `dryRun` 一律回 `400 DRY_RUN_UNSUPPORTED`，不會忽略參數照做。OpenAPI 以 `x-hazelminx-dry-run` 標記這些端點，作為 ROB-003 的核對清單。目前 `POST /management/v1/jobs` 支援，預覽會寫出是否視為重送、會排在哪些工作後面、空間夠不夠。
+- **確認端點**：`GET`／`POST /management/v1/confirmations/{id}`（ROB-010）。只有套用變更的同一個帳號看得到、能確認（工作階段或 API Token 都可以），其他人一律 `404`。確認要從變更套用之後才建立的連線送出（`api.ConnContext` 記下每條連線的建立時間）。變更有指定新入口時，Host 或本機位址也要相符，否則回 `409 CONFIRMATION_NEW_CONNECTION_REQUIRED`。超過時間回 `409 CONFIRMATION_EXPIRED`。指定的本機位址是 `0.0.0.0` 這類萬用位址時只比對 port。只有平台資料庫唯讀時，確認會回 `503`，其他降級不擋確認。同一資源有待確認的變更時，其他寫入回 `409 CONFIRMATION_REQUIRED`。倒數、自動回復與重啟續算由票 024 接上。Core 前面若有反向代理，Core 看不到瀏覽器那段連線，這個判定就不成立。目前管理入口由瀏覽器直連 Core。
+- **非 UTF-8 名稱**：主機來的名稱用 `RawName`：`text` 一律是有效 UTF-8（無效位元組換成 U+FFFD），原始內容不是有效 UTF-8 時另附 `bytes`（標準 base64）。兩個顯示相同的名稱以 `bytes` 區分。改名、下載等操作把整個 `RawName` 送回來，有 `bytes` 就以它為準。
 
 ## Agent 通道（票 007）
 
@@ -65,7 +82,9 @@ Agent 主動連到 `-agent-listen` 的 `/agent/v1/connect`（TLS 1.3 上的 WebS
 | `cmd/hazelminx-core` | 進入點：設定、儲存、HTTP、優雅關閉 |
 | `internal/config` | 旗標與環境變數載入、驗證 |
 | `internal/store` | SQLite 開啟、WAL、`synchronous=FULL`、開檔前 `quick_check`、只升不降的 migration（`migrations/NNNN_name.sql`） |
-| `internal/api` | Gin 路由、健康檢查、總覽、工作 API、介面靜態檔；`iam_routes.go` 是工作階段、CSRF 與授權中介層（`RequireGlobal`、`RequireScoped`）與 IAM 端點 |
+| `internal/api` | Gin 路由與管理 API 共用契約（錯誤代碼表、列表、版本條件、dryRun、202 工作回應、OpenAPI）、健康檢查、總覽、工作 API、背景列表查詢、確認端點、介面靜態檔；`iam_routes.go` 是工作階段、CSRF 與授權中介層（`RequireGlobal`、`RequireScoped`）與 IAM 端點 |
+| `internal/paging` | 列表的 keyset 分頁：把排序與游標換成 SQL 的 ORDER BY 與「在這一筆之後」條件 |
+| `internal/confirm` | ROB-010 確認紀錄：建立、查詢、確認（新連線與入口判定）、標記已回復、查同一資源是否有待確認變更 |
 | `internal/jobs` | 工作引擎：狀態機、冪等鍵、資源鎖、預算、事件序號、診斷、SQLite 儲存 |
 | `internal/protocol` | Core↔Agent 訊息型別、嚴格與寬鬆解碼、版本協商、握手簽章內容；`fixturegen/` 重產 `docs/contracts/fixtures` 的確定性樣本 |
 | `internal/nodes` | 節點 PKI、Agent 連線 hub（握手、會話、心跳）、步驟執行器、重連對帳、`node.inspect` 工作種類 |

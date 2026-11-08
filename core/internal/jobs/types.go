@@ -3,6 +3,7 @@ package jobs
 import (
 	"encoding/json"
 	"errors"
+	"github.com/HazelnutParadise/hazelminx/core/internal/paging"
 	"time"
 )
 
@@ -293,10 +294,39 @@ type StepReport struct {
 }
 
 // ListOptions filters Engine.List. Results are newest first unless
-// Ascending is set.
+// Ascending is set; Page, when it has a Sort, replaces Limit and Ascending
+// with a keyset page (sort fields: createdAt, updatedAt, kind, state, id).
 type ListOptions struct {
 	States    []State
 	Kind      string
+	Node      string
 	Limit     int
 	Ascending bool
+	Page      paging.Query
+}
+
+// JobSortColumns maps list sort fields to job columns.
+var JobSortColumns = map[string]paging.Column{
+	"createdAt": {Expr: "created_at"},
+	"updatedAt": {Expr: "updated_at"},
+	"kind":      {Expr: "kind"},
+	"state":     {Expr: "state"},
+	"id":        {Expr: "id"},
+}
+
+// SortValue returns the value of a sort field of j, as JobSortColumns
+// compares it.
+func (j *Job) SortValue(field string) string {
+	switch field {
+	case "createdAt":
+		return j.CreatedAt.UTC().Format(time.RFC3339Nano)
+	case "updatedAt":
+		return j.UpdatedAt.UTC().Format(time.RFC3339Nano)
+	case "kind":
+		return j.Kind
+	case "state":
+		return string(j.State)
+	default:
+		return j.ID
+	}
 }

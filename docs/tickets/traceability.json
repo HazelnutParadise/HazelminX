@@ -182,7 +182,7 @@
     "INT-001"
    ],
    "acceptance_tests": [],
-   "status": "blocked",
+   "status": "done",
    "issue": 10
   },
   {
@@ -297,7 +297,7 @@
     "IAM-010"
    ],
    "acceptance_tests": [],
-   "status": "blocked",
+   "status": "ready",
    "issue": 15
   },
   {
@@ -318,7 +318,7 @@
    "acceptance_tests": [
     "T-030"
    ],
-   "status": "blocked",
+   "status": "ready",
    "issue": 16
   },
   {
@@ -1038,7 +1038,7 @@
     "GH-T14",
     "GH-T15"
    ],
-   "status": "blocked",
+   "status": "ready",
    "issue": 47
   },
   {
