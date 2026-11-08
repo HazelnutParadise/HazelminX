@@ -44,6 +44,7 @@
 
 - 需求 ID：ENG-001、002、003、004、006、007、008、009、011、012 完成；ENG-003 的 Agent 端由票 007 接上。
 - 變更：新增 `core/internal/jobs`（狀態機、鎖表、引擎、回報器、SQLite 儲存）、migration `0002_jobs.sql`（`jobs`、`job_events`）、`core/internal/api/jobs.go`（`/management/v1/jobs` 列出、提交、取得、事件、取消）、`main.go` 接線（啟動時 `Recover`、關閉時 `Stop`）、總覽改為動態列出操作。
+- 票 007 對引擎的新增：`StepError.NothingChanged`（執行端拒絕、沒做任何事的這次嘗試不算執行過）與 `Step.Attempts`（步驟開始執行的次數，先前有過中斷的嘗試時，被拒的重試仍照常回滾）；測試 `TestRefusedStepIsNotCountedAsExecuted`、`TestRefusedRetryAfterInterruptedAttemptStillRollsBack`。`TestRecoverAfterRestartDoesNotResetOrRerun` 原本把測試自己排入的另一個同種工作也算進「不得重跑」，不加 `-race` 時穩定失敗，已改成確認它排隊後取消，只檢查被對帳的工作。
 - 影響範圍：Core 資料庫 schema 升到 2；`api.Server` 新增 `RegisterJobs`；未動前端、Agent、`docs/design/`。
 - 測試環境：macOS arm64、Go 1.26.5、`go vet ./...` 與 `go test -race ./...` 全綠；本機啟動執行檔並以 curl 驗證總覽、清單、400／404 與 `/healthz`。
 - 正常與失敗案例：見上方逐條證據；失敗注入涵蓋斷線、磁碟滿、復原失敗、再檢查阻擋、預算不足、必要檢查失敗、日誌洪水。

@@ -14,6 +14,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -407,10 +408,11 @@ func TestUnauthenticatedClientCannotMakeTheHubHoldMuch(t *testing.T) {
 	}
 }
 
-// Idle connections from one address use up only that address's handshake
-// slots, and a client that never sends hello is dropped after a few
-// seconds, so they cannot keep genuine agents out.
-func TestConcurrentHandshakesAreCappedPerSource(t *testing.T) {
+// Silent connections cannot keep agents out, even from the same address
+// (for example behind the same proxy): when a source has the maximum number
+// of handshakes in progress, the oldest is closed for the newcomer, and a
+// client that never sends hello is dropped after a few seconds anyway.
+func TestSilentConnectionsCannotLockAgentsOut(t *testing.T) {
 	core := startCore(t, HubOptions{})
 	c := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{RootCAs: coreCAPool(t, core.pki), ServerName: protocol.CoreServerName}}}
 	var conns []*websocket.Conn
@@ -426,54 +428,71 @@ func TestConcurrentHandshakesAreCappedPerSource(t *testing.T) {
 		}
 		conns = append(conns, conn) // never send hello
 	}
-	_, resp, err := websocket.Dial(context.Background(), core.url, &websocket.DialOptions{HTTPClient: c})
-	if err == nil || resp == nil || resp.StatusCode != http.StatusServiceUnavailable {
-		t.Fatalf("handshake over the per-source cap: err=%v resp=%v", err, resp)
-	}
-	// The silent clients are dropped after helloTimeout and a real agent
-	// from the same address gets through.
 	start := time.Now()
 	n := newTestNode(t, core.pki)
-	for {
-		a, err := dialAgent(t, core, core.url, n, agentOpts{})
-		if err == nil && a.ready != nil {
-			break
-		}
-		if time.Since(start) > helloTimeout+3*time.Second {
-			t.Fatalf("slots were not freed: %v", err)
-		}
-		time.Sleep(100 * time.Millisecond)
+	a, err := dialAgent(t, core, core.url, n, agentOpts{})
+	if err != nil || a.ready == nil {
+		t.Fatalf("genuine agent locked out by %d silent connections: %v", maxHandshakesPer, err)
+	}
+	if time.Since(start) > helloTimeout {
+		t.Fatalf("agent had to wait %s; the oldest silent connection should have been closed for it", time.Since(start))
+	}
+	// The oldest silent connection was the one closed.
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if _, _, err := conns[0].Read(ctx); err == nil || errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("oldest silent connection still open: %v", err)
 	}
 }
 
-func TestHandshakeSlotsAreCountedPerSourceAndInTotal(t *testing.T) {
+func TestHandshakeSlotsEvictTheOldestPerSourceAndInTotal(t *testing.T) {
 	h := NewHub(HubOptions{PKI: testPKI(t)})
+	var mu sync.Mutex
+	evicted := map[string]bool{}
+	slot := func(src, name string) *handshakeSlot {
+		return h.acquireSlot(src, func() { mu.Lock(); evicted[name] = true; mu.Unlock() })
+	}
 	for i := 0; i < maxHandshakesPer; i++ {
-		if !h.acquireSlot("198.51.100.1") {
-			t.Fatalf("slot %d refused", i)
+		slot("198.51.100.1", fmt.Sprintf("a%d", i))
+	}
+	slot("198.51.100.2", "b0")
+	slot("198.51.100.1", "a-new") // evicts a0, not b0
+	waitFor(t, "eviction", func() bool { mu.Lock(); defer mu.Unlock(); return evicted["a0"] })
+	mu.Lock()
+	if evicted["b0"] || evicted["a1"] {
+		t.Fatalf("wrong connection evicted: %v", evicted)
+	}
+	mu.Unlock()
+	// Releasing an evicted slot is a no-op; the count stays consistent.
+	h.slotMu.Lock()
+	before := len(h.slots)
+	h.slotMu.Unlock()
+	for _, sl := range h.slots[:1] {
+		h.releaseSlot(sl)
+		h.releaseSlot(sl)
+	}
+	h.slotMu.Lock()
+	if len(h.slots) != before-1 {
+		t.Fatalf("slots %d, want %d", len(h.slots), before-1)
+	}
+	h.slotMu.Unlock()
+	// The total stays at the cap however many sources arrive.
+	for i := 0; i < maxHandshakes*2; i++ {
+		slot(fmt.Sprintf("203.0.113.%d", i%250), fmt.Sprintf("c%d", i))
+	}
+	h.slotMu.Lock()
+	if len(h.slots) != maxHandshakes {
+		t.Fatalf("%d slots in use, cap %d", len(h.slots), maxHandshakes)
+	}
+	h.slotMu.Unlock()
+	for in, want := range map[string]string{
+		"10.0.0.1:9":               "10.0.0.1",
+		"[2001:db8:1:2:3::1]:443":  "2001:db8:1:2::/64",
+		"[2001:db8:1:2:ffff::9]:1": "2001:db8:1:2::/64",
+		"[::ffff:10.0.0.2]:5":      "10.0.0.2",
+	} {
+		if got := sourceOf(in); got != want {
+			t.Errorf("sourceOf(%s) = %s, want %s", in, got, want)
 		}
-	}
-	if h.acquireSlot("198.51.100.1") {
-		t.Fatal("one source exceeded its cap")
-	}
-	if !h.acquireSlot("198.51.100.2") {
-		t.Fatal("another source was locked out by the first")
-	}
-	h.releaseSlot("198.51.100.1")
-	if !h.acquireSlot("198.51.100.1") {
-		t.Fatal("released slot was not reusable")
-	}
-	// The total cap holds across many sources.
-	got := 0
-	for i := 0; got < maxHandshakes+10 && i < maxHandshakes*2; i++ {
-		if h.acquireSlot(fmt.Sprintf("203.0.113.%d", i)) {
-			got++
-		}
-	}
-	if h.slots != maxHandshakes {
-		t.Fatalf("%d slots in use, cap %d", h.slots, maxHandshakes)
-	}
-	if sourceOf("[2001:db8::1]:443") != "2001:db8::1" || sourceOf("10.0.0.1:9") != "10.0.0.1" {
-		t.Fatal("sourceOf")
 	}
 }

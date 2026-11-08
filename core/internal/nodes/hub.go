@@ -75,7 +75,7 @@ const (
 	maxMessageBytes   = 1 << 20  // one message in an established session
 	maxHandshakeBytes = 64 << 10 // one handshake message
 	maxHandshakes     = 256      // handshakes in progress at once, all sources
-	maxHandshakesPer  = 8        // handshakes in progress from one source address
+	maxHandshakesPer  = 32       // handshakes in progress from one source (IPv4 address or IPv6 /64)
 	helloTimeout      = 3 * time.Second
 	maxRecordedText   = 256 // characters kept from agent-supplied strings in refusals
 )
@@ -87,9 +87,8 @@ const maxRejections = 50
 type Hub struct {
 	opts HubOptions
 
-	slotMu     sync.Mutex
-	slots      int            // handshakes in progress
-	slotsPerIP map[string]int // by source address
+	slotMu sync.Mutex
+	slots  []*handshakeSlot // handshakes in progress, oldest first
 
 	mu         sync.Mutex
 	sessions   map[string]*Session // by node fingerprint
@@ -126,7 +125,7 @@ func NewHub(opts HubOptions) *Hub {
 	if opts.Range == (protocol.Range{}) {
 		opts.Range = protocol.SupportedRange()
 	}
-	return &Hub{opts: opts, slotsPerIP: map[string]int{}, sessions: map[string]*Session{}, orphaned: map[string][]string{}}
+	return &Hub{opts: opts, sessions: map[string]*Session{}, orphaned: map[string][]string{}}
 }
 
 // Rejection is a refused connection attempt, kept so operators can see
@@ -217,57 +216,100 @@ func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	src := sourceOf(r.RemoteAddr)
-	if !h.acquireSlot(src) {
-		w.Header().Set("Retry-After", "5")
-		http.Error(w, "too many agent handshakes in progress", http.StatusServiceUnavailable)
-		return
-	}
-	released := false
-	release := func() {
-		if !released {
-			released = true
-			h.releaseSlot(src)
-		}
-	}
-	defer release()
 	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{CompressionMode: websocket.CompressionDisabled})
 	if err != nil {
 		return // Accept already answered
 	}
+	slot := h.acquireSlot(sourceOf(r.RemoteAddr), func() { conn.CloseNow() })
+	released := false
+	release := func() {
+		if !released {
+			released = true
+			h.releaseSlot(slot)
+		}
+	}
+	defer release()
 	conn.SetReadLimit(maxHandshakeBytes)
 	h.handshake(r, conn, release)
 }
 
-// acquireSlot reserves a handshake slot for a source address. One source
-// cannot take all slots, so idle connections from one place do not lock
-// every agent out; the global cap bounds the total.
-func (h *Hub) acquireSlot(src string) bool {
-	h.slotMu.Lock()
-	defer h.slotMu.Unlock()
-	if h.slots >= maxHandshakes || h.slotsPerIP[src] >= maxHandshakesPer {
-		return false
-	}
-	h.slots++
-	h.slotsPerIP[src]++
-	return true
+// handshakeSlot is one handshake in progress.
+type handshakeSlot struct {
+	src   string
+	evict func()
+	gone  bool // evicted or released
 }
 
-func (h *Hub) releaseSlot(src string) {
+// acquireSlot registers a handshake. When the source (or the hub) already
+// has the maximum in progress, the oldest of them is closed to make room:
+// genuine handshakes finish in well under a second, so the connections that
+// linger are the ones holding slots without finishing, and new arrivals,
+// including agents behind the same proxy or NAT as an attacker, still get
+// through.
+func (h *Hub) acquireSlot(src string, evict func()) *handshakeSlot {
 	h.slotMu.Lock()
 	defer h.slotMu.Unlock()
-	h.slots--
-	if h.slotsPerIP[src]--; h.slotsPerIP[src] <= 0 {
-		delete(h.slotsPerIP, src)
+	sameSource := 0
+	for _, sl := range h.slots {
+		if sl.src == src {
+			sameSource++
+		}
+	}
+	if sameSource >= maxHandshakesPer {
+		for _, sl := range h.slots {
+			if sl.src == src {
+				h.evictLocked(sl)
+				break
+			}
+		}
+	}
+	if len(h.slots) >= maxHandshakes {
+		h.evictLocked(h.slots[0])
+	}
+	sl := &handshakeSlot{src: src, evict: evict}
+	h.slots = append(h.slots, sl)
+	return sl
+}
+
+func (h *Hub) evictLocked(sl *handshakeSlot) {
+	h.removeLocked(sl)
+	go sl.evict()
+}
+
+func (h *Hub) removeLocked(sl *handshakeSlot) {
+	if sl.gone {
+		return
+	}
+	sl.gone = true
+	for i, x := range h.slots {
+		if x == sl {
+			h.slots = append(h.slots[:i], h.slots[i+1:]...)
+			return
+		}
 	}
 }
 
-// sourceOf is the IP of a remote address ("ip:port").
+func (h *Hub) releaseSlot(sl *handshakeSlot) {
+	h.slotMu.Lock()
+	defer h.slotMu.Unlock()
+	h.removeLocked(sl)
+}
+
+// sourceOf groups remote addresses: an IPv4 address, or the /64 of an IPv6
+// address (one host can hold a whole /64).
 func sourceOf(remote string) string {
-	if host, _, err := net.SplitHostPort(remote); err == nil {
+	host := remote
+	if h, _, err := net.SplitHostPort(remote); err == nil {
+		host = h
+	}
+	ip := net.ParseIP(host)
+	if ip == nil {
 		return host
 	}
-	return remote
+	if v4 := ip.To4(); v4 != nil {
+		return v4.String()
+	}
+	return (&net.IPNet{IP: ip.Mask(net.CIDRMask(64, 128)), Mask: net.CIDRMask(64, 128)}).String()
 }
 
 // clip keeps agent-supplied text short in what the hub stores and logs.

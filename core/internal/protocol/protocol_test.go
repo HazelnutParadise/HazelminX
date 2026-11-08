@@ -222,6 +222,7 @@ var lenientWant = map[string]reflect.Type{
 	"hello_future_agent.json":                reflect.TypeOf(&Hello{}),
 	"hello_case_variant_key_is_ignored.json": reflect.TypeOf(&Hello{}),
 	"reject_future_core.json":                reflect.TypeOf(&Reject{}),
+	"welcome_capability_future_field.json":   reflect.TypeOf(&Welcome{}),
 }
 
 func TestDecodeHandshake_LenientFixtures(t *testing.T) {

@@ -684,6 +684,35 @@ func TestRefusedStepIsNotCountedAsExecuted(t *testing.T) {
 	}
 }
 
+// A retryable step whose first attempt was interrupted may have changed
+// something. If the retry after reconciliation is refused without running,
+// the step still counts as executed and is rolled back.
+func TestRefusedRetryAfterInterruptedAttemptStillRollsBack(t *testing.T) {
+	var calls int
+	var mu sync.Mutex
+	h := &fakeHandler{kind: "k", steps: []StepSpec{{Name: "write", RollbackMethod: "undo", Retryable: true}},
+		execute: func(ctx context.Context, j *Job, s *Step, rep Reporter) error {
+			mu.Lock()
+			calls++
+			n := calls
+			mu.Unlock()
+			if n == 1 {
+				return ErrDisconnected // first attempt: outcome lost
+			}
+			return &StepError{Code: "NODE_OFFLINE", Summary: "nothing was sent", Retryable: true, NothingChanged: true}
+		}}
+	env := newEnv(t, Options{}, h)
+	j := env.submit(SubmitRequest{RequestID: "retry-refused", Kind: "k"})
+	env.waitState(j.ID, StateUnknown)
+	if _, err := env.engine.Reconcile(env.ctx, j.ID, []StepReport{{Index: 0, Started: true}}); err != nil {
+		t.Fatal(err)
+	}
+	done := env.waitFinished(j.ID)
+	if done.State != StateRolledBack || len(h.rolledBack) != 1 || done.Steps[0].Attempts != 2 {
+		t.Fatalf("state %s (%s) rolledBack %v attempts %d", done.State, done.StateReason, h.rolledBack, done.Steps[0].Attempts)
+	}
+}
+
 func TestRollbackFailureNeedsAttention(t *testing.T) {
 	h := &fakeHandler{kind: "restore", steps: []StepSpec{{Name: "stop-db", RollbackMethod: "start-db"}, {Name: "restore-files", RollbackMethod: "restore-previous"}},
 		execute: func(ctx context.Context, j *Job, s *Step, rep Reporter) error {
@@ -753,6 +782,11 @@ func TestRecoverAfterRestartDoesNotResetOrRerun(t *testing.T) {
 	// Locks are rebuilt: a conflicting job waits.
 	other := env2.submit(SubmitRequest{RequestID: "o", Kind: "k", Resources: []ResourceRef{{Kind: "database", ID: "d"}}})
 	env2.waitState(other.ID, StateQueued)
+	// Cancel it once it is seen waiting, so the only steps that could run
+	// below are the reconciled job's.
+	if _, err := env2.engine.Cancel(env2.ctx, other.ID); err != nil {
+		t.Fatal(err)
+	}
 	// Reconcile says step b completed: continue to verification.
 	if _, err := env2.engine.Reconcile(env2.ctx, j.ID, []StepReport{{Index: 1, Started: true, Completed: true}}); err != nil {
 		t.Fatal(err)

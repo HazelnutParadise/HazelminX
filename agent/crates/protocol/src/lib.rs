@@ -66,8 +66,11 @@ pub struct ProtocolRange {
     pub max: u32,
 }
 
+/// No `deny_unknown_fields`: capabilities appear in the handshake, which
+/// must tolerate fields a newer peer adds. The agent never decodes the
+/// strict messages that carry capabilities (`step_rejected` flows agent to
+/// core), and the Core checks those strictly.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
 pub struct Capability {
     pub name: String,
     pub version: u32,

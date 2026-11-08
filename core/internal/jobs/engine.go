@@ -788,6 +788,7 @@ func (e *Engine) runSteps(ctx context.Context, j *Job, h Handler, f *flight) boo
 		now := e.now()
 		step.Status = StepRunning
 		step.StartedAt = &now
+		step.Attempts++
 		j.Cancellable = step.Cancellable
 		e.event(ctx, j, Event{Type: EventStepStarted, Step: i, Message: step.Name})
 		if err := e.save(ctx, j); err != nil {
@@ -995,8 +996,8 @@ func (e *Engine) executedSteps(j *Job) []*Step {
 			if s.Status == StepFailed && s.Recheck != "ok" {
 				continue // blocked before doing anything
 			}
-			if s.Status == StepFailed && s.Error != nil && s.Error.NothingChanged {
-				continue // refused by the executor without running
+			if s.Status == StepFailed && s.Error != nil && s.Error.NothingChanged && s.Attempts <= 1 {
+				continue // refused without running, and never started before
 			}
 			out = append(out, s)
 		}
