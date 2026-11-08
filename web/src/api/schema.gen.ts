@@ -34,6 +34,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/management/v1/agent-connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** connected agents (protocol, capabilities, transport) and recently refused connection attempts with both protocol ranges */
+        get: operations["getAgentConnections"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/management/v1/audit-events": {
         parameters: {
             query?: never;
@@ -60,8 +77,42 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** password login; sets the session and CSRF cookies */
+        /** password login; signs in (step signed-in, sets the cookies) or, when the account has a second factor, returns a single-use challenge (step second-factor) */
         post: operations["login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/auth/login/passkey-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** WebAuthn assertion options for the second login step */
+        post: operations["loginPasskeyOptions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/auth/login/second-factor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** finish a login with totp, recovery-code or passkey; sets the session and CSRF cookies */
+        post: operations["completeSecondFactor"];
         delete?: never;
         options?: never;
         head?: never;
@@ -79,6 +130,57 @@ export interface paths {
         put?: never;
         /** revoke the current session */
         post: operations["logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/auth/passkeys/domain-impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** passkeys and accounts affected if the management domain became ?domain=; changes nothing */
+        get: operations["passkeyDomainImpact"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/auth/reauthenticate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** prove password and, when enrolled, a second factor again; counts as recent for 10 minutes */
+        post: operations["reauthenticate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/auth/reauthenticate/passkey-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** WebAuthn assertion options for reauthentication */
+        post: operations["reauthPasskeyOptions"];
         delete?: never;
         options?: never;
         head?: never;
@@ -240,6 +342,195 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/management/v1/me/recovery-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** replace your recovery codes; the old set stops working; the new set is shown once (needs recent authentication) */
+        post: operations["regenerateRecoveryCodes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/me/second-factors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** own authenticator app, passkeys and remaining recovery codes */
+        get: operations["listSecondFactors"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/me/second-factors/passkeys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** register a passkey; returns recovery codes once when it is the first factor */
+        post: operations["registerPasskey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/me/second-factors/passkeys/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** remove one of your passkeys (needs recent authentication) */
+        delete: operations["removePasskey"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/me/second-factors/passkeys/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** WebAuthn creation options for a new passkey (needs recent authentication) */
+        post: operations["passkeyRegistrationOptions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/me/second-factors/totp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** start authenticator-app enrolment; returns the seed once (needs recent authentication) */
+        post: operations["beginTOTP"];
+        /** remove the authenticator app, or cancel an unconfirmed enrolment (needs recent authentication) */
+        delete: operations["removeTOTP"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/me/second-factors/totp/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** confirm the authenticator app with a first code; returns recovery codes once when it is the first factor */
+        post: operations["confirmTOTP"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/me/session-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** your idle timeout and its bounds */
+        get: operations["getSessionSettings"];
+        /** set your idle timeout (0 = platform default); applies to the current session at once */
+        put: operations["putSessionSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/me/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** your signed-in sessions */
+        get: operations["listOwnSessions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/me/sessions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** sign out one of your sessions now */
+        delete: operations["revokeOwnSession"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/me/sessions/revoke-others": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** sign out every other session now */
+        post: operations["revokeOtherSessions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/management/v1/openapi.json": {
         parameters: {
             query?: never;
@@ -284,7 +575,7 @@ export interface paths {
         /** whether the first owner still has to be created */
         get: operations["getSetup"];
         put?: never;
-        /** create the first owner with the one-time setup code */
+        /** create the first owner with the one-time setup code and sign them in (held to second-factor enrolment) */
         post: operations["completeSetup"];
         delete?: never;
         options?: never;
@@ -366,10 +657,15 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        agentConnectionsResponse: {
+            connections: components["schemas"]["ConnectionInfo"][];
+            coreProtocol: components["schemas"]["Range"];
+            rejections: components["schemas"]["Rejection"][];
+        };
         apiError: {
             alsoBlockedBy?: string[];
             /** @enum {string} */
-            code: "ALREADY_EXISTS" | "CONFIRMATION_EXPIRED" | "CONFIRMATION_NEW_CONNECTION_REQUIRED" | "CONFIRMATION_REQUIRED" | "CONTROLLER_CONFLICT" | "CSRF_TOKEN_MISMATCH" | "DRY_RUN_UNSUPPORTED" | "FORBIDDEN" | "INTERNAL" | "INVALID_CREDENTIALS" | "JOB_NOT_CANCELLABLE" | "LIST_QUERY_EXPIRED" | "LIST_QUERY_LIMIT_REACHED" | "LIST_QUERY_NOT_READY" | "NOT_FOUND" | "ORIGIN_MISMATCH" | "PAYLOAD_TOO_LARGE" | "PLATFORM_DEGRADED" | "PRECHECK_FAILED" | "QUERY_LIMIT_EXCEEDED" | "REQUEST_ID_CONFLICT" | "RESOURCE_READ_ONLY" | "RESOURCE_REFERENCED" | "SCOPE_DEGRADED" | "SETUP_CODE_INVALID" | "SETUP_DONE" | "TOO_MANY_ATTEMPTS" | "UI_INDEX_MISSING" | "UI_NOT_EMBEDDED" | "UNAUTHENTICATED" | "VALIDATION_FAILED" | "VERSION_MISMATCH" | "VERSION_REQUIRED";
+            code: "ALREADY_EXISTS" | "CONFIRMATION_EXPIRED" | "CONFIRMATION_NEW_CONNECTION_REQUIRED" | "CONFIRMATION_REQUIRED" | "CONTROLLER_CONFLICT" | "CSRF_TOKEN_MISMATCH" | "DRY_RUN_UNSUPPORTED" | "FORBIDDEN" | "INTERNAL" | "INVALID_CREDENTIALS" | "JOB_NOT_CANCELLABLE" | "LAST_SECOND_FACTOR" | "LIST_QUERY_EXPIRED" | "LIST_QUERY_LIMIT_REACHED" | "LIST_QUERY_NOT_READY" | "LOGIN_CHALLENGE_INVALID" | "NOT_AVAILABLE" | "NOT_FOUND" | "ORIGIN_MISMATCH" | "PAYLOAD_TOO_LARGE" | "PLATFORM_DEGRADED" | "PRECHECK_FAILED" | "QUERY_LIMIT_EXCEEDED" | "REAUTHENTICATION_REQUIRED" | "REQUEST_ID_CONFLICT" | "RESOURCE_READ_ONLY" | "RESOURCE_REFERENCED" | "SCOPE_DEGRADED" | "SECOND_FACTOR_ENROLLMENT_REQUIRED" | "SECOND_FACTOR_INVALID" | "SETUP_CODE_INVALID" | "SETUP_DONE" | "TOO_MANY_ATTEMPTS" | "UI_INDEX_MISSING" | "UI_NOT_EMBEDDED" | "UNAUTHENTICATED" | "VALIDATION_FAILED" | "VERSION_MISMATCH" | "VERSION_REQUIRED";
             details?: Record<string, never>;
             evidence?: string[];
             fields?: components["schemas"]["FieldError"][];
@@ -431,6 +727,13 @@ export interface components {
             /** Format: int64 */
             reserveBytes: number;
         };
+        Capability: {
+            name: string;
+            version: number;
+        };
+        challengeRequest: {
+            challengeToken: string;
+        };
         Check: {
             detail?: string;
             evidence?: string[];
@@ -464,6 +767,20 @@ export interface components {
         confirmationResponse: {
             confirmation: components["schemas"]["Confirmation"];
         };
+        ConnectionInfo: {
+            agentProtocol: components["schemas"]["Range"];
+            agentVersion: string;
+            capabilities: components["schemas"]["Capability"][];
+            /** Format: date-time */
+            connectedAt: string;
+            /** Format: date-time */
+            lastSeenAt: string;
+            nodeId: string;
+            protocolVersion: number;
+            remoteAddr: string;
+            sessionId: string;
+            transport: string;
+        };
         CreateUserInput: {
             displayName: string;
             password: string;
@@ -482,12 +799,26 @@ export interface components {
                 [key: string]: string;
             };
         };
+        DomainImpact: {
+            domain: string;
+            lostPasskeys: components["schemas"]["LostPasskey"][];
+            passkeysLost: number;
+            passkeysTotal: number;
+            safe: boolean;
+            suggestedActions: string[];
+            users: components["schemas"]["UserImpact"][];
+            usersWithoutSecondFactor: number;
+        };
         DryRunResult: {
             blockers: components["schemas"]["apiError"][];
             dryRun: boolean;
             impact: components["schemas"]["Impact"];
             ok: boolean;
             preview?: unknown;
+        };
+        EnrollmentResult: {
+            passkey?: components["schemas"]["PasskeyInfo"];
+            recoveryCodes?: string[];
         };
         Event: {
             /** Format: date-time */
@@ -499,6 +830,13 @@ export interface components {
             seq: number;
             step?: number;
             type: string;
+        };
+        FactorSummary: {
+            enrollmentRequired: boolean;
+            passkeys: components["schemas"]["PasskeyInfo"][];
+            recoveryCodesRemaining: number;
+            required: boolean;
+            totp: components["schemas"]["TOTPInfo"];
         };
         FieldError: {
             field: string;
@@ -632,10 +970,23 @@ export interface components {
             username: string;
         };
         loginResponse: {
-            csrfToken: string;
             /** Format: date-time */
-            expiresAt: string;
-            user: components["schemas"]["User"];
+            challengeExpiresAt?: string;
+            challengeToken?: string;
+            csrfToken?: string;
+            /** Format: date-time */
+            expiresAt?: string;
+            methods?: string[];
+            secondFactorEnrollmentRequired: boolean;
+            step: string;
+            user?: components["schemas"]["User"];
+        };
+        LostPasskey: {
+            id: string;
+            name: string;
+            rpId: string;
+            userId: string;
+            username: string;
         };
         overviewOperation: {
             docs: string;
@@ -662,6 +1013,44 @@ export interface components {
             timeoutSeconds: number;
             total: number;
         };
+        PasskeyInfo: {
+            /** Format: date-time */
+            createdAt: string;
+            id: string;
+            /** Format: date-time */
+            lastUsedAt?: string;
+            name: string;
+            rpId: string;
+        };
+        passkeyRegisterRequest: {
+            credential: unknown;
+            name?: string;
+        };
+        Range: {
+            max: number;
+            min: number;
+        };
+        reauthRequest: {
+            code?: string;
+            credential?: unknown;
+            method?: string;
+            password: string;
+        };
+        recoveryCodesResponse: {
+            recoveryCodes: string[];
+        };
+        Rejection: {
+            agentProtocol?: components["schemas"]["Range"];
+            agentVersion?: string;
+            /** Format: date-time */
+            at: string;
+            code: string;
+            coreProtocol: components["schemas"]["Range"];
+            identityProven: boolean;
+            message: string;
+            nodeId?: string;
+            remoteAddr: string;
+        };
         ResourceRef: {
             device?: string;
             id?: string;
@@ -670,6 +1059,9 @@ export interface components {
             node?: string;
             path?: string;
             resolvedPath?: string;
+        };
+        revokedResponse: {
+            revoked: number;
         };
         roleInfo: {
             actions: string[];
@@ -682,6 +1074,12 @@ export interface components {
             id: string;
             kind: string;
         };
+        secondFactorRequest: {
+            challengeToken: string;
+            code?: string;
+            credential?: unknown;
+            method: string;
+        };
         Session: {
             /** Format: date-time */
             createdAt: string;
@@ -690,16 +1088,44 @@ export interface components {
             id: string;
             /** Format: date-time */
             lastSeenAt: string;
+            secondFactor: string;
             sourceIp: string;
             userAgent: string;
             userId: string;
+        };
+        SessionInfo: {
+            /** Format: date-time */
+            createdAt: string;
+            current: boolean;
+            /** Format: date-time */
+            expiresAt: string;
+            id: string;
+            /** Format: date-time */
+            lastSeenAt: string;
+            secondFactor: string;
+            sourceIp: string;
+            userAgent: string;
         };
         sessionResponse: {
             assignments: components["schemas"]["Assignment"][];
             csrfToken?: string;
             kind: string;
+            secondFactorEnrollmentRequired: boolean;
             session?: components["schemas"]["Session"];
             user: components["schemas"]["User"];
+        };
+        SessionSettings: {
+            absoluteMaxSeconds: number;
+            default: boolean;
+            idleTimeoutSeconds: number;
+            maxSeconds: number;
+            minSeconds: number;
+        };
+        sessionSettingsRequest: {
+            idleTimeoutSeconds: number;
+        };
+        sessionsResponse: {
+            sessions: components["schemas"]["SessionInfo"][];
         };
         setupRequest: {
             password: string;
@@ -710,6 +1136,7 @@ export interface components {
             needsSetup: boolean;
         };
         Step: {
+            attempts?: number;
             cancellable: boolean;
             error?: components["schemas"]["StepError"];
             evidence?: string[];
@@ -735,6 +1162,7 @@ export interface components {
             cause?: string;
             code: string;
             evidence?: string[];
+            nothingChanged?: boolean;
             retryable: boolean;
             suggestedActions?: string[];
             summary: string;
@@ -748,6 +1176,28 @@ export interface components {
             /** Format: int64 */
             requiredBytes?: number;
             resources?: components["schemas"]["ResourceRef"][];
+        };
+        totpConfirmRequest: {
+            code: string;
+        };
+        TOTPEnrollment: {
+            digits: number;
+            /** Format: date-time */
+            expiresAt: string;
+            periodSeconds: number;
+            secret: string;
+            /** Format: date-time */
+            serverTime: string;
+            uri: string;
+        };
+        TOTPInfo: {
+            confirmed: boolean;
+            /** Format: date-time */
+            confirmedAt?: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            lastUsedAt?: string;
         };
         UpdateUserInput: {
             displayName?: string;
@@ -779,6 +1229,16 @@ export interface components {
         };
         userDetailResponse: {
             user: components["schemas"]["UserDetail"];
+        };
+        UserImpact: {
+            hasTotp: boolean;
+            keepsSecondFactor: boolean;
+            passkeysKept: number;
+            passkeysLost: number;
+            recoveryCodesRemaining: number;
+            secondFactorRequired: boolean;
+            userId: string;
+            username: string;
         };
         userResponse: {
             user: components["schemas"]["User"];
@@ -859,6 +1319,71 @@ export interface operations {
             };
             /** @description Bad Request: VALIDATION_FAILED */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    getAgentConnections: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["agentConnectionsResponse"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -974,7 +1499,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
+            /** @description signed in, or a second-factor challenge (step tells which) */
             200: {
                 headers: {
                     "Set-Cookie"?: string;
@@ -994,6 +1519,145 @@ export interface operations {
                 };
             };
             /** @description Unauthorized: INVALID_CREDENTIALS */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Too Many Requests: TOO_MANY_ATTEMPTS */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    loginPasskeyOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["challengeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: LOGIN_CHALLENGE_INVALID */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: NOT_AVAILABLE */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    completeSecondFactor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["secondFactorRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["loginResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: LOGIN_CHALLENGE_INVALID, SECOND_FACTOR_INVALID */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -1079,6 +1743,239 @@ export interface operations {
             };
             /** @description Not Found: NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    passkeyDomainImpact: {
+        parameters: {
+            query: {
+                /** @description host name such as panel.example.com */
+                domain: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DomainImpact"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    reauthenticate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["reauthRequest"];
+            };
+        };
+        responses: {
+            /** @description reauthenticated */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: INVALID_CREDENTIALS, SECOND_FACTOR_INVALID, UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Too Many Requests: TOO_MANY_ATTEMPTS */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    reauthPasskeyOptions: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: NOT_AVAILABLE */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1984,6 +2881,990 @@ export interface operations {
             };
         };
     };
+    regenerateRecoveryCodes: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["recoveryCodesResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH, REAUTHENTICATION_REQUIRED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: ALREADY_EXISTS */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    listSecondFactors: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FactorSummary"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    registerPasskey: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["passkeyRegisterRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnrollmentResult"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: SECOND_FACTOR_INVALID, UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH, REAUTHENTICATION_REQUIRED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: ALREADY_EXISTS, NOT_AVAILABLE */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    removePasskey: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH, REAUTHENTICATION_REQUIRED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: LAST_SECOND_FACTOR */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    passkeyRegistrationOptions: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH, REAUTHENTICATION_REQUIRED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: NOT_AVAILABLE */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    beginTOTP: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TOTPEnrollment"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH, REAUTHENTICATION_REQUIRED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: ALREADY_EXISTS, NOT_AVAILABLE */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    removeTOTP: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH, REAUTHENTICATION_REQUIRED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: LAST_SECOND_FACTOR */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    confirmTOTP: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["totpConfirmRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnrollmentResult"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: SECOND_FACTOR_INVALID, UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: ALREADY_EXISTS */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Too Many Requests: TOO_MANY_ATTEMPTS */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    getSessionSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionSettings"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    putSessionSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["sessionSettingsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionSettings"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    listOwnSessions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["sessionsResponse"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    revokeOwnSession: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description revoked */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    revokeOtherSessions: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["revokedResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
     openapi: {
         parameters: {
             query?: never;
@@ -2139,10 +4020,11 @@ export interface operations {
             /** @description Created */
             201: {
                 headers: {
+                    "Set-Cookie"?: string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["userResponse"];
+                    "application/json": components["schemas"]["loginResponse"];
                 };
             };
             /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
