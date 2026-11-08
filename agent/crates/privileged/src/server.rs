@@ -1,6 +1,12 @@
 //! Socket listener and the per-request pipeline:
 //! peer uid → frame size → JSON → grant (signature, window, revocation) →
-//! action kind → permission → parameters → slot → execute → stream.
+//! action kind → permission → parameters → ledger declaration → slot →
+//! ledger intent (before state) → execute → stream → ledger result.
+//!
+//! An action that changes the host runs only after its intent lines are
+//! synced to the host ledger (spec 55.1). No declaration, no ledger, or an
+//! unreadable before-state means the action is refused and the refusal is a
+//! security event (T-250).
 //!
 //! Control requests (`health`, `revoke`) are answered after the peer check
 //! without touching the action slots, so a host saturated with long actions
@@ -11,6 +17,7 @@ use crate::audit::{SecurityEvent, SecurityLog, redact, truncate};
 use crate::command::OutputSink;
 use crate::executor::Executor;
 use crate::grant::{Grant, GrantRejection, Revocations, is_token};
+use crate::ledger::recorder::{ChangeContext, LedgerDecl, Recorder};
 use crate::protocol::{ErrorCode, MAX_REQUEST_BYTES, PROTOCOL_VERSION, Request, Response};
 use ed25519_dalek::VerifyingKey;
 use std::io;
@@ -45,6 +52,7 @@ pub struct Server {
     cfg: ServerConfig,
     executor: Arc<dyn Executor>,
     log: Arc<dyn SecurityLog>,
+    recorder: Arc<Recorder>,
     revocations: Revocations,
     slots: Semaphore,
     active: AtomicUsize,
@@ -63,12 +71,14 @@ impl Server {
         cfg: ServerConfig,
         executor: Arc<dyn Executor>,
         log: Arc<dyn SecurityLog>,
+        recorder: Arc<Recorder>,
     ) -> Arc<Self> {
         let max = cfg.max_concurrent_actions.max(1);
         Arc::new(Self {
             cfg,
             executor,
             log,
+            recorder,
             revocations: Revocations::default(),
             slots: Semaphore::new(max),
             active: AtomicUsize::new(0),
@@ -219,6 +229,7 @@ impl Server {
                         version: env!("CARGO_PKG_VERSION").to_string(),
                         active_actions: self.active.load(Ordering::SeqCst),
                         max_actions: self.cfg.max_concurrent_actions.max(1),
+                        ledger_ready: self.recorder.ready().is_ok(),
                     },
                 )
                 .await;
@@ -246,11 +257,12 @@ impl Server {
             }
             Request::Action {
                 request_id,
+                job_id,
                 grant,
                 action,
             } => {
                 let outcome = self
-                    .run_action(request_id.clone(), grant, action, stream)
+                    .run_action(request_id.clone(), job_id, grant, action, stream)
                     .await;
                 if let Err(refusal) = outcome {
                     if let Some(event) = refusal.event {
@@ -270,6 +282,7 @@ impl Server {
     async fn run_action(
         &self,
         request_id: String,
+        job_id: Option<String>,
         grant: Grant,
         action: serde_json::Value,
         stream: &mut UnixStream,
@@ -343,7 +356,50 @@ impl Server {
             }
         };
 
-        // Slot, then execute while forwarding output.
+        if job_id.as_deref().is_some_and(|j| !is_token(j)) {
+            return Err(Refusal {
+                code: ErrorCode::InvalidParam,
+                message: "job_id is not a token".into(),
+                event: Some(SecurityEvent::ParamRejected {
+                    grant_id: grant.id.clone(),
+                    action: kind,
+                    reason: "job_id is not a token".into(),
+                }),
+            });
+        }
+
+        // Ledger declaration: what this action changes on the host.
+        let action_kind = action.kind().to_string();
+        let ledger_refusal = |reason: String| Refusal {
+            code: ErrorCode::LedgerRefused,
+            message: reason.clone(),
+            event: Some(SecurityEvent::LedgerRefused {
+                grant_id: grant.id.clone(),
+                action: action_kind.clone(),
+                reason: truncate(&reason),
+            }),
+        };
+        let declared = match self.executor.declare(&action) {
+            None => {
+                return Err(ledger_refusal(
+                    "action has no host-ledger description".into(),
+                ));
+            }
+            Some(LedgerDecl::ReadOnly) => None,
+            Some(LedgerDecl::Changes(d)) if d.is_empty() => {
+                return Err(ledger_refusal(
+                    "action declares a change but names no target".into(),
+                ));
+            }
+            Some(LedgerDecl::Changes(d)) => {
+                if let Err(reason) = self.recorder.ready() {
+                    return Err(ledger_refusal(format!("host ledger unavailable: {reason}")));
+                }
+                Some(d)
+            }
+        };
+
+        // Slot, then the ledger intent, then execute while forwarding output.
         let permit = match tokio::time::timeout(SLOT_WAIT, self.slots.acquire()).await {
             Ok(Ok(p)) => p,
             _ => {
@@ -356,8 +412,28 @@ impl Server {
         };
         self.active.fetch_add(1, Ordering::SeqCst);
         let started = Instant::now();
-        let (sink, mut rx) = OutputSink::channel();
         let kind = action.kind().to_string();
+        let pending = match &declared {
+            None => None,
+            Some(d) => {
+                let ctx = ChangeContext {
+                    job_id: job_id.clone(),
+                    request_id: Some(request_id.clone()),
+                    grant_id: Some(grant.id.clone()),
+                    subject: Some(grant.subject.clone()),
+                    action: kind.clone(),
+                };
+                match self.recorder.begin(&ctx, d).await {
+                    Ok(p) => Some(p),
+                    Err(e) => {
+                        self.active.fetch_sub(1, Ordering::SeqCst);
+                        drop(permit);
+                        return Err(ledger_refusal(e.to_string()));
+                    }
+                }
+            }
+        };
+        let (sink, mut rx) = OutputSink::channel();
         let exec = tokio::spawn(self.executor.execute(action, sink));
         let mut client_gone = false;
         while let Some(chunk) = rx.recv().await {
@@ -372,6 +448,22 @@ impl Server {
             }
         }
         let result = exec.await;
+        if let Some(pending) = pending {
+            let outcome = match &result {
+                Ok(Ok(_)) => Ok(()),
+                Ok(Err(e)) => Err(e.message.clone()),
+                Err(join) => Err(format!("action task failed: {join}")),
+            };
+            if let Err(e) = self.recorder.finish(pending, &outcome).await {
+                // The change ran and its intent is on disk; only the result
+                // line is missing, which reads as "outcome unknown".
+                self.log.record(SecurityEvent::LedgerResultUnrecorded {
+                    grant_id: grant.id.clone(),
+                    action: kind.clone(),
+                    reason: truncate(&e.to_string()),
+                });
+            }
+        }
         self.active.fetch_sub(1, Ordering::SeqCst);
         drop(permit);
 
