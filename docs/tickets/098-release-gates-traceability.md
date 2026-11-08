@@ -15,6 +15,7 @@
 ## Acceptance criteria
 
 - [ ] 沒有證據的需求保持未完成；開發版標示未完成功能
+- [ ] 首次發版前，`core/internal/store/migrations/` 已合併成單一 `0001`，沒有重工步驟；舊整串 migration 與新 `0001` 建出的全新資料庫 schema 比對完全相同，比對結果附在發版 PR（規則見 AGENTS.md）。
 
 ## Delivery record
 

@@ -1,2254 +1,2689 @@
 {
- "generated_from": "docs/spec/HazelminX_Requirements_v1.1.json",
- "tickets": [
-  {
-   "id": "001",
-   "file": "001-repo-scaffold.md",
-   "title": "維護者可以在單一 repo 取得規格、架構決策、票務與工作規則",
-   "epic": "foundation",
-   "milestone": "M0",
-   "blocked_by": [],
-   "requirements": [],
-   "acceptance_tests": [],
-   "status": "done",
-   "issue": 1
-  },
-  {
-   "id": "002",
-   "file": "002-design-system.md",
-   "title": "設計師與開發者可以依 DESIGN.md 與互動原型審查主要畫面",
-   "epic": "design",
-   "milestone": "M0",
-   "blocked_by": [],
-   "requirements": [],
-   "acceptance_tests": [
-    "T-117"
-   ],
-   "status": "in_progress",
-   "issue": 2
-  },
-  {
-   "id": "003",
-   "file": "003-core-skeleton.md",
-   "title": "管理員可以啟動 hazelminx-core 並通過健康檢查",
-   "epic": "foundation",
-   "milestone": "M0",
-   "blocked_by": [
-    "001"
-   ],
-   "requirements": [],
-   "acceptance_tests": [],
-   "status": "done",
-   "issue": 3
-  },
-  {
-   "id": "004",
-   "file": "004-agent-skeleton.md",
-   "title": "管理員可以在主機上以 systemd 執行 hazelminx-agent 並回報身分",
-   "epic": "nodes",
-   "milestone": "M0",
-   "blocked_by": [
-    "001"
-   ],
-   "requirements": [],
-   "acceptance_tests": [],
-   "status": "done",
-   "issue": 4
-  },
-  {
-   "id": "005",
-   "file": "005-web-skeleton.md",
-   "title": "使用者可以開啟 React 介面並切換語言與淺深色",
-   "epic": "foundation",
-   "milestone": "M0",
-   "blocked_by": [
-    "001",
-    "002"
-   ],
-   "requirements": [
-    "UI-001"
-   ],
-   "acceptance_tests": [
-    "T-118"
-   ],
-   "status": "blocked",
-   "issue": 5
-  },
-  {
-   "id": "006",
-   "file": "006-ci-pipeline.md",
-   "title": "維護者可以在 CI 建置、測試並產生各架構成品",
-   "epic": "release",
-   "milestone": "M0",
-   "blocked_by": [
-    "003",
-    "004",
-    "005"
-   ],
-   "requirements": [],
-   "acceptance_tests": [],
-   "status": "in_progress",
-   "issue": 6
-  },
-  {
-   "id": "007",
-   "file": "007-core-agent-protocol.md",
-   "title": "Core 與 Agent 可以用版本化、雙向驗證的通道交換能力與工作事件",
-   "epic": "nodes",
-   "milestone": "M0",
-   "blocked_by": [
-    "003",
-    "004"
-   ],
-   "requirements": [
-    "NOD-002",
-    "NOD-011",
-    "SEC-011"
-   ],
-   "acceptance_tests": [
-    "T-018",
-    "T-021",
-    "T-024"
-   ],
-   "status": "done",
-   "issue": 7
-  },
-  {
-   "id": "008",
-   "file": "008-job-engine.md",
-   "title": "使用者可以提交工作後關閉頁面，之後仍能查到進度、證據與結果",
-   "epic": "foundation",
-   "milestone": "M0",
-   "blocked_by": [
-    "003"
-   ],
-   "requirements": [
-    "ENG-001",
-    "ENG-002",
-    "ENG-003",
-    "ENG-004",
-    "ENG-006",
-    "ENG-007",
-    "ENG-008",
-    "ENG-009",
-    "ENG-011",
-    "ENG-012"
-   ],
-   "acceptance_tests": [
-    "T-025",
-    "T-026",
-    "T-027",
-    "T-028",
-    "T-029",
-    "T-031",
-    "T-033",
-    "T-034"
-   ],
-   "status": "done",
-   "issue": 8
-  },
-  {
-   "id": "009",
-   "file": "009-iam-foundation.md",
-   "title": "擁有者可以登入、建立帳號與角色，未授權的 API 呼叫一律被拒絕",
-   "epic": "iam",
-   "milestone": "M0",
-   "blocked_by": [
-    "003"
-   ],
-   "requirements": [
-    "IAM-001",
-    "IAM-006",
-    "IAM-012"
-   ],
-   "acceptance_tests": [
-    "T-013",
-    "T-014"
-   ],
-   "status": "done",
-   "issue": 9
-  },
-  {
-   "id": "010",
-   "file": "010-management-api-contract.md",
-   "title": "整合者可以用 /management/v1 的分頁、版本條件與工作回應操作資源",
-   "epic": "integration",
-   "milestone": "M0",
-   "blocked_by": [
-    "003",
-    "008"
-   ],
-   "requirements": [
-    "INT-001"
-   ],
-   "acceptance_tests": [],
-   "status": "done",
-   "issue": 10
-  },
-  {
-   "id": "011",
-   "file": "011-secrets-and-master-key.md",
-   "title": "管理員可以安全保存機密，且主金鑰可輪替並驗證舊備份仍可解密",
-   "epic": "foundation",
-   "milestone": "M0",
-   "blocked_by": [
-    "003"
-   ],
-   "requirements": [
-    "DAT-001",
-    "DAT-002",
-    "DAT-004"
-   ],
-   "acceptance_tests": [],
-   "status": "done",
-   "issue": 11
-  },
-  {
-   "id": "012",
-   "file": "012-privileged-executor.md",
-   "title": "維運者可以執行需要高權限的固定動作，而 Agent 主程序維持低權限",
-   "epic": "nodes",
-   "milestone": "M0",
-   "blocked_by": [
-    "004"
-   ],
-   "requirements": [
-    "SEC-005",
-    "SEC-006",
-    "SEC-009",
-    "SEC-010"
-   ],
-   "acceptance_tests": [
-    "T-039"
-   ],
-   "status": "done",
-   "issue": 12
-  },
-  {
-   "id": "013",
-   "file": "013-one-line-install.md",
-   "title": "管理員可以一行安裝單機模式、重開機後登入，且安裝不需要任何編譯器",
-   "epic": "install",
-   "milestone": "M1",
-   "blocked_by": [
-    "003",
-    "004",
-    "009",
-    "012"
-   ],
-   "requirements": [
-    "INS-001",
-    "INS-002",
-    "INS-003",
-    "INS-004",
-    "INS-005",
-    "INS-006",
-    "INS-013",
-    "PKG-001",
-    "PKG-002",
-    "REL-002"
-   ],
-   "acceptance_tests": [
-    "T-001",
-    "T-003",
-    "T-004",
-    "T-005",
-    "T-006",
-    "DEP-T01",
-    "DEP-T02"
-   ],
-   "status": "ready",
-   "issue": 13
-  },
-  {
-   "id": "014",
-   "file": "014-mfa-and-sessions.md",
-   "title": "使用者可以設定 TOTP、Passkey、復原碼並檢視與撤銷自己的工作階段",
-   "epic": "iam",
-   "milestone": "M1",
-   "blocked_by": [
-    "009"
-   ],
-   "requirements": [
-    "IAM-002",
-    "IAM-003",
-    "IAM-011",
-    "SET-004"
-   ],
-   "acceptance_tests": [
-    "T-130"
-   ],
-   "status": "done",
-   "issue": 14
-  },
-  {
-   "id": "015",
-   "file": "015-users-roles-tokens.md",
-   "title": "擁有者可以管理使用者、角色、資源範圍與有期限的 API Token",
-   "epic": "iam",
-   "milestone": "M1",
-   "blocked_by": [
-    "009",
-    "010"
-   ],
-   "requirements": [
-    "IAM-004",
-    "IAM-009",
-    "IAM-010"
-   ],
-   "acceptance_tests": [],
-   "status": "ready",
-   "issue": 15
-  },
-  {
-   "id": "016",
-   "file": "016-change-plans.md",
-   "title": "管理員可以預覽並批准高風險變更計畫，內容改變時原批准失效",
-   "epic": "iam",
-   "milestone": "M1",
-   "blocked_by": [
-    "008",
-    "010"
-   ],
-   "requirements": [
-    "IAM-005",
-    "ENG-005",
-    "UI-006"
-   ],
-   "acceptance_tests": [
-    "T-030"
-   ],
-   "status": "ready",
-   "issue": 16
-  },
-  {
-   "id": "017",
-   "file": "017-ui-shell.md",
-   "title": "使用者可以在主導覽、全域搜尋與工作中心之間完成日常操作",
-   "epic": "foundation",
-   "milestone": "M1",
-   "blocked_by": [
-    "005",
-    "008",
-    "010"
-   ],
-   "requirements": [
-    "UI-002",
-    "UI-003",
-    "UI-004",
-    "UI-007",
-    "UI-011",
-    "UI-012"
-   ],
-   "acceptance_tests": [
-    "T-119"
-   ],
-   "status": "blocked",
-   "issue": 17
-  },
-  {
-   "id": "018",
-   "file": "018-platform-settings.md",
-   "title": "管理員可以設定面板名稱、時區、入口、通知、更新通道與遙測",
-   "epic": "foundation",
-   "milestone": "M1",
-   "blocked_by": [
-    "017"
-   ],
-   "requirements": [
-    "SET-001",
-    "SET-002",
-    "SET-003",
-    "SET-005",
-    "SET-006",
-    "SET-007",
-    "SET-008",
-    "SET-009",
-    "SET-010"
-   ],
-   "acceptance_tests": [
-    "T-132",
-    "T-133"
-   ],
-   "status": "blocked",
-   "issue": 18
-  },
-  {
-   "id": "019",
-   "file": "019-node-enrollment.md",
-   "title": "管理員可以用一次性註冊碼加入節點，並看到離線、過期、維護與撤銷狀態",
-   "epic": "nodes",
-   "milestone": "M1",
-   "blocked_by": [
-    "004",
-    "007",
-    "009"
-   ],
-   "requirements": [
-    "NOD-001",
-    "NOD-005",
-    "NOD-006",
-    "NOD-007",
-    "NOD-008",
-    "NOD-009",
-    "SEC-001",
-    "SEC-002",
-    "SEC-003",
-    "SEC-004",
-    "SEC-008"
-   ],
-   "acceptance_tests": [
-    "T-016",
-    "T-017",
-    "T-019",
-    "T-020",
-    "T-022"
-   ],
-   "status": "blocked",
-   "issue": 19
-  },
-  {
-   "id": "020",
-   "file": "020-host-overview-monitoring.md",
-   "title": "維運者可以查看主機資訊、資源指標與歷史趨勢",
-   "epic": "host",
-   "milestone": "M1",
-   "blocked_by": [
-    "019",
-    "017"
-   ],
-   "requirements": [
-    "SYS-001",
-    "MON-001",
-    "MON-002",
-    "MON-003",
-    "MON-005"
-   ],
-   "acceptance_tests": [],
-   "status": "blocked",
-   "issue": 20
-  },
-  {
-   "id": "021",
-   "file": "021-packages-and-updates.md",
-   "title": "維運者可以搜尋、安裝、更新、移除套件並套用安全更新",
-   "epic": "host",
-   "milestone": "M1",
-   "blocked_by": [
-    "019",
-    "012"
-   ],
-   "requirements": [
-    "SYS-002",
-    "SYS-003",
-    "SYS-012"
-   ],
-   "acceptance_tests": [
-    "T-007"
-   ],
-   "status": "blocked",
-   "issue": 21
-  },
-  {
-   "id": "022",
-   "file": "022-systemd-services.md",
-   "title": "維運者可以管理 systemd 服務、計時器與其設定檔",
-   "epic": "host",
-   "milestone": "M1",
-   "blocked_by": [
-    "012"
-   ],
-   "requirements": [
-    "SYS-004",
-    "SYS-005"
-   ],
-   "acceptance_tests": [],
-   "status": "ready",
-   "issue": 22
-  },
-  {
-   "id": "023",
-   "file": "023-processes-users-sudo.md",
-   "title": "維運者可以查看程序並管理 Linux 使用者、群組與 sudo",
-   "epic": "host",
-   "milestone": "M1",
-   "blocked_by": [
-    "012"
-   ],
-   "requirements": [
-    "SYS-006",
-    "SYS-007"
-   ],
-   "acceptance_tests": [],
-   "status": "ready",
-   "issue": 23
-  },
-  {
-   "id": "024",
-   "file": "024-network-and-firewall.md",
-   "title": "維運者可以管理網路、DNS、主機名稱、時間服務與防火牆",
-   "epic": "host",
-   "milestone": "M1",
-   "blocked_by": [
-    "012",
-    "008"
-   ],
-   "requirements": [
-    "SYS-008",
-    "SYS-009"
-   ],
-   "acceptance_tests": [
-    "T-037",
-    "T-038"
-   ],
-   "status": "ready",
-   "issue": 24
-  },
-  {
-   "id": "025",
-   "file": "025-reboot-shutdown.md",
-   "title": "維運者可以重新開機或關機，並看到受影響的工作與服務",
-   "epic": "host",
-   "milestone": "M1",
-   "blocked_by": [
-    "008",
-    "012"
-   ],
-   "requirements": [
-    "SYS-010"
-   ],
-   "acceptance_tests": [],
-   "status": "ready",
-   "issue": 25
-  },
-  {
-   "id": "026",
-   "file": "026-ssh-keys-and-sshd.md",
-   "title": "維運者可以管理 SSH 公鑰、sshd 設定與主機指紋",
-   "epic": "ssh",
-   "milestone": "M1",
-   "blocked_by": [
-    "012"
-   ],
-   "requirements": [
-    "SSH-001",
-    "SSH-002",
-    "SSH-003",
-    "SSH-004",
-    "SSH-005",
-    "SSH-008"
-   ],
-   "acceptance_tests": [
-    "T-035",
-    "T-036"
-   ],
-   "status": "ready",
-   "issue": 26
-  },
-  {
-   "id": "027",
-   "file": "027-web-terminal.md",
-   "title": "使用者可以在網頁使用授權終端機，且稽核政策可設定",
-   "epic": "ssh",
-   "milestone": "M1",
-   "blocked_by": [
-    "019",
-    "009",
-    "012"
-   ],
-   "requirements": [
-    "SSH-006",
-    "SSH-007",
-    "IAM-007"
-   ],
-   "acceptance_tests": [
-    "T-023"
-   ],
-   "status": "blocked",
-   "issue": 27
-  },
-  {
-   "id": "028",
-   "file": "028-file-manager.md",
-   "title": "使用者可以瀏覽、整理、授權與追蹤宿主機檔案",
-   "epic": "files",
-   "milestone": "M1",
-   "blocked_by": [
-    "012",
-    "017"
-   ],
-   "requirements": [
-    "FIL-001",
-    "FIL-002",
-    "FIL-005",
-    "FIL-007",
-    "FIL-009",
-    "FIL-010",
-    "FIL-011",
-    "FIL-013"
-   ],
-   "acceptance_tests": [
-    "T-131"
-   ],
-   "status": "blocked",
-   "issue": 28
-  },
-  {
-   "id": "029",
-   "file": "029-file-transfer-edit.md",
-   "title": "使用者可以上傳、下載、續傳大檔，線上編輯、壓縮與安全預覽",
-   "epic": "files",
-   "milestone": "M1",
-   "blocked_by": [
-    "028",
-    "010"
-   ],
-   "requirements": [
-    "FIL-003",
-    "FIL-004",
-    "FIL-006",
-    "FIL-012"
-   ],
-   "acceptance_tests": [
-    "T-040",
-    "T-041",
-    "T-042"
-   ],
-   "status": "blocked",
-   "issue": 29
-  },
-  {
-   "id": "030",
-   "file": "030-disk-overview-alerts.md",
-   "title": "維運者可以查看磁碟、分割區、檔案系統、健康與容量告警",
-   "epic": "storage",
-   "milestone": "M1",
-   "blocked_by": [
-    "019",
-    "020"
-   ],
-   "requirements": [
-    "STO-001",
-    "STO-010",
-    "STO-011"
-   ],
-   "acceptance_tests": [],
-   "status": "blocked",
-   "issue": 30
-  },
-  {
-   "id": "031",
-   "file": "031-disk-operations.md",
-   "title": "維運者可以分割、格式化、掛載磁碟並管理 LVM、RAID、LUKS 與網路儲存",
-   "epic": "storage",
-   "milestone": "M1",
-   "blocked_by": [
-    "012",
-    "016",
-    "030"
-   ],
-   "requirements": [
-    "STO-002",
-    "STO-003",
-    "STO-004"
-   ],
-   "acceptance_tests": [
-    "T-044",
-    "T-045",
-    "T-049",
-    "T-050",
-    "DEP-T03"
-   ],
-   "status": "blocked",
-   "issue": 31
-  },
-  {
-   "id": "032",
-   "file": "032-storage-bindings.md",
-   "title": "管理員可以設定資料位置並以裝置身分綁定，掛錯磁碟時服務不啟動",
-   "epic": "storage",
-   "milestone": "M1",
-   "blocked_by": [
-    "031",
-    "008"
-   ],
-   "requirements": [
-    "STO-005",
-    "STO-006",
-    "STO-007",
-    "STO-008"
-   ],
-   "acceptance_tests": [
-    "T-046",
-    "T-047"
-   ],
-   "status": "blocked",
-   "issue": 32
-  },
-  {
-   "id": "033",
-   "file": "033-move-app-data.md",
-   "title": "管理員可以把應用資料安全搬到另一顆磁碟",
-   "epic": "storage",
-   "milestone": "M1",
-   "blocked_by": [
-    "032",
-    "016"
-   ],
-   "requirements": [
-    "STO-009"
-   ],
-   "acceptance_tests": [
-    "T-048"
-   ],
-   "status": "blocked",
-   "issue": 33
-  },
-  {
-   "id": "034",
-   "file": "034-baseline-host-tools.md",
-   "title": "維運者可以管理 FTP／SFTP、Fail2ban、防毒等基線工具",
-   "epic": "host",
-   "milestone": "M1",
-   "blocked_by": [
-    "021",
-    "022"
-   ],
-   "requirements": [
-    "SYS-011"
-   ],
-   "acceptance_tests": [
-    "T-134"
-   ],
-   "status": "blocked",
-   "issue": 34
-  },
-  {
-   "id": "035",
-   "file": "035-logs-retention-diagnostics.md",
-   "title": "管理員可以設定日誌與統計容量、保存政策並產生遮罩診斷包",
-   "epic": "monitoring",
-   "milestone": "M1",
-   "blocked_by": [
-    "003",
-    "017"
-   ],
-   "requirements": [
-    "DAT-005",
-    "DAT-008",
-    "MON-008"
-   ],
-   "acceptance_tests": [
-    "T-124"
-   ],
-   "status": "blocked",
-   "issue": 35
-  },
-  {
-   "id": "036",
-   "file": "036-platform-update.md",
-   "title": "管理員可以更新 HazelminX，失敗時回到相容舊版本或進入明確復原",
-   "epic": "install",
-   "milestone": "M1",
-   "blocked_by": [
-    "013",
-    "008",
-    "007"
-   ],
-   "requirements": [
-    "INS-009",
-    "INS-010",
-    "REL-003",
-    "REL-004",
-    "REL-005",
-    "REL-006",
-    "REL-007",
-    "DAT-006"
-   ],
-   "acceptance_tests": [
-    "T-008",
-    "T-009",
-    "DEP-T04",
-    "DEP-T05",
-    "DEP-T06",
-    "DEP-T07",
-    "DEP-T08"
-   ],
-   "status": "blocked",
-   "issue": 36
-  },
-  {
-   "id": "037",
-   "file": "037-offline-install-uninstall.md",
-   "title": "管理員可以用離線包安裝，並解除安裝平台而保留應用與移交維護",
-   "epic": "install",
-   "milestone": "M1",
-   "blocked_by": [
-    "013"
-   ],
-   "requirements": [
-    "INS-011",
-    "INS-012",
-    "INS-014",
-    "PKG-003",
-    "UN-001",
-    "UN-002",
-    "UN-003",
-    "UN-004",
-    "UN-005"
-   ],
-   "acceptance_tests": [
-    "T-002",
-    "T-010",
-    "T-011",
-    "DEP-T09",
-    "DEP-T10",
-    "DEP-T11",
-    "DEP-T12"
-   ],
-   "status": "blocked",
-   "issue": 37
-  },
-  {
-   "id": "038",
-   "file": "038-recovery-mode.md",
-   "title": "擁有者可以在資料庫損壞或鎖死時用離線救援方式恢復管理",
-   "epic": "install",
-   "milestone": "M1",
-   "blocked_by": [
-    "013"
-   ],
-   "requirements": [
-    "IAM-008",
-    "SEC-012",
-    "ARC-001",
-    "PKG-006",
-    "INS-007"
-   ],
-   "acceptance_tests": [
-    "T-012",
-    "T-120"
-   ],
-   "status": "blocked",
-   "issue": 38
-  },
-  {
-   "id": "039",
-   "file": "039-engine-detect-install.md",
-   "title": "管理員可以看到 Docker、Podman、K3s 各自狀態並在頁面一鍵安裝 Docker",
-   "epic": "containers",
-   "milestone": "M2",
-   "blocked_by": [
-    "019",
-    "016",
-    "012"
-   ],
-   "requirements": [
-    "NOD-003",
-    "NOD-004",
-    "INS-008"
-   ],
-   "acceptance_tests": [
-    "T-051"
-   ],
-   "status": "blocked",
-   "issue": 39
-  },
-  {
-   "id": "040",
-   "file": "040-container-management.md",
-   "title": "容器管理員可以建立、檢視、操作容器並查看日誌、終端機與暴露範圍",
-   "epic": "containers",
-   "milestone": "M2",
-   "blocked_by": [
-    "039",
-    "027"
-   ],
-   "requirements": [
-    "CTR-001",
-    "CTR-002",
-    "CTR-003",
-    "CTR-004",
-    "CTR-012"
-   ],
-   "acceptance_tests": [
-    "T-015"
-   ],
-   "status": "blocked",
-   "issue": 40
-  },
-  {
-   "id": "041",
-   "file": "041-images-registries-networks-volumes.md",
-   "title": "管理員可以管理映像、登錄站、容器網路與 Volume 並採用安全更新",
-   "epic": "containers",
-   "milestone": "M2",
-   "blocked_by": [
-    "039"
-   ],
-   "requirements": [
-    "CTR-005",
-    "CTR-006",
-    "CTR-007",
-    "CTR-008",
-    "CTR-014"
-   ],
-   "acceptance_tests": [],
-   "status": "blocked",
-   "issue": 41
-  },
-  {
-   "id": "042",
-   "file": "042-container-takeover-engine-settings.md",
-   "title": "管理員可以匯入既有容器選擇接管，並管理引擎設定、儲存位置與 GPU 裝置",
-   "epic": "containers",
-   "milestone": "M2",
-   "blocked_by": [
-    "040",
-    "032"
-   ],
-   "requirements": [
-    "CTR-009",
-    "CTR-010",
-    "CTR-011"
-   ],
-   "acceptance_tests": [],
-   "status": "blocked",
-   "issue": 42
-  },
-  {
-   "id": "043",
-   "file": "043-swarm.md",
-   "title": "管理員可以管理 Swarm 節點、服務、Stack、Secret 與更新策略",
-   "epic": "containers",
-   "milestone": "M2",
-   "blocked_by": [
-    "041"
-   ],
-   "requirements": [
-    "CTR-013"
-   ],
-   "acceptance_tests": [],
-   "status": "blocked",
-   "issue": 43
-  },
-  {
-   "id": "044",
-   "file": "044-compose-projects.md",
-   "title": "專案管理員可以建立專案與環境，匯入完整 Compose 並驗證後部署",
-   "epic": "compose",
-   "milestone": "M2",
-   "blocked_by": [
-    "039",
-    "008",
-    "016"
-   ],
-   "requirements": [
-    "CMP-001",
-    "CMP-007",
-    "CMP-008",
-    "CMP-012",
-    "CMP-015",
-    "UI-008"
-   ],
-   "acceptance_tests": [
-    "T-052"
-   ],
-   "status": "blocked",
-   "issue": 44
-  },
-  {
-   "id": "045",
-   "file": "045-env-layers.md",
-   "title": "管理員可以分層管理 .env、介面變數與覆寫層，並預覽每個服務實際收到的值",
-   "epic": "compose",
-   "milestone": "M2",
-   "blocked_by": [
-    "044",
-    "011"
-   ],
-   "requirements": [
-    "CMP-004",
-    "CMP-005",
-    "CMP-006"
-   ],
-   "acceptance_tests": [
-    "T-053",
-    "T-054",
-    "T-055",
-    "T-056",
-    "T-061"
-   ],
-   "status": "blocked",
-   "issue": 45
-  },
-  {
-   "id": "046",
-   "file": "046-deploy-revisions.md",
-   "title": "管理員可以查看部署版本、三方比較並回到相容舊版",
-   "epic": "compose",
-   "milestone": "M2",
-   "blocked_by": [
-    "045"
-   ],
-   "requirements": [
-    "CMP-011",
-    "CMP-014",
-    "CMP-016",
-    "CMP-017",
-    "CMP-018"
-   ],
-   "acceptance_tests": [
-    "T-057",
-    "T-058",
-    "T-062"
-   ],
-   "status": "blocked",
-   "issue": 46
-  },
-  {
-   "id": "047",
-   "file": "047-github-connections.md",
-   "title": "使用者可以用 GitHub 網頁授權或 PAT 建立可重用連線，並保存多帳號多授權",
-   "epic": "github",
-   "milestone": "M2",
-   "blocked_by": [
-    "009",
-    "011",
-    "010"
-   ],
-   "requirements": [
-    "GIT-001",
-    "GIT-002",
-    "GIT-003",
-    "GIT-004",
-    "GIT-013",
-    "GIT-014",
-    "GIT-015",
-    "GIT-016",
-    "GIT-031"
-   ],
-   "acceptance_tests": [
-    "GH-T01",
-    "GH-T02",
-    "GH-T03",
-    "GH-T04",
-    "GH-T12",
-    "GH-T13",
-    "GH-T14",
-    "GH-T15"
-   ],
-   "status": "ready",
-   "issue": 47
-  },
-  {
-   "id": "048",
-   "file": "048-repo-picker.md",
-   "title": "使用者可以瀏覽、搜尋、分頁載入可用 Repo，並選分支、commit 與 Compose 檔案",
-   "epic": "github",
-   "milestone": "M2",
-   "blocked_by": [
-    "047",
-    "017"
-   ],
-   "requirements": [
-    "GIT-005",
-    "GIT-006",
-    "GIT-007",
-    "GIT-008",
-    "GIT-034"
-   ],
-   "acceptance_tests": [
-    "GH-T05",
-    "GH-T06",
-    "GH-T07",
-    "GH-T08"
-   ],
-   "status": "blocked",
-   "issue": 48
-  },
-  {
-   "id": "049",
-   "file": "049-git-deploy.md",
-   "title": "專案管理員可以從 GitHub 以固定 commit 隔離抓取、建置並部署，手動 URL／PAT／SSH 模式照常可用",
-   "epic": "github",
-   "milestone": "M2",
-   "blocked_by": [
-    "048",
-    "044",
-    "012"
-   ],
-   "requirements": [
-    "CMP-002",
-    "CMP-003",
-    "CMP-013",
-    "GIT-009",
-    "GIT-010",
-    "GIT-011",
-    "GIT-025",
-    "GIT-027",
-    "GIT-038"
-   ],
-   "acceptance_tests": [
-    "T-063",
-    "T-066",
-    "GH-T09",
-    "GH-T10",
-    "GH-T24",
-    "GH-T26"
-   ],
-   "status": "blocked",
-   "issue": 49
-  },
-  {
-   "id": "050",
-   "file": "050-auto-deploy-webhooks.md",
-   "title": "管理員可以設定 Webhook 或定期檢查觸發部署，並決定多環境與連續 commit 政策",
-   "epic": "github",
-   "milestone": "M2",
-   "blocked_by": [
-    "049"
-   ],
-   "requirements": [
-    "CMP-009",
-    "CMP-010",
-    "GIT-018",
-    "GIT-019",
-    "GIT-020"
-   ],
-   "acceptance_tests": [
-    "T-059",
-    "T-060",
-    "GH-T17",
-    "GH-T18",
-    "GH-T19"
-   ],
-   "status": "blocked",
-   "issue": 50
-  },
-  {
-   "id": "051",
-   "file": "051-connection-sharing-rotation.md",
-   "title": "管理員可以分開授權連線的查看、瀏覽、使用與管理，並安全輪替、撤銷與斷開",
-   "epic": "github",
-   "milestone": "M2",
-   "blocked_by": [
-    "049",
-    "016"
-   ],
-   "requirements": [
-    "GIT-012",
-    "GIT-017",
-    "GIT-021",
-    "GIT-022",
-    "GIT-023",
-    "GIT-024",
-    "GIT-026",
-    "GIT-028",
-    "GIT-029",
-    "GIT-030",
-    "GIT-032",
-    "GIT-033",
-    "GIT-035",
-    "GIT-036",
-    "GIT-037",
-    "GIT-039",
-    "GIT-040"
-   ],
-   "acceptance_tests": [
-    "GH-T11",
-    "GH-T16",
-    "GH-T20",
-    "GH-T21",
-    "GH-T22",
-    "GH-T23",
-    "GH-T25",
-    "GH-T27",
-    "GH-T28",
-    "GH-T29",
-    "GH-T30",
-    "GH-T31",
-    "GH-T32",
-    "GH-T33",
-    "GH-T34"
-   ],
-   "status": "blocked",
-   "issue": 51
-  },
-  {
-   "id": "052",
-   "file": "052-appstore-install.md",
-   "title": "管理員可以同步官方商店並安裝整套應用，選擇節點、網路、Port 與資料位置",
-   "epic": "appstore",
-   "milestone": "M2",
-   "blocked_by": [
-    "044",
-    "032"
-   ],
-   "requirements": [
-    "APP-001",
-    "APP-003",
-    "APP-004",
-    "APP-009",
-    "APP-011",
-    "APP-012"
-   ],
-   "acceptance_tests": [
-    "T-064"
-   ],
-   "status": "blocked",
-   "issue": 52
-  },
-  {
-   "id": "053",
-   "file": "053-appstore-update-uninstall.md",
-   "title": "管理員可以編輯、更新與卸載商店應用，自訂設定不被新版覆寫",
-   "epic": "appstore",
-   "milestone": "M2",
-   "blocked_by": [
-    "052",
-    "046"
-   ],
-   "requirements": [
-    "APP-005",
-    "APP-006",
-    "APP-007",
-    "APP-008",
-    "APP-010"
-   ],
-   "acceptance_tests": [
-    "T-057",
-    "T-065"
-   ],
-   "status": "blocked",
-   "issue": 53
-  },
-  {
-   "id": "054",
-   "file": "054-appstore-sources.md",
-   "title": "管理員可以新增受信任的第三方商店來源與本機範本",
-   "epic": "appstore",
-   "milestone": "M2",
-   "blocked_by": [
-    "052"
-   ],
-   "requirements": [
-    "APP-002"
-   ],
-   "acceptance_tests": [],
-   "status": "blocked",
-   "issue": 54
-  },
-  {
-   "id": "055",
-   "file": "055-zentinel-install.md",
-   "title": "管理員可以從介面安裝原生 Zentinel，Core 重啟不影響既有網站，救援入口不依賴它",
-   "epic": "web",
-   "milestone": "M3",
-   "blocked_by": [
-    "021",
-    "012",
-    "016"
-   ],
-   "requirements": [
-    "WEB-001",
-    "ARC-002",
-    "ARC-007"
-   ],
-   "acceptance_tests": [],
-   "status": "blocked",
-   "issue": 55
-  },
-  {
-   "id": "056",
-   "file": "056-websites-and-routing.md",
-   "title": "使用者可以建立靜態與反向代理網站、綁定多網域並穩定路由到容器服務",
-   "epic": "web",
-   "milestone": "M3",
-   "blocked_by": [
-    "055",
-    "044"
-   ],
-   "requirements": [
-    "WEB-002",
-    "WEB-003",
-    "WEB-009",
-    "WEB-011",
-    "WEB-014",
-    "WEB-015"
-   ],
-   "acceptance_tests": [
-    "T-080",
-    "T-128"
-   ],
-   "status": "blocked",
-   "issue": 56
-  },
-  {
-   "id": "057",
-   "file": "057-certificates-acme.md",
-   "title": "管理員可以申請、匯入、續期憑證並管理 ACME 帳號與 DNS 供應商",
-   "epic": "web",
-   "milestone": "M3",
-   "blocked_by": [
-    "056"
-   ],
-   "requirements": [
-    "WEB-004",
-    "WEB-005"
-   ],
-   "acceptance_tests": [
-    "T-079"
-   ],
-   "status": "blocked",
-   "issue": 57
-  },
-  {
-   "id": "058",
-   "file": "058-proxy-features.md",
-   "title": "使用者可以設定重導、重寫、標頭、快取、壓縮、上傳限制、多後端與串流代理",
-   "epic": "web",
-   "milestone": "M3",
-   "blocked_by": [
-    "056"
-   ],
-   "requirements": [
-    "WEB-006",
-    "WEB-007",
-    "WEB-008"
-   ],
-   "acceptance_tests": [
-    "T-085"
-   ],
-   "status": "blocked",
-   "issue": 58
-  },
-  {
-   "id": "059",
-   "file": "059-language-runtimes.md",
-   "title": "使用者可以建立 PHP、Java、Node.js、Go、Python、.NET 執行環境網站",
-   "epic": "web",
-   "milestone": "M3",
-   "blocked_by": [
-    "056",
-    "044"
-   ],
-   "requirements": [
-    "RUN-001",
-    "RUN-002",
-    "RUN-003",
-    "RUN-004",
-    "RUN-005",
-    "RUN-006",
-    "RUN-007",
-    "RUN-008"
-   ],
-   "acceptance_tests": [
-    "T-078",
-    "T-125",
-    "T-126"
-   ],
-   "status": "blocked",
-   "issue": 59
-  },
-  {
-   "id": "060",
-   "file": "060-tcp-udp-proxy.md",
-   "title": "使用者可以設定 TCP／UDP 代理與連接埠轉送",
-   "epic": "web",
-   "milestone": "M3",
-   "blocked_by": [
-    "055"
-   ],
-   "requirements": [
-    "WEB-013"
-   ],
-   "acceptance_tests": [
-    "T-127"
-   ],
-   "status": "blocked",
-   "issue": 60
-  },
-  {
-   "id": "062",
-   "file": "062-token-api-proxy.md",
-   "title": "管理員可以發布 infra-manager 相容的 Token API 代理，既有客戶端不需修改",
-   "epic": "api-proxy",
-   "milestone": "M3",
-   "blocked_by": [
-    "055",
-    "015"
-   ],
-   "requirements": [
-    "API-001",
-    "API-002",
-    "API-003",
-    "API-004",
-    "API-005",
-    "API-006",
-    "API-007",
-    "API-009",
-    "API-010"
-   ],
-   "acceptance_tests": [
-    "T-081",
-    "T-082",
-    "T-083",
-    "T-084",
-    "T-085",
-    "T-097"
-   ],
-   "status": "blocked",
-   "issue": 61
-  },
-  {
-   "id": "063",
-   "file": "063-infra-manager-import.md",
-   "title": "管理員可以匯入既有 infra-manager 的服務、Token 與使用者",
-   "epic": "api-proxy",
-   "milestone": "M3",
-   "blocked_by": [
-    "062"
-   ],
-   "requirements": [
-    "API-008"
-   ],
-   "acceptance_tests": [],
-   "status": "blocked",
-   "issue": 62
-  },
-  {
-   "id": "064",
-   "file": "064-waf.md",
-   "title": "安全管理員可以安裝 WAF，逐站設定模式、規則、例外與失效政策",
-   "epic": "security",
-   "milestone": "M3",
-   "blocked_by": [
-    "055"
-   ],
-   "requirements": [
-    "WAF-001",
-    "WAF-002",
-    "WAF-003",
-    "WAF-004",
-    "WAF-005",
-    "WAF-006",
-    "WAF-007",
-    "WAF-008",
-    "WAF-009",
-    "WAF-010",
-    "WAF-011",
-    "WAF-012"
-   ],
-   "acceptance_tests": [
-    "T-086",
-    "T-087",
-    "T-088",
-    "T-089",
-    "T-090"
-   ],
-   "status": "blocked",
-   "issue": 63
-  },
-  {
-   "id": "065",
-   "file": "065-trusted-ip-tunnel.md",
-   "title": "管理員可以為每個入口設定可信代理模式，Cloudflare Tunnel 流量取得正確訪客 IP",
-   "epic": "security",
-   "milestone": "M3",
-   "blocked_by": [
-    "055",
-    "064"
-   ],
-   "requirements": [
-    "IP-001",
-    "IP-002",
-    "IP-003",
-    "IP-004",
-    "IP-005",
-    "IP-006",
-    "IP-007",
-    "IP-008",
-    "IP-009"
-   ],
-   "acceptance_tests": [
-    "T-091",
-    "T-092",
-    "T-093",
-    "T-094",
-    "T-095"
-   ],
-   "status": "blocked",
-   "issue": 64
-  },
-  {
-   "id": "066",
-   "file": "066-traffic-analytics.md",
-   "title": "使用者可以依時間、節點、網域與入口查看流量、來源、路徑、裝置與 API 用量",
-   "epic": "analytics",
-   "milestone": "M3",
-   "blocked_by": [
-    "065",
-    "035"
-   ],
-   "requirements": [
-    "ANA-001",
-    "ANA-002",
-    "ANA-003",
-    "ANA-004",
-    "ANA-005",
-    "ANA-006",
-    "ANA-008",
-    "ANA-009",
-    "ANA-010",
-    "ANA-011",
-    "ANA-012"
-   ],
-   "acceptance_tests": [
-    "T-096",
-    "T-097"
-   ],
-   "status": "blocked",
-   "issue": 65
-  },
-  {
-   "id": "067",
-   "file": "067-cloudflare-analytics.md",
-   "title": "管理員可以連接 Cloudflare Analytics 並分開看邊緣與來源站",
-   "epic": "analytics",
-   "milestone": "M3",
-   "blocked_by": [
-    "066"
-   ],
-   "requirements": [
-    "ANA-007"
-   ],
-   "acceptance_tests": [],
-   "status": "blocked",
-   "issue": 66
-  },
-  {
-   "id": "068",
-   "file": "068-openresty-migration.md",
-   "title": "管理員可以把 OpenResty 網站遷移到 Zentinel，無法轉換的項目先列出",
-   "epic": "migration",
-   "milestone": "M3",
-   "blocked_by": [
-    "056",
-    "059",
-    "060"
-   ],
-   "requirements": [
-    "WEB-010"
-   ],
-   "acceptance_tests": [
-    "T-067"
-   ],
-   "status": "blocked",
-   "issue": 67
-  },
-  {
-   "id": "069",
-   "file": "069-database-services.md",
-   "title": "管理員可以安裝或接管資料庫服務，管理帳號、連線、健康與對外開放",
-   "epic": "database",
-   "milestone": "M4",
-   "blocked_by": [
-    "052",
-    "040"
-   ],
-   "requirements": [
-    "DB-001",
-    "DB-002",
-    "DB-004",
-    "DB-005",
-    "DB-008",
-    "DB-010"
-   ],
-   "acceptance_tests": [],
-   "status": "blocked",
-   "issue": 68
-  },
-  {
-   "id": "070",
-   "file": "070-sql-data-editor.md",
-   "title": "使用者可以瀏覽與編輯 PostgreSQL 與 MySQL 的結構與資料並執行 SQL",
-   "epic": "database",
-   "milestone": "M4",
-   "blocked_by": [
-    "069"
-   ],
-   "requirements": [
-    "DB-003",
-    "DB-006",
-    "DB-009",
-    "PG-001",
-    "PG-002",
-    "PG-003",
-    "PG-004",
-    "PG-005",
-    "PG-006"
-   ],
-   "acceptance_tests": [
-    "T-098",
-    "T-099",
-    "T-100"
-   ],
-   "status": "blocked",
-   "issue": 69
-  },
-  {
-   "id": "071",
-   "file": "071-redis-manager.md",
-   "title": "使用者可以管理 Redis 鍵、TTL、ACL、持久化與拓樸",
-   "epic": "database",
-   "milestone": "M4",
-   "blocked_by": [
-    "069"
-   ],
-   "requirements": [
-    "RED-001",
-    "RED-002",
-    "RED-003",
-    "RED-004",
-    "RED-005",
-    "RED-006",
-    "RED-007"
-   ],
-   "acceptance_tests": [
-    "T-101",
-    "T-102"
-   ],
-   "status": "blocked",
-   "issue": 70
-  },
-  {
-   "id": "072",
-   "file": "072-mongodb-manager.md",
-   "title": "使用者可以管理 MongoDB 實例、集合、文件與索引",
-   "epic": "database",
-   "milestone": "M4",
-   "blocked_by": [
-    "069"
-   ],
-   "requirements": [
-    "MDB-001",
-    "MDB-002",
-    "MDB-003",
-    "MDB-004",
-    "MDB-005",
-    "MDB-006"
-   ],
-   "acceptance_tests": [
-    "T-129"
-   ],
-   "status": "blocked",
-   "issue": 71
-  },
-  {
-   "id": "073",
-   "file": "073-database-upgrade-backup.md",
-   "title": "管理員可以執行資料庫備份、還原與大版本升級",
-   "epic": "database",
-   "milestone": "M4",
-   "blocked_by": [
-    "070",
-    "016"
-   ],
-   "requirements": [
-    "DB-007",
-    "PG-007",
-    "PG-008",
-    "DEP-006"
-   ],
-   "acceptance_tests": [
-    "T-076"
-   ],
-   "status": "blocked",
-   "issue": 72
-  },
-  {
-   "id": "074",
-   "file": "074-ollama-models.md",
-   "title": "管理員可以安裝或接管 Ollama 並管理模型的下載、刪除、複製與配額",
-   "epic": "ai",
-   "milestone": "M4",
-   "blocked_by": [
-    "052"
-   ],
-   "requirements": [
-    "AI-001",
-    "AI-002",
-    "AI-003",
-    "AI-004",
-    "AI-005",
-    "AI-008",
-    "AI-010"
-   ],
-   "acceptance_tests": [
-    "T-104",
-    "T-105"
-   ],
-   "status": "blocked",
-   "issue": 73
-  },
-  {
-   "id": "075",
-   "file": "075-gpu-chat-inference-api.md",
-   "title": "管理員可以選 GPU、在網頁測試模型，並透過 Token 代理發布推論 API",
-   "epic": "ai",
-   "milestone": "M4",
-   "blocked_by": [
-    "074",
-    "062"
-   ],
-   "requirements": [
-    "AI-006",
-    "AI-007",
-    "AI-009",
-    "AI-011"
-   ],
-   "acceptance_tests": [
-    "T-103"
-   ],
-   "status": "blocked",
-   "issue": 74
-  },
-  {
-   "id": "076",
-   "file": "076-baseline-ai-mcp.md",
-   "title": "管理員可以保留基線 AI／MCP／Agent 能力，MCP 預設唯讀且危險操作需批准",
-   "epic": "ai",
-   "milestone": "M4",
-   "blocked_by": [
-    "074",
-    "015"
-   ],
-   "requirements": [
-    "AI-012",
-    "INT-003",
-    "INT-004"
-   ],
-   "acceptance_tests": [],
-   "status": "blocked",
-   "issue": 75
-  },
-  {
-   "id": "077",
-   "file": "077-backup-accounts.md",
-   "title": "管理員可以建立本機、S3、SFTP、WebDAV、雲端硬碟與 NAS 備份目的地並測試讀寫",
-   "epic": "backup",
-   "milestone": "M4",
-   "blocked_by": [
-    "011",
-    "017"
-   ],
-   "requirements": [
-    "BAK-001",
-    "BAK-002",
-    "BAK-003",
-    "BAK-004",
-    "BAK-005",
-    "BAK-006",
-    "BAK-007",
-    "BAK-008",
-    "BAK-009"
-   ],
-   "acceptance_tests": [
-    "T-106"
-   ],
-   "status": "blocked",
-   "issue": 76
-  },
-  {
-   "id": "078",
-   "file": "078-backup-jobs.md",
-   "title": "使用者可以備份應用、資料庫、目錄與平台設定，含一致性、多目的地、保留與加密",
-   "epic": "backup",
-   "milestone": "M4",
-   "blocked_by": [
-    "077",
-    "069",
-    "046"
-   ],
-   "requirements": [
-    "BKR-001",
-    "BKR-002",
-    "BKR-003",
-    "BKR-004",
-    "BKR-005",
-    "BKR-006",
-    "BKR-007",
-    "BKR-011",
-    "BKR-012",
-    "BKR-013",
-    "BKR-014",
-    "BKR-015",
-    "DAT-003",
-    "WEB-012"
-   ],
-   "acceptance_tests": [
-    "T-107",
-    "T-108",
-    "T-109",
-    "T-110"
-   ],
-   "status": "blocked",
-   "issue": 77
-  },
-  {
-   "id": "079",
-   "file": "079-restore.md",
-   "title": "管理員可以隔離演練還原、預覽覆寫並還原到不同節點與磁碟",
-   "epic": "backup",
-   "milestone": "M4",
-   "blocked_by": [
-    "078"
-   ],
-   "requirements": [
-    "BKR-008",
-    "BKR-009",
-    "BKR-010"
-   ],
-   "acceptance_tests": [
-    "T-111",
-    "T-112",
-    "T-113"
-   ],
-   "status": "blocked",
-   "issue": 78
-  },
-  {
-   "id": "080",
-   "file": "080-cron-jobs.md",
-   "title": "管理員可以建立計畫任務，設定重疊、錯過、重試、依賴、通知與腳本庫",
-   "epic": "jobs",
-   "milestone": "M4",
-   "blocked_by": [
-    "008",
-    "017"
-   ],
-   "requirements": [
-    "JOB-001",
-    "JOB-002",
-    "JOB-003",
-    "JOB-004",
-    "JOB-005",
-    "JOB-006",
-    "JOB-007",
-    "JOB-008",
-    "JOB-009",
-    "JOB-010",
-    "JOB-011",
-    "JOB-012"
-   ],
-   "acceptance_tests": [
-    "T-114",
-    "T-115",
-    "T-116"
-   ],
-   "status": "blocked",
-   "issue": 79
-  },
-  {
-   "id": "081",
-   "file": "081-alerts-notifications.md",
-   "title": "管理員可以設定告警、通知管道與靜音，並從告警跳到相關資源",
-   "epic": "monitoring",
-   "milestone": "M4",
-   "blocked_by": [
-    "020",
-    "018"
-   ],
-   "requirements": [
-    "MON-004",
-    "MON-006",
-    "MON-007"
-   ],
-   "acceptance_tests": [],
-   "status": "blocked",
-   "issue": 80
-  },
-  {
-   "id": "082",
-   "file": "082-self-monitoring-metrics.md",
-   "title": "管理員可以監控 HazelminX 自己並輸出標準監控指標",
-   "epic": "monitoring",
-   "milestone": "M4",
-   "blocked_by": [
-    "020"
-   ],
-   "requirements": [
-    "MON-009",
-    "MON-010",
-    "ARC-008"
-   ],
-   "acceptance_tests": [],
-   "status": "blocked",
-   "issue": 81
-  },
-  {
-   "id": "083",
-   "file": "083-integrations-export-cli.md",
-   "title": "管理員可以匯出匯入設定、收發整合 Webhook，並用 CLI 查看版本、診斷與升級",
-   "epic": "integration",
-   "milestone": "M4",
-   "blocked_by": [
-    "010",
-    "016"
-   ],
-   "requirements": [
-    "INT-002",
-    "INT-005",
-    "INT-006",
-    "INT-007",
-    "INT-008",
-    "DAT-007",
-    "SEC-007"
-   ],
-   "acceptance_tests": [],
-   "status": "blocked",
-   "issue": 82
-  },
-  {
-   "id": "084",
-   "file": "084-multi-node-views.md",
-   "title": "管理員可以在單一畫面查看與批次操作跨節點資源",
-   "epic": "nodes",
-   "milestone": "M5",
-   "blocked_by": [
-    "019",
-    "017"
-   ],
-   "requirements": [
-    "NOD-010",
-    "NOD-012",
-    "UI-009"
-   ],
-   "acceptance_tests": [],
-   "status": "blocked",
-   "issue": 83
-  },
-  {
-   "id": "085",
-   "file": "085-cross-node-copy.md",
-   "title": "使用者可以跨節點複製資料並確認 UID／GID 映射",
-   "epic": "files",
-   "milestone": "M5",
-   "blocked_by": [
-    "028",
-    "084"
-   ],
-   "requirements": [
-    "FIL-008"
-   ],
-   "acceptance_tests": [
-    "T-043"
-   ],
-   "status": "blocked",
-   "issue": 84
-  },
-  {
-   "id": "086",
-   "file": "086-kubernetes-connect.md",
-   "title": "管理員可以連接既有 Kubernetes／K3s 並管理工作負載、Service、設定與診斷",
-   "epic": "cluster",
-   "milestone": "M5",
-   "blocked_by": [
-    "019"
-   ],
-   "requirements": [
-    "KUB-001",
-    "KUB-005",
-    "KUB-006",
-    "KUB-009",
-    "KUB-014"
-   ],
-   "acceptance_tests": [
-    "T-068",
-    "T-069"
-   ],
-   "status": "blocked",
-   "issue": 85
-  },
-  {
-   "id": "087",
-   "file": "087-k3s-cluster-lifecycle.md",
-   "title": "管理員可以建立 K3s 叢集、加入／移除／升級節點並建立高可用",
-   "epic": "cluster",
-   "milestone": "M5",
-   "blocked_by": [
-    "086",
-    "055",
-    "016"
-   ],
-   "requirements": [
-    "KUB-002",
-    "KUB-003",
-    "KUB-004",
-    "KUB-013"
-   ],
-   "acceptance_tests": [
-    "T-067"
-   ],
-   "status": "blocked",
-   "issue": 86
-  },
-  {
-   "id": "088",
-   "file": "088-kubernetes-helm-storage-yaml.md",
-   "title": "使用者可以安裝 Helm Chart、管理儲存、匯入 YAML、備份 datastore 並安排維護",
-   "epic": "cluster",
-   "milestone": "M5",
-   "blocked_by": [
-    "086"
-   ],
-   "requirements": [
-    "KUB-007",
-    "KUB-008",
-    "KUB-010",
-    "KUB-011",
-    "KUB-012",
-    "STO-012"
-   ],
-   "acceptance_tests": [
-    "T-070",
-    "T-071"
-   ],
-   "status": "blocked",
-   "issue": 87
-  },
-  {
-   "id": "089",
-   "file": "089-zero-downtime-deploy.md",
-   "title": "管理員可以在符合條件時不中斷部署，不符合時看到具體原因與回復選項",
-   "epic": "deploy",
-   "milestone": "M5",
-   "blocked_by": [
-    "046",
-    "056",
-    "008"
-   ],
-   "requirements": [
-    "DEP-001",
-    "DEP-002",
-    "DEP-003",
-    "DEP-004",
-    "DEP-005",
-    "DEP-007",
-    "DEP-008",
-    "DEP-009",
-    "DEP-010"
-   ],
-   "acceptance_tests": [
-    "T-072",
-    "T-073",
-    "T-074",
-    "T-075",
-    "T-077"
-   ],
-   "status": "blocked",
-   "issue": 88
-  },
-  {
-   "id": "090",
-   "file": "090-control-generation.md",
-   "title": "系統可以用控制世代與資源擁有者阻止舊控制中心或第二個控制器寫入",
-   "epic": "nodes",
-   "milestone": "M5",
-   "blocked_by": [
-    "008",
-    "019"
-   ],
-   "requirements": [
-    "ENG-010",
-    "ARC-005"
-   ],
-   "acceptance_tests": [
-    "T-032"
-   ],
-   "status": "blocked",
-   "issue": 89
-  },
-  {
-   "id": "091",
-   "file": "091-migrate-from-1panel.md",
-   "title": "管理員可以從 1Panel 乾跑匯入並分批接管，原服務未批准前不停止",
-   "epic": "migration",
-   "milestone": "M5",
-   "blocked_by": [
-    "053",
-    "056",
-    "069",
-    "078"
-   ],
-   "requirements": [
-    "PAR-005",
-    "PAR-006"
-   ],
-   "acceptance_tests": [],
-   "status": "blocked",
-   "issue": 90
-  },
-  {
-   "id": "092",
-   "file": "092-baseline-inventory.md",
-   "title": "驗收者可以查每項 1Panel v2.4.1 OSS 功能在 HazelminX 的對應位置與狀態",
-   "epic": "quality",
-   "milestone": "M0",
-   "blocked_by": [
-    "001"
-   ],
-   "requirements": [
-    "PAR-001",
-    "PAR-002",
-    "PAR-003",
-    "PAR-004",
-    "PAR-007"
-   ],
-   "acceptance_tests": [
-    "T-121"
-   ],
-   "status": "in_progress",
-   "issue": 91
-  },
-  {
-   "id": "093",
-   "file": "093-windows-agent.md",
-   "title": "管理員可以把 Windows Server 加為受管節點（條件式範圍，待核定）",
-   "epic": "windows",
-   "milestone": "M5",
-   "blocked_by": [
-    "019",
-    "012"
-   ],
-   "requirements": [
-    "WIN-001",
-    "WIN-002",
-    "WIN-003",
-    "WIN-004",
-    "WIN-005",
-    "WIN-006",
-    "WIN-007",
-    "WIN-008"
-   ],
-   "acceptance_tests": [
-    "DEP-T13",
-    "DEP-T14",
-    "DEP-T15",
-    "DEP-T16",
-    "DEP-T17",
-    "DEP-T18"
-   ],
-   "status": "blocked",
-   "issue": 92
-  },
-  {
-   "id": "094",
-   "file": "094-disaster-recovery.md",
-   "title": "管理員可以在控制中心完全損毀後用救援工具與復原金鑰在乾淨主機還原",
-   "epic": "backup",
-   "milestone": "M5",
-   "blocked_by": [
-    "078",
-    "013"
-   ],
-   "requirements": [
-    "ARC-003",
-    "ARC-004",
-    "ARC-006"
-   ],
-   "acceptance_tests": [],
-   "status": "blocked",
-   "issue": 93
-  },
-  {
-   "id": "095",
-   "file": "095-branding-and-legal.md",
-   "title": "使用者看到的品牌是 HazelminX，法律與授權資訊仍可讀且來源正確",
-   "epic": "foundation",
-   "milestone": "M0",
-   "blocked_by": [
-    "005"
-   ],
-   "requirements": [
-    "UI-010"
-   ],
-   "acceptance_tests": [
-    "T-122",
-    "T-123"
-   ],
-   "status": "blocked",
-   "issue": 94
-  },
-  {
-   "id": "096",
-   "file": "096-mobile-keyboard-a11y.md",
-   "title": "使用者可以在 360px 手機與只用鍵盤的情況完成日常操作",
-   "epic": "quality",
-   "milestone": "M5",
-   "blocked_by": [
-    "017"
-   ],
-   "requirements": [
-    "UI-005"
-   ],
-   "acceptance_tests": [
-    "T-117"
-   ],
-   "status": "blocked",
-   "issue": 95
-  },
-  {
-   "id": "097",
-   "file": "097-release-supply-chain.md",
-   "title": "維護者可以發布附簽署清單、SBOM、授權與支援矩陣的正式 Release",
-   "epic": "release",
-   "milestone": "M5",
-   "blocked_by": [
-    "006",
-    "036"
-   ],
-   "requirements": [
-    "REL-001",
-    "PKG-004",
-    "PKG-005"
-   ],
-   "acceptance_tests": [],
-   "status": "blocked",
-   "issue": 96
-  },
-  {
-   "id": "098",
-   "file": "098-release-gates-traceability.md",
-   "title": "驗收者可以依 G-01 至 G-14 門檻與需求→測試→證據追溯表判定可否發布",
-   "epic": "quality",
-   "milestone": "M5",
-   "blocked_by": [
-    "092",
-    "097"
-   ],
-   "requirements": [],
-   "acceptance_tests": [],
-   "status": "blocked",
-   "issue": 97
-  },
-  {
-   "id": "099",
-   "file": "099-performance-budget.md",
-   "title": "維護者可以依 38 章情境量測效能並附測試條件",
-   "epic": "quality",
-   "milestone": "M5",
-   "blocked_by": [
-    "084",
-    "066"
-   ],
-   "requirements": [],
-   "acceptance_tests": [
-    "T-119"
-   ],
-   "status": "blocked",
-   "issue": 98
-  }
- ]
+  "generated_from": "docs/spec/HazelminX_Requirements_v1.1.json",
+  "tickets": [
+    {
+      "id": "001",
+      "file": "001-repo-scaffold.md",
+      "title": "維護者可以在單一 repo 取得規格、架構決策、票務與工作規則",
+      "epic": "foundation",
+      "milestone": "M0",
+      "blocked_by": [],
+      "requirements": [],
+      "acceptance_tests": [],
+      "status": "done",
+      "issue": 1
+    },
+    {
+      "id": "002",
+      "file": "002-design-system.md",
+      "title": "設計師與開發者可以依 DESIGN.md 與互動原型審查主要畫面",
+      "epic": "design",
+      "milestone": "M0",
+      "blocked_by": [],
+      "requirements": [],
+      "acceptance_tests": [
+        "T-117"
+      ],
+      "status": "in_progress",
+      "issue": 2
+    },
+    {
+      "id": "003",
+      "file": "003-core-skeleton.md",
+      "title": "管理員可以啟動 hazelminx-core 並通過健康檢查",
+      "epic": "foundation",
+      "milestone": "M0",
+      "blocked_by": [
+        "001"
+      ],
+      "requirements": [],
+      "acceptance_tests": [],
+      "status": "done",
+      "issue": 3
+    },
+    {
+      "id": "004",
+      "file": "004-agent-skeleton.md",
+      "title": "管理員可以在主機上以 systemd 執行 hazelminx-agent 並回報身分",
+      "epic": "nodes",
+      "milestone": "M0",
+      "blocked_by": [
+        "001"
+      ],
+      "requirements": [],
+      "acceptance_tests": [],
+      "status": "done",
+      "issue": 4
+    },
+    {
+      "id": "005",
+      "file": "005-web-skeleton.md",
+      "title": "使用者可以開啟 React 介面並切換語言與淺深色",
+      "epic": "foundation",
+      "milestone": "M0",
+      "blocked_by": [
+        "001",
+        "002"
+      ],
+      "requirements": [
+        "UI-001"
+      ],
+      "acceptance_tests": [
+        "T-118"
+      ],
+      "status": "in_progress",
+      "issue": 5
+    },
+    {
+      "id": "006",
+      "file": "006-ci-pipeline.md",
+      "title": "維護者可以在 CI 建置、測試並產生各架構成品",
+      "epic": "release",
+      "milestone": "M0",
+      "blocked_by": [
+        "003",
+        "004",
+        "005"
+      ],
+      "requirements": [],
+      "acceptance_tests": [],
+      "status": "in_progress",
+      "issue": 6
+    },
+    {
+      "id": "007",
+      "file": "007-core-agent-protocol.md",
+      "title": "Core 與 Agent 可以用版本化、雙向驗證的通道交換能力與工作事件",
+      "epic": "nodes",
+      "milestone": "M0",
+      "blocked_by": [
+        "003",
+        "004"
+      ],
+      "requirements": [
+        "NOD-002",
+        "NOD-011",
+        "SEC-011"
+      ],
+      "acceptance_tests": [
+        "T-018",
+        "T-021",
+        "T-024"
+      ],
+      "status": "done",
+      "issue": 7
+    },
+    {
+      "id": "008",
+      "file": "008-job-engine.md",
+      "title": "使用者可以提交工作後關閉頁面，之後仍能查到進度、證據與結果",
+      "epic": "foundation",
+      "milestone": "M0",
+      "blocked_by": [
+        "003"
+      ],
+      "requirements": [
+        "ENG-001",
+        "ENG-002",
+        "ENG-003",
+        "ENG-004",
+        "ENG-006",
+        "ENG-007",
+        "ENG-008",
+        "ENG-009",
+        "ENG-011",
+        "ENG-012"
+      ],
+      "acceptance_tests": [
+        "T-025",
+        "T-026",
+        "T-027",
+        "T-028",
+        "T-029",
+        "T-031",
+        "T-033",
+        "T-034"
+      ],
+      "status": "done",
+      "issue": 8
+    },
+    {
+      "id": "009",
+      "file": "009-iam-foundation.md",
+      "title": "擁有者可以登入、建立帳號與角色，未授權的 API 呼叫一律被拒絕",
+      "epic": "iam",
+      "milestone": "M0",
+      "blocked_by": [
+        "003"
+      ],
+      "requirements": [
+        "IAM-001",
+        "IAM-006",
+        "IAM-012"
+      ],
+      "acceptance_tests": [
+        "T-013",
+        "T-014"
+      ],
+      "status": "done",
+      "issue": 9
+    },
+    {
+      "id": "010",
+      "file": "010-management-api-contract.md",
+      "title": "整合者可以用 /management/v1 的分頁、版本條件與工作回應操作資源",
+      "epic": "integration",
+      "milestone": "M0",
+      "blocked_by": [
+        "003",
+        "008"
+      ],
+      "requirements": [
+        "INT-001"
+      ],
+      "acceptance_tests": [],
+      "status": "done",
+      "issue": 10
+    },
+    {
+      "id": "011",
+      "file": "011-secrets-and-master-key.md",
+      "title": "管理員可以安全保存機密，且主金鑰可輪替並驗證舊備份仍可解密",
+      "epic": "foundation",
+      "milestone": "M0",
+      "blocked_by": [
+        "003"
+      ],
+      "requirements": [
+        "DAT-001",
+        "DAT-002",
+        "DAT-004"
+      ],
+      "acceptance_tests": [],
+      "status": "done",
+      "issue": 11
+    },
+    {
+      "id": "012",
+      "file": "012-privileged-executor.md",
+      "title": "維運者可以執行需要高權限的固定動作，而 Agent 主程序維持低權限",
+      "epic": "nodes",
+      "milestone": "M0",
+      "blocked_by": [
+        "004"
+      ],
+      "requirements": [
+        "SEC-005",
+        "SEC-006",
+        "SEC-009",
+        "SEC-010"
+      ],
+      "acceptance_tests": [
+        "T-039"
+      ],
+      "status": "done",
+      "issue": 12
+    },
+    {
+      "id": "013",
+      "file": "013-one-line-install.md",
+      "title": "管理員可以一行安裝單機模式、重開機後登入，且安裝不需要任何編譯器",
+      "epic": "install",
+      "milestone": "M1",
+      "blocked_by": [
+        "003",
+        "004",
+        "009",
+        "012"
+      ],
+      "requirements": [
+        "INS-001",
+        "INS-002",
+        "INS-003",
+        "INS-004",
+        "INS-005",
+        "INS-006",
+        "INS-013",
+        "PKG-001",
+        "PKG-002",
+        "REL-002"
+      ],
+      "acceptance_tests": [
+        "T-001",
+        "T-003",
+        "T-004",
+        "T-005",
+        "T-006",
+        "DEP-T01",
+        "DEP-T02"
+      ],
+      "status": "ready",
+      "issue": 13
+    },
+    {
+      "id": "014",
+      "file": "014-mfa-and-sessions.md",
+      "title": "使用者可以設定 TOTP、Passkey、復原碼並檢視與撤銷自己的工作階段",
+      "epic": "iam",
+      "milestone": "M1",
+      "blocked_by": [
+        "009"
+      ],
+      "requirements": [
+        "IAM-002",
+        "IAM-003",
+        "IAM-011",
+        "SET-004"
+      ],
+      "acceptance_tests": [
+        "T-130"
+      ],
+      "status": "done",
+      "issue": 14
+    },
+    {
+      "id": "015",
+      "file": "015-users-roles-tokens.md",
+      "title": "擁有者可以管理使用者、角色、資源範圍與有期限的 API Token",
+      "epic": "iam",
+      "milestone": "M1",
+      "blocked_by": [
+        "009",
+        "010"
+      ],
+      "requirements": [
+        "IAM-004",
+        "IAM-009",
+        "IAM-010"
+      ],
+      "acceptance_tests": [],
+      "status": "ready",
+      "issue": 15
+    },
+    {
+      "id": "016",
+      "file": "016-change-plans.md",
+      "title": "管理員可以預覽並批准高風險變更計畫，內容改變時原批准失效",
+      "epic": "iam",
+      "milestone": "M1",
+      "blocked_by": [
+        "008",
+        "010"
+      ],
+      "requirements": [
+        "IAM-005",
+        "ENG-005",
+        "UI-006"
+      ],
+      "acceptance_tests": [
+        "T-030"
+      ],
+      "status": "ready",
+      "issue": 16
+    },
+    {
+      "id": "017",
+      "file": "017-ui-shell.md",
+      "title": "使用者可以在主導覽、全域搜尋與工作中心之間完成日常操作",
+      "epic": "foundation",
+      "milestone": "M1",
+      "blocked_by": [
+        "005",
+        "008",
+        "010"
+      ],
+      "requirements": [
+        "UI-002",
+        "UI-003",
+        "UI-004",
+        "UI-007",
+        "UI-011",
+        "UI-012",
+        "ROB-004",
+        "ROB-005",
+        "ROB-007",
+        "ROB-008",
+        "ROB-013"
+      ],
+      "acceptance_tests": [
+        "T-119",
+        "T-160",
+        "T-161",
+        "T-163",
+        "T-164",
+        "T-171",
+        "T-174",
+        "T-175",
+        "T-179",
+        "T-180",
+        "T-181",
+        "T-182",
+        "T-185",
+        "T-186",
+        "T-187",
+        "T-231",
+        "T-232"
+      ],
+      "status": "blocked",
+      "issue": 17
+    },
+    {
+      "id": "018",
+      "file": "018-platform-settings.md",
+      "title": "管理員可以設定面板名稱、時區、入口、通知、更新通道與遙測",
+      "epic": "foundation",
+      "milestone": "M1",
+      "blocked_by": [
+        "017"
+      ],
+      "requirements": [
+        "SET-001",
+        "SET-002",
+        "SET-003",
+        "SET-005",
+        "SET-006",
+        "SET-007",
+        "SET-008",
+        "SET-009",
+        "SET-010"
+      ],
+      "acceptance_tests": [
+        "T-132",
+        "T-133"
+      ],
+      "status": "blocked",
+      "issue": 18
+    },
+    {
+      "id": "019",
+      "file": "019-node-enrollment.md",
+      "title": "管理員可以用一次性註冊碼加入節點，並看到離線、過期、維護與撤銷狀態",
+      "epic": "nodes",
+      "milestone": "M1",
+      "blocked_by": [
+        "004",
+        "007",
+        "009"
+      ],
+      "requirements": [
+        "NOD-001",
+        "NOD-005",
+        "NOD-006",
+        "NOD-007",
+        "NOD-008",
+        "NOD-009",
+        "SEC-001",
+        "SEC-002",
+        "SEC-003",
+        "SEC-004",
+        "SEC-008"
+      ],
+      "acceptance_tests": [
+        "T-016",
+        "T-017",
+        "T-019",
+        "T-020",
+        "T-022"
+      ],
+      "status": "blocked",
+      "issue": 19
+    },
+    {
+      "id": "020",
+      "file": "020-host-overview-monitoring.md",
+      "title": "維運者可以查看主機資訊、資源指標與歷史趨勢",
+      "epic": "host",
+      "milestone": "M1",
+      "blocked_by": [
+        "019",
+        "017"
+      ],
+      "requirements": [
+        "SYS-001",
+        "MON-001",
+        "MON-002",
+        "MON-003",
+        "MON-005",
+        "ROB-009"
+      ],
+      "acceptance_tests": [
+        "T-165",
+        "T-172",
+        "T-183"
+      ],
+      "status": "blocked",
+      "issue": 20
+    },
+    {
+      "id": "021",
+      "file": "021-packages-and-updates.md",
+      "title": "維運者可以搜尋、安裝、更新、移除套件並套用安全更新",
+      "epic": "host",
+      "milestone": "M1",
+      "blocked_by": [
+        "019",
+        "012"
+      ],
+      "requirements": [
+        "SYS-002",
+        "SYS-003",
+        "SYS-012"
+      ],
+      "acceptance_tests": [
+        "T-007"
+      ],
+      "status": "blocked",
+      "issue": 21
+    },
+    {
+      "id": "022",
+      "file": "022-systemd-services.md",
+      "title": "維運者可以管理 systemd 服務、計時器與其設定檔",
+      "epic": "host",
+      "milestone": "M1",
+      "blocked_by": [
+        "012"
+      ],
+      "requirements": [
+        "SYS-004",
+        "SYS-005"
+      ],
+      "acceptance_tests": [],
+      "status": "ready",
+      "issue": 22
+    },
+    {
+      "id": "023",
+      "file": "023-processes-users-sudo.md",
+      "title": "維運者可以查看程序並管理 Linux 使用者、群組與 sudo",
+      "epic": "host",
+      "milestone": "M1",
+      "blocked_by": [
+        "012"
+      ],
+      "requirements": [
+        "SYS-006",
+        "SYS-007"
+      ],
+      "acceptance_tests": [],
+      "status": "ready",
+      "issue": 23
+    },
+    {
+      "id": "024",
+      "file": "024-network-and-firewall.md",
+      "title": "維運者可以管理網路、DNS、主機名稱、時間服務與防火牆",
+      "epic": "host",
+      "milestone": "M1",
+      "blocked_by": [
+        "012",
+        "008"
+      ],
+      "requirements": [
+        "SYS-008",
+        "SYS-009",
+        "ROB-010",
+        "ROB-014"
+      ],
+      "acceptance_tests": [
+        "T-037",
+        "T-038",
+        "T-167",
+        "T-178",
+        "T-184",
+        "T-188",
+        "T-233"
+      ],
+      "status": "ready",
+      "issue": 24
+    },
+    {
+      "id": "025",
+      "file": "025-reboot-shutdown.md",
+      "title": "維運者可以重新開機或關機，並看到受影響的工作與服務",
+      "epic": "host",
+      "milestone": "M1",
+      "blocked_by": [
+        "008",
+        "012"
+      ],
+      "requirements": [
+        "SYS-010"
+      ],
+      "acceptance_tests": [],
+      "status": "ready",
+      "issue": 25
+    },
+    {
+      "id": "026",
+      "file": "026-ssh-keys-and-sshd.md",
+      "title": "維運者可以管理 SSH 公鑰、sshd 設定與主機指紋",
+      "epic": "ssh",
+      "milestone": "M1",
+      "blocked_by": [
+        "012"
+      ],
+      "requirements": [
+        "SSH-001",
+        "SSH-002",
+        "SSH-003",
+        "SSH-004",
+        "SSH-005",
+        "SSH-008"
+      ],
+      "acceptance_tests": [
+        "T-035",
+        "T-036"
+      ],
+      "status": "ready",
+      "issue": 26
+    },
+    {
+      "id": "027",
+      "file": "027-web-terminal.md",
+      "title": "使用者可以在網頁使用授權終端機，且稽核政策可設定",
+      "epic": "ssh",
+      "milestone": "M1",
+      "blocked_by": [
+        "019",
+        "009",
+        "012"
+      ],
+      "requirements": [
+        "SSH-006",
+        "SSH-007",
+        "IAM-007"
+      ],
+      "acceptance_tests": [
+        "T-023"
+      ],
+      "status": "blocked",
+      "issue": 27
+    },
+    {
+      "id": "028",
+      "file": "028-file-manager.md",
+      "title": "使用者可以瀏覽、整理、授權與追蹤宿主機檔案",
+      "epic": "files",
+      "milestone": "M1",
+      "blocked_by": [
+        "012",
+        "017"
+      ],
+      "requirements": [
+        "FIL-001",
+        "FIL-002",
+        "FIL-005",
+        "FIL-007",
+        "FIL-009",
+        "FIL-010",
+        "FIL-011",
+        "FIL-013"
+      ],
+      "acceptance_tests": [
+        "T-131"
+      ],
+      "status": "blocked",
+      "issue": 28
+    },
+    {
+      "id": "029",
+      "file": "029-file-transfer-edit.md",
+      "title": "使用者可以上傳、下載、續傳大檔，線上編輯、壓縮與安全預覽",
+      "epic": "files",
+      "milestone": "M1",
+      "blocked_by": [
+        "028",
+        "010"
+      ],
+      "requirements": [
+        "FIL-003",
+        "FIL-004",
+        "FIL-006",
+        "FIL-012"
+      ],
+      "acceptance_tests": [
+        "T-040",
+        "T-041",
+        "T-042"
+      ],
+      "status": "blocked",
+      "issue": 29
+    },
+    {
+      "id": "030",
+      "file": "030-disk-overview-alerts.md",
+      "title": "維運者可以查看磁碟、分割區、檔案系統、健康與容量告警",
+      "epic": "storage",
+      "milestone": "M1",
+      "blocked_by": [
+        "019",
+        "020"
+      ],
+      "requirements": [
+        "STO-001",
+        "STO-010",
+        "STO-011"
+      ],
+      "acceptance_tests": [],
+      "status": "blocked",
+      "issue": 30
+    },
+    {
+      "id": "031",
+      "file": "031-disk-operations.md",
+      "title": "維運者可以分割、格式化、掛載磁碟並管理 LVM、RAID、LUKS 與網路儲存",
+      "epic": "storage",
+      "milestone": "M1",
+      "blocked_by": [
+        "012",
+        "016",
+        "030"
+      ],
+      "requirements": [
+        "STO-002",
+        "STO-003",
+        "STO-004"
+      ],
+      "acceptance_tests": [
+        "T-044",
+        "T-045",
+        "T-049",
+        "T-050",
+        "DEP-T03"
+      ],
+      "status": "blocked",
+      "issue": 31
+    },
+    {
+      "id": "032",
+      "file": "032-storage-bindings.md",
+      "title": "管理員可以設定資料位置並以裝置身分綁定，掛錯磁碟時服務不啟動",
+      "epic": "storage",
+      "milestone": "M1",
+      "blocked_by": [
+        "031",
+        "008"
+      ],
+      "requirements": [
+        "STO-005",
+        "STO-006",
+        "STO-007",
+        "STO-008"
+      ],
+      "acceptance_tests": [
+        "T-046",
+        "T-047"
+      ],
+      "status": "blocked",
+      "issue": 32
+    },
+    {
+      "id": "033",
+      "file": "033-move-app-data.md",
+      "title": "管理員可以把應用資料安全搬到另一顆磁碟",
+      "epic": "storage",
+      "milestone": "M1",
+      "blocked_by": [
+        "032",
+        "016"
+      ],
+      "requirements": [
+        "STO-009"
+      ],
+      "acceptance_tests": [
+        "T-048"
+      ],
+      "status": "blocked",
+      "issue": 33
+    },
+    {
+      "id": "034",
+      "file": "034-baseline-host-tools.md",
+      "title": "維運者可以管理 FTP／SFTP、Fail2ban、防毒等基線工具",
+      "epic": "host",
+      "milestone": "M1",
+      "blocked_by": [
+        "021",
+        "022"
+      ],
+      "requirements": [
+        "SYS-011"
+      ],
+      "acceptance_tests": [
+        "T-134"
+      ],
+      "status": "blocked",
+      "issue": 34
+    },
+    {
+      "id": "035",
+      "file": "035-logs-retention-diagnostics.md",
+      "title": "管理員可以設定日誌與統計容量、保存政策並產生遮罩診斷包",
+      "epic": "monitoring",
+      "milestone": "M1",
+      "blocked_by": [
+        "003",
+        "017"
+      ],
+      "requirements": [
+        "DAT-005",
+        "DAT-008",
+        "MON-008",
+        "ROB-015"
+      ],
+      "acceptance_tests": [
+        "T-124",
+        "T-242",
+        "T-243"
+      ],
+      "status": "blocked",
+      "issue": 35
+    },
+    {
+      "id": "036",
+      "file": "036-platform-update.md",
+      "title": "管理員可以更新 HazelminX，失敗時回到相容舊版本或進入明確復原",
+      "epic": "install",
+      "milestone": "M1",
+      "blocked_by": [
+        "013",
+        "008",
+        "007"
+      ],
+      "requirements": [
+        "INS-009",
+        "INS-010",
+        "REL-003",
+        "REL-004",
+        "REL-005",
+        "REL-006",
+        "REL-007",
+        "DAT-006"
+      ],
+      "acceptance_tests": [
+        "T-008",
+        "T-009",
+        "DEP-T04",
+        "DEP-T05",
+        "DEP-T06",
+        "DEP-T07",
+        "DEP-T08"
+      ],
+      "status": "blocked",
+      "issue": 36
+    },
+    {
+      "id": "037",
+      "file": "037-offline-install-uninstall.md",
+      "title": "管理員可以用離線包安裝，並解除安裝平台而保留應用與移交維護",
+      "epic": "install",
+      "milestone": "M1",
+      "blocked_by": [
+        "013",
+        "113"
+      ],
+      "requirements": [
+        "INS-011",
+        "INS-012",
+        "INS-014",
+        "PKG-003",
+        "UN-001",
+        "UN-002",
+        "UN-003",
+        "UN-004",
+        "UN-005",
+        "UNX-003",
+        "UNX-004",
+        "UNX-005",
+        "UNX-006",
+        "UNX-007"
+      ],
+      "acceptance_tests": [
+        "T-002",
+        "T-010",
+        "T-011",
+        "DEP-T09",
+        "DEP-T10",
+        "DEP-T11",
+        "DEP-T12",
+        "T-244",
+        "T-245",
+        "T-246",
+        "T-247",
+        "T-248",
+        "T-249",
+        "T-251"
+      ],
+      "status": "blocked",
+      "issue": 37
+    },
+    {
+      "id": "038",
+      "file": "038-recovery-mode.md",
+      "title": "擁有者可以在資料庫損壞或鎖死時用離線救援方式恢復管理",
+      "epic": "install",
+      "milestone": "M1",
+      "blocked_by": [
+        "013"
+      ],
+      "requirements": [
+        "IAM-008",
+        "SEC-012",
+        "ARC-001",
+        "PKG-006",
+        "INS-007"
+      ],
+      "acceptance_tests": [
+        "T-012",
+        "T-120"
+      ],
+      "status": "blocked",
+      "issue": 38
+    },
+    {
+      "id": "039",
+      "file": "039-engine-detect-install.md",
+      "title": "管理員可以看到 Docker、Podman、K3s 各自狀態並在頁面一鍵安裝 Docker",
+      "epic": "containers",
+      "milestone": "M2",
+      "blocked_by": [
+        "019",
+        "016",
+        "012"
+      ],
+      "requirements": [
+        "NOD-003",
+        "NOD-004",
+        "INS-008",
+        "ENV-001",
+        "ENV-002",
+        "ENV-006"
+      ],
+      "acceptance_tests": [
+        "T-051",
+        "T-149",
+        "T-150",
+        "T-152",
+        "T-156"
+      ],
+      "status": "blocked",
+      "issue": 39
+    },
+    {
+      "id": "040",
+      "file": "040-container-management.md",
+      "title": "容器管理員可以建立、檢視、操作容器並查看日誌、終端機與暴露範圍",
+      "epic": "containers",
+      "milestone": "M2",
+      "blocked_by": [
+        "039",
+        "027"
+      ],
+      "requirements": [
+        "CTR-001",
+        "CTR-002",
+        "CTR-003",
+        "CTR-004",
+        "CTR-012",
+        "ENV-003",
+        "ENV-004",
+        "ENV-007"
+      ],
+      "acceptance_tests": [
+        "T-015",
+        "T-151",
+        "T-153",
+        "T-166"
+      ],
+      "status": "blocked",
+      "issue": 40
+    },
+    {
+      "id": "041",
+      "file": "041-images-registries-networks-volumes.md",
+      "title": "管理員可以管理映像、登錄站、容器網路與 Volume 並採用安全更新",
+      "epic": "containers",
+      "milestone": "M2",
+      "blocked_by": [
+        "039"
+      ],
+      "requirements": [
+        "CTR-005",
+        "CTR-006",
+        "CTR-007",
+        "CTR-008",
+        "CTR-014"
+      ],
+      "acceptance_tests": [],
+      "status": "blocked",
+      "issue": 41
+    },
+    {
+      "id": "042",
+      "file": "042-container-takeover-engine-settings.md",
+      "title": "管理員可以匯入既有容器選擇接管，並管理引擎設定、儲存位置與 GPU 裝置",
+      "epic": "containers",
+      "milestone": "M2",
+      "blocked_by": [
+        "040",
+        "032"
+      ],
+      "requirements": [
+        "CTR-009",
+        "CTR-010",
+        "CTR-011",
+        "ENV-008",
+        "ENV-009"
+      ],
+      "acceptance_tests": [
+        "T-154",
+        "T-155"
+      ],
+      "status": "blocked",
+      "issue": 42
+    },
+    {
+      "id": "043",
+      "file": "043-swarm.md",
+      "title": "管理員可以管理 Swarm 節點、服務、Stack、Secret 與更新策略",
+      "epic": "containers",
+      "milestone": "M2",
+      "blocked_by": [
+        "041"
+      ],
+      "requirements": [
+        "CTR-013"
+      ],
+      "acceptance_tests": [],
+      "status": "blocked",
+      "issue": 43
+    },
+    {
+      "id": "044",
+      "file": "044-compose-projects.md",
+      "title": "專案管理員可以建立專案與環境，匯入完整 Compose 並驗證後部署",
+      "epic": "compose",
+      "milestone": "M2",
+      "blocked_by": [
+        "039",
+        "008",
+        "016"
+      ],
+      "requirements": [
+        "CMP-001",
+        "CMP-007",
+        "CMP-008",
+        "CMP-012",
+        "CMP-015",
+        "UI-008"
+      ],
+      "acceptance_tests": [
+        "T-052"
+      ],
+      "status": "blocked",
+      "issue": 44
+    },
+    {
+      "id": "045",
+      "file": "045-env-layers.md",
+      "title": "管理員可以分層管理 .env、介面變數與覆寫層，並預覽每個服務實際收到的值",
+      "epic": "compose",
+      "milestone": "M2",
+      "blocked_by": [
+        "044",
+        "011"
+      ],
+      "requirements": [
+        "CMP-004",
+        "CMP-005",
+        "CMP-006"
+      ],
+      "acceptance_tests": [
+        "T-053",
+        "T-054",
+        "T-055",
+        "T-056",
+        "T-061"
+      ],
+      "status": "blocked",
+      "issue": 45
+    },
+    {
+      "id": "046",
+      "file": "046-deploy-revisions.md",
+      "title": "管理員可以查看部署版本、三方比較並回到相容舊版",
+      "epic": "compose",
+      "milestone": "M2",
+      "blocked_by": [
+        "045"
+      ],
+      "requirements": [
+        "CMP-011",
+        "CMP-014",
+        "CMP-016",
+        "CMP-017",
+        "CMP-018"
+      ],
+      "acceptance_tests": [
+        "T-057",
+        "T-058",
+        "T-062"
+      ],
+      "status": "blocked",
+      "issue": 46
+    },
+    {
+      "id": "047",
+      "file": "047-github-connections.md",
+      "title": "使用者可以用 GitHub 網頁授權或 PAT 建立可重用連線，並保存多帳號多授權",
+      "epic": "github",
+      "milestone": "M2",
+      "blocked_by": [
+        "009",
+        "011",
+        "010"
+      ],
+      "requirements": [
+        "GIT-001",
+        "GIT-002",
+        "GIT-003",
+        "GIT-004",
+        "GIT-013",
+        "GIT-014",
+        "GIT-015",
+        "GIT-016",
+        "GIT-031"
+      ],
+      "acceptance_tests": [
+        "GH-T01",
+        "GH-T02",
+        "GH-T03",
+        "GH-T04",
+        "GH-T12",
+        "GH-T13",
+        "GH-T14",
+        "GH-T15"
+      ],
+      "status": "ready",
+      "issue": 47
+    },
+    {
+      "id": "048",
+      "file": "048-repo-picker.md",
+      "title": "使用者可以瀏覽、搜尋、分頁載入可用 Repo，並選分支、commit 與 Compose 檔案",
+      "epic": "github",
+      "milestone": "M2",
+      "blocked_by": [
+        "047",
+        "017"
+      ],
+      "requirements": [
+        "GIT-005",
+        "GIT-006",
+        "GIT-007",
+        "GIT-008",
+        "GIT-034"
+      ],
+      "acceptance_tests": [
+        "GH-T05",
+        "GH-T06",
+        "GH-T07",
+        "GH-T08"
+      ],
+      "status": "blocked",
+      "issue": 48
+    },
+    {
+      "id": "049",
+      "file": "049-git-deploy.md",
+      "title": "專案管理員可以從 GitHub 以固定 commit 隔離抓取、建置並部署，手動 URL／PAT／SSH 模式照常可用",
+      "epic": "github",
+      "milestone": "M2",
+      "blocked_by": [
+        "048",
+        "044",
+        "012"
+      ],
+      "requirements": [
+        "CMP-002",
+        "CMP-003",
+        "CMP-013",
+        "GIT-009",
+        "GIT-010",
+        "GIT-011",
+        "GIT-025",
+        "GIT-027",
+        "GIT-038"
+      ],
+      "acceptance_tests": [
+        "T-063",
+        "T-066",
+        "GH-T09",
+        "GH-T10",
+        "GH-T24",
+        "GH-T26"
+      ],
+      "status": "blocked",
+      "issue": 49
+    },
+    {
+      "id": "050",
+      "file": "050-auto-deploy-webhooks.md",
+      "title": "管理員可以設定 Webhook 或定期檢查觸發部署，並決定多環境與連續 commit 政策",
+      "epic": "github",
+      "milestone": "M2",
+      "blocked_by": [
+        "049"
+      ],
+      "requirements": [
+        "CMP-009",
+        "CMP-010",
+        "GIT-018",
+        "GIT-019",
+        "GIT-020"
+      ],
+      "acceptance_tests": [
+        "T-059",
+        "T-060",
+        "GH-T17",
+        "GH-T18",
+        "GH-T19"
+      ],
+      "status": "blocked",
+      "issue": 50
+    },
+    {
+      "id": "051",
+      "file": "051-connection-sharing-rotation.md",
+      "title": "管理員可以分開授權連線的查看、瀏覽、使用與管理，並安全輪替、撤銷與斷開",
+      "epic": "github",
+      "milestone": "M2",
+      "blocked_by": [
+        "049",
+        "016"
+      ],
+      "requirements": [
+        "GIT-012",
+        "GIT-017",
+        "GIT-021",
+        "GIT-022",
+        "GIT-023",
+        "GIT-024",
+        "GIT-026",
+        "GIT-028",
+        "GIT-029",
+        "GIT-030",
+        "GIT-032",
+        "GIT-033",
+        "GIT-035",
+        "GIT-036",
+        "GIT-037",
+        "GIT-039",
+        "GIT-040"
+      ],
+      "acceptance_tests": [
+        "GH-T11",
+        "GH-T16",
+        "GH-T20",
+        "GH-T21",
+        "GH-T22",
+        "GH-T23",
+        "GH-T25",
+        "GH-T27",
+        "GH-T28",
+        "GH-T29",
+        "GH-T30",
+        "GH-T31",
+        "GH-T32",
+        "GH-T33",
+        "GH-T34"
+      ],
+      "status": "blocked",
+      "issue": 51
+    },
+    {
+      "id": "052",
+      "file": "052-appstore-install.md",
+      "title": "管理員可以同步官方商店並安裝整套應用，選擇節點、網路、Port 與資料位置",
+      "epic": "appstore",
+      "milestone": "M2",
+      "blocked_by": [
+        "044",
+        "032"
+      ],
+      "requirements": [
+        "APP-001",
+        "APP-003",
+        "APP-004",
+        "APP-009",
+        "APP-011",
+        "APP-012"
+      ],
+      "acceptance_tests": [
+        "T-064"
+      ],
+      "status": "blocked",
+      "issue": 52
+    },
+    {
+      "id": "053",
+      "file": "053-appstore-update-uninstall.md",
+      "title": "管理員可以編輯、更新與卸載商店應用，自訂設定不被新版覆寫",
+      "epic": "appstore",
+      "milestone": "M2",
+      "blocked_by": [
+        "052",
+        "046"
+      ],
+      "requirements": [
+        "APP-005",
+        "APP-006",
+        "APP-007",
+        "APP-008",
+        "APP-010"
+      ],
+      "acceptance_tests": [
+        "T-057",
+        "T-065"
+      ],
+      "status": "blocked",
+      "issue": 53
+    },
+    {
+      "id": "054",
+      "file": "054-appstore-sources.md",
+      "title": "管理員可以新增受信任的第三方商店來源與本機範本",
+      "epic": "appstore",
+      "milestone": "M2",
+      "blocked_by": [
+        "052"
+      ],
+      "requirements": [
+        "APP-002"
+      ],
+      "acceptance_tests": [],
+      "status": "blocked",
+      "issue": 54
+    },
+    {
+      "id": "055",
+      "file": "055-zentinel-install.md",
+      "title": "管理員可以從介面安裝原生 Zentinel，Core 重啟不影響既有網站，救援入口不依賴它",
+      "epic": "web",
+      "milestone": "M3",
+      "blocked_by": [
+        "021",
+        "012",
+        "016"
+      ],
+      "requirements": [
+        "WEB-001",
+        "ARC-002",
+        "ARC-007"
+      ],
+      "acceptance_tests": [],
+      "status": "blocked",
+      "issue": 55
+    },
+    {
+      "id": "056",
+      "file": "056-websites-and-routing.md",
+      "title": "使用者可以建立靜態與反向代理網站、綁定多網域並穩定路由到容器服務",
+      "epic": "web",
+      "milestone": "M3",
+      "blocked_by": [
+        "055",
+        "044"
+      ],
+      "requirements": [
+        "WEB-002",
+        "WEB-003",
+        "WEB-009",
+        "WEB-011",
+        "WEB-014",
+        "WEB-015"
+      ],
+      "acceptance_tests": [
+        "T-080",
+        "T-128"
+      ],
+      "status": "blocked",
+      "issue": 56
+    },
+    {
+      "id": "057",
+      "file": "057-certificates-acme.md",
+      "title": "管理員可以申請、匯入、續期憑證並管理 ACME 帳號與 DNS 供應商",
+      "epic": "web",
+      "milestone": "M3",
+      "blocked_by": [
+        "056"
+      ],
+      "requirements": [
+        "WEB-004",
+        "WEB-005"
+      ],
+      "acceptance_tests": [
+        "T-079"
+      ],
+      "status": "blocked",
+      "issue": 57
+    },
+    {
+      "id": "058",
+      "file": "058-proxy-features.md",
+      "title": "使用者可以設定重導、重寫、標頭、快取、壓縮、上傳限制、多後端與串流代理",
+      "epic": "web",
+      "milestone": "M3",
+      "blocked_by": [
+        "056"
+      ],
+      "requirements": [
+        "WEB-006",
+        "WEB-007",
+        "WEB-008"
+      ],
+      "acceptance_tests": [
+        "T-085"
+      ],
+      "status": "blocked",
+      "issue": 58
+    },
+    {
+      "id": "059",
+      "file": "059-language-runtimes.md",
+      "title": "使用者可以建立 PHP、Java、Node.js、Go、Python、.NET 執行環境網站",
+      "epic": "web",
+      "milestone": "M3",
+      "blocked_by": [
+        "056",
+        "044"
+      ],
+      "requirements": [
+        "RUN-001",
+        "RUN-002",
+        "RUN-003",
+        "RUN-004",
+        "RUN-005",
+        "RUN-006",
+        "RUN-007",
+        "RUN-008"
+      ],
+      "acceptance_tests": [
+        "T-078",
+        "T-125",
+        "T-126"
+      ],
+      "status": "blocked",
+      "issue": 59
+    },
+    {
+      "id": "060",
+      "file": "060-tcp-udp-proxy.md",
+      "title": "使用者可以設定 TCP／UDP 代理與連接埠轉送",
+      "epic": "web",
+      "milestone": "M3",
+      "blocked_by": [
+        "055"
+      ],
+      "requirements": [
+        "WEB-013"
+      ],
+      "acceptance_tests": [
+        "T-127"
+      ],
+      "status": "blocked",
+      "issue": 60
+    },
+    {
+      "id": "062",
+      "file": "062-token-api-proxy.md",
+      "title": "管理員可以發布 infra-manager 相容的 Token API 代理，既有客戶端不需修改",
+      "epic": "api-proxy",
+      "milestone": "M3",
+      "blocked_by": [
+        "055",
+        "015"
+      ],
+      "requirements": [
+        "API-001",
+        "API-002",
+        "API-003",
+        "API-004",
+        "API-005",
+        "API-006",
+        "API-007",
+        "API-009",
+        "API-010"
+      ],
+      "acceptance_tests": [
+        "T-081",
+        "T-082",
+        "T-083",
+        "T-084",
+        "T-085",
+        "T-097"
+      ],
+      "status": "blocked",
+      "issue": 61
+    },
+    {
+      "id": "063",
+      "file": "063-infra-manager-import.md",
+      "title": "管理員可以匯入既有 infra-manager 的服務、Token 與使用者",
+      "epic": "api-proxy",
+      "milestone": "M3",
+      "blocked_by": [
+        "062"
+      ],
+      "requirements": [
+        "API-008"
+      ],
+      "acceptance_tests": [],
+      "status": "blocked",
+      "issue": 62
+    },
+    {
+      "id": "064",
+      "file": "064-waf.md",
+      "title": "安全管理員可以安裝 WAF，逐站設定模式、規則、例外與失效政策",
+      "epic": "security",
+      "milestone": "M3",
+      "blocked_by": [
+        "055"
+      ],
+      "requirements": [
+        "WAF-001",
+        "WAF-002",
+        "WAF-003",
+        "WAF-004",
+        "WAF-005",
+        "WAF-006",
+        "WAF-007",
+        "WAF-008",
+        "WAF-009",
+        "WAF-010",
+        "WAF-011",
+        "WAF-012"
+      ],
+      "acceptance_tests": [
+        "T-086",
+        "T-087",
+        "T-088",
+        "T-089",
+        "T-090"
+      ],
+      "status": "blocked",
+      "issue": 63
+    },
+    {
+      "id": "065",
+      "file": "065-trusted-ip-tunnel.md",
+      "title": "管理員可以為每個入口設定可信代理模式，Cloudflare Tunnel 流量取得正確訪客 IP",
+      "epic": "security",
+      "milestone": "M3",
+      "blocked_by": [
+        "055",
+        "064"
+      ],
+      "requirements": [
+        "IP-001",
+        "IP-002",
+        "IP-003",
+        "IP-004",
+        "IP-005",
+        "IP-006",
+        "IP-007",
+        "IP-008",
+        "IP-009"
+      ],
+      "acceptance_tests": [
+        "T-091",
+        "T-092",
+        "T-093",
+        "T-094",
+        "T-095"
+      ],
+      "status": "blocked",
+      "issue": 64
+    },
+    {
+      "id": "066",
+      "file": "066-traffic-analytics.md",
+      "title": "使用者可以依時間、節點、網域與入口查看流量、來源、路徑、裝置與 API 用量",
+      "epic": "analytics",
+      "milestone": "M3",
+      "blocked_by": [
+        "065",
+        "035"
+      ],
+      "requirements": [
+        "ANA-001",
+        "ANA-002",
+        "ANA-003",
+        "ANA-004",
+        "ANA-005",
+        "ANA-006",
+        "ANA-008",
+        "ANA-009",
+        "ANA-010",
+        "ANA-011",
+        "ANA-012"
+      ],
+      "acceptance_tests": [
+        "T-096",
+        "T-097"
+      ],
+      "status": "blocked",
+      "issue": 65
+    },
+    {
+      "id": "067",
+      "file": "067-cloudflare-analytics.md",
+      "title": "管理員可以連接 Cloudflare Analytics 並分開看邊緣與來源站",
+      "epic": "analytics",
+      "milestone": "M3",
+      "blocked_by": [
+        "066"
+      ],
+      "requirements": [
+        "ANA-007"
+      ],
+      "acceptance_tests": [],
+      "status": "blocked",
+      "issue": 66
+    },
+    {
+      "id": "068",
+      "file": "068-openresty-migration.md",
+      "title": "管理員可以把 OpenResty 網站遷移到 Zentinel，無法轉換的項目先列出",
+      "epic": "migration",
+      "milestone": "M3",
+      "blocked_by": [
+        "056",
+        "059",
+        "060"
+      ],
+      "requirements": [
+        "WEB-010"
+      ],
+      "acceptance_tests": [
+        "T-067"
+      ],
+      "status": "blocked",
+      "issue": 67
+    },
+    {
+      "id": "069",
+      "file": "069-database-services.md",
+      "title": "管理員可以安裝或接管資料庫服務，管理帳號、連線、健康與對外開放",
+      "epic": "database",
+      "milestone": "M4",
+      "blocked_by": [
+        "052",
+        "040"
+      ],
+      "requirements": [
+        "DB-001",
+        "DB-002",
+        "DB-004",
+        "DB-005",
+        "DB-008",
+        "DB-010"
+      ],
+      "acceptance_tests": [],
+      "status": "blocked",
+      "issue": 68
+    },
+    {
+      "id": "070",
+      "file": "070-sql-data-editor.md",
+      "title": "使用者可以瀏覽與編輯 PostgreSQL 與 MySQL 的結構與資料並執行 SQL",
+      "epic": "database",
+      "milestone": "M4",
+      "blocked_by": [
+        "069"
+      ],
+      "requirements": [
+        "DB-003",
+        "DB-006",
+        "DB-009",
+        "PG-001",
+        "PG-002",
+        "PG-003",
+        "PG-004",
+        "PG-005",
+        "PG-006"
+      ],
+      "acceptance_tests": [
+        "T-098",
+        "T-099",
+        "T-100"
+      ],
+      "status": "blocked",
+      "issue": 69
+    },
+    {
+      "id": "071",
+      "file": "071-redis-manager.md",
+      "title": "使用者可以管理 Redis 鍵、TTL、ACL、持久化與拓樸",
+      "epic": "database",
+      "milestone": "M4",
+      "blocked_by": [
+        "069"
+      ],
+      "requirements": [
+        "RED-001",
+        "RED-002",
+        "RED-003",
+        "RED-004",
+        "RED-005",
+        "RED-006",
+        "RED-007"
+      ],
+      "acceptance_tests": [
+        "T-101",
+        "T-102"
+      ],
+      "status": "blocked",
+      "issue": 70
+    },
+    {
+      "id": "072",
+      "file": "072-mongodb-manager.md",
+      "title": "使用者可以管理 MongoDB 實例、集合、文件與索引",
+      "epic": "database",
+      "milestone": "M4",
+      "blocked_by": [
+        "069"
+      ],
+      "requirements": [
+        "MDB-001",
+        "MDB-002",
+        "MDB-003",
+        "MDB-004",
+        "MDB-005",
+        "MDB-006"
+      ],
+      "acceptance_tests": [
+        "T-129"
+      ],
+      "status": "blocked",
+      "issue": 71
+    },
+    {
+      "id": "073",
+      "file": "073-database-upgrade-backup.md",
+      "title": "管理員可以執行資料庫備份、還原與大版本升級",
+      "epic": "database",
+      "milestone": "M4",
+      "blocked_by": [
+        "070",
+        "016"
+      ],
+      "requirements": [
+        "DB-007",
+        "PG-007",
+        "PG-008",
+        "DEP-006"
+      ],
+      "acceptance_tests": [
+        "T-076"
+      ],
+      "status": "blocked",
+      "issue": 72
+    },
+    {
+      "id": "074",
+      "file": "074-ollama-models.md",
+      "title": "管理員可以安裝或接管 Ollama 並管理模型的下載、刪除、複製與配額",
+      "epic": "ai",
+      "milestone": "M4",
+      "blocked_by": [
+        "052"
+      ],
+      "requirements": [
+        "AI-001",
+        "AI-002",
+        "AI-003",
+        "AI-004",
+        "AI-005",
+        "AI-008",
+        "AI-010"
+      ],
+      "acceptance_tests": [
+        "T-104",
+        "T-105"
+      ],
+      "status": "blocked",
+      "issue": 73
+    },
+    {
+      "id": "075",
+      "file": "075-gpu-chat-inference-api.md",
+      "title": "管理員可以選 GPU、在網頁測試模型，並透過 Token 代理發布推論 API",
+      "epic": "ai",
+      "milestone": "M4",
+      "blocked_by": [
+        "074",
+        "062"
+      ],
+      "requirements": [
+        "AI-006",
+        "AI-007",
+        "AI-009",
+        "AI-011"
+      ],
+      "acceptance_tests": [
+        "T-103"
+      ],
+      "status": "blocked",
+      "issue": 74
+    },
+    {
+      "id": "076",
+      "file": "076-baseline-ai-mcp.md",
+      "title": "管理員可以保留基線 AI／MCP／Agent 能力，MCP 預設唯讀且危險操作需批准",
+      "epic": "ai",
+      "milestone": "M4",
+      "blocked_by": [
+        "074",
+        "015"
+      ],
+      "requirements": [
+        "AI-012",
+        "INT-003",
+        "INT-004"
+      ],
+      "acceptance_tests": [],
+      "status": "blocked",
+      "issue": 75
+    },
+    {
+      "id": "077",
+      "file": "077-backup-accounts.md",
+      "title": "管理員可以建立本機、S3、SFTP、WebDAV、雲端硬碟與 NAS 備份目的地並測試讀寫",
+      "epic": "backup",
+      "milestone": "M4",
+      "blocked_by": [
+        "011",
+        "017"
+      ],
+      "requirements": [
+        "BAK-001",
+        "BAK-002",
+        "BAK-003",
+        "BAK-004",
+        "BAK-005",
+        "BAK-006",
+        "BAK-007",
+        "BAK-008",
+        "BAK-009"
+      ],
+      "acceptance_tests": [
+        "T-106"
+      ],
+      "status": "blocked",
+      "issue": 76
+    },
+    {
+      "id": "078",
+      "file": "078-backup-jobs.md",
+      "title": "使用者可以備份應用、資料庫、目錄與平台設定，含一致性、多目的地、保留與加密",
+      "epic": "backup",
+      "milestone": "M4",
+      "blocked_by": [
+        "077",
+        "069",
+        "046"
+      ],
+      "requirements": [
+        "BKR-001",
+        "BKR-002",
+        "BKR-003",
+        "BKR-004",
+        "BKR-005",
+        "BKR-006",
+        "BKR-007",
+        "BKR-011",
+        "BKR-012",
+        "BKR-013",
+        "BKR-014",
+        "BKR-015",
+        "DAT-003",
+        "WEB-012"
+      ],
+      "acceptance_tests": [
+        "T-107",
+        "T-108",
+        "T-109",
+        "T-110"
+      ],
+      "status": "blocked",
+      "issue": 77
+    },
+    {
+      "id": "079",
+      "file": "079-restore.md",
+      "title": "管理員可以隔離演練還原、預覽覆寫並還原到不同節點與磁碟",
+      "epic": "backup",
+      "milestone": "M4",
+      "blocked_by": [
+        "078"
+      ],
+      "requirements": [
+        "BKR-008",
+        "BKR-009",
+        "BKR-010"
+      ],
+      "acceptance_tests": [
+        "T-111",
+        "T-112",
+        "T-113"
+      ],
+      "status": "blocked",
+      "issue": 78
+    },
+    {
+      "id": "080",
+      "file": "080-cron-jobs.md",
+      "title": "管理員可以建立計畫任務，設定重疊、錯過、重試、依賴、通知與腳本庫",
+      "epic": "jobs",
+      "milestone": "M4",
+      "blocked_by": [
+        "008",
+        "017"
+      ],
+      "requirements": [
+        "JOB-001",
+        "JOB-002",
+        "JOB-003",
+        "JOB-004",
+        "JOB-005",
+        "JOB-006",
+        "JOB-007",
+        "JOB-008",
+        "JOB-009",
+        "JOB-010",
+        "JOB-011",
+        "JOB-012"
+      ],
+      "acceptance_tests": [
+        "T-114",
+        "T-115",
+        "T-116"
+      ],
+      "status": "blocked",
+      "issue": 79
+    },
+    {
+      "id": "081",
+      "file": "081-alerts-notifications.md",
+      "title": "管理員可以設定告警、通知管道與靜音，並從告警跳到相關資源",
+      "epic": "monitoring",
+      "milestone": "M4",
+      "blocked_by": [
+        "020",
+        "018"
+      ],
+      "requirements": [
+        "MON-004",
+        "MON-006",
+        "MON-007",
+        "ROB-011"
+      ],
+      "acceptance_tests": [
+        "T-168"
+      ],
+      "status": "blocked",
+      "issue": 80
+    },
+    {
+      "id": "082",
+      "file": "082-self-monitoring-metrics.md",
+      "title": "管理員可以監控 HazelminX 自己並輸出標準監控指標",
+      "epic": "monitoring",
+      "milestone": "M4",
+      "blocked_by": [
+        "020"
+      ],
+      "requirements": [
+        "MON-009",
+        "MON-010",
+        "ARC-008"
+      ],
+      "acceptance_tests": [],
+      "status": "blocked",
+      "issue": 81
+    },
+    {
+      "id": "083",
+      "file": "083-integrations-export-cli.md",
+      "title": "管理員可以匯出匯入設定、收發整合 Webhook，並用 CLI 查看版本、診斷與升級",
+      "epic": "integration",
+      "milestone": "M4",
+      "blocked_by": [
+        "010",
+        "016"
+      ],
+      "requirements": [
+        "INT-002",
+        "INT-005",
+        "INT-006",
+        "INT-007",
+        "INT-008",
+        "DAT-007",
+        "SEC-007"
+      ],
+      "acceptance_tests": [],
+      "status": "blocked",
+      "issue": 82
+    },
+    {
+      "id": "084",
+      "file": "084-multi-node-views.md",
+      "title": "管理員可以在單一畫面查看與批次操作跨節點資源",
+      "epic": "nodes",
+      "milestone": "M5",
+      "blocked_by": [
+        "019",
+        "017"
+      ],
+      "requirements": [
+        "NOD-010",
+        "NOD-012",
+        "UI-009"
+      ],
+      "acceptance_tests": [],
+      "status": "blocked",
+      "issue": 83
+    },
+    {
+      "id": "085",
+      "file": "085-cross-node-copy.md",
+      "title": "使用者可以跨節點複製資料並確認 UID／GID 映射",
+      "epic": "files",
+      "milestone": "M5",
+      "blocked_by": [
+        "028",
+        "084"
+      ],
+      "requirements": [
+        "FIL-008"
+      ],
+      "acceptance_tests": [
+        "T-043"
+      ],
+      "status": "blocked",
+      "issue": 84
+    },
+    {
+      "id": "086",
+      "file": "086-kubernetes-connect.md",
+      "title": "管理員可以連接既有 Kubernetes／K3s 並管理工作負載、Service、設定與診斷",
+      "epic": "cluster",
+      "milestone": "M5",
+      "blocked_by": [
+        "019"
+      ],
+      "requirements": [
+        "KUB-001",
+        "KUB-005",
+        "KUB-006",
+        "KUB-009",
+        "KUB-014",
+        "ENV-005"
+      ],
+      "acceptance_tests": [
+        "T-068",
+        "T-069"
+      ],
+      "status": "blocked",
+      "issue": 85
+    },
+    {
+      "id": "087",
+      "file": "087-k3s-cluster-lifecycle.md",
+      "title": "管理員可以建立 K3s 叢集、加入／移除／升級節點並建立高可用",
+      "epic": "cluster",
+      "milestone": "M5",
+      "blocked_by": [
+        "086",
+        "055",
+        "016"
+      ],
+      "requirements": [
+        "KUB-002",
+        "KUB-003",
+        "KUB-004",
+        "KUB-013"
+      ],
+      "acceptance_tests": [
+        "T-067"
+      ],
+      "status": "blocked",
+      "issue": 86
+    },
+    {
+      "id": "088",
+      "file": "088-kubernetes-helm-storage-yaml.md",
+      "title": "使用者可以安裝 Helm Chart、管理儲存、匯入 YAML、備份 datastore 並安排維護",
+      "epic": "cluster",
+      "milestone": "M5",
+      "blocked_by": [
+        "086"
+      ],
+      "requirements": [
+        "KUB-007",
+        "KUB-008",
+        "KUB-010",
+        "KUB-011",
+        "KUB-012",
+        "STO-012"
+      ],
+      "acceptance_tests": [
+        "T-070",
+        "T-071"
+      ],
+      "status": "blocked",
+      "issue": 87
+    },
+    {
+      "id": "089",
+      "file": "089-zero-downtime-deploy.md",
+      "title": "管理員可以在符合條件時不中斷部署，不符合時看到具體原因與回復選項",
+      "epic": "deploy",
+      "milestone": "M5",
+      "blocked_by": [
+        "046",
+        "056",
+        "008"
+      ],
+      "requirements": [
+        "DEP-001",
+        "DEP-002",
+        "DEP-003",
+        "DEP-004",
+        "DEP-005",
+        "DEP-007",
+        "DEP-008",
+        "DEP-009",
+        "DEP-010"
+      ],
+      "acceptance_tests": [
+        "T-072",
+        "T-073",
+        "T-074",
+        "T-075",
+        "T-077"
+      ],
+      "status": "blocked",
+      "issue": 88
+    },
+    {
+      "id": "090",
+      "file": "090-control-generation.md",
+      "title": "系統可以用控制世代與資源擁有者阻止舊控制中心或第二個控制器寫入",
+      "epic": "nodes",
+      "milestone": "M5",
+      "blocked_by": [
+        "008",
+        "019"
+      ],
+      "requirements": [
+        "ENG-010",
+        "ARC-005"
+      ],
+      "acceptance_tests": [
+        "T-032"
+      ],
+      "status": "blocked",
+      "issue": 89
+    },
+    {
+      "id": "091",
+      "file": "091-migrate-from-1panel.md",
+      "title": "管理員可以從 1Panel 乾跑匯入並分批接管，原服務未批准前不停止",
+      "epic": "migration",
+      "milestone": "M5",
+      "blocked_by": [
+        "053",
+        "056",
+        "069",
+        "078"
+      ],
+      "requirements": [
+        "PAR-005",
+        "PAR-006"
+      ],
+      "acceptance_tests": [],
+      "status": "blocked",
+      "issue": 90
+    },
+    {
+      "id": "092",
+      "file": "092-baseline-inventory.md",
+      "title": "驗收者可以查每項 1Panel v2.4.1 OSS 功能在 HazelminX 的對應位置與狀態",
+      "epic": "quality",
+      "milestone": "M0",
+      "blocked_by": [
+        "001"
+      ],
+      "requirements": [
+        "PAR-001",
+        "PAR-002",
+        "PAR-003",
+        "PAR-004",
+        "PAR-007"
+      ],
+      "acceptance_tests": [
+        "T-121"
+      ],
+      "status": "in_progress",
+      "issue": 91
+    },
+    {
+      "id": "093",
+      "file": "093-windows-agent.md",
+      "title": "管理員可以把 Windows Server 加為受管節點（條件式範圍，待核定）",
+      "epic": "windows",
+      "milestone": "M5",
+      "blocked_by": [
+        "019",
+        "012"
+      ],
+      "requirements": [
+        "WIN-001",
+        "WIN-002",
+        "WIN-003",
+        "WIN-004",
+        "WIN-005",
+        "WIN-006",
+        "WIN-007",
+        "WIN-008"
+      ],
+      "acceptance_tests": [
+        "DEP-T13",
+        "DEP-T14",
+        "DEP-T15",
+        "DEP-T16",
+        "DEP-T17",
+        "DEP-T18"
+      ],
+      "status": "blocked",
+      "issue": 92
+    },
+    {
+      "id": "094",
+      "file": "094-disaster-recovery.md",
+      "title": "管理員可以在控制中心完全損毀後用救援工具與復原金鑰在乾淨主機還原",
+      "epic": "backup",
+      "milestone": "M5",
+      "blocked_by": [
+        "078",
+        "013"
+      ],
+      "requirements": [
+        "ARC-003",
+        "ARC-004",
+        "ARC-006"
+      ],
+      "acceptance_tests": [],
+      "status": "blocked",
+      "issue": 93
+    },
+    {
+      "id": "095",
+      "file": "095-branding-and-legal.md",
+      "title": "使用者看到的品牌是 HazelminX，法律與授權資訊仍可讀且來源正確",
+      "epic": "foundation",
+      "milestone": "M0",
+      "blocked_by": [
+        "005"
+      ],
+      "requirements": [
+        "UI-010"
+      ],
+      "acceptance_tests": [
+        "T-122",
+        "T-123"
+      ],
+      "status": "blocked",
+      "issue": 94
+    },
+    {
+      "id": "096",
+      "file": "096-mobile-keyboard-a11y.md",
+      "title": "使用者可以在 360px 手機與只用鍵盤的情況完成日常操作",
+      "epic": "quality",
+      "milestone": "M5",
+      "blocked_by": [
+        "017"
+      ],
+      "requirements": [
+        "UI-005"
+      ],
+      "acceptance_tests": [
+        "T-117"
+      ],
+      "status": "blocked",
+      "issue": 95
+    },
+    {
+      "id": "097",
+      "file": "097-release-supply-chain.md",
+      "title": "維護者可以發布附簽署清單、SBOM、授權與支援矩陣的正式 Release",
+      "epic": "release",
+      "milestone": "M5",
+      "blocked_by": [
+        "006",
+        "036"
+      ],
+      "requirements": [
+        "REL-001",
+        "PKG-004",
+        "PKG-005"
+      ],
+      "acceptance_tests": [],
+      "status": "blocked",
+      "issue": 96
+    },
+    {
+      "id": "098",
+      "file": "098-release-gates-traceability.md",
+      "title": "驗收者可以依 G-01 至 G-14 門檻與需求→測試→證據追溯表判定可否發布",
+      "epic": "quality",
+      "milestone": "M5",
+      "blocked_by": [
+        "092",
+        "097"
+      ],
+      "requirements": [],
+      "acceptance_tests": [],
+      "status": "blocked",
+      "issue": 97
+    },
+    {
+      "id": "099",
+      "file": "099-performance-budget.md",
+      "title": "維護者可以依 38 章情境量測效能並附測試條件",
+      "epic": "quality",
+      "milestone": "M5",
+      "blocked_by": [
+        "084",
+        "066"
+      ],
+      "requirements": [],
+      "acceptance_tests": [
+        "T-119"
+      ],
+      "status": "blocked",
+      "issue": 98
+    },
+    {
+      "id": "100",
+      "file": "100-host-service-module-framework.md",
+      "title": "維運者可以在通用框架裡看模組狀態、結構化或原始編輯設定、套用前驗證並回滾",
+      "epic": "host-services",
+      "milestone": "M6",
+      "blocked_by": [
+        "022",
+        "012",
+        "029"
+      ],
+      "requirements": [
+        "HSM-001",
+        "HSM-002",
+        "HSM-003",
+        "HSM-013",
+        "HSM-014"
+      ],
+      "acceptance_tests": [
+        "T-148"
+      ],
+      "status": "blocked",
+      "issue": 107
+    },
+    {
+      "id": "101",
+      "file": "101-dns-dhcp-servers.md",
+      "title": "維運者可以管理 BIND 權威 DNS 與 DHCP（ISC／Kea）的 zone、紀錄、子網、租約",
+      "epic": "host-services",
+      "milestone": "M6",
+      "blocked_by": [
+        "100"
+      ],
+      "requirements": [
+        "HSM-004",
+        "HSM-005"
+      ],
+      "acceptance_tests": [
+        "T-140",
+        "T-141"
+      ],
+      "status": "blocked",
+      "issue": 108
+    },
+    {
+      "id": "102",
+      "file": "102-mail-servers.md",
+      "title": "維運者可以管理 Postfix／Dovecot 的網域、信箱、別名、TLS 與佇列",
+      "epic": "host-services",
+      "milestone": "M6",
+      "blocked_by": [
+        "100",
+        "011"
+      ],
+      "requirements": [
+        "HSM-006"
+      ],
+      "acceptance_tests": [
+        "T-142"
+      ],
+      "status": "blocked",
+      "issue": 109
+    },
+    {
+      "id": "103",
+      "file": "103-file-sharing-servers.md",
+      "title": "維運者可以管理 Samba 分享與 NFS exports 並看目前連線",
+      "epic": "host-services",
+      "milestone": "M6",
+      "blocked_by": [
+        "100",
+        "023"
+      ],
+      "requirements": [
+        "HSM-007"
+      ],
+      "acceptance_tests": [
+        "T-143"
+      ],
+      "status": "blocked",
+      "issue": 110
+    },
+    {
+      "id": "104",
+      "file": "104-native-web-servers.md",
+      "title": "維運者可以管理宿主機原生 Apache／Nginx 的虛擬主機與模組，並與 Zentinel 分工",
+      "epic": "host-services",
+      "milestone": "M6",
+      "blocked_by": [
+        "100",
+        "060"
+      ],
+      "requirements": [
+        "HSM-008"
+      ],
+      "acceptance_tests": [
+        "T-144"
+      ],
+      "status": "blocked",
+      "issue": 111
+    },
+    {
+      "id": "105",
+      "file": "105-logrotate-and-quotas.md",
+      "title": "維運者可以管理 logrotate 與磁碟配額",
+      "epic": "host-services",
+      "milestone": "M6",
+      "blocked_by": [
+        "100",
+        "030"
+      ],
+      "requirements": [
+        "HSM-009",
+        "HSM-010"
+      ],
+      "acceptance_tests": [
+        "T-145",
+        "T-146"
+      ],
+      "status": "blocked",
+      "issue": 112
+    },
+    {
+      "id": "106",
+      "file": "106-pam-mime-printers.md",
+      "title": "維運者可以管理 PAM、MIME 對映與 CUPS 印表機",
+      "epic": "host-services",
+      "milestone": "M6",
+      "blocked_by": [
+        "100",
+        "009"
+      ],
+      "requirements": [
+        "HSM-011",
+        "HSM-012"
+      ],
+      "acceptance_tests": [
+        "T-147"
+      ],
+      "status": "blocked",
+      "issue": 113
+    },
+    {
+      "id": "107",
+      "file": "107-resource-state-drift-impact.md",
+      "title": "維運者可以看到每個資源由誰管理、與平台紀錄差在哪，並在寫入前看到影響範圍",
+      "epic": "foundation",
+      "milestone": "M1",
+      "blocked_by": [
+        "007",
+        "008",
+        "010"
+      ],
+      "requirements": [
+        "ROB-001",
+        "ROB-002",
+        "ROB-003",
+        "ROB-006",
+        "ROB-012"
+      ],
+      "acceptance_tests": [
+        "T-157",
+        "T-158",
+        "T-159",
+        "T-162",
+        "T-169",
+        "T-170",
+        "T-173",
+        "T-176",
+        "T-177"
+      ],
+      "status": "blocked",
+      "issue": 114
+    },
+    {
+      "id": "108",
+      "file": "108-project-units-connections.md",
+      "title": "專案管理員可以在一個專案環境放多個 Compose 與 Kubernetes 部署單元，單元之間用公開變數與內部位址連線",
+      "epic": "compose",
+      "milestone": "M2",
+      "blocked_by": [
+        "044",
+        "049",
+        "086",
+        "088"
+      ],
+      "requirements": [
+        "PRJ-001",
+        "PRJ-002",
+        "PRJ-003",
+        "PRJ-004",
+        "PRJ-005",
+        "PRJ-006",
+        "PRJ-012"
+      ],
+      "acceptance_tests": [
+        "T-189",
+        "T-190",
+        "T-191",
+        "T-192",
+        "T-193",
+        "T-194",
+        "T-195",
+        "T-196",
+        "T-205",
+        "T-218"
+      ],
+      "status": "blocked",
+      "issue": 115
+    },
+    {
+      "id": "109",
+      "file": "109-env-groups-and-files.md",
+      "title": "使用者可以把環境變數分成以檔名命名的組，在每個填變數的地方上傳任意檔名的 env 檔，並看到每個服務實際收到的值",
+      "epic": "compose",
+      "milestone": "M2",
+      "blocked_by": [
+        "045",
+        "017"
+      ],
+      "requirements": [
+        "PRJ-007",
+        "PRJ-008",
+        "PRJ-009",
+        "PRJ-010",
+        "PRJ-013"
+      ],
+      "acceptance_tests": [
+        "T-197",
+        "T-198",
+        "T-199",
+        "T-200",
+        "T-201",
+        "T-206",
+        "T-207",
+        "T-213",
+        "T-214",
+        "T-215"
+      ],
+      "status": "blocked",
+      "issue": 116
+    },
+    {
+      "id": "110",
+      "file": "110-compose-semantics-zero-downtime.md",
+      "title": "部署照 Compose 與 Helm 的實際讀法處理多份 compose 檔、profile、建置變數、設定檔與 values，並且每次建置、建置完才無縫替換",
+      "epic": "compose",
+      "milestone": "M2",
+      "blocked_by": [
+        "044",
+        "046",
+        "108",
+        "109"
+      ],
+      "requirements": [
+        "PRJ-011",
+        "PRJ-014",
+        "PRJ-015"
+      ],
+      "acceptance_tests": [
+        "T-202",
+        "T-203",
+        "T-204",
+        "T-208",
+        "T-209",
+        "T-210",
+        "T-211",
+        "T-212",
+        "T-216",
+        "T-217",
+        "T-219",
+        "T-220"
+      ],
+      "status": "blocked",
+      "issue": 117
+    },
+    {
+      "id": "111",
+      "file": "111-model-hub-hf-runtime.md",
+      "title": "管理員可以建立多個模型庫、在面板搜尋並下載 Hugging Face 模型，再用內建的 vLLM 或 llama.cpp 部署推論服務",
+      "epic": "ai",
+      "milestone": "M4",
+      "blocked_by": [
+        "074",
+        "075"
+      ],
+      "requirements": [
+        "HFM-001",
+        "HFM-002",
+        "HFM-003",
+        "HFM-004",
+        "HFM-005",
+        "HFM-006",
+        "HFM-007",
+        "HFM-008"
+      ],
+      "acceptance_tests": [
+        "T-221",
+        "T-222",
+        "T-223",
+        "T-224",
+        "T-225",
+        "T-226",
+        "T-227",
+        "T-228",
+        "T-229",
+        "T-230"
+      ],
+      "status": "blocked",
+      "issue": 118
+    },
+    {
+      "id": "112",
+      "file": "112-app-template-network-mounts.md",
+      "title": "從 1Panel 商店安裝時轉換範本（網路、Port、資料路徑、資料庫連線），應用的網路與資料位置安裝時能設、之後也能隨時改",
+      "epic": "appstore",
+      "milestone": "M2",
+      "blocked_by": [
+        "052",
+        "053",
+        "109"
+      ],
+      "requirements": [
+        "APX-001",
+        "APX-002",
+        "APX-003",
+        "APX-004",
+        "APX-005",
+        "APX-006",
+        "APX-007",
+        "APX-008"
+      ],
+      "acceptance_tests": [
+        "T-234",
+        "T-235",
+        "T-236",
+        "T-237",
+        "T-238",
+        "T-239",
+        "T-240",
+        "T-241"
+      ],
+      "status": "blocked",
+      "issue": 119
+    },
+    {
+      "id": "113",
+      "file": "113-host-change-ledger.md",
+      "title": "平台對主機的每個變更都寫進變更帳本，並在安裝時記錄安裝前快照",
+      "epic": "host",
+      "milestone": "M1",
+      "blocked_by": [
+        "012"
+      ],
+      "requirements": [
+        "UNX-001",
+        "UNX-002"
+      ],
+      "acceptance_tests": [
+        "T-250"
+      ],
+      "status": "in_progress",
+      "issue": 120
+    }
+  ]
 }

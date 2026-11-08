@@ -38,3 +38,6 @@ data/
 dist/
 build/
 release/
+
+# scripts/embed-web.sh staging
+core/web/.dist.*

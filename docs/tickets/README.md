@@ -12,7 +12,7 @@
 | [002](002-design-system.md) | 設計師與開發者可以依 DESIGN.md 與互動原型審查主要畫面 | 設計系統 | — | [#2](https://github.com/HazelnutParadise/hazelminx/issues/2) | in_progress |
 | [003](003-core-skeleton.md) | 管理員可以啟動 hazelminx-core 並通過健康檢查 | 基礎建設 | 001 | [#3](https://github.com/HazelnutParadise/hazelminx/issues/3) | done |
 | [004](004-agent-skeleton.md) | 管理員可以在主機上以 systemd 執行 hazelminx-agent 並回報身分 | 節點與 Agent | 001 | [#4](https://github.com/HazelnutParadise/hazelminx/issues/4) | done |
-| [005](005-web-skeleton.md) | 使用者可以開啟 React 介面並切換語言與淺深色 | 基礎建設 | 001, 002 | [#5](https://github.com/HazelnutParadise/hazelminx/issues/5) | blocked |
+| [005](005-web-skeleton.md) | 使用者可以開啟 React 介面並切換語言與淺深色 | 基礎建設 | 001, 002 | [#5](https://github.com/HazelnutParadise/hazelminx/issues/5) | in_progress |
 | [006](006-ci-pipeline.md) | 維護者可以在 CI 建置、測試並產生各架構成品 | 發布與供應鏈 | 003, 004, 005 | [#6](https://github.com/HazelnutParadise/hazelminx/issues/6) | in_progress |
 | [007](007-core-agent-protocol.md) | Core 與 Agent 可以用版本化、雙向驗證的通道交換能力與工作事件 | 節點與 Agent | 003, 004 | [#7](https://github.com/HazelnutParadise/hazelminx/issues/7) | done |
 | [008](008-job-engine.md) | 使用者可以提交工作後關閉頁面，之後仍能查到進度、證據與結果 | 基礎建設 | 003 | [#8](https://github.com/HazelnutParadise/hazelminx/issues/8) | done |
@@ -20,6 +20,7 @@
 | [010](010-management-api-contract.md) | 整合者可以用 /management/v1 的分頁、版本條件與工作回應操作資源 | API、CLI 與整合 | 003, 008 | [#10](https://github.com/HazelnutParadise/hazelminx/issues/10) | done |
 | [011](011-secrets-and-master-key.md) | 管理員可以安全保存機密，且主金鑰可輪替並驗證舊備份仍可解密 | 基礎建設 | 003 | [#11](https://github.com/HazelnutParadise/hazelminx/issues/11) | done |
 | [012](012-privileged-executor.md) | 維運者可以執行需要高權限的固定動作，而 Agent 主程序維持低權限 | 節點與 Agent | 004 | [#12](https://github.com/HazelnutParadise/hazelminx/issues/12) | done |
+| [113](113-host-change-ledger.md) | 平台對主機的每個變更都寫進變更帳本，並在安裝時記錄安裝前快照 | 主機 | 012 | [#120](https://github.com/HazelnutParadise/hazelminx/issues/120) | ready |
 | [092](092-baseline-inventory.md) | 驗收者可以查每項 1Panel v2.4.1 OSS 功能在 HazelminX 的對應位置與狀態 | 品質與驗收 | 001 | [#91](https://github.com/HazelnutParadise/hazelminx/issues/91) | in_progress |
 | [095](095-branding-and-legal.md) | 使用者看到的品牌是 HazelminX，法律與授權資訊仍可讀且來源正確 | 基礎建設 | 005 | [#94](https://github.com/HazelnutParadise/hazelminx/issues/94) | blocked |
 
@@ -53,6 +54,9 @@
 | [036](036-platform-update.md) | 管理員可以更新 HazelminX，失敗時回到相容舊版本或進入明確復原 | 安裝、更新與卸載 | 013, 008, 007 | [#36](https://github.com/HazelnutParadise/hazelminx/issues/36) | blocked |
 | [037](037-offline-install-uninstall.md) | 管理員可以用離線包安裝，並解除安裝平台而保留應用與移交維護 | 安裝、更新與卸載 | 013 | [#37](https://github.com/HazelnutParadise/hazelminx/issues/37) | blocked |
 | [038](038-recovery-mode.md) | 擁有者可以在資料庫損壞或鎖死時用離線救援方式恢復管理 | 安裝、更新與卸載 | 013 | [#38](https://github.com/HazelnutParadise/hazelminx/issues/38) | blocked |
+| [107](107-resource-state-drift-impact.md) | 維運者可以看到每個資源由誰管理、與平台紀錄差在哪，並在寫入前看到影響範圍 | 基礎建設 | 007, 008, 010 | [#114](https://github.com/HazelnutParadise/hazelminx/issues/114) | blocked |
+
+規格增補 03（`docs/spec/addendum-03-robustness.md`，異常情境的整體處理，ROB-001～015、T-157～188、T-231～233 與 T-242～243），2026-11-07 使用者核定，ROB-013～015 於 2026-11-08 加入。ROB-001／002／003／006／012 由票 107 擁有，ROB-004／005／007／008／013 由 017、ROB-009 由 020、ROB-010／014 由 024、ROB-011 由 081、ROB-015 由 035 擁有；010、027、028、040 另有驗證條目。
 
 ## M2 容器、Compose 與 GitHub
 
@@ -71,9 +75,13 @@
 | [049](049-git-deploy.md) | 專案管理員可以從 GitHub 以固定 commit 隔離抓取、建置並部署，手動 URL／PAT／SSH 模式照常可用 | GitHub 來源 | 048, 044, 012 | [#49](https://github.com/HazelnutParadise/hazelminx/issues/49) | blocked |
 | [050](050-auto-deploy-webhooks.md) | 管理員可以設定 Webhook 或定期檢查觸發部署，並決定多環境與連續 commit 政策 | GitHub 來源 | 049 | [#50](https://github.com/HazelnutParadise/hazelminx/issues/50) | blocked |
 | [051](051-connection-sharing-rotation.md) | 管理員可以分開授權連線的查看、瀏覽、使用與管理，並安全輪替、撤銷與斷開 | GitHub 來源 | 049, 016 | [#51](https://github.com/HazelnutParadise/hazelminx/issues/51) | blocked |
+| [108](108-project-units-connections.md) | 專案管理員可以在一個專案環境放多個 Compose 與 Kubernetes 部署單元，單元之間用公開變數與內部位址連線 | Compose 部署 | 044, 049, 086, 088 | [#115](https://github.com/HazelnutParadise/hazelminx/issues/115) | blocked |
+| [109](109-env-groups-and-files.md) | 使用者可以把環境變數分成以檔名命名的組，在每個填變數的地方上傳任意檔名的 env 檔，並看到每個服務實際收到的值 | Compose 部署 | 045, 017 | [#116](https://github.com/HazelnutParadise/hazelminx/issues/116) | blocked |
+| [110](110-compose-semantics-zero-downtime.md) | 部署照 Compose 與 Helm 的實際讀法處理多份 compose 檔、profile、建置變數、設定檔與 values，並且每次建置、建置完才無縫替換 | Compose 部署 | 044, 046, 108, 109 | [#117](https://github.com/HazelnutParadise/hazelminx/issues/117) | blocked |
 | [052](052-appstore-install.md) | 管理員可以同步官方商店並安裝整套應用，選擇節點、網路、Port 與資料位置 | 應用商店 | 044, 032 | [#52](https://github.com/HazelnutParadise/hazelminx/issues/52) | blocked |
 | [053](053-appstore-update-uninstall.md) | 管理員可以編輯、更新與卸載商店應用，自訂設定不被新版覆寫 | 應用商店 | 052, 046 | [#53](https://github.com/HazelnutParadise/hazelminx/issues/53) | blocked |
 | [054](054-appstore-sources.md) | 管理員可以新增受信任的第三方商店來源與本機範本 | 應用商店 | 052 | [#54](https://github.com/HazelnutParadise/hazelminx/issues/54) | blocked |
+| [112](112-app-template-network-mounts.md) | 從 1Panel 商店安裝時轉換範本（網路、Port、資料路徑、資料庫連線），應用的網路與資料位置安裝時能設、之後也能隨時改 | 應用商店 | 052, 053, 109 | [#119](https://github.com/HazelnutParadise/hazelminx/issues/119) | blocked |
 
 ## M3 網站入口與安全防護
 
@@ -105,6 +113,7 @@
 | [074](074-ollama-models.md) | 管理員可以安裝或接管 Ollama 並管理模型的下載、刪除、複製與配額 | AI 與模型 | 052 | [#73](https://github.com/HazelnutParadise/hazelminx/issues/73) | blocked |
 | [075](075-gpu-chat-inference-api.md) | 管理員可以選 GPU、在網頁測試模型，並透過 Token 代理發布推論 API | AI 與模型 | 074, 062 | [#74](https://github.com/HazelnutParadise/hazelminx/issues/74) | blocked |
 | [076](076-baseline-ai-mcp.md) | 管理員可以保留基線 AI／MCP／Agent 能力，MCP 預設唯讀且危險操作需批准 | AI 與模型 | 074, 015 | [#75](https://github.com/HazelnutParadise/hazelminx/issues/75) | blocked |
+| [111](111-model-hub-hf-runtime.md) | 管理員可以建立多個模型庫、在面板搜尋並下載 Hugging Face 模型，再用內建的 vLLM 或 llama.cpp 部署推論服務 | AI 與模型 | 074, 075 | [#118](https://github.com/HazelnutParadise/hazelminx/issues/118) | blocked |
 | [077](077-backup-accounts.md) | 管理員可以建立本機、S3、SFTP、WebDAV、雲端硬碟與 NAS 備份目的地並測試讀寫 | 備份與還原 | 011, 017 | [#76](https://github.com/HazelnutParadise/hazelminx/issues/76) | blocked |
 | [078](078-backup-jobs.md) | 使用者可以備份應用、資料庫、目錄與平台設定，含一致性、多目的地、保留與加密 | 備份與還原 | 077, 069, 046 | [#77](https://github.com/HazelnutParadise/hazelminx/issues/77) | blocked |
 | [079](079-restore.md) | 管理員可以隔離演練還原、預覽覆寫並還原到不同節點與磁碟 | 備份與還原 | 078 | [#78](https://github.com/HazelnutParadise/hazelminx/issues/78) | blocked |
@@ -132,8 +141,32 @@
 | [098](098-release-gates-traceability.md) | 驗收者可以依 G-01 至 G-14 門檻與需求→測試→證據追溯表判定可否發布 | 品質與驗收 | 092, 097 | [#97](https://github.com/HazelnutParadise/hazelminx/issues/97) | blocked |
 | [099](099-performance-budget.md) | 維護者可以依 38 章情境量測效能並附測試條件 | 品質與驗收 | 084, 066 | [#98](https://github.com/HazelnutParadise/hazelminx/issues/98) | blocked |
 
+## M6 宿主機服務模組（Webmin 等價）
+
+規格增補 01（`docs/spec/addendum-01-host-service-modules.md`），2026-11-07 使用者核定納入。
+
+規格增補 02（`docs/spec/addendum-02-multi-environment.md`，同一台主機上的多個引擎環境，ENV-001～009、T-149～156），2026-11-07 使用者核定，驗收條件併入票 039、040、042、086。
+
+| 票 | 使用者可以做什麼 | Epic | Blocked by | Issue | 狀態 |
+|---|---|---|---|---|---|
+| [100](100-host-service-module-framework.md) | 維運者可以在通用框架裡看模組狀態、結構化或原始編輯設定、套用前驗證並回滾 | 宿主機服務模組 | 022, 012, 029 | [#107](https://github.com/HazelnutParadise/hazelminx/issues/107) | blocked |
+| [101](101-dns-dhcp-servers.md) | 維運者可以管理 BIND 權威 DNS 與 DHCP（ISC／Kea）的 zone、紀錄、子網、租約 | 宿主機服務模組 | 100 | [#108](https://github.com/HazelnutParadise/hazelminx/issues/108) | blocked |
+| [102](102-mail-servers.md) | 維運者可以管理 Postfix／Dovecot 的網域、信箱、別名、TLS 與佇列 | 宿主機服務模組 | 100, 011 | [#109](https://github.com/HazelnutParadise/hazelminx/issues/109) | blocked |
+| [103](103-file-sharing-servers.md) | 維運者可以管理 Samba 分享與 NFS exports 並看目前連線 | 宿主機服務模組 | 100, 023 | [#110](https://github.com/HazelnutParadise/hazelminx/issues/110) | blocked |
+| [104](104-native-web-servers.md) | 維運者可以管理宿主機原生 Apache／Nginx 的虛擬主機與模組，並與 Zentinel 分工 | 宿主機服務模組 | 100, 060 | [#111](https://github.com/HazelnutParadise/hazelminx/issues/111) | blocked |
+| [105](105-logrotate-and-quotas.md) | 維運者可以管理 logrotate 與磁碟配額 | 宿主機服務模組 | 100, 030 | [#112](https://github.com/HazelnutParadise/hazelminx/issues/112) | blocked |
+| [106](106-pam-mime-printers.md) | 維運者可以管理 PAM、MIME 對映與 CUPS 印表機 | 宿主機服務模組 | 100, 009 | [#113](https://github.com/HazelnutParadise/hazelminx/issues/113) | blocked |
+
+規格增補 04（`docs/spec/addendum-04-project-units.md`，專案的部署單元、單元之間的連線與 env 檔，PRJ-001～015、T-189～220），2026-11-08 使用者核定。由票 108、109、110 擁有。
+
+規格增補 05（`docs/spec/addendum-05-model-hub.md`，內建 Hugging Face 模型 runtime 與模型庫，HFM-001～008、T-221～230），2026-11-08 使用者核定。由票 111 擁有。
+
+規格增補 06（`docs/spec/addendum-06-app-network-mounts.md`，1Panel 商店範本的轉換，以及應用的網路與資料掛載，APX-001～008、T-234～241），2026-11-08 使用者核定（含 54.1 網路模型）。由票 112 擁有。
+
+規格增補 07（`docs/spec/addendum-07-clean-uninstall.md`，主機變更帳本與完全移除，UNX-001～007、T-244～251），2026-11-08 使用者核定。UNX-001／002 由票 113 擁有，UNX-003～007 由 037 擁有。
+
 ## 覆蓋檢查
 
-- 規格需求 449 條，已指派擁有票 449 條，未指派 0 條。
-- 驗收案例 186 個，已連到票 186 個。
+- 規格需求 449 條＋增補 01 的 14 條＋增補 02 的 9 條＋增補 03 的 15 條＋增補 04 的 15 條＋增補 05 的 8 條＋增補 06 的 8 條＋增補 07 的 7 條，已指派擁有票 525 條，未指派 0 條。
+- 驗收案例 186 個＋增補 01 的 9 個＋增補 02 的 8 個＋增補 03 的 37 個＋增補 04 的 32 個＋增補 05 的 10 個＋增補 06 的 8 個＋增補 07 的 8 個，已連到票 298 個。
 - 本檔由 `docs/tickets/traceability.json` 同步產生；修改票的需求範圍時同時更新兩者。

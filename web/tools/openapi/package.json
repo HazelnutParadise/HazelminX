@@ -1,0 +1,10 @@
+{
+  "name": "hazelminx-openapi-gen",
+  "private": true,
+  "description": "Generates web/src/api/schema.gen.ts from Core's OpenAPI document. Separate package because openapi-typescript needs the TypeScript 5 compiler API, which TypeScript 7 does not ship.",
+  "type": "module",
+  "devDependencies": {
+    "openapi-typescript": "7.13.0",
+    "typescript": "5.9.3"
+  }
+}
