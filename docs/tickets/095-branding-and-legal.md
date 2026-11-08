@@ -4,7 +4,7 @@
 **User Story:** 使用者可以在一致的介面完成日常管理  
 **Milestone:** M0 基礎與設計  
 **Blocked by:** [005 使用者可以開啟 React 介面並切換語言與淺深色](005-web-skeleton.md)  
-**Status:** blocked  
+**Status:** ready  
 **規格章節:** 44｜遷移、授權與長期維護  
 **Issue:** [#94](https://github.com/HazelnutParadise/hazelminx/issues/94)  
 

@@ -4,7 +4,7 @@
 **User Story:** 使用者可以在一致的介面完成日常管理  
 **Milestone:** M0 基礎與設計  
 **Blocked by:** [001 維護者可以在單一 repo 取得規格、架構決策、票務與工作規則](001-repo-scaffold.md), [002 設計師與開發者可以依 DESIGN.md 與互動原型審查主要畫面](002-design-system.md)  
-**Status:** in_progress  
+**Status:** done  
 **規格章節:** 07｜介面與操作體驗  
 **Issue:** [#5](https://github.com/HazelnutParadise/hazelminx/issues/5)  
 

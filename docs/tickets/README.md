@@ -12,7 +12,7 @@
 | [002](002-design-system.md) | 設計師與開發者可以依 DESIGN.md 與互動原型審查主要畫面 | 設計系統 | — | [#2](https://github.com/HazelnutParadise/hazelminx/issues/2) | in_progress |
 | [003](003-core-skeleton.md) | 管理員可以啟動 hazelminx-core 並通過健康檢查 | 基礎建設 | 001 | [#3](https://github.com/HazelnutParadise/hazelminx/issues/3) | done |
 | [004](004-agent-skeleton.md) | 管理員可以在主機上以 systemd 執行 hazelminx-agent 並回報身分 | 節點與 Agent | 001 | [#4](https://github.com/HazelnutParadise/hazelminx/issues/4) | done |
-| [005](005-web-skeleton.md) | 使用者可以開啟 React 介面並切換語言與淺深色 | 基礎建設 | 001, 002 | [#5](https://github.com/HazelnutParadise/hazelminx/issues/5) | in_progress |
+| [005](005-web-skeleton.md) | 使用者可以開啟 React 介面並切換語言與淺深色 | 基礎建設 | 001, 002 | [#5](https://github.com/HazelnutParadise/hazelminx/issues/5) | done |
 | [006](006-ci-pipeline.md) | 維護者可以在 CI 建置、測試並產生各架構成品 | 發布與供應鏈 | 003, 004, 005 | [#6](https://github.com/HazelnutParadise/hazelminx/issues/6) | in_progress |
 | [007](007-core-agent-protocol.md) | Core 與 Agent 可以用版本化、雙向驗證的通道交換能力與工作事件 | 節點與 Agent | 003, 004 | [#7](https://github.com/HazelnutParadise/hazelminx/issues/7) | done |
 | [008](008-job-engine.md) | 使用者可以提交工作後關閉頁面，之後仍能查到進度、證據與結果 | 基礎建設 | 003 | [#8](https://github.com/HazelnutParadise/hazelminx/issues/8) | done |
@@ -22,7 +22,7 @@
 | [012](012-privileged-executor.md) | 維運者可以執行需要高權限的固定動作，而 Agent 主程序維持低權限 | 節點與 Agent | 004 | [#12](https://github.com/HazelnutParadise/hazelminx/issues/12) | done |
 | [113](113-host-change-ledger.md) | 平台對主機的每個變更都寫進變更帳本，並在安裝時記錄安裝前快照 | 主機 | 012 | [#120](https://github.com/HazelnutParadise/hazelminx/issues/120) | done |
 | [092](092-baseline-inventory.md) | 驗收者可以查每項 1Panel v2.4.1 OSS 功能在 HazelminX 的對應位置與狀態 | 品質與驗收 | 001 | [#91](https://github.com/HazelnutParadise/hazelminx/issues/91) | in_progress |
-| [095](095-branding-and-legal.md) | 使用者看到的品牌是 HazelminX，法律與授權資訊仍可讀且來源正確 | 基礎建設 | 005 | [#94](https://github.com/HazelnutParadise/hazelminx/issues/94) | blocked |
+| [095](095-branding-and-legal.md) | 使用者看到的品牌是 HazelminX，法律與授權資訊仍可讀且來源正確 | 基礎建設 | 005 | [#94](https://github.com/HazelnutParadise/hazelminx/issues/94) | ready |
 
 ## M1 單機主機管理
 
@@ -32,7 +32,7 @@
 | [014](014-mfa-and-sessions.md) | 使用者可以設定 TOTP、Passkey、復原碼並檢視與撤銷自己的工作階段 | 身分與存取 | 009 | [#14](https://github.com/HazelnutParadise/hazelminx/issues/14) | done |
 | [015](015-users-roles-tokens.md) | 擁有者可以管理使用者、角色、資源範圍與有期限的 API Token | 身分與存取 | 009, 010 | [#15](https://github.com/HazelnutParadise/hazelminx/issues/15) | ready |
 | [016](016-change-plans.md) | 管理員可以預覽並批准高風險變更計畫，內容改變時原批准失效 | 身分與存取 | 008, 010 | [#16](https://github.com/HazelnutParadise/hazelminx/issues/16) | ready |
-| [017](017-ui-shell.md) | 使用者可以在主導覽、全域搜尋與工作中心之間完成日常操作 | 基礎建設 | 005, 008, 010 | [#17](https://github.com/HazelnutParadise/hazelminx/issues/17) | blocked |
+| [017](017-ui-shell.md) | 使用者可以在主導覽、全域搜尋與工作中心之間完成日常操作 | 基礎建設 | 005, 008, 010 | [#17](https://github.com/HazelnutParadise/hazelminx/issues/17) | ready |
 | [018](018-platform-settings.md) | 管理員可以設定面板名稱、時區、入口、通知、更新通道與遙測 | 基礎建設 | 017 | [#18](https://github.com/HazelnutParadise/hazelminx/issues/18) | blocked |
 | [019](019-node-enrollment.md) | 管理員可以用一次性註冊碼加入節點，並看到離線、過期、維護與撤銷狀態 | 節點與 Agent | 004, 007, 009 | [#19](https://github.com/HazelnutParadise/hazelminx/issues/19) | blocked |
 | [020](020-host-overview-monitoring.md) | 維運者可以查看主機資訊、資源指標與歷史趨勢 | 主機管理 | 019, 017 | [#20](https://github.com/HazelnutParadise/hazelminx/issues/20) | blocked |
