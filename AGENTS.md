@@ -54,7 +54,6 @@
 - 背景列表查詢在執行期間會輪流佔用唯一的 SQLite 連線（`store` 設 `SetMaxOpenConns(1)`），大型稽核表上沒有索引的篩選會拖慢其他 API。加讀取用的第二個連線池時，背景查詢要改用它。
 - IAM 的寫入端點（建帳號、改帳號、指派與撤銷角色）還沒經過 `Server.writeBlockers`，平台資料庫唯讀時會回 `INTERNAL` 而不是 `PLATFORM_DEGRADED`。票 017 接上降級偵測時一起處理。
 - ROB-010 確認比對的 `Host` 是用戶端送來的標頭。瀏覽器無法偽造，但腳本或 API Token 可以從舊入口送新的 Host，確認一個其實連不到的網域變更。票 024 決定是否改比 TLS SNI，或限制網域變更只接受瀏覽器工作階段確認。
-- GitHub issue #10（票 010）還開著：PR #121 已合併進 `main`（`d5c590a`），關閉 issue 時附上 PR 連結。
 - PR #123（票 014）新增的 `0006_mfa_sessions.sql` 與 `main` 上的 `0006_management_contract.sql` 重號，合併前改成 `0007` 並更新票 014 的引用。
 - 票 010 的「設計缺口」一節列出 API 已有、畫面還沒畫的狀態（列表邊界、背景查詢、錯誤呈現、版本過期、影響預覽、確認倒數），由設計端補進 `docs/design/`。
 - 寫入閘門的 `RESOURCE_READ_ONLY`、`CONTROLLER_CONFLICT`、`SCOPE_DEGRADED`、`RESOURCE_REFERENCED` 目前只有單元測試；第一個有受管資源端點的票接上 `ResourceState` 時，補一條經 API 拒絕的測試。
