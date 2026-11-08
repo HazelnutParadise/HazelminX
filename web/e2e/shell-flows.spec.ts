@@ -152,3 +152,17 @@ test("seeded light mode applies before first paint", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("data-mode", "light");
 });
+
+test("crossing the phone breakpoint keeps the page mounted (no lost input)", async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 800 });
+  await page.goto("/settings");
+  await page.locator("main h1").waitFor();
+  await page.evaluate(() => ((document.querySelector("main h1") as HTMLElement & { _mark?: number })._mark = 1));
+  await page.setViewportSize({ width: 600, height: 800 });
+  await expect(page.locator(".hx-chiprow")).toBeVisible();
+  await page.setViewportSize({ width: 1024, height: 800 });
+  await expect(page.getByRole("button", { name: "收合側欄" })).toBeVisible();
+  expect(await page.evaluate(() => (document.querySelector("main h1") as HTMLElement & { _mark?: number })._mark)).toBe(
+    1,
+  );
+});

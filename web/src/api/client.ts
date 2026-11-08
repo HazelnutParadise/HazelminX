@@ -87,7 +87,10 @@ export async function apiFetch<T>(
   req: ApiRequest = {},
   deps: { fetchImpl?: typeof fetch; cookies?: () => string } = {},
 ): Promise<T> {
-  if (!path.startsWith("/")) throw new TypeError(`apiFetch path must start with "/": ${path}`);
+  // "//host/x" is protocol-relative: it would send the request, and the CSRF token, to another origin.
+  if (!path.startsWith("/") || path.startsWith("//")) {
+    throw new TypeError(`apiFetch path must be an absolute path on this origin: ${path}`);
+  }
   const fetchImpl = deps.fetchImpl ?? ((input, init) => fetch(input, init));
   const cookies = deps.cookies ?? (() => document.cookie);
   const method = req.method ?? "GET";
@@ -108,13 +111,30 @@ export async function apiFetch<T>(
   try {
     res = await fetchImpl(path, init);
   } catch (err) {
+    // A caller's abort rejects with the signal's reason (AbortError, TimeoutError or anything passed to abort()).
+    if (req.signal?.aborted) throw req.signal.reason ?? err;
     const name = typeof err === "object" && err !== null && "name" in err ? String(err.name) : "Error";
     if (name === "AbortError") throw err;
     const message = typeof err === "object" && err !== null && "message" in err ? String(err.message) : String(err);
     throw new ApiError({ status: 0, code: "NETWORK_ERROR", message, raw: `${name}: ${message}` });
   }
 
-  const text = await res.text();
+  let text: string;
+  try {
+    text = await res.text();
+  } catch (err) {
+    // The connection dropped after the headers arrived (Core restarting, proxy timeout).
+    if (req.signal?.aborted) throw req.signal.reason ?? err;
+    const name = typeof err === "object" && err !== null && "name" in err ? String(err.name) : "Error";
+    const message = typeof err === "object" && err !== null && "message" in err ? String(err.message) : String(err);
+    throw new ApiError({
+      status: res.status,
+      code: "NETWORK_ERROR",
+      message,
+      raw: `${name}: ${message}`,
+      traceId: res.headers.get(TRACE_HEADER) ?? undefined,
+    });
+  }
   if (res.ok) {
     if (res.status === 204 || text === "") return undefined as T;
     try {

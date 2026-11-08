@@ -38,27 +38,20 @@ export function AppShell() {
           hostHref={(id) => `${PAGES.nodes.path}/${encodeURIComponent(id)}`}
         />
       )}
-      {mobile ? (
-        <div className="hx-body hx-body--mobile">
-          <MobileNav />
-          <main id="main" className="hx-main" tabIndex={-1}>
-            <Outlet />
-          </main>
-        </div>
-      ) : (
-        <Sidebar.Provider
-          className="hx-body"
-          open={sidebarOpen}
-          collapsible="icon"
-          mobileBreakpoint={0}
-          onOpenChange={onSidebarChange}
-        >
-          <SideNav />
-          <main id="main" className="hx-main" tabIndex={-1}>
-            <Outlet />
-          </main>
-        </Sidebar.Provider>
-      )}
+      {/* One tree for every width: <main> keeps its position, so crossing the phone breakpoint
+          swaps only the navigation and never remounts the page (no lost input). */}
+      <Sidebar.Provider
+        className={mobile ? "hx-body hx-body--mobile" : "hx-body"}
+        open={sidebarOpen}
+        collapsible="icon"
+        mobileBreakpoint={0}
+        onOpenChange={onSidebarChange}
+      >
+        {mobile ? <MobileNav /> : <SideNav />}
+        <main id="main" className="hx-main" tabIndex={-1}>
+          <Outlet />
+        </main>
+      </Sidebar.Provider>
     </div>
   );
 }

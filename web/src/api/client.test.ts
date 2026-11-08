@@ -182,6 +182,40 @@ describe("apiFetch", () => {
     expect(err.raw).toBe(body);
   });
 
+  it("rejects protocol-relative paths so the CSRF token never leaves this origin", async () => {
+    const fetchImpl = fakeFetch(() => jsonResponse({}));
+    await expect(
+      apiFetch("//evil.example/x", { method: "POST" }, depsWith(fetchImpl, "hazelminx_csrf=tok")),
+    ).rejects.toThrow(TypeError);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("rethrows the abort reason when the caller's signal aborted with one (e.g. a timeout)", async () => {
+    const controller = new AbortController();
+    const reason = new DOMException("t", "TimeoutError");
+    controller.abort(reason);
+    const fetchImpl = fakeFetch(() => {
+      throw reason;
+    });
+    const err = await rejectionOf(apiFetch("/management/v1/x", { signal: controller.signal }, depsWith(fetchImpl, "")));
+    expect(err).toBe(reason);
+  });
+
+  it("wraps a connection drop while reading the body as NETWORK_ERROR with the status and trace id", async () => {
+    const stream = new ReadableStream({
+      start(c) {
+        c.enqueue(new TextEncoder().encode("{"));
+        c.error(new TypeError("network error"));
+      },
+    });
+    const fetchImpl = fakeFetch(() => new Response(stream, { status: 200, headers: { "X-Trace-ID": "h9" } }));
+    const err = (await rejectionOf(apiFetch("/management/v1/x", {}, depsWith(fetchImpl, "")))) as ApiError;
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err.code).toBe("NETWORK_ERROR");
+    expect(err.status).toBe(200);
+    expect(err.traceId).toBe("h9");
+  });
+
   it("wraps a network failure as status 0 with code NETWORK_ERROR", async () => {
     const fetchImpl = fakeFetch(() => {
       throw new TypeError("Failed to fetch");

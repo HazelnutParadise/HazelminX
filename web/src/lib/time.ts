@@ -96,10 +96,20 @@ export function formatElapsed(fromIso: string, now: Date, locale: string): strin
     const next = parts[first + 1];
     if (next && next[1] > 0) duration[next[0]] = next[1];
   }
-  const { DurationFormat } = Intl as unknown as { DurationFormat: DurationFormatCtor };
-  return new DurationFormat(locale, { style: "short", secondsDisplay: first === -1 ? "always" : "auto" }).format(
-    duration,
-  );
+  const { DurationFormat } = Intl as unknown as { DurationFormat?: DurationFormatCtor };
+  if (DurationFormat) {
+    return new DurationFormat(locale, { style: "short", secondsDisplay: first === -1 ? "always" : "auto" }).format(
+      duration,
+    );
+  }
+  // Browsers without Intl.DurationFormat (Chrome < 129, Firefox < 136): format each unit on its own.
+  const units = { days: "day", hours: "hour", minutes: "minute", seconds: "second" } as const;
+  return (Object.keys(units) as (keyof typeof units)[])
+    .filter((k) => duration[k] !== undefined)
+    .map((k) =>
+      new Intl.NumberFormat(locale, { style: "unit", unit: units[k], unitDisplay: "short" }).format(duration[k]!),
+    )
+    .join(" ");
 }
 
 /** The browser's IANA time zone, falling back to "UTC" when the runtime reports none. */

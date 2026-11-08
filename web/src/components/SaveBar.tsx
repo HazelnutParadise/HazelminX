@@ -39,10 +39,12 @@ export function SaveBar({ changes, effect, saveLabel, onSave, onDiscard, seconda
   const isMac = useMemo(() => checkIsMac(), []);
 
   useEffect(() => {
+    if (changes <= 0) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && (e.key === "s" || e.key === "S")) {
         e.preventDefault();
-        if (!saving) {
+        // Holding the keys auto-repeats, and an IME may still be composing: save once, on a real press.
+        if (!saving && !e.repeat && !e.isComposing) {
           onSave();
         }
       }
@@ -52,7 +54,7 @@ export function SaveBar({ changes, effect, saveLabel, onSave, onDiscard, seconda
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [saving, onSave]);
+  }, [changes, saving, onSave]);
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { MemoryRouter } from "react-router";
 import { beforeAll, describe, expect, it, vi } from "vite-plus/test";
@@ -71,6 +71,26 @@ describe("SaveBar", () => {
     rerender(<SaveBar changes={1} {...props} saving onSave={onSave} onDiscard={vi.fn()} />);
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "s", ctrlKey: true, cancelable: true }));
     expect(onSave).toHaveBeenCalledTimes(2);
+  });
+
+  it("leaves Ctrl+S alone when there is nothing to save", () => {
+    const onSave = vi.fn();
+    render(<SaveBar changes={0} {...props} onSave={onSave} onDiscard={vi.fn()} />);
+    const ev = new KeyboardEvent("keydown", { key: "s", ctrlKey: true, cancelable: true });
+    window.dispatchEvent(ev);
+    expect(onSave).not.toHaveBeenCalled();
+    expect(ev.defaultPrevented).toBe(false);
+  });
+
+  it("ignores auto-repeat and IME composition so holding ⌘S saves once", () => {
+    const onSave = vi.fn();
+    render(<SaveBar changes={1} {...props} onSave={onSave} onDiscard={vi.fn()} />);
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "s", metaKey: true, cancelable: true }));
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "s", metaKey: true, repeat: true, cancelable: true }));
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "s", metaKey: true, isComposing: true, cancelable: true }),
+    );
+    expect(onSave).toHaveBeenCalledTimes(1);
   });
 
   it("asks before the page unloads while changes are unsaved", () => {
@@ -154,6 +174,23 @@ describe("ComponentDownBanner", () => {
     expect(alert.querySelector("pre")!.textContent).toBe("line one\nline two");
     fireEvent.click(within(alert).getByRole("button", { name: /重啟 Zentinel/ }));
     expect(base.onRestart).toHaveBeenCalled();
+  });
+
+  it("keeps counting the stopped time when no reference time is passed", () => {
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "Date"] });
+    try {
+      vi.setSystemTime(new Date("2026-11-08T03:30:05Z"));
+      const { now: _ignored, ...rest } = base;
+      void _ignored;
+      render(<ComponentDownBanner {...rest} canRestart />);
+      expect(screen.getByRole("alert")).toHaveTextContent("5 秒");
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+      expect(screen.getByRole("alert")).toHaveTextContent("1 分鐘 5 秒");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("keeps the restart button visible but disabled without permission", () => {

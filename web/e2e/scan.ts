@@ -27,7 +27,7 @@ export async function axeViolations(page: Page): Promise<string[]> {
  * Text contrast computed directly: every element with its own visible text against the composited
  * background of its ancestors. axe marks text over pseudo-elements or color-mix() fills as "incomplete"
  * rather than failing it (it missed Kumo's white-on-hazel primary button), so this check fills that gap.
- * Disabled controls and content under opacity < 1 are exempt (WCAG 1.4.3 inactive components).
+ * Only disabled controls are exempt (WCAG 1.4.3 inactive components); opacity is multiplied into the text color.
  */
 export async function contrastIssues(page: Page): Promise<string[]> {
   return page.evaluate(() => {
@@ -61,18 +61,22 @@ export async function contrastIssues(page: Page): Promise<string[]> {
       // Measure the text itself: wrappers with display: contents have no box of their own.
       const range = document.createRange();
       range.selectNodeContents(text);
-      const r = range.getBoundingClientRect();
+      let r = range.getBoundingClientRect();
       if (cs.visibility === "hidden" || r.width === 0 || r.height === 0) continue;
       if (el.closest("[disabled], [aria-disabled='true'], [hidden]")) continue;
-      let faded = false;
-      for (let p: HTMLElement | null = el; p; p = p.parentElement)
-        if (parseFloat(getComputedStyle(p).opacity) < 1) faded = true;
-      // What is actually painted under the text: the hit-test stack below the element at its center,
-      // which includes absolutely positioned siblings (Kumo paints button gradients on a sibling span).
-      const below = document
-        .elementsFromPoint(r.left + r.width / 2, r.top + r.height / 2)
-        .filter((n) => n !== el && !el.contains(n) && n instanceof HTMLElement) as HTMLElement[];
-      const stack = [...below];
+      let opacity = 1;
+      for (let p: HTMLElement | null = el; p; p = p.parentElement) opacity *= parseFloat(getComputedStyle(p).opacity);
+      // Hit-testing only works inside the viewport: bring the text into view first.
+      if (r.top < 0 || r.bottom > innerHeight || r.left < 0 || r.right > innerWidth) {
+        el.scrollIntoView({ block: "center", inline: "center" });
+        r = range.getBoundingClientRect();
+      }
+      // What is painted under the text: the hit-test stack below the element at its center. It includes
+      // absolutely positioned siblings (Kumo paints button gradients on a sibling span) and skips anything
+      // stacked on top of the text (a sticky bar covering it).
+      const hits = document.elementsFromPoint(r.left + r.width / 2, r.top + r.height / 2) as HTMLElement[];
+      const at = hits.findIndex((n) => n === el || n.contains(el) || el.contains(n));
+      const stack = at === -1 ? [] : hits.slice(at).filter((n) => n !== el && !el.contains(n));
       if (!stack.length) for (let p = el.parentElement; p; p = p.parentElement) stack.push(p);
       const layers: number[][] = [];
       // Gradient fills are checked against every color stop: worst case wins.
@@ -91,13 +95,14 @@ export async function contrastIssues(page: Page): Promise<string[]> {
         if (bg[3] > 0) layers.push(bg);
         if (bg[3] >= 1) break;
       }
-      if (faded || unknown) continue;
+      if (unknown) continue;
       let base = [255, 255, 255, 1];
       for (const l of layers.reverse()) base = over(l, base);
       const size = parseFloat(cs.fontSize);
       const large = size >= 24 || (size >= 18.66 && parseInt(cs.fontWeight) >= 700);
       for (const bg of stops.length ? stops.map((s) => over(s, base)) : [base]) {
-        const fg = over(rgba(cs.color), bg);
+        const c = rgba(cs.color);
+        const fg = over([c[0], c[1], c[2], c[3] * opacity], bg);
         const [a, b] = [lum(fg), lum(bg)].sort((x, y) => y - x);
         const ratio = (a + 0.05) / (b + 0.05);
         if (ratio < (large ? 3 : 4.5)) {

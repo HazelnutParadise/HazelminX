@@ -130,6 +130,21 @@ describe("formatElapsed", () => {
     expect(formatElapsed("2026-11-08T02:42:01Z", now, "zh-Hant-TW")).toBe("1 小時");
   });
 
+  it("falls back to unit formatting when Intl.DurationFormat is missing (older browsers)", () => {
+    const saved = (Intl as unknown as Record<string, unknown>).DurationFormat;
+    delete (Intl as unknown as Record<string, unknown>).DurationFormat;
+    try {
+      const unit = (u: string, n: number, l: string) =>
+        new Intl.NumberFormat(l, { style: "unit", unit: u, unitDisplay: "short" }).format(n);
+      expect(formatElapsed("2026-11-08T03:30:00Z", now, "en")).toBe(
+        `${unit("minute", 12, "en")} ${unit("second", 6, "en")}`,
+      );
+      expect(formatElapsed("2026-11-08T03:42:06Z", now, "zh-Hant-TW")).toBe(unit("second", 0, "zh-Hant-TW"));
+    } finally {
+      (Intl as unknown as Record<string, unknown>).DurationFormat = saved;
+    }
+  });
+
   it("returns null when fromIso is after now", () => {
     expect(formatElapsed("2026-11-08T03:42:07Z", now, "en")).toBeNull();
   });

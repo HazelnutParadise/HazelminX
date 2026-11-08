@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Tooltip } from "@cloudflare/kumo/components/tooltip";
 import { ArrowClockwiseIcon, LockIcon, ScrollIcon } from "@phosphor-icons/react";
@@ -55,7 +55,13 @@ export function ComponentDownBanner({
   onViewLogs,
 }: ComponentDownBannerProps) {
   const { t } = useTranslation();
-  const [fallbackNow] = useState(() => new Date());
+  const [fallbackNow, setFallbackNow] = useState(() => new Date());
+  useEffect(() => {
+    if (now) return;
+    // Without a reference time from the caller, keep the stopped duration current.
+    const id = window.setInterval(() => setFallbackNow(new Date()), 30_000);
+    return () => window.clearInterval(id);
+  }, [now]);
   const currentLocale = activeLocale();
   const elapsed = formatElapsed(stoppedAt, now ?? fallbackNow, currentLocale);
   const duration = elapsed ?? t("unknown");
