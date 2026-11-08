@@ -10,10 +10,10 @@
 |---|---|---|---|---|---|
 | [001](001-repo-scaffold.md) | 維護者可以在單一 repo 取得規格、架構決策、票務與工作規則 | 基礎建設 | — | [#1](https://github.com/HazelnutParadise/hazelminx/issues/1) | done |
 | [002](002-design-system.md) | 設計師與開發者可以依 DESIGN.md 與互動原型審查主要畫面 | 設計系統 | — | [#2](https://github.com/HazelnutParadise/hazelminx/issues/2) | in_progress |
-| [003](003-core-skeleton.md) | 管理員可以啟動 hazelminx-core 並通過健康檢查 | 基礎建設 | 001 | [#3](https://github.com/HazelnutParadise/hazelminx/issues/3) | in_progress |
+| [003](003-core-skeleton.md) | 管理員可以啟動 hazelminx-core 並通過健康檢查 | 基礎建設 | 001 | [#3](https://github.com/HazelnutParadise/hazelminx/issues/3) | done |
 | [004](004-agent-skeleton.md) | 管理員可以在主機上以 systemd 執行 hazelminx-agent 並回報身分 | 節點與 Agent | 001 | [#4](https://github.com/HazelnutParadise/hazelminx/issues/4) | done |
 | [005](005-web-skeleton.md) | 使用者可以開啟 React 介面並切換語言與淺深色 | 基礎建設 | 001, 002 | [#5](https://github.com/HazelnutParadise/hazelminx/issues/5) | blocked |
-| [006](006-ci-pipeline.md) | 維護者可以在 CI 建置、測試並產生各架構成品 | 發布與供應鏈 | 003, 004, 005 | [#6](https://github.com/HazelnutParadise/hazelminx/issues/6) | blocked |
+| [006](006-ci-pipeline.md) | 維護者可以在 CI 建置、測試並產生各架構成品 | 發布與供應鏈 | 003, 004, 005 | [#6](https://github.com/HazelnutParadise/hazelminx/issues/6) | in_progress |
 | [007](007-core-agent-protocol.md) | Core 與 Agent 可以用版本化、雙向驗證的通道交換能力與工作事件 | 節點與 Agent | 003, 004 | [#7](https://github.com/HazelnutParadise/hazelminx/issues/7) | done |
 | [008](008-job-engine.md) | 使用者可以提交工作後關閉頁面，之後仍能查到進度、證據與結果 | 基礎建設 | 003 | [#8](https://github.com/HazelnutParadise/hazelminx/issues/8) | done |
 | [009](009-iam-foundation.md) | 擁有者可以登入、建立帳號與角色，未授權的 API 呼叫一律被拒絕 | 身分與存取 | 003 | [#9](https://github.com/HazelnutParadise/hazelminx/issues/9) | done |
@@ -27,7 +27,7 @@
 
 | 票 | 使用者可以做什麼 | Epic | Blocked by | Issue | 狀態 |
 |---|---|---|---|---|---|
-| [013](013-one-line-install.md) | 管理員可以一行安裝單機模式、重開機後登入，且安裝不需要任何編譯器 | 安裝、更新與卸載 | 003, 004, 009, 012 | [#13](https://github.com/HazelnutParadise/hazelminx/issues/13) | blocked |
+| [013](013-one-line-install.md) | 管理員可以一行安裝單機模式、重開機後登入，且安裝不需要任何編譯器 | 安裝、更新與卸載 | 003, 004, 009, 012 | [#13](https://github.com/HazelnutParadise/hazelminx/issues/13) | ready |
 | [014](014-mfa-and-sessions.md) | 使用者可以設定 TOTP、Passkey、復原碼並檢視與撤銷自己的工作階段 | 身分與存取 | 009 | [#14](https://github.com/HazelnutParadise/hazelminx/issues/14) | done |
 | [015](015-users-roles-tokens.md) | 擁有者可以管理使用者、角色、資源範圍與有期限的 API Token | 身分與存取 | 009, 010 | [#15](https://github.com/HazelnutParadise/hazelminx/issues/15) | ready |
 | [016](016-change-plans.md) | 管理員可以預覽並批准高風險變更計畫，內容改變時原批准失效 | 身分與存取 | 008, 010 | [#16](https://github.com/HazelnutParadise/hazelminx/issues/16) | ready |
