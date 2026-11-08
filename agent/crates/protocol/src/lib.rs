@@ -395,24 +395,68 @@ pub fn negotiate(ours: ProtocolRange, theirs: ProtocolRange) -> Result<u32, Inco
     }
 }
 
-/// The exact bytes each side signs (docs/contracts/README.md). It covers
-/// both nonces and both key-exchange public keys, so a proxy that swaps a
-/// kex key breaks the signatures.
-#[allow(clippy::too_many_arguments)]
-pub fn transcript(
-    role: Role,
-    agent_nonce: &str,
-    core_nonce: &str,
-    agent_kex: &str,
-    core_kex: &str,
-    protocol_version: u32,
-    node_fingerprint: &str,
-    session_id: &str,
-) -> String {
+/// Everything a handshake signature covers.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TranscriptInput<'a> {
+    pub agent_nonce: &'a str,
+    pub core_nonce: &'a str,
+    pub agent_kex: &'a str,
+    pub core_kex: &'a str,
+    pub protocol_version: u32,
+    pub node_fingerprint: &'a str,
+    pub session_id: &'a str,
+    /// [`hello_digest`] of the hello exactly as sent and received.
+    pub hello_digest: &'a str,
+    /// [`welcome_digest`] of the welcome's other fields.
+    pub welcome_digest: &'a str,
+}
+
+/// The exact text each side signs (docs/contracts/README.md). It covers
+/// both nonces, both key-exchange keys, the whole hello and the welcome's
+/// parameters, so a proxy that changes any of them breaks the signatures.
+pub fn transcript(role: Role, t: &TranscriptInput<'_>) -> String {
     format!(
-        "{TRANSCRIPT_DOMAIN}\n{}\n{agent_nonce}\n{core_nonce}\n{agent_kex}\n{core_kex}\n{protocol_version}\n{node_fingerprint}\n{session_id}\n",
-        role.as_str()
+        "{TRANSCRIPT_DOMAIN}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n",
+        role.as_str(),
+        t.agent_nonce,
+        t.core_nonce,
+        t.agent_kex,
+        t.core_kex,
+        t.protocol_version,
+        t.node_fingerprint,
+        t.session_id,
+        t.hello_digest,
+        t.welcome_digest
     )
+}
+
+/// Lowercase hex SHA-256 of the hello text.
+pub fn hello_digest(raw: &str) -> String {
+    use sha2::{Digest, Sha256};
+    hex::encode(Sha256::digest(raw.as_bytes()))
+}
+
+/// Lowercase hex SHA-256 of the welcome fields the transcript does not list
+/// one by one, length-prefixed so it does not depend on JSON formatting:
+/// lp("hazelminx-welcome-v1"), lp(coreVersion), be32(heartbeatSeconds),
+/// be32(len(caps)), then lp(name) and be32(version) per capability, where
+/// lp(x) = be32(len(x)) || x.
+pub fn welcome_digest(core_version: &str, heartbeat_seconds: u32, caps: &[Capability]) -> String {
+    use sha2::{Digest, Sha256};
+    let mut h = Sha256::new();
+    let lp = |h: &mut Sha256, x: &str| {
+        h.update((x.len() as u32).to_be_bytes());
+        h.update(x.as_bytes());
+    };
+    lp(&mut h, "hazelminx-welcome-v1");
+    lp(&mut h, core_version);
+    h.update(heartbeat_seconds.to_be_bytes());
+    h.update((caps.len() as u32).to_be_bytes());
+    for c in caps {
+        lp(&mut h, &c.name);
+        h.update(c.version.to_be_bytes());
+    }
+    hex::encode(h.finalize())
 }
 
 /// Node fingerprint: lowercase hex SHA-256 of the raw 32-byte Ed25519 key.

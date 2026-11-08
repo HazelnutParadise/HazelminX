@@ -59,11 +59,11 @@ type Action struct {
 func (r *StepRunner) Execute(ctx context.Context, job *jobs.Job, step *jobs.Step, rep jobs.Reporter, a Action) (json.RawMessage, error) {
 	s, ok := r.hub.Session(job.Node)
 	if !ok {
-		return nil, &jobs.StepError{Code: CodeNodeOffline, Summary: fmt.Sprintf("node %s is not connected; nothing was sent", short(job.Node)), Retryable: true,
+		return nil, &jobs.StepError{Code: CodeNodeOffline, Summary: fmt.Sprintf("node %s is not connected; nothing was sent", short(job.Node)), Retryable: true, NothingChanged: true,
 			SuggestedActions: []string{"check-node-connection", "retry"}}
 	}
 	if !s.Supports(protocol.CapJobs, 1) || !s.Supports(a.Name, a.Version) {
-		return nil, &jobs.StepError{Code: CodeCapabilityUnsupported,
+		return nil, &jobs.StepError{Code: CodeCapabilityUnsupported, NothingChanged: true,
 			Summary:          fmt.Sprintf("agent %s does not support %s v%d (it declares %s); nothing was sent", s.agentVersion, a.Name, a.Version, capList(s.caps)),
 			SuggestedActions: []string{"upgrade-agent"}}
 	}
@@ -71,7 +71,7 @@ func (r *StepRunner) Execute(ctx context.Context, job *jobs.Job, step *jobs.Step
 	for k, v := range a.Params {
 		b, err := json.Marshal(v)
 		if err != nil {
-			return nil, &jobs.StepError{Code: "INVALID_PARAMS", Summary: fmt.Sprintf("param %q: %v", k, err)}
+			return nil, &jobs.StepError{Code: "INVALID_PARAMS", Summary: fmt.Sprintf("param %q: %v", k, err), NothingChanged: true}
 		}
 		params[k] = b
 	}
@@ -122,7 +122,7 @@ func (r *StepRunner) Execute(ctx context.Context, job *jobs.Job, step *jobs.Step
 			// Nothing ran. Only a journal the agent cannot write is worth a
 			// retry; the other refusals need a different request.
 			return nil, &jobs.StepError{Code: m.Code, Summary: "agent refused the step without running it: " + m.Message,
-				Retryable: m.Code == protocol.StepRejectJournalUnavailable}
+				Retryable: m.Code == protocol.StepRejectJournalUnavailable, NothingChanged: true}
 		}
 		return nil, fmt.Errorf("%w: unexpected answer %T", jobs.ErrDisconnected, v)
 	case <-s.Done():

@@ -494,14 +494,62 @@ const (
 	RoleAgent Role = "agent"
 )
 
+// TranscriptInput is everything a handshake signature covers.
+type TranscriptInput struct {
+	AgentNonce, CoreNonce string
+	AgentKex, CoreKex     string
+	ProtocolVersion       int
+	NodeFingerprint       string
+	SessionID             string
+	// HelloDigest is HelloDigest of the hello exactly as sent and received.
+	HelloDigest string
+	// WelcomeDigest is WelcomeDigest of the welcome's other fields.
+	WelcomeDigest string
+}
+
 // Transcript is the exact text each side signs (docs/contracts/README.md).
-// It covers both nonces and both key-exchange public keys, so a proxy that
-// replaces a kex key breaks the signatures.
+// It covers both nonces, both key-exchange keys, the whole hello and the
+// welcome's parameters, so a proxy that changes any of them breaks the
+// signatures.
 //
 // Expected result: with the inputs of fixtures/signature.json, RoleCore
 // gives coreTranscript and RoleAgent gives agentTranscript byte for byte.
-func Transcript(role Role, agentNonce, coreNonce, agentKex, coreKex string, protocolVersion int, nodeFingerprint, sessionID string) []byte {
-	return fmt.Appendf(nil, "%s\n%s\n%s\n%s\n%s\n%s\n%d\n%s\n%s\n", TranscriptDomain, role, agentNonce, coreNonce, agentKex, coreKex, protocolVersion, nodeFingerprint, sessionID)
+func Transcript(role Role, in TranscriptInput) []byte {
+	return fmt.Appendf(nil, "%s\n%s\n%s\n%s\n%s\n%s\n%d\n%s\n%s\n%s\n%s\n", TranscriptDomain, role,
+		in.AgentNonce, in.CoreNonce, in.AgentKex, in.CoreKex, in.ProtocolVersion, in.NodeFingerprint, in.SessionID, in.HelloDigest, in.WelcomeDigest)
+}
+
+// HelloDigest is the lowercase hex SHA-256 of the hello text.
+func HelloDigest(raw []byte) string {
+	sum := sha256.Sum256(raw)
+	return hex.EncodeToString(sum[:])
+}
+
+// WelcomeDigest is the lowercase hex SHA-256 of the welcome fields the
+// transcript does not list one by one, in a length-prefixed encoding that
+// does not depend on JSON formatting: lp("hazelminx-welcome-v1"),
+// lp(coreVersion), be32(heartbeatSeconds), be32(len(caps)), then lp(name)
+// and be32(version) per capability, where lp(x) = be32(len(x)) || x.
+func WelcomeDigest(coreVersion string, heartbeatSeconds int, caps []Capability) string {
+	h := sha256.New()
+	u32 := func(v int) {
+		var b [4]byte
+		binary.BigEndian.PutUint32(b[:], uint32(v))
+		h.Write(b[:])
+	}
+	lp := func(x string) {
+		u32(len(x))
+		h.Write([]byte(x))
+	}
+	lp("hazelminx-welcome-v1")
+	lp(coreVersion)
+	u32(heartbeatSeconds)
+	u32(len(caps))
+	for _, c := range caps {
+		lp(c.Name)
+		u32(c.Version)
+	}
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 // Fingerprint is the lowercase hex SHA-256 of a raw 32-byte Ed25519 key.
@@ -644,7 +692,7 @@ func SealFrame(key []byte, n uint64, body []byte) ([]byte, error) {
 // missing field → ErrFrame.
 func OpenFrame(key []byte, want uint64, data []byte) ([]byte, error) {
 	var fields map[string]json.RawMessage
-	if err := json.Unmarshal(data, &fields); err != nil || len(fields) != 3 {
+	if err := json.Unmarshal(data, &fields); err != nil || len(fields) != 3 || noDuplicateKeys(data) != nil {
 		return nil, fmt.Errorf("%w: not a frame object", ErrFrame)
 	}
 	var f Frame

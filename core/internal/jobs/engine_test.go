@@ -659,6 +659,31 @@ func TestKnownFailureWithoutRollbackMethodStaysFailed(t *testing.T) {
 	}
 }
 
+// A step the executor refused without running (NothingChanged) is not an
+// executed step: the job fails as "nothing was changed", not as "changes
+// remain and cannot be rolled back".
+func TestRefusedStepIsNotCountedAsExecuted(t *testing.T) {
+	h := &fakeHandler{kind: "k", steps: []StepSpec{{Name: "write"}},
+		execute: func(ctx context.Context, j *Job, s *Step, rep Reporter) error {
+			return &StepError{Code: "JOURNAL_UNAVAILABLE", Summary: "agent refused", Retryable: true, NothingChanged: true}
+		}}
+	env := newEnv(t, Options{}, h)
+	done := env.waitFinished(env.submit(SubmitRequest{RequestID: "refused", Kind: "k"}).ID)
+	if done.State != StateFailed || !done.Reversible || len(done.Diagnostics.Residue) != 0 || !strings.Contains(done.StateReason, "nothing was changed") {
+		t.Fatalf("state %s reversible %v residue %v reason %q", done.State, done.Reversible, done.Diagnostics.Residue, done.StateReason)
+	}
+	// Without the flag the same failure is treated as a step that ran.
+	h2 := &fakeHandler{kind: "k2", steps: []StepSpec{{Name: "write"}},
+		execute: func(ctx context.Context, j *Job, s *Step, rep Reporter) error {
+			return &StepError{Code: "DISK_FULL", Summary: "no space"}
+		}}
+	env2 := newEnv(t, Options{}, h2)
+	done2 := env2.waitFinished(env2.submit(SubmitRequest{RequestID: "ran", Kind: "k2"}).ID)
+	if len(done2.Diagnostics.Residue) == 0 {
+		t.Fatalf("a step that ran and failed without rollback must leave residue: %+v", done2.Diagnostics)
+	}
+}
+
 func TestRollbackFailureNeedsAttention(t *testing.T) {
 	h := &fakeHandler{kind: "restore", steps: []StepSpec{{Name: "stop-db", RollbackMethod: "start-db"}, {Name: "restore-files", RollbackMethod: "restore-previous"}},
 		execute: func(ctx context.Context, j *Job, s *Step, rep Reporter) error {

@@ -995,6 +995,9 @@ func (e *Engine) executedSteps(j *Job) []*Step {
 			if s.Status == StepFailed && s.Recheck != "ok" {
 				continue // blocked before doing anything
 			}
+			if s.Status == StepFailed && s.Error != nil && s.Error.NothingChanged {
+				continue // refused by the executor without running
+			}
 			out = append(out, s)
 		}
 	}

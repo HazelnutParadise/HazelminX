@@ -34,13 +34,18 @@ Agent 主動連到 Core 的 Agent 入口（預設 `:9801`，路徑 `/agent/v1/co
   {protocolVersion}
   {nodeFingerprint}
   {sessionId}
+  {helloDigest}
+  {welcomeDigest}
   ```
 
-  `role` 是 `core` 或 `agent`。Core 以身分私鑰簽 `core` 版本，Agent 以節點私鑰簽 `agent` 版本。雙方 nonce 都是新的，所以舊握手無法重放；角色字串不同，所以一方的簽章不能拿來冒充另一方；兩個 `kex` 都在簽章內，所以中間人換掉任何一方的 `kex`，簽章就對不上。
+  `helloDigest` 是 hello 原文（Agent 送出、Core 收到的那段文字，逐位元組）的 SHA-256 小寫 hex。`welcomeDigest` 是 welcome 其餘參數的 SHA-256 小寫 hex，用不依賴 JSON 格式的長度前綴編碼：依序寫入 `lp("hazelminx-welcome-v1")`、`lp(coreVersion)`、`heartbeatSeconds` 的 4 位元組大端序、能力數量的 4 位元組大端序，再對每個能力寫 `lp(name)` 與 `version` 的 4 位元組大端序；`lp(x)` 是 x 的位元組長度（4 位元組大端序）接 x 本身。
+
+  `role` 是 `core` 或 `agent`。Core 以身分私鑰簽 `core` 版本，Agent 以節點私鑰簽 `agent` 版本。雙方 nonce 都是新的，所以舊握手無法重放；角色字串不同，所以一方的簽章不能拿來冒充另一方；兩個 `kex`、整份 hello 與 welcome 的參數都在簽章內，所以中間人換掉任何一方的 `kex`、改支援範圍、能力清單或心跳間隔，簽章就對不上。
 - 節點身分以 `nodeCertificate`＋`proof` 證明，不依賴 TLS 用戶端憑證，也不讀任何 HTTP Header。經會終止 TLS 的代理時仍成立；直連時 Agent 另外出示 TLS 用戶端憑證，Core 要求兩者指紋一致。
 - Agent 的 `core_transport = "pinned"`（預設）以 `core-ca.crt` 驗 TLS 伺服端；`"proxy"` 以代理的憑證鏈驗 TLS（`proxy_ca_file` 或內建公開根憑證），Core 身分改由 `coreCertificate`＋`proof` 證明。
 - 雙方以自己的 X25519 私鑰和對方的 `kex` 算出共同秘密，再用 HKDF-SHA256（不加鹽）展開成兩把 32 位元組金鑰：`info` 是 `hazelminx-session-v1 core->agent {sessionId}` 的金鑰給 Core 送出的訊息用，`hazelminx-session-v1 agent->core {sessionId}` 的給 Agent 送出的訊息用。代理看得到握手內容，但算不出這兩把金鑰。
-- 握手訊息單則上限 64 KiB；Core 同時進行中的握手上限 64 條，超過回 HTTP 503；被拒紀錄只保留 Agent 提供文字的前 256 個字元。
+- 握手訊息單則上限 64 KiB，hello 要在連線後 3 秒內送到；Core 同時進行中的握手上限 256 條、同一來源位址 8 條，超過回 HTTP 503；被拒紀錄只保留 Agent 提供文字的前 256 個字元。
+- `reject` 沒有簽章：經會終止 TLS 的代理可以偽造一則 `reject`，讓 Agent 以為被拒而等待重試。代理本來就能直接切斷連線，這只是同一種阻斷，不會讓任何指令被執行。
 
 ## 訊框
 
@@ -53,8 +58,9 @@ Agent 主動連到 Core 的 Agent 入口（預設 `:9801`，路徑 `/agent/v1/co
 - `n` 是這個方向的訊框序號，從 1 起每則加 1；收方只接受下一個號碼。
 - `body` 是訊息本身的 JSON 文字（字串，不是物件），握手後訊息的形狀與規則都適用在它上面。
 - `mac` 是 HMAC-SHA256，金鑰是送方方向的那把，內容依序是 `hazelminx-frame-v1\n`、`n` 的 8 位元組大端序、`body` 的 UTF-8 位元組，標準 base64。
-- 訊框多或少欄位、序號不對、MAC 不符、二進位訊框，收方一律直接關閉會話，不看內容、不回 `protocol_error`。這擋住經會終止 TLS 的代理插入、重放或調換訊息。
+- 訊框多或少欄位、重複的鍵、序號不對、MAC 不符、二進位訊框，收方一律直接關閉會話，不看內容、不回 `protocol_error`。這擋住經會終止 TLS 的代理插入、重放或調換訊息。
 - 握手後單則訊框上限 1 MiB。Agent 回報的步驟結果超過 256 KiB 時改記為失敗 `RESULT_TOO_LARGE`。
+- 訊框只保證完整性與順序，內容沒有另外加密：直連時有 TLS 保護，經會終止 TLS 的代理時代理看得到內容。機密不得以明文放進步驟參數或結果。
 
 ### 版本規則
 
@@ -111,6 +117,6 @@ Core 收到 `step_reconcile` 的答案前，Agent 若還在跑那個步驟，會
 - `fixtures/messages/*.json`：每種訊息一則合法樣本，兩邊解碼後再編碼要得到同樣的 JSON 值。
 - `fixtures/invalid/*.json`：必須被拒絕的訊息，檔名說明原因。
 - `fixtures/handshake-lenient/*.json`：帶未知欄位、仍須被握手解碼接受的訊息。
-- `fixtures/signature.json`：固定種子的節點、Core 與 X25519 金鑰，簽章內容、預期簽章、共同秘密與兩方向的會話金鑰（Ed25519 是確定性簽章，兩邊必須算出同一個值）。
-- `fixtures/frames.json`：用上面的會話金鑰封好的訊框，兩邊封出來的要逐字相同，改任何一處都要被拒絕。
+- `fixtures/signature.json`：固定種子的節點、Core 與 X25519 金鑰，hello 原文與兩個雜湊、簽章內容、預期簽章、共同秘密與兩方向的會話金鑰（Ed25519 是確定性簽章，兩邊必須算出同一個值）。
+- `fixtures/frames.json`：用上面的會話金鑰封好的訊框。兩邊要算出同一個 `mac`、還原出同一個 `body`；訊框的 JSON 文字本身可能不同（Go 會把 `<`、`&` 這類字元跳脫），所以不比對整段文字。改任何一處都要被拒絕。
 - `fixtures/pki/`：測試用 CA、Core 與節點憑證（僅供測試，私鑰公開，不得用於任何部署）。

@@ -596,6 +596,9 @@ type signatureFixture struct {
 	CoreKexSeedHex   string `json:"coreKexSeedHex"`
 	KeyCoreToAgent   string `json:"keyCoreToAgentHex"`
 	KeyAgentToCore   string `json:"keyAgentToCoreHex"`
+	HelloText        string `json:"helloText"`
+	HelloDigestHex   string `json:"helloDigest"`
+	WelcomeDigestHex string `json:"welcomeDigest"`
 	AgentProof       string `json:"agentProof"`
 	AgentTranscript  string `json:"agentTranscript"`
 	CoreNonce        string `json:"coreNonce"`
@@ -607,6 +610,12 @@ type signatureFixture struct {
 	NodeSeedHex      string `json:"nodeSeedHex"`
 	ProtocolVersion  int    `json:"protocolVersion"`
 	SessionID        string `json:"sessionId"`
+}
+
+func (s signatureFixture) input() TranscriptInput {
+	return TranscriptInput{AgentNonce: s.AgentNonce, CoreNonce: s.CoreNonce, AgentKex: s.AgentKex, CoreKex: s.CoreKex,
+		ProtocolVersion: s.ProtocolVersion, NodeFingerprint: s.NodeFingerprint, SessionID: s.SessionID,
+		HelloDigest: s.HelloDigestHex, WelcomeDigest: s.WelcomeDigestHex}
 }
 
 func loadSignature(t *testing.T) signatureFixture {
@@ -643,7 +652,7 @@ func TestTranscript_MatchesFixture(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			var got []byte
 			noPanic(t, func() {
-				got = Transcript(c.role, s.AgentNonce, s.CoreNonce, s.AgentKex, s.CoreKex, s.ProtocolVersion, s.NodeFingerprint, s.SessionID)
+				got = Transcript(c.role, s.input())
 			})
 			if !bytes.Equal(got, []byte(c.want)) {
 				t.Fatalf("transcript differs\n got: %q\nwant: %q", got, c.want)
@@ -696,7 +705,7 @@ func TestSignatures_FixtureKeysSignTranscripts(t *testing.T) {
 		}
 		var transcript []byte
 		noPanic(t, func() {
-			transcript = Transcript(RoleAgent, s.AgentNonce, s.CoreNonce, s.AgentKex, s.CoreKex, s.ProtocolVersion, s.NodeFingerprint, s.SessionID)
+			transcript = Transcript(RoleAgent, s.input())
 		})
 		sig := ed25519.Sign(nodePriv, transcript)
 		if got := base64.StdEncoding.EncodeToString(sig); got != s.AgentProof {
@@ -706,7 +715,7 @@ func TestSignatures_FixtureKeysSignTranscripts(t *testing.T) {
 	t.Run("core proof is the core key over the core transcript", func(t *testing.T) {
 		var transcript []byte
 		noPanic(t, func() {
-			transcript = Transcript(RoleCore, s.AgentNonce, s.CoreNonce, s.AgentKex, s.CoreKex, s.ProtocolVersion, s.NodeFingerprint, s.SessionID)
+			transcript = Transcript(RoleCore, s.input())
 		})
 		sig := ed25519.Sign(corePriv, transcript)
 		if got := base64.StdEncoding.EncodeToString(sig); got != s.CoreProof {
@@ -894,5 +903,49 @@ func TestHandshakeIgnoresCaseVariantKeys(t *testing.T) {
 	}
 	if h := m.(*Hello); h.Nonce != loadSignature(t).AgentNonce {
 		t.Fatalf("nonce %q was filled from a case-variant key", h.Nonce)
+	}
+}
+
+// The hello digest is over the exact text, and the hello text decodes to
+// the hello fixture; the welcome digest is computed from the welcome
+// fixture's fields with the length-prefixed encoding.
+func TestHelloAndWelcomeDigestsMatchFixture(t *testing.T) {
+	s := loadSignature(t)
+	if HelloDigest([]byte(s.HelloText)) != s.HelloDigestHex {
+		t.Fatal("hello digest differs from fixture")
+	}
+	var fromText, fromFile any
+	_ = json.Unmarshal([]byte(s.HelloText), &fromText)
+	_ = json.Unmarshal(readFixture(t, "messages/hello.json"), &fromFile)
+	if !reflect.DeepEqual(fromText, fromFile) {
+		t.Fatal("helloText is not the hello fixture")
+	}
+	m, err := DecodeHandshake(readFixture(t, "messages/welcome.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := m.(*Welcome)
+	if got := WelcomeDigest(w.CoreVersion, w.HeartbeatSeconds, w.Capabilities); got != s.WelcomeDigestHex {
+		t.Fatalf("welcome digest %s, fixture %s", got, s.WelcomeDigestHex)
+	}
+	// Each covered field changes the digest.
+	for name, d := range map[string]string{
+		"core version": WelcomeDigest(w.CoreVersion+"x", w.HeartbeatSeconds, w.Capabilities),
+		"heartbeat":    WelcomeDigest(w.CoreVersion, w.HeartbeatSeconds+1, w.Capabilities),
+		"capabilities": WelcomeDigest(w.CoreVersion, w.HeartbeatSeconds, append(w.Capabilities, Capability{Name: "x", Version: 1})),
+		"cap boundary": WelcomeDigest(w.CoreVersion, w.HeartbeatSeconds, []Capability{{Name: "jobs", Version: 1}, {Name: "", Version: 0}}),
+	} {
+		if d == s.WelcomeDigestHex {
+			t.Errorf("%s change does not change the digest", name)
+		}
+	}
+}
+
+func TestFrameWithDuplicateKeyIsRejected(t *testing.T) {
+	key := make([]byte, 32)
+	good, _ := SealFrame(key, 1, []byte(`{"type":"ack","seq":1}`))
+	dup := append(bytes.TrimSuffix(good, []byte("}")), []byte(`,"n":1}`)...)
+	if _, err := OpenFrame(key, 1, dup); !errors.Is(err, ErrFrame) {
+		t.Fatalf("duplicate n accepted: %v", err)
 	}
 }

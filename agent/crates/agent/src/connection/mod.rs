@@ -298,43 +298,57 @@ async fn handshake(
         kex: agent_kex.clone(),
         capabilities: actions::capabilities(),
     };
-    send(ws, &hello).await?;
+    // The hello digest is taken over the exact text sent.
+    let hello_text = proto::encode(&hello);
+    ws.send(tungstenite::Message::text(hello_text.clone()))
+        .await
+        .context("send to core")?;
     let welcome = recv_handshake(ws, deadline).await?;
-    let (version, core_version, core_cert, core_nonce, core_kex, session_id, proof, heartbeat) =
-        match welcome {
-            Handshake::Welcome {
-                protocol_version,
-                core_version,
-                core_certificate,
-                nonce,
-                kex,
-                session_id,
-                proof,
-                heartbeat_seconds,
-                capabilities: _,
-            } => (
-                protocol_version,
-                core_version,
-                core_certificate,
-                nonce,
-                kex,
-                session_id,
-                proof,
-                heartbeat_seconds,
-            ),
-            Handshake::Reject {
+    let (
+        version,
+        core_version,
+        core_cert,
+        core_nonce,
+        core_kex,
+        session_id,
+        proof,
+        heartbeat,
+        core_caps,
+    ) = match welcome {
+        Handshake::Welcome {
+            protocol_version,
+            core_version,
+            core_certificate,
+            nonce,
+            kex,
+            session_id,
+            proof,
+            heartbeat_seconds,
+            capabilities,
+        } => (
+            protocol_version,
+            core_version,
+            core_certificate,
+            nonce,
+            kex,
+            session_id,
+            proof,
+            heartbeat_seconds,
+            capabilities,
+        ),
+        Handshake::Reject {
+            code,
+            message,
+            supported,
+        } => {
+            return Err(HandshakeError::Refused {
                 code,
                 message,
                 supported,
-            } => {
-                return Err(HandshakeError::Refused {
-                    code,
-                    message,
-                    supported,
-                });
-            }
-            other => return Err(anyhow!("expected welcome, got {other:?}").into()),
-        };
+            });
+        }
+        other => return Err(anyhow!("expected welcome, got {other:?}").into()),
+    };
     let ours = proto::supported_range();
     if version < ours.min || version > ours.max {
         return Err(anyhow!(
@@ -348,16 +362,20 @@ async fn handshake(
         return Err(anyhow!("core nonce is not 32 bytes of base64url").into());
     }
     let fp = shared.identity.fingerprint();
-    let core_t = proto::transcript(
-        Role::Core,
-        &agent_nonce,
-        &core_nonce,
-        &agent_kex,
-        &core_kex,
-        version,
-        &fp,
-        &session_id,
-    );
+    let welcome_digest = proto::welcome_digest(&core_version, heartbeat, &core_caps);
+    let hello_digest = proto::hello_digest(&hello_text);
+    let tin = proto::TranscriptInput {
+        agent_nonce: &agent_nonce,
+        core_nonce: &core_nonce,
+        agent_kex: &agent_kex,
+        core_kex: &core_kex,
+        protocol_version: version,
+        node_fingerprint: &fp,
+        session_id: &session_id,
+        hello_digest: &hello_digest,
+        welcome_digest: &welcome_digest,
+    };
+    let core_t = proto::transcript(Role::Core, &tin);
     let proof = base64::engine::general_purpose::STANDARD
         .decode(proof.as_bytes())
         .map_err(|_| anyhow!("core proof is not base64"))?;
@@ -366,16 +384,7 @@ async fn handshake(
         .context("core identity check failed; not continuing")?;
     let keys = proto::derive_keys(Role::Agent, &kex_secret, &core_kex, &session_id)
         .map_err(|e| anyhow!("welcome kex: {e}"))?;
-    let agent_t = proto::transcript(
-        Role::Agent,
-        &agent_nonce,
-        &core_nonce,
-        &agent_kex,
-        &core_kex,
-        version,
-        &fp,
-        &session_id,
-    );
+    let agent_t = proto::transcript(Role::Agent, &tin);
     let sig = shared.identity.sign(agent_t.as_bytes());
     send(
         ws,
@@ -477,6 +486,11 @@ async fn serve(
         send_n: 0,
         recv_n: 0,
     };
+    // A journal failure that happened while no session was up is handled by
+    // this session's replay and the Core's reconcile; it must not end it.
+    shared
+        .broken
+        .store(false, std::sync::atomic::Ordering::SeqCst);
     // Replay every event the Core has not acknowledged, then follow the journal.
     let mut sent_up_to = shared.steps.lock().unwrap().journal().acked();
     let mut tick = tokio::time::interval(heartbeat);

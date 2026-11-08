@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -406,7 +407,10 @@ func TestUnauthenticatedClientCannotMakeTheHubHoldMuch(t *testing.T) {
 	}
 }
 
-func TestConcurrentHandshakesAreCapped(t *testing.T) {
+// Idle connections from one address use up only that address's handshake
+// slots, and a client that never sends hello is dropped after a few
+// seconds, so they cannot keep genuine agents out.
+func TestConcurrentHandshakesAreCappedPerSource(t *testing.T) {
 	core := startCore(t, HubOptions{})
 	c := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{RootCAs: coreCAPool(t, core.pki), ServerName: protocol.CoreServerName}}}
 	var conns []*websocket.Conn
@@ -415,23 +419,61 @@ func TestConcurrentHandshakesAreCapped(t *testing.T) {
 			c.CloseNow()
 		}
 	}()
-	for i := 0; i < maxHandshakes; i++ {
+	for i := 0; i < maxHandshakesPer; i++ {
 		conn, _, err := websocket.Dial(context.Background(), core.url, &websocket.DialOptions{HTTPClient: c})
 		if err != nil {
 			t.Fatalf("handshake %d: %v", i, err)
 		}
-		conns = append(conns, conn) // never send hello: the slot stays taken
+		conns = append(conns, conn) // never send hello
 	}
 	_, resp, err := websocket.Dial(context.Background(), core.url, &websocket.DialOptions{HTTPClient: c})
 	if err == nil || resp == nil || resp.StatusCode != http.StatusServiceUnavailable {
-		t.Fatalf("handshake over the cap: err=%v resp=%v", err, resp)
+		t.Fatalf("handshake over the per-source cap: err=%v resp=%v", err, resp)
 	}
-	conns[0].CloseNow()
-	waitFor(t, "a slot to free up", func() bool {
-		conn, _, err := websocket.Dial(context.Background(), core.url, &websocket.DialOptions{HTTPClient: c})
-		if err == nil {
-			conns = append(conns, conn)
+	// The silent clients are dropped after helloTimeout and a real agent
+	// from the same address gets through.
+	start := time.Now()
+	n := newTestNode(t, core.pki)
+	for {
+		a, err := dialAgent(t, core, core.url, n, agentOpts{})
+		if err == nil && a.ready != nil {
+			break
 		}
-		return err == nil
-	})
+		if time.Since(start) > helloTimeout+3*time.Second {
+			t.Fatalf("slots were not freed: %v", err)
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+}
+
+func TestHandshakeSlotsAreCountedPerSourceAndInTotal(t *testing.T) {
+	h := NewHub(HubOptions{PKI: testPKI(t)})
+	for i := 0; i < maxHandshakesPer; i++ {
+		if !h.acquireSlot("198.51.100.1") {
+			t.Fatalf("slot %d refused", i)
+		}
+	}
+	if h.acquireSlot("198.51.100.1") {
+		t.Fatal("one source exceeded its cap")
+	}
+	if !h.acquireSlot("198.51.100.2") {
+		t.Fatal("another source was locked out by the first")
+	}
+	h.releaseSlot("198.51.100.1")
+	if !h.acquireSlot("198.51.100.1") {
+		t.Fatal("released slot was not reusable")
+	}
+	// The total cap holds across many sources.
+	got := 0
+	for i := 0; got < maxHandshakes+10 && i < maxHandshakes*2; i++ {
+		if h.acquireSlot(fmt.Sprintf("203.0.113.%d", i)) {
+			got++
+		}
+	}
+	if h.slots != maxHandshakes {
+		t.Fatalf("%d slots in use, cap %d", h.slots, maxHandshakes)
+	}
+	if sourceOf("[2001:db8::1]:443") != "2001:db8::1" || sourceOf("10.0.0.1:9") != "10.0.0.1" {
+		t.Fatal("sourceOf")
+	}
 }

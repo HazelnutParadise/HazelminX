@@ -133,13 +133,17 @@ fn sig_bytes32(sig: &Value, key: &str) -> [u8; 32] {
 fn sig_transcript(role: Role, sig: &Value) -> String {
     transcript(
         role,
-        sig_str(sig, "agentNonce"),
-        sig_str(sig, "coreNonce"),
-        sig_str(sig, "agentKex"),
-        sig_str(sig, "coreKex"),
-        sig_protocol_version(sig),
-        sig_str(sig, "nodeFingerprint"),
-        sig_str(sig, "sessionId"),
+        &hazelminx_protocol::TranscriptInput {
+            agent_nonce: sig_str(sig, "agentNonce"),
+            core_nonce: sig_str(sig, "coreNonce"),
+            agent_kex: sig_str(sig, "agentKex"),
+            core_kex: sig_str(sig, "coreKex"),
+            protocol_version: sig_protocol_version(sig),
+            node_fingerprint: sig_str(sig, "nodeFingerprint"),
+            session_id: sig_str(sig, "sessionId"),
+            hello_digest: sig_str(sig, "helloDigest"),
+            welcome_digest: sig_str(sig, "welcomeDigest"),
+        },
     )
 }
 
@@ -704,6 +708,43 @@ fn handshake_ignores_case_variant_keys() {
     match decode_handshake(&text).unwrap() {
         hazelminx_protocol::Handshake::Hello { nonce, .. } => {
             assert_eq!(nonce, sig_str(&signature(), "agentNonce"))
+        }
+        other => panic!("{other:?}"),
+    }
+}
+
+#[test]
+fn hello_and_welcome_digests_match_fixture() {
+    let sig = signature();
+    let text = sig_str(&sig, "helloText");
+    assert_eq!(
+        hazelminx_protocol::hello_digest(text),
+        sig_str(&sig, "helloDigest")
+    );
+    let a: Value = serde_json::from_str(text).unwrap();
+    assert_eq!(
+        a,
+        fixture_value("messages/hello.json"),
+        "helloText is not the hello fixture"
+    );
+    match decode_handshake(&read_fixture("messages/welcome.json")).unwrap() {
+        hazelminx_protocol::Handshake::Welcome {
+            core_version,
+            heartbeat_seconds,
+            capabilities,
+            ..
+        } => {
+            let d =
+                hazelminx_protocol::welcome_digest(&core_version, heartbeat_seconds, &capabilities);
+            assert_eq!(d, sig_str(&sig, "welcomeDigest"));
+            assert_ne!(
+                hazelminx_protocol::welcome_digest(
+                    &core_version,
+                    heartbeat_seconds + 1,
+                    &capabilities
+                ),
+                d
+            );
         }
         other => panic!("{other:?}"),
     }

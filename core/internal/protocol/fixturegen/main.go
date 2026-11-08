@@ -100,8 +100,25 @@ func issue(ca *x509.Certificate, caKey ed25519.PrivateKey, pub ed25519.PublicKey
 	return der
 }
 
-func transcript(role, agentNonce, coreNonce, agentKex, coreKex string, version int, node, session string) string {
-	return fmt.Sprintf("hazelminx-session-v1\n%s\n%s\n%s\n%s\n%s\n%d\n%s\n%s\n", role, agentNonce, coreNonce, agentKex, coreKex, version, node, session)
+func transcript(role, agentNonce, coreNonce, agentKex, coreKex string, version int, node, session, helloDigest, welcomeDigest string) string {
+	return fmt.Sprintf("hazelminx-session-v1\n%s\n%s\n%s\n%s\n%s\n%d\n%s\n%s\n%s\n%s\n", role, agentNonce, coreNonce, agentKex, coreKex, version, node, session, helloDigest, welcomeDigest)
+}
+
+// welcomeDigest follows the length-prefixed encoding of the contract.
+func welcomeDigest(coreVersion string, heartbeat int, caps []map[string]any) string {
+	var b []byte
+	u32 := func(v int) { b = binary.BigEndian.AppendUint32(b, uint32(v)) }
+	lp := func(x string) { u32(len(x)); b = append(b, x...) }
+	lp("hazelminx-welcome-v1")
+	lp(coreVersion)
+	u32(heartbeat)
+	u32(len(caps))
+	for _, c := range caps {
+		lp(c["name"].(string))
+		u32(c["version"].(int))
+	}
+	sum := sha256.Sum256(b)
+	return hex.EncodeToString(sum[:])
 }
 
 func kexKey(label string) *ecdh.PrivateKey {
@@ -182,8 +199,25 @@ func main() {
 	must(err)
 	a2c, err := hkdf.Key(sha256.New, shared, nil, "hazelminx-session-v1 agent->core "+session, 32)
 	must(err)
-	coreT := transcript("core", agentNonce, coreNonce, agentKex, coreKex, version, nodeFP, session)
-	agentT := transcript("agent", agentNonce, coreNonce, agentKex, coreKex, version, nodeFP, session)
+	caps := []map[string]any{{"name": "jobs", "version": 1}, {"name": "agent.info", "version": 1}}
+	hello := map[string]any{
+		"type":            "hello",
+		"protocol":        map[string]any{"min": 1, "max": 1},
+		"agentVersion":    "0.1.0",
+		"nodeCertificate": certPEM(nodeDER),
+		"nonce":           agentNonce,
+		"kex":             agentKex,
+		"capabilities":    caps,
+	}
+	helloText, err := json.Marshal(hello)
+	must(err)
+	helloSum := sha256.Sum256(helloText)
+	helloDigest := hex.EncodeToString(helloSum[:])
+	coreCaps := []map[string]any{{"name": "jobs", "version": 1}}
+	const coreVersion, heartbeat = "0.1.0", 10
+	wDigest := welcomeDigest(coreVersion, heartbeat, coreCaps)
+	coreT := transcript("core", agentNonce, coreNonce, agentKex, coreKex, version, nodeFP, session, helloDigest, wDigest)
+	agentT := transcript("agent", agentNonce, coreNonce, agentKex, coreKex, version, nodeFP, session, helloDigest, wDigest)
 	coreProof := base64.StdEncoding.EncodeToString(ed25519.Sign(coreKey, []byte(coreT)))
 	agentProof := base64.StdEncoding.EncodeToString(ed25519.Sign(nodeKey, []byte(agentT)))
 
@@ -204,34 +238,28 @@ func main() {
 		"keyAgentToCoreHex": hex.EncodeToString(a2c),
 		"protocolVersion":   version,
 		"sessionId":         session,
+		"helloText":         string(helloText),
+		"helloDigest":       helloDigest,
+		"welcomeDigest":     wDigest,
 		"coreTranscript":    coreT,
 		"agentTranscript":   agentT,
 		"coreProof":         coreProof,
 		"agentProof":        agentProof,
 	})
 
-	caps := []map[string]any{{"name": "jobs", "version": 1}, {"name": "agent.info", "version": 1}}
 	msgs := filepath.Join(dir, "messages")
-	writeJSON(msgs, "hello.json", map[string]any{
-		"type":            "hello",
-		"protocol":        map[string]any{"min": 1, "max": 1},
-		"agentVersion":    "0.1.0",
-		"nodeCertificate": certPEM(nodeDER),
-		"nonce":           agentNonce,
-		"kex":             agentKex,
-		"capabilities":    caps,
-	})
+	writeJSON(msgs, "hello.json", hello)
 	writeJSON(msgs, "welcome.json", map[string]any{
 		"type":             "welcome",
 		"protocolVersion":  version,
-		"coreVersion":      "0.1.0",
+		"coreVersion":      coreVersion,
 		"coreCertificate":  certPEM(coreDER),
 		"nonce":            coreNonce,
 		"kex":              coreKex,
 		"sessionId":        session,
 		"proof":            coreProof,
-		"heartbeatSeconds": 10,
-		"capabilities":     []map[string]any{{"name": "jobs", "version": 1}},
+		"heartbeatSeconds": heartbeat,
+		"capabilities":     coreCaps,
 	})
 	writeJSON(msgs, "auth.json", map[string]any{"type": "auth", "proof": agentProof})
 

@@ -143,6 +143,9 @@ type StepError struct {
 	Evidence         []string `json:"evidence,omitempty"`
 	SuggestedActions []string `json:"suggestedActions,omitempty"`
 	Retryable        bool     `json:"retryable"`
+	// NothingChanged: the executor refused or never received the step, so
+	// it left nothing behind and the step does not count as executed.
+	NothingChanged bool `json:"nothingChanged,omitempty"`
 }
 
 func (e *StepError) Error() string { return e.Code + ": " + e.Summary }

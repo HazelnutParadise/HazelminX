@@ -44,7 +44,7 @@ Agent 主動連到 `-agent-listen` 的 `/agent/v1/connect`（TLS 1.3 上的 WebS
 
 - 第一次啟動時在機密服務建立節點 CA 與 Core 身分（`node-pki/ca`、`node-pki/core`，私鑰加密存放）。節點憑證由 `nodes.PKI.IssueNodeCertificate` 簽發，註冊流程（票 019）會用它；Agent 要釘選的 CA 是 `PKI.CACertificatePEM()`。
 - 每次連線雙方都要證明身分：Core 驗節點憑證鏈、用途、指紋，以及節點私鑰對握手內容的簽章；直連時 TLS 用戶端憑證必須是同一節點。Agent 驗 Core 憑證鏈、`core.hazelminx.internal` 名稱與 Core 的簽章，不看 IP 或主機名。HTTP Header 一律不當身分，所以經會終止 TLS 的代理時仍有獨立的節點身分證明。握手同時以 X25519 交換金鑰，之後每則訊息帶序號與 HMAC，代理插入、重放或調換訊息都會讓會話斷線。
-- 握手訊息上限 64 KiB、同時握手上限 64 條，被拒紀錄只留 Agent 提供文字的前 256 字元。
+- 握手訊息上限 64 KiB、hello 要在 3 秒內送到、同時握手上限 256 條且同一來源 8 條，被拒紀錄只留 Agent 提供文字的前 256 字元。
 - 協定版本沒有交集時拒絕連線並記錄雙方範圍；同一節點已有連線時拒絕第二條（複製的虛擬機）；`Authorizer` 回 `ErrNodeRevoked` 時拒絕（撤銷清單在票 019）。
 - 工作步驟經 `nodes.StepRunner` 送到節點：Agent 沒宣告的能力不送；節點不在線是已知失敗（沒送出任何東西）；送出後斷線是 `unknown`。Agent 重連後，`nodes.Reconciler` 在會話存活期間每 15 秒掃一次該節點「狀態不明」的工作，先向 Agent 查持久紀錄再交給引擎對帳，已完成的步驟不重跑。
 

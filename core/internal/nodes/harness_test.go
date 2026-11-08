@@ -248,7 +248,11 @@ func dialAgent(t *testing.T, core *testCore, url string, n testNode, o agentOpts
 	if o.badNonce {
 		helloNonce = "short"
 	}
-	a.writeHandshake(t, protocol.Hello{Type: protocol.TypeHello, Protocol: r, AgentVersion: version, NodeCertificate: string(cert), Nonce: helloNonce, Kex: kex, Capabilities: caps})
+	helloRaw, err := json.Marshal(protocol.Hello{Type: protocol.TypeHello, Protocol: r, AgentVersion: version, NodeCertificate: string(cert), Nonce: helloNonce, Kex: kex, Capabilities: caps})
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.writeFrame(t, helloRaw)
 	msg, err := a.readHandshake(ctx)
 	if err != nil {
 		return a, err
@@ -264,7 +268,11 @@ func dialAgent(t *testing.T, core *testCore, url string, n testNode, o agentOpts
 	}
 	// Verify the core like the real agent does: certificate chain, usage,
 	// name, and proof over the core transcript.
-	if err := verifyCoreForTest(core.pki, a.welcome, nonce, kex, n.fp); err != nil {
+	tin := protocol.TranscriptInput{AgentNonce: nonce, CoreNonce: a.welcome.Nonce, AgentKex: kex, CoreKex: a.welcome.Kex,
+		ProtocolVersion: a.welcome.ProtocolVersion, NodeFingerprint: n.fp, SessionID: a.welcome.SessionID,
+		HelloDigest:   protocol.HelloDigest(helloRaw),
+		WelcomeDigest: protocol.WelcomeDigest(a.welcome.CoreVersion, a.welcome.HeartbeatSeconds, a.welcome.Capabilities)}
+	if err := verifyCoreForTest(core.pki, a.welcome, tin); err != nil {
 		return a, err
 	}
 	if a.keys, err = protocol.DeriveKeys(protocol.RoleAgent, kexKey, a.welcome.Kex, a.welcome.SessionID); err != nil {
@@ -278,7 +286,9 @@ func dialAgent(t *testing.T, core *testCore, url string, n testNode, o agentOpts
 	if o.signer != nil {
 		signer = o.signer
 	}
-	proof := ed25519.Sign(signer, protocol.Transcript(protocol.RoleAgent, nonce, a.welcome.Nonce, signedKex, a.welcome.Kex, a.welcome.ProtocolVersion, n.fp, a.welcome.SessionID))
+	signed := tin
+	signed.AgentKex = signedKex
+	proof := ed25519.Sign(signer, protocol.Transcript(protocol.RoleAgent, signed))
 	if o.authProof != nil {
 		proof = o.authProof
 	}
@@ -300,7 +310,7 @@ func dialAgent(t *testing.T, core *testCore, url string, n testNode, o agentOpts
 	return a, nil
 }
 
-func verifyCoreForTest(p *PKI, w *protocol.Welcome, agentNonce, agentKex, fp string) error {
+func verifyCoreForTest(p *PKI, w *protocol.Welcome, tin protocol.TranscriptInput) error {
 	block, _ := pem.Decode([]byte(w.CoreCertificate))
 	if block == nil {
 		return errors.New("core certificate PEM")
@@ -318,7 +328,7 @@ func verifyCoreForTest(p *PKI, w *protocol.Welcome, agentNonce, agentKex, fp str
 	if err != nil {
 		return err
 	}
-	if !ed25519.Verify(c.PublicKey.(ed25519.PublicKey), protocol.Transcript(protocol.RoleCore, agentNonce, w.Nonce, agentKex, w.Kex, w.ProtocolVersion, fp, w.SessionID), sig) {
+	if !ed25519.Verify(c.PublicKey.(ed25519.PublicKey), protocol.Transcript(protocol.RoleCore, tin), sig) {
 		return errors.New("core proof does not verify")
 	}
 	return nil

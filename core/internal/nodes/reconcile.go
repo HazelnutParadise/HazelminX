@@ -67,8 +67,12 @@ func (rc *Reconciler) logger() *slog.Logger {
 	return rc.Logger
 }
 
-// pass asks about every unknown job of the session's node in parallel, so
-// one long-running step does not hold up the others.
+// maxParallelReconciles bounds the reconcile requests in flight on one
+// session, well under the session's send queue.
+const maxParallelReconciles = 16
+
+// pass asks about every unknown job of the session's node, several at a
+// time, so one long-running step does not hold up the others.
 func (rc *Reconciler) pass(ctx context.Context, s *Session) {
 	unknown, err := rc.Engine.List(ctx, jobs.ListOptions{States: []jobs.State{jobs.StateUnknown}, Ascending: true})
 	if err != nil {
@@ -76,13 +80,15 @@ func (rc *Reconciler) pass(ctx context.Context, s *Session) {
 		return
 	}
 	var wg sync.WaitGroup
+	limit := make(chan struct{}, maxParallelReconciles)
 	for _, j := range unknown {
 		if j.Node != s.NodeID() {
 			continue
 		}
 		wg.Add(1)
+		limit <- struct{}{}
 		go func() {
-			defer wg.Done()
+			defer func() { <-limit; wg.Done() }()
 			rc.settle(ctx, s, j)
 		}()
 	}
