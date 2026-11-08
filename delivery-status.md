@@ -30,7 +30,7 @@ None。
 票 007 Core↔Agent 協定：Agent 以 mTLS WebSocket 連上 Core，交換協定版本與能力，Core 與 Agent 用同一組黃金 JSON 樣本通過契約測試。PR #102（票 002）合併後，票 005 依 `DESIGN.md` token 建立 `web/` 骨架。
 
 ## Next Ticket
-007 Core 與 Agent 協定（ready）。005 前端骨架仍等票 002 完成。另外 014、015、022、023、026 的前置票都已 done，狀態為 ready；013、016、024、025 還在等 003、004 或 008 完成驗收；019 等 007。
+007 Core 與 Agent 協定（ready）。005 前端骨架仍等票 002 完成。另外 014、015、022、023、026、047 的前置票都已 done，狀態為 ready；013、016、024、025 還在等 003 或 008 完成驗收；019 等 007。
 
 ## Decision Log
 | decision | rationale | timestamp | impacted_ticket_ids |
