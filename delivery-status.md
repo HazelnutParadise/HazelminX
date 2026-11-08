@@ -1,14 +1,13 @@
 # Delivery Status
 
 ## Current Phase
-M0 基礎與設計：Core 與 Agent 後端骨架（票 003、004、008、009、011、012）已合併進 `main`，管理 API 共用契約（票 010）在 PR 審查中；設計系統與 UI/UX 原型（票 002）進行中。
+M0 基礎與設計：Core 與 Agent 後端骨架（票 003、004、008、009、011、012）與管理 API 共用契約（票 010）已合併進 `main`；設計系統與 UI/UX 原型（票 002）進行中。
 
 ## Stage Objective
 完成 `DESIGN.md` 與主要畫面原型並通過設計審查，讓票 003、004、005、007 可以在一致的視覺與互動基準上開工；M0 結束時 Core、Agent、Web 骨架可建置並在 CI 通過。
 
 ## Active Workstreams
 - 設計系統與原型（票 002，PR #102）→ `DESIGN.md`、`docs/design/`、`DESIGN-REVIEW.md`。
-- 管理 API 共用契約（票 010）→ `core/internal/api` 的錯誤代碼表、列表、版本條件、dryRun、202 工作回應、確認端點與 OpenAPI，PR 等審查。
 - 1Panel 功能基線盤點（票 092，PR #99）→ `docs/baseline/`。
 - 已在 `main` 但驗收未完成：票 003 等 CI（票 006）；票 004 缺 Komodo Periphery 改造起點的 crate 與授權清單、閒置 CPU 與記憶體量測；票 008 的 ENG-003 Agent 端等票 004、007。
 - 參考專案研究收尾 → `docs/research/`（1Panel 後端／前端、Komodo Periphery、Portainer Git Stack、Beszel 報告待補）。
@@ -61,8 +60,7 @@ None。
 - 規格：`docs/spec/HazelminX_Spec_v1.1_zh-TW.md`
 - 票務：`docs/tickets/README.md`、GitHub issues #1–#98（milestone M0–M5）
 - 草稿 PR：#99（092 基線盤點）、#102（002 設計方向）
-- 已合併 PR：#100（003）、#101（004）、#103（011）、#104（009）、#105（008）、#106（012）
-- 待審 PR：票 010（分支 `ticket/010-management-api-contract`）
+- 已合併 PR：#100（003）、#101（004）、#103（011）、#104（009）、#105（008）、#106（012）、#121（010）
 - 設計畫布：<https://claude.ai/artifact/NBXgFGYEiZVnKLraoa7Nt8>（第一頁三個方向、第二頁方向 B 定稿 12 畫板，私人）
 - 研究：`docs/research/`
 - 工作規則：`AGENTS.md`
@@ -73,4 +71,4 @@ None。
 - Vite+ 的 `vp` 尚未安裝在開發機；票 005 開工時先裝全域 CLI（`curl -fsSL https://vite.plus | bash`）。
 - 在 `/Volumes/SSD` 上 `cargo build` 需設 `CARGO_TARGET_DIR` 到支援檔案鎖的磁碟（project memory 有紀錄）。
 - 票 010 新增 migration `0006_management_contract.sql`。其他平行分支若也新增 `0006`，後合併的一方要改號，並同步更新票檔裡的引用。
-- 2026-11-08 起，`main` 上 `core/internal/api` 的測試會失敗：IAM 測試的時鐘寫死在 2026-11-07，cookie 的 Max-Age 卻用牆上時鐘算。票 010 分支的第一個 commit 已經修正，同時修了 `TestRecoverAfterRestartDoesNotResetOrRerun` 約三成機率失敗的問題。
+- `core/internal/api` 的 IAM 測試時鐘原本寫死在 2026-11-07，從 2026-11-08 起整批失敗。票 010（PR #121）已經修正，同時修了 `TestRecoverAfterRestartDoesNotResetOrRerun` 約三成機率失敗的問題。
