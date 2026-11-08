@@ -10,7 +10,7 @@ M0 基礎與設計：Core 與 Agent 後端骨架（票 003、004、008、009、0
 - 設計系統與原型（票 002，PR #102）→ `DESIGN.md`、`docs/design/`（30 個畫板，19 個主導覽項全部有畫面）、`DESIGN-REVIEW.md`（三輪）。
 - 1Panel 功能基線盤點（票 092，PR #99）→ `docs/baseline/`。
 - 已在 `main` 但驗收未完成：票 003 等 CI（票 006）；票 004 缺 Komodo Periphery 改造起點的 crate 與授權清單、閒置 CPU 與記憶體量測；票 008 的 ENG-003 Agent 端等票 004、007。
-- 前端骨架（票 005，分支 `ticket/005-web-skeleton`）→ `web/`：Kumo＋HazelminX 主題、外殼、i18n、深淺色、共用元件（儲存列、主機狀態列、元件停止橫條、原文＋白話摘要）、Playwright 版面與無障礙掃描；Core 嵌入版已實測。PR base 暫設 `ticket/002-design-system`，PR #102 合併後改 main。
+- 前端骨架（票 005，分支 `ticket/005-web-skeleton`，草稿 PR #126）→ `web/`：Kumo＋HazelminX 主題、外殼、i18n、深淺色、共用元件（儲存列、主機狀態列、元件停止橫條、原文＋白話摘要）、Playwright 版面與無障礙掃描；Core 嵌入版已實測。PR base 暫設 `ticket/002-design-system`，PR #102 合併後改 main。
 - 參考專案研究收尾 → `docs/research/`（1Panel 後端／前端、Komodo Periphery、Portainer Git Stack、Beszel 報告待補）。
 
 ## Milestones
@@ -60,7 +60,7 @@ None。
 - 架構決策：`ENG.md`
 - 規格：`docs/spec/HazelminX_Spec_v1.1_zh-TW.md`
 - 票務：`docs/tickets/README.md`、GitHub issues #1–#98（milestone M0–M5）
-- 草稿 PR：#99（092 基線盤點）、#102（002 設計方向）
+- 草稿 PR：#99（092 基線盤點）、#102（002 設計方向）、#126（005 前端骨架）
 - 已合併 PR：#100（003）、#101（004）、#103（011）、#104（009）、#105（008）、#106（012）
 - 設計畫布：<https://claude.ai/artifact/NBXgFGYEiZVnKLraoa7Nt8>（第一頁三個方向、第二頁方向 B 定稿 12 畫板，私人）
 - 研究：`docs/research/`
