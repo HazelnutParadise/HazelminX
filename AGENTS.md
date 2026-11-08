@@ -49,4 +49,8 @@
 
 ## Follow-ups
 
+- 密碼登入（`iam.Service.Login`）先 `limiter.Check` 再雜湊密碼、最後才記失敗，同時送出大量猜測可以超過帳號冷卻的次數；比照票 014 的第二步，同一帳號的嘗試要一次處理一個。
+- 有密碼的攻擊者可以持續送錯的第二驗證碼，讓管理員的第二步一直被冷卻擋住（`#2fa:` 計數按帳號、不分來源）。改法要使用者決定：例如改成「帳號＋來源」計數加較高的帳號總上限，或 Passkey 成功不受計數影響。
+- 管理網域改變後，只剩舊網域 Passkey 的強制角色帳號，系統仍算它「已有第二驗證」，不會要求重新綁定；票 018 實作網域變更時，要依 `auth/passkeys/domain-impact` 的結果處理這些帳號。
+- `internal/jobs` 的 `TestRecoverAfterRestartDoesNotResetOrRerun` 偶爾失敗（票 014 的審查在 base `de30d42` 也重現過），要查是測試時序還是引擎問題。
 - 第一次正式發版前，把 `core/internal/store/migrations/` 的所有 migration 合併成單一個 `0001` 檔，`store` 的連號檢查與 schema 版本相關測試一起更新。已經有使用者安裝的版本發出去之後，就不能再這樣合併。
