@@ -348,7 +348,8 @@ body{{margin:0}}
 .hb .rrow{{--t:24px minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,.5fr) minmax(0,.6fr)}}
 @media (max-width:1280px){{.hb .frow{{--t:28px minmax(0,2fr) 90px 100px}}.hb .frow>:nth-child(4){{display:none}}}}
 @media (max-width:1024px){{.hb .c5{{display:none}}.hb .crow{{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.5fr) minmax(0,.9fr) minmax(0,.9fr) 100px}}.hb .acts .ib:nth-child(n+3){{display:none}}}}
-@media (max-width:900px){{.hb .side{{order:-2}}.hb .aside{{order:-1;width:100%;border-left:0;border-bottom:1px solid var(--line)}}}}
+@media (max-width:900px){{.hb .side{{order:-2}}.hb .aside{{order:-1;width:100%;border-left:0;border-bottom:1px solid var(--line)}}.hb #attention article:nth-of-type(n+3){{display:none}}.hb #attention .mall{{display:inline-flex}}}}
+.hb #attention .mall{{display:none}}
 @media (max-width:900px){{.hb .top{{flex-wrap:wrap;padding:8px 12px;gap:8px;min-height:0}}.hb .crumb{{display:none}}.hb .top .search{{order:3;flex:1 1 100%;max-width:none;margin:0}}.hb .obs{{display:none}}.hb .ib.user span{{display:none}}.hb .side{{width:100%;border-right:0;border-bottom:1px solid var(--line);flex-direction:row;flex-wrap:nowrap;overflow-x:auto;gap:4px;padding:8px 12px}}.hb .navgrp{{display:none}}.hb .navcol{{flex-direction:row;flex:none;gap:4px}}.hb .side .nv{{width:auto;min-width:44px;justify-content:center;min-height:36px;padding:0 10px;white-space:nowrap;font-size:13px}}.hb .side .nv .cnt{{margin-left:4px}}.hb .side .coll{{display:none}}.hb .nv svg{{display:none}}.hb .brand{{width:auto;border:0;padding:0 12px}}}}
 @media (max-width:1100px){{.hb .aside{{width:100%;border-left:0;border-top:1px solid var(--line)}}.hb .fm{{grid-template-columns:220px minmax(0,1fr)}}.hb .fm .pane.detp{{grid-column:1/-1;border-top:1px solid var(--line)}}}}
 @media (max-width:767px){{
@@ -488,6 +489,7 @@ ICONS = {
  "files": '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>',
  "projects": '<path d="m12 3 9 5-9 5-9-5 9-5z"/><path d="m3 13 9 5 9-5"/><path d="m3 17 9 5 9-5"/>',
  "store": '<path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
+ "objstore": '<path d="M4 7h16l-1.6 12.2a2 2 0 0 1-2 1.8H7.6a2 2 0 0 1-2-1.8L4 7z"/><ellipse cx="12" cy="7" rx="8" ry="2.5"/><path d="M9 12h6"/>',
  "db": '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
  "ai": '<rect x="6" y="6" width="12" height="12" rx="2"/><rect x="10" y="10" width="4" height="4"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/>',
  "backup": '<path d="M12 4v10"/><path d="m8 10 4 4 4-4"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/>',
@@ -530,6 +532,7 @@ ICONS = {
  "more": '<circle cx="6" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18" cy="12" r="1.2"/>',
  "stop": '<rect x="6" y="6" width="12" height="12" rx="1.5"/>',
  "chev": '<path d="m9 6 6 6-6 6"/>',
+ "chevl": '<path d="m15 6-6 6 6 6"/>',
  "folder": '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>',
  "file": '<path d="M6 3h8l4 4v14H6V3z"/><path d="M14 3v4h4"/>',
  "sort": '<path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/>',
@@ -572,6 +575,7 @@ NAV = [
     ("網站與入口", "web", "Websites.dc.html"),
     ("API 代理", "api", "APIProxy.dc.html"),
     ("資料庫", "db", "Database.dc.html"),
+    ("物件儲存", "objstore", "ObjectStorage.dc.html"),
     ("AI", "ai", "AI.dc.html"),
     ("檔案", "files", "Files.dc.html"),
     ("儲存與備份", "storage", "Storage.dc.html"),
@@ -585,7 +589,7 @@ NAV = [
 ]
 # 側欄只放「跨節點的資源」。單一主機才有意義的（系統、服務模組、檔案、程序）收進節點頁分頁；
 # 全站都會用到的（工作、告警、終端機、搜尋）放頂列與最上方。
-GROUPS = [("應用", ["projects", "store", "web", "db", "ai", "api"]),
+GROUPS = [("應用", ["projects", "store", "web", "db", "objstore", "ai", "api"]),
           ("基礎設施", ["nodes", "docker", "k8s", "storage", "cron"]),
           ("安全與紀錄", ["security", "analytics", "logs"]),
           ("管理", ["iam", "settings"])]
@@ -621,8 +625,8 @@ def topbar(current: str, jobs: int = 3, attention: int = 5, obs: str = "03:42:06
     <a class="brand{" mini" if collapsed else ""}" href="Overview.dc.html" aria-label="HazelminX 總覽"><span class="logo" aria-hidden="true"></span><span>HazelminX</span></a>
     <a class="inp search" href="CommandPalette.dc.html" aria-label="搜尋或下指令">{icon("search")}<span>搜尋或下指令</span><span class="kbd">⌘K</span></a>
     <div class="tright">
-      <span class="obs">觀測 <span class="mono">{obs}</span> · 每 10 秒</span>
-      <a class="ib" href="Events.dc.html" aria-label="需要處理 {attention}" data-tip="需要處理 · {attention}">{icon("events")}<b class="badge dng">{attention}</b></a>
+      <span class="obs">資料更新於 <span class="mono">{obs}</span> · 每 10 秒</span>
+      <a class="ib" href="Overview.dc.html#attention" aria-label="需要處理 {attention}" data-tip="需要處理 {attention} · 告警 3、待批准 1、對外 Port 1">{icon("events")}<b class="badge dng">{attention}</b></a>
       <a class="ib" href="Terminal.dc.html" aria-label="終端機" data-tip="終端機">{icon("terminal")}</a>
       <button type="button" class="ib" aria-label="切換淺色或深色" data-tip="切換淺色或深色">{icon("sun")}</button>
       <button type="button" class="ib user" aria-label="tim · 擁有者">{icon("user")}<span>tim</span></button>
@@ -646,11 +650,13 @@ def savebar(changes: str, effect: str, primary: str, secondary: str = "") -> str
             f'<button type="button" class="btn pri" aria-keyshortcuts="Meta+S">{icon("save", 14)}{primary}<span class="kbd">⌘S</span></button></span></div>')
 
 
-def component_down(name: str, host: str, since: str, exit_info: str, impact: str, can_restart: bool = True, tries: str = "", kind: str = "", busy: bool = False) -> str:
+def component_down(name: str, host: str, since: str, exit_info: str, impact: str, can_restart: bool = True, tries: str = "", kind: str = "", busy: bool = False, fix: str = "") -> str:
     """平台依賴的元件停止時，依賴它的頁面頂端都放這條（ROB-013）。頁面其餘內容照常，以上次觀測值呈現。"""
     btn = (f'<button type="button" class="btn pri" disabled>{icon("restart", 14)}重啟中…</button>' if busy
            else f'<button type="button" class="btn pri">{icon("restart", 14)}重啟 {name}</button>' if can_restart
            else f'<span tabindex="0" data-tip="需要 {name} 的操作權限，請找主機管理員"><button type="button" class="btn pri" disabled>{icon("restart", 14)}重啟 {name}</button></span>')
+    if fix and not busy:  # 停止原因是設定錯誤時，直接重啟一定再失敗：主要動作換成修正方法，重啟降為次要
+        btn = fix + btn.replace('class="btn pri"', 'class="btn"')
     t = f'<span class="note">{tries}</span>' if tries else ""
     return (f'<div class="cdown" role="alert"><span class="t"><strong>{name} 已停止 · {host} · {since}</strong>' + (f'<span class="note mono">{kind}</span>' if kind else '') + f''
             f'<span>{status("dng", exit_info)} <span class="note">{impact}</span></span>{t}</span>'
@@ -847,11 +853,21 @@ def ranked(items: list[tuple[str, float, str]], vmax: float | None = None) -> st
     return f'<div class="ranks">{rows}</div>'
 
 
-def state_timeline(states: str, labels: list[str] | None = None) -> str:
-    """states: 字串，每字一段：o=成功 f=失敗 r=回滾 p=進行中 e=空"""
+TL_KINDS = {
+    "deploy": ("部署歷史", {"o": "成功", "f": "失敗", "r": "回滾", "p": "進行中", "e": "無資料"}),
+    "alert": ("告警狀態", {"o": "正常", "f": "觸發", "r": "靜音", "p": "評估中", "e": "無資料"}),
+    "job": ("執行紀錄", {"o": "成功", "f": "失敗", "r": "略過", "p": "執行中", "e": "沒排程"}),
+}
+
+
+def state_timeline(states: str, labels: list[str] | None = None, kind: str = "deploy") -> str:
+    """states: 字串，每字一段：o f r p e，意思依 kind（部署、告警、排程執行）。每格都有提示，不留空白 title。"""
     cls = {"o": "", "f": " f", "r": " r", "p": " p", "e": " e"}
-    segs = "".join(f'<i class="{cls[c].strip()}" title="{(labels or [""] * len(states))[i]}"></i>' for i, c in enumerate(states))
-    return f'<div class="timeline" role="img" aria-label="部署歷史：{states.count("o")} 成功、{states.count("f")} 失敗、{states.count("r")} 回滾">{segs}</div>'
+    what, names = TL_KINDS[kind]
+    tips = labels or [f"第 {i + 1} 段" for i in range(len(states))]
+    segs = "".join(f'<i class="{cls[c].strip()}" title="{tips[i]} · {names[c]}"></i>' for i, c in enumerate(states))
+    counts = "、".join(f"{states.count(k)} {names[k]}" for k in "ofr" if states.count(k))
+    return f'<div class="timeline" role="img" aria-label="{what}：{counts}">{segs}</div>'
 
 
 def segmented(parts: list[tuple[float, str]]) -> str:
