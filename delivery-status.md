@@ -10,6 +10,7 @@ M0 基礎與設計：Core 與 Agent 後端骨架（票 003、004、008、009、0
 - 設計系統與原型（票 002，PR #102）→ `DESIGN.md`、`docs/design/`（30 個畫板，19 個主導覽項全部有畫面）、`DESIGN-REVIEW.md`（三輪）。
 - 1Panel 功能基線盤點（票 092，PR #99）→ `docs/baseline/`。
 - 已在 `main` 但驗收未完成：票 003 等 CI（票 006）；票 004 缺 Komodo Periphery 改造起點的 crate 與授權清單、閒置 CPU 與記憶體量測；票 008 的 ENG-003 Agent 端等票 004、007。
+- 前端骨架（票 005，分支 `ticket/005-web-skeleton`）→ `web/`：Kumo＋HazelminX 主題、外殼、i18n、深淺色、共用元件（儲存列、主機狀態列、元件停止橫條、原文＋白話摘要）、Playwright 版面與無障礙掃描；Core 嵌入版已實測。PR base 暫設 `ticket/002-design-system`，PR #102 合併後改 main。
 - 參考專案研究收尾 → `docs/research/`（1Panel 後端／前端、Komodo Periphery、Portainer Git Stack、Beszel 報告待補）。
 
 ## Milestones
@@ -26,10 +27,10 @@ M0 基礎與設計：Core 與 Agent 後端骨架（票 003、004、008、009、0
 None。
 
 ## Next Verifiable Output
-票 007 Core↔Agent 協定：Agent 以 mTLS WebSocket 連上 Core，交換協定版本與能力，Core 與 Agent 用同一組黃金 JSON 樣本通過契約測試。PR #102（票 002）合併後，票 005 依 `DESIGN.md` token 建立 `web/` 骨架。
+票 007 Core↔Agent 協定：Agent 以 mTLS WebSocket 連上 Core，交換協定版本與能力，Core 與 Agent 用同一組黃金 JSON 樣本通過契約測試。票 005 的 PR 隨 PR #102（票 002）之後合併；合併後票 017 可在 `web/` 外殼上接工作中心、降級列與搜尋。
 
 ## Next Ticket
-007 Core 與 Agent 協定（ready）。005 前端骨架仍等票 002 完成。另外 014、022、023、026 的前置票都已 done，狀態改為 ready；010、013、024、025 還在等 003、004 或 008 完成驗收。
+007 Core 與 Agent 協定（ready）。005 前端骨架已完成驗收，等 PR #102 合併後再合併。另外 014、022、023、026 的前置票都已 done，狀態改為 ready；010、013、024、025 還在等 003、004 或 008 完成驗收。
 
 ## Decision Log
 | decision | rationale | timestamp | impacted_ticket_ids |
@@ -49,6 +50,10 @@ None。
 | 猜到不可見範圍的資源 ID 回與「不存在」完全相同的 404，可見但無權才回 403 | T-014 要求查詢、下載、搜尋、事件串流都不洩漏存在與否 | 2026-11-07 | 009、008、010 |
 | `/management/v1/jobs` 掛在 IAM 驗證之後：讀取要全域 `platform:read`，提交與取消要全域 `platform:write`；各工作種類的權限與範圍由票 010 定 | 合併 008 與 009 時工作 API 原本不需登入；AGENTS.md 要求危險操作在後端驗權 | 2026-11-07 | 008、009、010 |
 | 003、004、008 驗收未完成仍先合併進 `main`，狀態維持 in_progress | 使用者決定（2026-11-07）；003 的 CI 條件要等 006，而 006 需要 003 先合併 | 2026-11-07 | 003、004、006、008 |
+| Kumo 主要／危險按鈕在 `@layer base` 用 `!important` 改成實心 token＋hazel-ink 字 | Kumo 以 inline style 把 brand 調亮 30% 並鎖白字，深色榛果底對比只有 2.00:1；覆蓋 token 無效 | 2026-11-08 | 005 |
+| 對比、觸控目標、可及名稱改用 Playwright 掃描（`web/e2e/scan.ts`），另自算文字對比 | `docs/design/tools/` 只有版面掃描；axe 遇到偽元素與兄弟層的底色只回 incomplete | 2026-11-08 | 005、096 |
+| API 型別產生器放在 `web/tools/openapi/` 的獨立小套件 | openapi-typescript 需要 TypeScript 5 的編譯器 API，TypeScript 7 沒有 | 2026-11-08 | 005、010 |
+| 「使用者時區」先取瀏覽器時區 | 帳號層級時區設定還沒有擁有票的 API | 2026-11-08 | 005、015、018 |
 | 主金鑰存 `<data-dir>/master.key`（多世代、舊世代永不刪）；SQLite 改 `synchronous=FULL`；`master.key` 存在而 `core.db` 不在視為遺失而非全新安裝 | 35.2 主金鑰不與資料庫同放、輪替後舊備份須可解密；DAT-002 已確認交易不可丟；T-012 不冒用空白庫 | 2026-11-07 | 011、078、013 |
 
 ## Source Links
@@ -64,5 +69,5 @@ None。
 ## Handoff Notes
 - 所有產品測試均未執行；規格裡的「必須」都是要求。
 - 參考專案原始碼放在本機暫存目錄，不進 repo；研究報告是線索，實作前以固定 commit 重新核對。
-- Vite+ 的 `vp` 尚未安裝在開發機；票 005 開工時先裝全域 CLI（`curl -fsSL https://vite.plus | bash`）。
+- `web/` 用專案內的 `vite-plus`（`./node_modules/.bin/vp`）；`package.json` 的 `devEngines` 鎖 npm 12.2.2，不要直接跑系統 npm／npx。`node_modules` 放在 SSD 上很慢，開發時可在本機磁碟的 clone 裡跑。
 - 在 `/Volumes/SSD` 上 `cargo build` 需設 `CARGO_TARGET_DIR` 到支援檔案鎖的磁碟（project memory 有紀錄）。
