@@ -182,7 +182,7 @@
     "INT-001"
    ],
    "acceptance_tests": [],
-   "status": "blocked",
+   "status": "done",
    "issue": 10
   },
   {
@@ -297,7 +297,7 @@
     "IAM-010"
    ],
    "acceptance_tests": [],
-   "status": "blocked",
+   "status": "ready",
    "issue": 15
   },
   {

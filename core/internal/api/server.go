@@ -1,10 +1,10 @@
 // Package api is the HTTP surface of hazelminx-core.
 //
-// Only the health endpoint and the /management/v1 overview exist here; the
-// contract (pagination, If-Match, 202 + jobId, error format) lands in ticket
-// 010 and authentication in ticket 009. Everything under /management/v1 will
-// sit behind those middlewares; nothing here may be mistaken for an authorized
-// write path.
+// The management contract (ticket 010, spec 36) lives here as shared pieces
+// every resource route uses: the error code table (errcodes.go), lists
+// (listing.go), versioned writes (version.go), dryRun previews and the
+// operation registry (operations.go), 202 job answers (jobresp.go) and the
+// OpenAPI document generated from the registry (openapi.go).
 package api
 
 import (
@@ -12,9 +12,12 @@ import (
 	"io/fs"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/HazelnutParadise/hazelminx/core/internal/confirm"
 	"github.com/HazelnutParadise/hazelminx/core/internal/iam"
+	"github.com/HazelnutParadise/hazelminx/core/internal/jobs"
 	"github.com/gin-gonic/gin"
 )
 
@@ -32,30 +35,49 @@ type Server struct {
 	health HealthChecker
 	ui     fs.FS
 	start  time.Time
-	// operations is the discovery list served by overview; every registered
-	// feature appends its public operations here.
-	operations []gin.H
-	// extras are extra overview fields contributed by features (job kinds…).
-	extras []func() gin.H
+	// ops is the operation registry behind the overview and OpenAPI; every
+	// route is added through handle.
+	ops []Operation
+	// extras let features add overview fields (job kinds…).
+	extras []func(*overviewResponse)
 
 	iam       *iam.Service     // set by MountIAM
 	protected *gin.RouterGroup // authenticated /management/v1 group
+	jobs      *jobs.Engine     // set by RegisterJobs
+	confirm   *confirm.Service // set by MountConfirmations
+	// platform reports platform-level degradation (addendum 03 機制四);
+	// ticket 017 wires the detectors. Nil means not degraded.
+	platform func() *PlatformDegradation
+
+	openapiOnce sync.Once
+	openapiDoc  []byte
 }
 
 // New builds the router. ui may be nil when no interface is embedded.
 func New(health HealthChecker, ui fs.FS) *Server {
 	gin.SetMode(gin.ReleaseMode)
 	e := gin.New()
-	e.Use(gin.Recovery())
+	// Every answer carries X-Trace-ID, including unknown paths and panics.
+	e.Use(traceID(), gin.CustomRecovery(func(c *gin.Context, _ any) {
+		respond(c, newError(CodeInternal, "internal error"))
+	}))
 	s := &Server{engine: e, health: health, ui: ui, start: time.Now()}
 
-	e.GET("/healthz", s.healthz)
-	s.addOperation("GET", "/healthz", "liveness and store health")
+	s.handle(e, "", Operation{Method: "GET", Path: "/healthz", ID: "health", Tag: "platform",
+		Summary:   "liveness and store health",
+		Responses: []Response{{Status: 200, Body: healthResponse{}, Description: "healthy"}, {Status: 503, Body: healthResponse{}, Description: "the store does not answer"}}},
+		s.healthz)
 
 	m := e.Group("/management/v1")
-	m.GET("", s.overview)
-	m.GET("/", s.overview)
-	s.addOperation("GET", "/management/v1", "this overview")
+	s.handle(m, "/management/v1", Operation{Method: "GET", Path: "/management/v1", ID: "overview", Tag: "platform",
+		Summary:   "this overview: every operation with a link to its OpenAPI entry",
+		Responses: []Response{{Status: 200, Body: overviewResponse{}}}},
+		s.overview)
+	m.GET("/", s.overview) // same operation with a trailing slash
+	s.handle(m, "/management/v1", Operation{Method: "GET", Path: "/management/v1/openapi.json", ID: "openapi", Tag: "platform",
+		Summary:   "OpenAPI 3.1 document of this API, generated from the operation registry",
+		Responses: []Response{{Status: 200, Description: "OpenAPI document"}}},
+		s.serveOpenAPI)
 
 	e.NoRoute(s.serveUI)
 	return s
@@ -86,36 +108,46 @@ func (s *Server) healthz(c *gin.Context) {
 	c.JSON(code, resp)
 }
 
-// overview is the API discovery document required by the engineering
-// guidelines: every public operation must be reachable from here.
-func (s *Server) overview(c *gin.Context) {
-	body := gin.H{
-		"name":       "HazelminX management API",
-		"version":    "v1",
-		"build":      Version,
-		"operations": s.operations,
-		"openapi":    nil, // ticket 010 publishes /management/v1/openapi.json
-	}
-	for _, f := range s.extras {
-		for k, v := range f() {
-			body[k] = v
-		}
-	}
-	c.JSON(http.StatusOK, body)
+type overviewResponse struct {
+	Name       string              `json:"name"`
+	Version    string              `json:"version"`
+	Build      string              `json:"build"`
+	OpenAPI    string              `json:"openapi"`
+	Operations []overviewOperation `json:"operations"`
+	// JobKinds lists the registered job kinds (when the job engine is
+	// mounted).
+	JobKinds []string `json:"jobKinds,omitempty"`
 }
 
-func (s *Server) addOperation(method, path, summary string) {
-	s.operations = append(s.operations, gin.H{"method": method, "path": path, "summary": summary})
+type overviewOperation struct {
+	Method  string `json:"method"`
+	Path    string `json:"path"`
+	Summary string `json:"summary"`
+	// Docs links to the operation in the OpenAPI document.
+	Docs string `json:"docs"`
+}
+
+// overview is the API discovery document required by the engineering
+// guidelines: every public operation is reachable from here.
+func (s *Server) overview(c *gin.Context) {
+	body := overviewResponse{Name: "HazelminX management API", Version: "v1", Build: Version, OpenAPI: openAPIPath}
+	for _, op := range s.ops {
+		body.Operations = append(body.Operations, overviewOperation{Method: op.Method, Path: op.Path, Summary: op.Summary, Docs: openAPIRef(op)})
+	}
+	for _, f := range s.extras {
+		f(&body)
+	}
+	c.JSON(http.StatusOK, body)
 }
 
 func (s *Server) serveUI(c *gin.Context) {
 	p := c.Request.URL.Path
 	if strings.HasPrefix(p, "/management/") || strings.HasPrefix(p, "/integrations/") || c.Request.Method != http.MethodGet {
-		c.JSON(http.StatusNotFound, gin.H{"code": "NOT_FOUND", "message": "no such operation", "path": p})
+		respond(c, newError(CodeNotFound, "no such operation: "+c.Request.Method+" "+p))
 		return
 	}
 	if s.ui == nil {
-		c.JSON(http.StatusServiceUnavailable, gin.H{"code": "UI_NOT_EMBEDDED", "message": "this build has no web interface embedded; use the management API"})
+		respond(c, newError(CodeUINotEmbedded, "this build has no web interface embedded; use the management API"))
 		return
 	}
 	name := strings.TrimPrefix(p, "/")
@@ -130,7 +162,7 @@ func (s *Server) serveUI(c *gin.Context) {
 	// and unknown paths fall back to it so client-side routing works.
 	data, err := fs.ReadFile(s.ui, "index.html")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"code": "UI_INDEX_MISSING", "message": "embedded interface has no index.html"})
+		respond(c, newError(CodeUIIndexMissing, "embedded interface has no index.html"))
 		return
 	}
 	c.Header("Cache-Control", "no-store")

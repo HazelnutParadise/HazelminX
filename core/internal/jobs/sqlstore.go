@@ -99,10 +99,7 @@ func decodeJob(doc string) (*Job, error) {
 	return &j, nil
 }
 
-func (s *SQLStore) ListJobs(ctx context.Context, opts ListOptions) ([]*Job, error) {
-	q := `SELECT doc FROM jobs`
-	var where []string
-	var args []any
+func jobFilter(opts ListOptions) (where []string, args []any) {
 	if len(opts.States) > 0 {
 		ph := make([]string, len(opts.States))
 		for i, st := range opts.States {
@@ -115,15 +112,47 @@ func (s *SQLStore) ListJobs(ctx context.Context, opts ListOptions) ([]*Job, erro
 		where = append(where, "kind=?")
 		args = append(args, opts.Kind)
 	}
+	if opts.Node != "" {
+		where = append(where, "node=?")
+		args = append(args, opts.Node)
+	}
+	return where, args
+}
+
+func (s *SQLStore) CountJobs(ctx context.Context, opts ListOptions) (int, error) {
+	where, args := jobFilter(opts)
+	q := `SELECT count(*) FROM jobs`
 	if len(where) > 0 {
 		q += " WHERE " + strings.Join(where, " AND ")
 	}
+	var n int
+	err := s.db.QueryRowContext(ctx, q, args...).Scan(&n)
+	return n, err
+}
+
+func (s *SQLStore) ListJobs(ctx context.Context, opts ListOptions) ([]*Job, error) {
+	q := `SELECT doc FROM jobs`
+	where, args := jobFilter(opts)
+	order := "created_at DESC, id DESC"
 	if opts.Ascending {
-		q += " ORDER BY created_at ASC, id ASC"
-	} else {
-		q += " ORDER BY created_at DESC, id DESC"
+		order = "created_at ASC, id ASC"
 	}
 	limit := opts.Limit
+	if len(opts.Page.Sort) > 0 {
+		o, w, a, err := opts.Page.SQL(JobSortColumns)
+		if err != nil {
+			return nil, err
+		}
+		order, limit = o, opts.Page.Limit
+		if w != "" {
+			where = append(where, w)
+			args = append(args, a...)
+		}
+	}
+	if len(where) > 0 {
+		q += " WHERE " + strings.Join(where, " AND ")
+	}
+	q += " ORDER BY " + order
 	if limit <= 0 || limit > 500 {
 		limit = 500
 	}
