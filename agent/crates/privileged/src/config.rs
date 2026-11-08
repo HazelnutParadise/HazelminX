@@ -26,6 +26,9 @@ pub struct Config {
     /// `json` (default) or `text`.
     #[serde(default = "default_log_format")]
     pub log_format: String,
+    /// Host change ledger (spec 55.1); root-only.
+    #[serde(default = "default_ledger_dir")]
+    pub ledger_dir: PathBuf,
 }
 
 fn default_socket_path() -> PathBuf {
@@ -40,6 +43,9 @@ fn default_max_actions() -> usize {
 fn default_log_format() -> String {
     "json".into()
 }
+fn default_ledger_dir() -> PathBuf {
+    PathBuf::from(crate::ledger::store::DEFAULT_LEDGER_DIR)
+}
 
 impl Default for Config {
     fn default() -> Self {
@@ -49,6 +55,7 @@ impl Default for Config {
             allowed_uid: None,
             max_concurrent_actions: default_max_actions(),
             log_format: default_log_format(),
+            ledger_dir: default_ledger_dir(),
         }
     }
 }
@@ -59,6 +66,7 @@ pub struct Overrides {
     pub issuer_public_key: Option<PathBuf>,
     pub allowed_uid: Option<u32>,
     pub log_format: Option<String>,
+    pub ledger_dir: Option<PathBuf>,
 }
 
 impl Config {
@@ -81,6 +89,9 @@ impl Config {
         if let Some(v) = overrides.log_format {
             cfg.log_format = v;
         }
+        if let Some(v) = overrides.ledger_dir {
+            cfg.ledger_dir = v;
+        }
         cfg.validate()?;
         Ok(cfg)
     }
@@ -94,6 +105,7 @@ impl Config {
             self.issuer_public_key.is_absolute(),
             "issuer_public_key must be absolute"
         );
+        anyhow::ensure!(self.ledger_dir.is_absolute(), "ledger_dir must be absolute");
         anyhow::ensure!(
             self.max_concurrent_actions >= 1,
             "max_concurrent_actions must be at least 1"

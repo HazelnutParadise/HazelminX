@@ -52,7 +52,7 @@
    ],
    "requirements": [],
    "acceptance_tests": [],
-   "status": "in_progress",
+   "status": "done",
    "issue": 4
   },
   {
@@ -1037,7 +1037,7 @@
     "GH-T14",
     "GH-T15"
    ],
-   "status": "blocked",
+   "status": "ready",
    "issue": 47
   },
   {

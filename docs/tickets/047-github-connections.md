@@ -4,7 +4,7 @@
 **User Story:** 使用者可以從 GitHub 部署  
 **Milestone:** M2 容器、Compose 與 GitHub  
 **Blocked by:** [009 擁有者可以登入、建立帳號與角色，未授權的 API 呼叫一律被拒絕](009-iam-foundation.md), [011 管理員可以安全保存機密，且主金鑰可輪替並驗證舊備份仍可解密](011-secrets-and-master-key.md), [010 整合者可以用 /management/v1 的分頁、版本條件與工作回應操作資源](010-management-api-contract.md)  
-**Status:** blocked  
+**Status:** ready  
 **規格章節:** 15｜完整 Compose、GitHub 與環境變數  
 **Issue:** [#47](https://github.com/HazelnutParadise/hazelminx/issues/47)  
 

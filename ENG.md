@@ -69,10 +69,11 @@ scripts/   CI 與發布腳本（簽署清單、依賴檢查）
 | Go HTTP 框架 | Gin | 1Panel 與 infra-manager 都用 Gin，移植成本最低；路由定義可產生 OpenAPI。 |
 | 平台資料庫 | SQLite（`modernc.org/sqlite`，純 Go）、WAL、`PRAGMA foreign_keys=ON` | PKG-001 要求乾淨主機無 C 編譯器；1Panel 已使用純 Go 的 glebarez/sqlite。多 Core 不共用同一檔案（35.1）。 |
 | Migration | 版本表 + 有序 SQL 檔 + Go 程式化步驟；只允許向上；啟動時比對 `schemaVersion` 拒絕舊執行檔開新資料 | DAT-006、REL-006。 |
-| Core↔Agent 協定 | Agent 主動建立 WebSocket over TLS（mTLS，雙向憑證），JSON 訊息，`protocolVersion` 與 `capabilities` 握手；事件帶單調序號；請求帶 `requestId`、`controlGeneration`、`expiresAt` | NOD-002、NOD-011、ENG-010、SEC-004。Komodo Periphery 已有 Agent 主動連 Core 的 WebSocket 客戶端（`connection/client.rs`），但身分驗證是 `mogh_pki` 的 Noise 握手而非 mTLS，Go 端沒有現成相容實作；因此 `connection/` 改為 mTLS，保留其單一 WebSocket 多工請求與終端機串流的設計。docker／stats／terminal 模組保留；`lib/command` 以 shlex 拆參數後走 `Command::args`，可作低權限命令層，但高權限動作仍走 privileged。 |
+| Core↔Agent 協定 | Agent 主動建立 WebSocket over TLS（mTLS，雙向憑證），JSON 訊息，`protocolVersion` 與 `capabilities` 握手；事件帶單調序號；請求帶 `requestId`、`controlGeneration`、`expiresAt` | NOD-002、NOD-011、ENG-010、SEC-004。Komodo Periphery 已有 Agent 主動連 Core 的 WebSocket 客戶端（`connection/client.rs`），但身分驗證是 `mogh_pki` 的 Noise 握手而非 mTLS，Go 端沒有現成相容實作；因此 `connection/` 改為 mTLS，保留其單一 WebSocket 多工請求與終端機串流的設計。docker／stats／terminal 模組保留；`lib/command` 的程序群組隔離、逾時與取消可作低權限命令層，移植時移除接受命令字串的 API、只留參數陣列（`agent/UPSTREAM.md`），高權限動作仍走 privileged。 |
 | GPU 指標 | NVIDIA 以 purego 動態載入 NVML（免 CGO／免綁定），AMD 與 Intel 讀 sysfs（`/sys/class/drm`、hwmon），CLI（nvidia-smi、rocm-smi、intel_gpu_top）只作退路；Rust 端對應用 `libloading` + sysfs | MON-002；Beszel 研究報告第 4 節。缺值明示，不假造跨廠相同欄位。 |
 | 協定單一來源 | `agent/crates/protocol`（Rust serde 型別）+ `docs/contracts/fixtures/*.json` 黃金樣本；Go 端 `core/internal/protocol` 以相同樣本做契約測試 | 兩種語言各自編譯，樣本保證相容。 |
 | 高權限隔離 | `hazelminx-privileged` 獨立行程（root），Unix socket，`SO_PEERCRED` 驗證呼叫者 uid；每個動作是具名 enum + 結構化參數，執行時以 `Command::args` 傳遞，不經 shell；每個請求附 Core 簽發的 Ed25519 授權憑證（權限名稱清單、有效期上限 24 小時、可依 id 撤銷），執行器以 `issuer.pub` 驗簽並逐動作比對權限；`health`／`revoke` 不排動作名額，輸出走有界通道 | 32.2、SEC-005、SEC-006、SEC-009。Komodo `lib/command` 以 shell 字串執行，不直接沿用。 |
+| 主機變更帳本 | 執行器在每個會改主機的動作前後寫帳本：動作在 `Action::ledger_decl` 宣告會改的對象（只讀動作宣告只讀），執行器先讀出變更前狀態、同步寫入意圖行，才執行，之後讀變更後狀態寫結果行。沒有宣告、帳本不可用、讀不到變更前狀態都拒絕並記安全事件。帳本在 `/var/lib/hazelminx/ledger`（root 0700，上層不得可被他人寫入），每行帶前一行的 SHA-256 形成雜湊鏈，檔案類對象另存原內容備份。Core 以 `ledger_export` 分頁取原始行，驗證雜湊鏈後保存副本。安裝器（013）用同一個 `Recorder` 記錄安裝步驟，安裝前先跑 `snapshot capture` | 增補 07 第 55.1 節、UNX-001、UNX-002、T-250。擁有權依「變更前是否存在」與「變更前後狀態是否不同」判定，之後只升不降。原始行原樣傳給 Core，Go 端以 `json.RawMessage` 驗雜湊，不必重現 Rust 的序列化。 |
 | 工作引擎 | Core 持久化工作與步驟；Agent 本機也持久化步驟與證據；重連先對帳（Agent 回報已完成步驟）再決定續跑；資源鎖以「裝置身分 + 掛載 + 正規化路徑」為鍵 | 33 章。 |
 | 前端 | React 19、TypeScript、Vite+（`vp`）；路由 react-router；資料 TanStack Query；表單 react-hook-form + zod；UI 以 Radix Primitives 為無障礙底層 + 自家設計 token（`DESIGN.md`）；i18n i18next（zh-TW、en）；終端機 xterm.js；編輯器 CodeMirror 6；圖表 待設計階段決定 | 7.2、UI-005；不複製上游品牌素材。 |
 | Zentinel 整合 | 固定版本；Core 產生完整解析後的 KDL（不含 `${VAR}`）→ Agent 經 privileged 寫入候選檔 → `zentinel --validate`（以選定版本能力為準）→ 原子換檔 → SIGHUP → 實際請求驗證 | 研究報告：無 HTTP reload API、無環境變數代換、admin listener 預設 `0.0.0.0:9090` 且無驗證（必須改綁本機並以防火牆限制）。 |
@@ -136,7 +137,7 @@ CI 必跑：`go test ./... && go vet`、`cargo test --workspace && cargo clippy 
 ## Hidden assumptions
 
 - SQLite 單一 Core 可承載 38.1 的擴充控制中心規模 — 風險：壓測未過時需換儲存，但不得引入必須登入平台才能啟動的容器（45.2）。
-- Komodo Periphery 的 docker／stats／terminal 模組在固定 commit 下可在新連線模型中重用 — 風險：依賴 `mogh_*` 系列 crate（MPL-2.0，crates.io）與 `komodo_client` 型別的綁定程度高，拆分成本待票 004 驗證；Periphery 無 GPU 採集、無通用檔案 API、無 Windows 條件編譯，這些都要新寫。
+- Komodo Periphery（`v2.3.3`，commit `780ac68`）的 docker／stats／terminal 模組與 `lib/command` 可在新連線模型中重用 — 以原始碼移植並改寫型別，不相依任何 Komodo 或 `mogh_*` crate，因為這些模組都綁著 `komodo_client` 型別；逐 crate 的保留／替換／捨棄與授權見 `agent/UPSTREAM.md`。風險：移植時要一併改寫型別與介面，成本落在票 007、020、027、040～044；Periphery 無 GPU 採集、無通用檔案 API、無 Windows 條件編譯，這些都要新寫。
 - 1Panel OSS 的 core 幾乎把整個 `/api/v2` 代理給 agent（約 691 條路由在 agent、72 條在 core）— 風險：「保留 Go 業務邏輯」的範圍比名稱上的 core 大得多，票 092 的基線盤點必須以 agent 路由為主；1Panel 無 Podman／K8s 支援，這兩塊是純新作。
 - Zentinel agent filter 能承載 WAF 與可信 IP 判定且延遲可接受 — 風險：WAF 引擎候選均未經本案測試（45.2）。
 - PHP 網站需獨立 HTTP runtime（Zentinel 無 FastCGI）— 風險：相容層是發布門檻（19.1）。

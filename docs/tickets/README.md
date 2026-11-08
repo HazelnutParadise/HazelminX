@@ -11,7 +11,7 @@
 | [001](001-repo-scaffold.md) | 維護者可以在單一 repo 取得規格、架構決策、票務與工作規則 | 基礎建設 | — | [#1](https://github.com/HazelnutParadise/hazelminx/issues/1) | done |
 | [002](002-design-system.md) | 設計師與開發者可以依 DESIGN.md 與互動原型審查主要畫面 | 設計系統 | — | [#2](https://github.com/HazelnutParadise/hazelminx/issues/2) | in_progress |
 | [003](003-core-skeleton.md) | 管理員可以啟動 hazelminx-core 並通過健康檢查 | 基礎建設 | 001 | [#3](https://github.com/HazelnutParadise/hazelminx/issues/3) | in_progress |
-| [004](004-agent-skeleton.md) | 管理員可以在主機上以 systemd 執行 hazelminx-agent 並回報身分 | 節點與 Agent | 001 | [#4](https://github.com/HazelnutParadise/hazelminx/issues/4) | in_progress |
+| [004](004-agent-skeleton.md) | 管理員可以在主機上以 systemd 執行 hazelminx-agent 並回報身分 | 節點與 Agent | 001 | [#4](https://github.com/HazelnutParadise/hazelminx/issues/4) | done |
 | [005](005-web-skeleton.md) | 使用者可以開啟 React 介面並切換語言與淺深色 | 基礎建設 | 001, 002 | [#5](https://github.com/HazelnutParadise/hazelminx/issues/5) | blocked |
 | [006](006-ci-pipeline.md) | 維護者可以在 CI 建置、測試並產生各架構成品 | 發布與供應鏈 | 003, 004, 005 | [#6](https://github.com/HazelnutParadise/hazelminx/issues/6) | blocked |
 | [007](007-core-agent-protocol.md) | Core 與 Agent 可以用版本化、雙向驗證的通道交換能力與工作事件 | 節點與 Agent | 003, 004 | [#7](https://github.com/HazelnutParadise/hazelminx/issues/7) | ready |
@@ -66,7 +66,7 @@
 | [044](044-compose-projects.md) | 專案管理員可以建立專案與環境，匯入完整 Compose 並驗證後部署 | Compose 部署 | 039, 008, 016 | [#44](https://github.com/HazelnutParadise/hazelminx/issues/44) | blocked |
 | [045](045-env-layers.md) | 管理員可以分層管理 .env、介面變數與覆寫層，並預覽每個服務實際收到的值 | Compose 部署 | 044, 011 | [#45](https://github.com/HazelnutParadise/hazelminx/issues/45) | blocked |
 | [046](046-deploy-revisions.md) | 管理員可以查看部署版本、三方比較並回到相容舊版 | Compose 部署 | 045 | [#46](https://github.com/HazelnutParadise/hazelminx/issues/46) | blocked |
-| [047](047-github-connections.md) | 使用者可以用 GitHub 網頁授權或 PAT 建立可重用連線，並保存多帳號多授權 | GitHub 來源 | 009, 011, 010 | [#47](https://github.com/HazelnutParadise/hazelminx/issues/47) | blocked |
+| [047](047-github-connections.md) | 使用者可以用 GitHub 網頁授權或 PAT 建立可重用連線，並保存多帳號多授權 | GitHub 來源 | 009, 011, 010 | [#47](https://github.com/HazelnutParadise/hazelminx/issues/47) | ready |
 | [048](048-repo-picker.md) | 使用者可以瀏覽、搜尋、分頁載入可用 Repo，並選分支、commit 與 Compose 檔案 | GitHub 來源 | 047, 017 | [#48](https://github.com/HazelnutParadise/hazelminx/issues/48) | blocked |
 | [049](049-git-deploy.md) | 專案管理員可以從 GitHub 以固定 commit 隔離抓取、建置並部署，手動 URL／PAT／SSH 模式照常可用 | GitHub 來源 | 048, 044, 012 | [#49](https://github.com/HazelnutParadise/hazelminx/issues/49) | blocked |
 | [050](050-auto-deploy-webhooks.md) | 管理員可以設定 Webhook 或定期檢查觸發部署，並決定多環境與連續 commit 政策 | GitHub 來源 | 049 | [#50](https://github.com/HazelnutParadise/hazelminx/issues/50) | blocked |
