@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"context"
+	"encoding/base32"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/HazelnutParadise/hazelminx/core/internal/iam"
+	"github.com/HazelnutParadise/hazelminx/core/internal/secrets"
 	"github.com/HazelnutParadise/hazelminx/core/internal/store"
 	"github.com/gin-gonic/gin"
 )
@@ -24,6 +26,36 @@ type harness struct {
 	svc   *iam.Service
 	srv   *Server
 	clock time.Time
+	// totp holds each enrolled user's seed and last used step, so login can
+	// answer the second step like an authenticator app would.
+	totp map[string]*totpDevice
+	// recovery holds the recovery codes each user was shown.
+	recovery map[string][]string
+}
+
+type totpDevice struct {
+	seed     []byte
+	lastStep int64
+}
+
+// newIAMService builds the identity service with a secret store (TOTP seeds,
+// recovery-code key) on st, reading time from hs.clock.
+func newIAMService(t *testing.T, st *store.Store, hs *harness) *iam.Service {
+	t.Helper()
+	kr, err := secrets.LoadOrCreateKeyring(filepath.Join(t.TempDir(), "master.key"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { kr.Close() })
+	vault, err := secrets.Open(context.Background(), st, kr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	svc, err := iam.New(st.DB, iam.Config{PasswordParams: iam.TestPasswordParams, Secrets: vault, Now: func() time.Time { return hs.clock }})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return svc
 }
 
 func newHarness(t *testing.T) *harness {
@@ -35,11 +67,8 @@ func newHarness(t *testing.T) *harness {
 	t.Cleanup(func() { st.Close() })
 	// Cookie lifetimes are computed against the wall clock, so the IAM
 	// clock starts at the real current time rather than a fixed date.
-	hs := &harness{t: t, clock: time.Now().UTC().Truncate(time.Second)}
-	svc, err := iam.New(st.DB, iam.Config{PasswordParams: iam.TestPasswordParams, Now: func() time.Time { return hs.clock }})
-	if err != nil {
-		t.Fatal(err)
-	}
+	hs := &harness{t: t, clock: time.Now().UTC().Truncate(time.Second), totp: map[string]*totpDevice{}}
+	svc := newIAMService(t, st, hs)
 	srv := New(st, nil)
 	srv.MountIAM(svc, IAMOptions{})
 	hs.h, hs.svc, hs.srv = srv.Handler(), svc, srv
@@ -103,12 +132,66 @@ func (c *client) do(method, path string, body any, hdr map[string]string) resp {
 	return out
 }
 
+// login signs in; when the account has an enrolled TOTP the harness answers
+// the second step with the next unused code, as an authenticator app would.
 func (c *client) login(username, password string) resp {
+	c.hs.t.Helper()
 	r := c.do(http.MethodPost, "/management/v1/auth/login", map[string]string{"username": username, "password": password}, nil)
-	if r.Code == http.StatusOK {
+	if r.Code == http.StatusOK && r.Body["step"] == "second-factor" {
+		if dev := c.hs.totp[username]; dev != nil {
+			r = c.do(http.MethodPost, "/management/v1/auth/login/second-factor",
+				map[string]string{"challengeToken": r.Body["challengeToken"].(string), "method": "totp", "code": c.hs.nextCode(dev)}, nil)
+		}
+	}
+	if r.Code == http.StatusOK && r.Body["step"] == "signed-in" {
 		c.csrf, _ = r.Body["csrfToken"].(string)
 	}
 	return r
+}
+
+// nextCode returns a code for the earliest step the server will still
+// accept (one step of skew either way, never a used step), moving the clock
+// only when no such step is within reach.
+func (hs *harness) nextCode(dev *totpDevice) string {
+	cur := iam.TOTPStep(hs.clock)
+	step := cur - iam.TOTPSkewSteps
+	if step <= dev.lastStep {
+		step = dev.lastStep + 1
+	}
+	if step > cur+iam.TOTPSkewSteps {
+		hs.clock = hs.clock.Add(time.Duration(step-cur-iam.TOTPSkewSteps) * iam.TOTPPeriod)
+	}
+	dev.lastStep = step
+	return iam.TOTPCode(dev.seed, step)
+}
+
+// enrollTOTP adds an authenticator app for username on this signed-in
+// client and returns the recovery codes the server issued.
+func (c *client) enrollTOTP(username string) []string {
+	c.hs.t.Helper()
+	r := c.do(http.MethodPost, "/management/v1/me/second-factors/totp", nil, nil)
+	if r.Code != http.StatusCreated {
+		c.hs.t.Fatalf("begin totp for %s: %+v", username, r)
+	}
+	seed, err := base32.StdEncoding.WithPadding(base32.NoPadding).DecodeString(r.Body["secret"].(string))
+	if err != nil {
+		c.hs.t.Fatal(err)
+	}
+	dev := &totpDevice{seed: seed}
+	r = c.do(http.MethodPost, "/management/v1/me/second-factors/totp/confirm", map[string]string{"code": c.hs.nextCode(dev)}, nil)
+	if r.Code != http.StatusOK {
+		c.hs.t.Fatalf("confirm totp for %s: %+v", username, r)
+	}
+	c.hs.totp[username] = dev
+	var codes []string
+	for _, v := range r.Body["recoveryCodes"].([]any) {
+		codes = append(codes, v.(string))
+	}
+	if c.hs.recovery == nil {
+		c.hs.recovery = map[string][]string{}
+	}
+	c.hs.recovery[username] = codes
+	return codes
 }
 
 const ownerPW = "owner-password-123"
@@ -127,11 +210,17 @@ func (hs *harness) bootstrap() *client {
 	if r := anon.do(http.MethodPost, "/management/v1/setup", map[string]string{"setupCode": "nope", "username": "owner", "password": ownerPW}, nil); r.Code != http.StatusForbidden {
 		hs.t.Fatalf("wrong setup code: %+v", r)
 	}
-	if r := anon.do(http.MethodPost, "/management/v1/setup", map[string]string{"setupCode": code, "username": "owner", "password": ownerPW}, nil); r.Code != http.StatusCreated {
-		hs.t.Fatalf("setup: %+v", r)
+	r := anon.do(http.MethodPost, "/management/v1/setup", map[string]string{"setupCode": code, "username": "owner", "password": ownerPW}, nil)
+	if r.Code != http.StatusCreated || r.Body["step"] != "signed-in" || r.Body["secondFactorEnrollmentRequired"] != true {
+		hs.t.Fatalf("setup must sign the owner in, held to enrolment: %+v", r)
 	}
-	if r := anon.do(http.MethodPost, "/management/v1/setup", map[string]string{"setupCode": code, "username": "evil", "password": ownerPW}, nil); r.Code != http.StatusConflict {
+	if r := hs.client("10.0.0.9").do(http.MethodPost, "/management/v1/setup", map[string]string{"setupCode": code, "username": "evil", "password": ownerPW}, nil); r.Code != http.StatusConflict {
 		hs.t.Fatalf("setup must be one-shot: %+v", r)
+	}
+	// Setup board: account → second factor → recovery codes.
+	anon.csrf = r.Body["csrfToken"].(string)
+	if codes := anon.enrollTOTP("owner"); len(codes) != iam.RecoveryCodeCount {
+		hs.t.Fatalf("first factor must issue %d recovery codes: %v", iam.RecoveryCodeCount, codes)
 	}
 	owner := hs.client("10.0.0.1")
 	if r := owner.login("owner", ownerPW); r.Code != http.StatusOK {
@@ -140,8 +229,21 @@ func (hs *harness) bootstrap() *client {
 	return owner
 }
 
-// createUser makes an account with one assignment and returns its logged-in browser.
+// createUser makes an account with one assignment and returns its logged-in
+// browser. Roles that must use a second factor get an authenticator app
+// enrolled right away, so the browser can act with that role.
 func (hs *harness) createUser(owner *client, username string, role iam.Role, scope iam.Scope, ip string) *client {
+	hs.t.Helper()
+	c := hs.createUserWithoutFactor(owner, username, role, scope, ip)
+	if r := c.do(http.MethodGet, "/management/v1/auth/session", nil, nil); r.Body["secondFactorEnrollmentRequired"] == true {
+		c.enrollTOTP(username)
+	}
+	return c
+}
+
+// createUserWithoutFactor is createUser without the enrolment, for tests of
+// the enrolment gate itself.
+func (hs *harness) createUserWithoutFactor(owner *client, username string, role iam.Role, scope iam.Scope, ip string) *client {
 	hs.t.Helper()
 	pw := username + "-password-123"
 	r := owner.do(http.MethodPost, "/management/v1/users", map[string]string{"username": username, "displayName": username, "password": pw}, nil)

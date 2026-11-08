@@ -34,6 +34,11 @@ type IAMOptions struct {
 	// deriving the client IP for throttling and audit. Empty trusts nobody,
 	// so a direct client cannot forge its source (ticket 065 wires Zentinel).
 	TrustedProxies []string
+	// PublicOrigin is the management address users open, e.g.
+	// "https://panel.example.com". Passkeys are bound to its host name. Empty
+	// derives the origin from each request (scheme and Host header); the
+	// browser still enforces that a passkey only works on its own domain.
+	PublicOrigin string
 }
 
 // MountIAM installs authentication, CSRF and authorization on /management/v1
@@ -41,6 +46,7 @@ type IAMOptions struct {
 // afterwards inherit the session requirement.
 func (s *Server) MountIAM(svc *iam.Service, opts IAMOptions) {
 	s.iam = svc
+	s.origin = strings.TrimSuffix(opts.PublicOrigin, "/")
 	_ = s.engine.SetTrustedProxies(opts.TrustedProxies)
 
 	const base = "/management/v1"
@@ -49,15 +55,18 @@ func (s *Server) MountIAM(svc *iam.Service, opts IAMOptions) {
 		Summary:   "whether the first owner still has to be created",
 		Responses: []Response{{Status: 200, Body: setupStatusResponse{}}}}, s.setupStatus)
 	s.handle(pub, base, Operation{Method: "POST", Path: base + "/setup", ID: "completeSetup", Tag: "auth",
-		Summary: "create the first owner with the one-time setup code", Request: setupRequest{},
-		Responses: []Response{{Status: 201, Body: userResponse{}}},
+		Summary: "create the first owner with the one-time setup code and sign them in (held to second-factor enrolment)", Request: setupRequest{},
+		Responses: []Response{{Status: 201, Body: loginResponse{}, Headers: []string{"Set-Cookie"}}},
 		Errors:    []string{CodeSetupDone, CodeSetupCodeInvalid, CodeTooManyAttempts}}, s.setupOwner)
 	s.handle(pub, base, Operation{Method: "POST", Path: base + "/auth/login", ID: "login", Tag: "auth",
-		Summary: "password login; sets the session and CSRF cookies", Request: loginRequest{},
-		Responses: []Response{{Status: 200, Body: loginResponse{}, Headers: []string{"Set-Cookie"}}},
-		Errors:    []string{CodeInvalidCredentials, CodeTooManyAttempts}}, s.login)
+		Summary: "password login; signs in (step signed-in, sets the cookies) or, when the account has a second factor, returns a single-use challenge (step second-factor)",
+		Request: loginRequest{},
+		Responses: []Response{{Status: 200, Body: loginResponse{}, Headers: []string{"Set-Cookie"},
+			Description: "signed in, or a second-factor challenge (step tells which)"}},
+		Errors: []string{CodeInvalidCredentials, CodeTooManyAttempts}}, s.login)
+	s.mountSecondFactorLogin(pub, base)
 
-	s.protected = s.engine.Group(base, s.requireSession(opts.Tokens), s.csrf())
+	s.protected = s.engine.Group(base, s.requireSession(opts.Tokens), s.csrf(), s.enrollmentGate())
 	p := s.protected
 	auth := func(op Operation) Operation { op.Auth = true; return op }
 	s.handle(p, base, auth(Operation{Method: "GET", Path: base + "/auth/session", ID: "getSession", Tag: "auth",
@@ -93,6 +102,7 @@ func (s *Server) MountIAM(svc *iam.Service, opts IAMOptions) {
 	s.handle(p, base, auth(Operation{Method: "GET", Path: base + "/audit-events", ID: "listAuditEvents", Tag: "audit",
 		Summary: "audit ledger, limited to scopes where the account holds audit:read", Permission: "audit:read on at least one scope",
 		List: &auditList, Responses: []Response{{Status: 200, Body: ListResponse[iam.AuditEvent]{}}}}), s.listAudit)
+	s.mountSecondFactors(p, base)
 }
 
 var optionalIfMatch = Param{Name: "If-Match", In: "header", Description: `optional "v<version>" of the account; when sent it must be current`,
@@ -187,6 +197,24 @@ func failErr(c *gin.Context, err error) {
 		fail(c, "SETUP_CODE_INVALID", "setup code is invalid or expired")
 	case errors.Is(err, iam.ErrThrottled):
 		fail(c, "TOO_MANY_ATTEMPTS", "too many attempts; try again later")
+	case errors.Is(err, iam.ErrInvalidCredentials):
+		fail(c, CodeInvalidCredentials, "username or password is incorrect")
+	case errors.Is(err, iam.ErrChallengeInvalid):
+		fail(c, CodeLoginChallengeInvalid, "the sign-in step expired or was already used; sign in again")
+	case errors.Is(err, iam.ErrSecondFactor):
+		fail(c, CodeSecondFactorInvalid, "the verification code, recovery code or passkey was not accepted")
+	case errors.Is(err, iam.ErrEnrollmentRequired):
+		e := newError(CodeEnrollmentRequired, "this account must add an authenticator app or passkey before doing anything else")
+		e.SuggestedActions = []string{"enroll-second-factor"}
+		respond(c, e)
+	case errors.Is(err, iam.ErrReauthRequired):
+		e := newError(CodeReauthRequired, "confirm your password and second factor again before changing sign-in methods")
+		e.SuggestedActions = []string{"reauthenticate"}
+		respond(c, e)
+	case errors.Is(err, iam.ErrLastFactor):
+		fail(c, CodeLastSecondFactor, "this account must keep at least one authenticator app or passkey; add another one first")
+	case errors.Is(err, iam.ErrUnavailable):
+		fail(c, CodeNotAvailable, strings.TrimPrefix(err.Error(), "iam: not available: "))
 	default:
 		fail(c, "INTERNAL", "internal error")
 	}
@@ -226,6 +254,13 @@ func (s *Server) requireSession(tokens iam.TokenAuthenticator) gin.HandlerFunc {
 			}
 			c.Set(principalKey, p)
 			c.Set(sessionKey, sess)
+			if sess.Renewed {
+				// The idle expiry moved; give the browser the new lifetime
+				// too, or the cookie dies at its first Max-Age.
+				renewed := *sess
+				renewed.Token = cookie
+				setSessionCookies(c, &renewed)
+			}
 			c.Next()
 			return
 		}
@@ -342,10 +377,19 @@ type userDetailResponse struct {
 	User *iam.UserDetail `json:"user"`
 }
 
+// loginResponse answers login, setup and the second login step. Step is
+// "signed-in" (cookies set; User, CSRFToken, ExpiresAt and
+// SecondFactorEnrollmentRequired filled) or "second-factor" (no cookie;
+// ChallengeToken, Methods and ChallengeExpiresAt filled).
 type loginResponse struct {
-	User      *iam.User `json:"user"`
-	CSRFToken string    `json:"csrfToken"`
-	ExpiresAt time.Time `json:"expiresAt"`
+	Step                           string     `json:"step"`
+	User                           *iam.User  `json:"user,omitempty"`
+	CSRFToken                      string     `json:"csrfToken,omitempty"`
+	ExpiresAt                      *time.Time `json:"expiresAt,omitempty"`
+	SecondFactorEnrollmentRequired bool       `json:"secondFactorEnrollmentRequired"`
+	ChallengeToken                 string     `json:"challengeToken,omitempty"`
+	Methods                        []string   `json:"methods,omitempty"`
+	ChallengeExpiresAt             *time.Time `json:"challengeExpiresAt,omitempty"`
 }
 
 type sessionResponse struct {
@@ -354,6 +398,9 @@ type sessionResponse struct {
 	Assignments []iam.Assignment `json:"assignments"`
 	Session     *iam.Session     `json:"session,omitempty"`
 	CSRFToken   string           `json:"csrfToken,omitempty"`
+	// SecondFactorEnrollmentRequired: the account must add a second factor
+	// before anything but enrolment works (IAM-002).
+	SecondFactorEnrollmentRequired bool `json:"secondFactorEnrollmentRequired"`
 }
 
 type roleInfo struct {
@@ -390,12 +437,34 @@ func (s *Server) setupOwner(c *gin.Context) {
 	if !bindJSON(c, &in, "body must be JSON with setupCode, username and password") {
 		return
 	}
-	u, err := s.iam.CompleteSetup(c.Request.Context(), in.SetupCode, in.Username, in.Password, source(c))
+	res, err := s.iam.CompleteSetup(c.Request.Context(), in.SetupCode, in.Username, in.Password, source(c))
+	if errors.Is(err, iam.ErrThrottled) {
+		throttled(c, res.RetryAfter)
+		return
+	}
 	if err != nil {
 		failErr(c, err)
 		return
 	}
-	c.JSON(http.StatusCreated, userResponse{User: u})
+	// The new owner is signed in; the session is held to second-factor
+	// enrolment until they add one (Setup board: account → 2FA → codes).
+	s.signedIn(c, http.StatusCreated, res)
+}
+
+// signedIn sets the session cookies and answers with the signed-in body.
+func (s *Server) signedIn(c *gin.Context, status int, res *iam.LoginResult) {
+	setSessionCookies(c, res.Session)
+	exp := res.Session.ExpiresAt.UTC().Truncate(time.Second)
+	c.JSON(status, loginResponse{Step: "signed-in", User: res.User, CSRFToken: res.Session.CSRFToken, ExpiresAt: &exp,
+		SecondFactorEnrollmentRequired: res.EnrollmentRequired})
+}
+
+func throttled(c *gin.Context, retry time.Duration) {
+	secs := int(retry.Seconds()) + 1
+	c.Header("Retry-After", strconv.Itoa(secs))
+	e := newError(CodeTooManyAttempts, "too many attempts; try again later")
+	e.RetryAfter = secs
+	respond(c, e)
 }
 
 type loginRequest struct {
@@ -408,25 +477,25 @@ func (s *Server) login(c *gin.Context) {
 	if !bindJSON(c, &in, "body must be JSON with username and password") {
 		return
 	}
-	sess, u, retry, err := s.iam.Login(c.Request.Context(), in.Username, in.Password, source(c))
+	src := source(c)
+	src.RPID = s.relyingParty(c).ID
+	res, err := s.iam.Login(c.Request.Context(), in.Username, in.Password, src)
 	if errors.Is(err, iam.ErrThrottled) {
-		secs := int(retry.Seconds()) + 1
-		c.Header("Retry-After", strconv.Itoa(secs))
-		e := newError(CodeTooManyAttempts, "too many attempts; try again later")
-		e.RetryAfter = secs
-		respond(c, e)
-		return
-	}
-	if errors.Is(err, iam.ErrInvalidCredentials) {
-		fail(c, CodeInvalidCredentials, "username or password is incorrect")
+		throttled(c, res.RetryAfter)
 		return
 	}
 	if err != nil {
 		failErr(c, err)
 		return
 	}
-	setSessionCookies(c, sess)
-	c.JSON(http.StatusOK, loginResponse{User: u, CSRFToken: sess.CSRFToken, ExpiresAt: sess.ExpiresAt.UTC().Truncate(time.Second)})
+	if res.Challenge != nil {
+		// Password accepted; no cookie until the second factor is.
+		exp := res.Challenge.ExpiresAt.UTC().Truncate(time.Second)
+		c.JSON(http.StatusOK, loginResponse{Step: "second-factor", ChallengeToken: res.Challenge.Token,
+			Methods: res.Challenge.Methods, ChallengeExpiresAt: &exp})
+		return
+	}
+	s.signedIn(c, http.StatusOK, res)
 }
 
 func (s *Server) logout(c *gin.Context) {
@@ -440,7 +509,7 @@ func (s *Server) logout(c *gin.Context) {
 
 func (s *Server) whoami(c *gin.Context) {
 	p := Principal(c)
-	out := sessionResponse{Kind: p.Kind, User: p.User, Assignments: p.Assignments}
+	out := sessionResponse{Kind: p.Kind, User: p.User, Assignments: p.Assignments, SecondFactorEnrollmentRequired: p.EnrollmentRequired}
 	if v, ok := c.Get(sessionKey); ok {
 		out.Session = v.(*iam.Session)
 		out.CSRFToken = out.Session.CSRFToken
@@ -663,7 +732,9 @@ func secureRequest(c *gin.Context) bool {
 
 func setSessionCookies(c *gin.Context, sess *iam.Session) {
 	secure := secureRequest(c)
-	maxAge := int(time.Until(sess.ExpiresAt).Seconds())
+	// The lifetime comes from the session itself, not the wall clock, so it
+	// agrees with the service clock (tests inject one).
+	maxAge := int(sess.ExpiresAt.Sub(sess.LastSeenAt).Seconds())
 	http.SetCookie(c.Writer, &http.Cookie{Name: SessionCookie, Value: sess.Token, Path: "/", HttpOnly: true, Secure: secure, SameSite: http.SameSiteStrictMode, MaxAge: maxAge})
 	http.SetCookie(c.Writer, &http.Cookie{Name: CSRFCookie, Value: sess.CSRFToken, Path: "/", HttpOnly: false, Secure: secure, SameSite: http.SameSiteStrictMode, MaxAge: maxAge})
 }

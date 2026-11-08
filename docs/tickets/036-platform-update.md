@@ -3,7 +3,7 @@
 **Epic:** 安裝、更新與卸載（`epic:install`）  
 **User Story:** 管理員可以安裝與啟動平台  
 **Milestone:** M1 單機主機管理  
-**Blocked by:** [013 管理員可以一行安裝單機模式、重開機後登入，且安裝不需要任何編譯器](013-one-line-install.md), [008 使用者可以提交工作後關閉頁面，之後仍能查到進度、證據與結果](008-job-engine.md)  
+**Blocked by:** [013 管理員可以一行安裝單機模式、重開機後登入，且安裝不需要任何編譯器](013-one-line-install.md), [008 使用者可以提交工作後關閉頁面，之後仍能查到進度、證據與結果](008-job-engine.md), [007 Core 與 Agent 可以用版本化、雙向驗證的通道交換能力與工作事件](007-core-agent-protocol.md)  
 **Status:** blocked  
 **規格章節:** 37｜安裝位置、版本更新與平台自我修復  
 **Issue:** [#36](https://github.com/HazelnutParadise/hazelminx/issues/36)  
@@ -24,6 +24,7 @@
 - [ ] **DAT-006** 維護者可以升級資料格式。 — 完成條件：先備份與檢查相容性；不能直接用舊執行檔開啟已不相容的新資料。
 - [ ] 不因查到版本而重啟服務
 - [ ] GitHub 限流或斷線不刪除現有版本並支援離線包
+- [ ] 協定不相容、被 Core 拒絕連線的 Agent，可以經已驗證的升級路徑更新到相容版本；更新完成前，該節點不接受其他變更（SEC-011 的升級路徑，需求由票 007 擁有）
 
 ## Acceptance tests（第 42 章）
 

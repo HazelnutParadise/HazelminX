@@ -1,0 +1,5 @@
+{
+  "type": "reject",
+  "code": "PROOF_INVALID",
+  "message": "node proof does not verify against the presented certificate"
+}

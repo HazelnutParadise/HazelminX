@@ -52,6 +52,11 @@
 ## Follow-ups
 
 - 第一次正式發版前，把 `core/internal/store/migrations/` 的所有 migration 合併成單一個 `0001` 檔，直接建出最終形狀，拿掉重工（例如先建欄位再改名、先加再刪的步驟，像 0005 把 0003 的 `request_id` 改成 `trace_id`，合併後直接建 `trace_id`）。`store` 的連號檢查與 schema 版本相關測試一起更新。驗證方式：用舊的整串 migration 與新的 `0001` 各建一個全新資料庫，比對 schema（表、欄位、索引、觸發器）必須完全相同。發版前開發與測試用的資料庫一律重建，不做升級。已經有使用者安裝的版本發出去之後，就不能再這樣合併，之後只能新增 migration。這條是 migration 不可變原則在首次發版前的唯一例外。
+- 密碼登入（`iam.Service.Login`）先 `limiter.Check` 再雜湊密碼、最後才記失敗，同時送出大量猜測可以超過帳號冷卻的次數；比照票 014 的第二步，同一帳號的嘗試要一次處理一個。
+- 有密碼的攻擊者可以持續送錯的第二驗證碼，讓帳號的第二步一直被冷卻擋住（`#2fa:` 計數按帳號、不分來源），與 IAM-012 衝突；使用者已決定票 014 先合併，另開 PR 修。候選改法：票 065 接上可信代理後改成「帳號＋來源」計數加較高的帳號總上限，或讓 Passkey 成功不受這個計數影響。
+- 管理網域改變後，只剩舊網域 Passkey 的強制角色帳號，系統仍算它「已有第二驗證」，不會要求重新綁定；票 018 實作網域變更時，要依 `auth/passkeys/domain-impact` 的結果處理這些帳號。
+- 沒有任何票負責「使用者自己改密碼」（規格第 05 章與各票都沒有），密碼外洩時已登入的使用者無法自救；建議補進票 015 或另開票。
+- `secureRequest`（`core/internal/api/iam_routes.go`）無條件相信 `X-Forwarded-Proto`，Cookie 的 Secure 旗標與沒設 `-public-origin` 時的 Passkey origin 都依它判斷；票 065 設定可信代理時一併只信任代理送來的值。
 - `jobs` 與 `iam` 的時間欄位用 `time.RFC3339Nano` 寫入，小數尾端的 0 會被去掉，所以同一秒內的文字排序不一定等於時間順序（`…05.12Z` 會排在 `…05.123Z` 後面）。列表照 `createdAt`、`at` 排序時可能有少量順序錯誤，keyset 翻頁本身不受影響。要改成固定 9 位小數，並為既有資料做一次轉換；`confirm` 與 `list_queries` 已經用固定格式。
 - 背景列表查詢在執行期間會輪流佔用唯一的 SQLite 連線（`store` 設 `SetMaxOpenConns(1)`），大型稽核表上沒有索引的篩選會拖慢其他 API。加讀取用的第二個連線池時，背景查詢要改用它。
 - IAM 的寫入端點（建帳號、改帳號、指派與撤銷角色）還沒經過 `Server.writeBlockers`，平台資料庫唯讀時會回 `INTERNAL` 而不是 `PLATFORM_DEGRADED`。票 017 接上降級偵測時一起處理。
@@ -59,3 +64,9 @@
 - PR #123（票 014）新增的 `0006_mfa_sessions.sql` 與 `main` 上的 `0006_management_contract.sql` 重號，合併前改成 `0007` 並更新票 014 的引用。
 - 票 010 的「設計缺口」一節列出 API 已有、畫面還沒畫的狀態（列表邊界、背景查詢、錯誤呈現、版本過期、影響預覽、確認倒數），由設計端補進 `docs/design/`。
 - 寫入閘門的 `RESOURCE_READ_ONLY`、`CONTROLLER_CONFLICT`、`SCOPE_DEGRADED`、`RESOURCE_REFERENCED` 目前只有單元測試；第一個有受管資源端點的票接上 `ResourceState` 時，補一條經 API 拒絕的測試。
+- Issue #20 比票檔 `020-host-overview-monitoring.md` 多出幾條驗收：GPU 欄位對齊 1Panel、GPU 程序對回所屬容器、硬體依類別分組成卡片、ROB-009，以及驗收案例 T-165、T-172、T-183。票檔是驗收條件的唯一來源，要決定把這些補進票檔，或從 issue 拿掉。
+- `agent/UPSTREAM.md` 把幾件事交給其他票決定，但那些票的驗收還沒寫：票 027 要決定終端機用哪個 Linux 帳號執行、`host.shell` 權限在 Agent 還是 `hazelminx-privileged` 檢查，以及收到 SIGTERM 時結束終端機；票 040 要決定低權限 Agent 怎麼存取 Docker socket；命令層（Komodo `lib/command`）由票 020、040、044 中最先需要的那張移植。
+- 票 007 選定 `rustls` 的加密後端（`aws-lc-rs` 或 `ring`）時，讀該 crate 實際的 LICENSE 檔，確認能與 GPL-3.0 一起散布，結果記進 `agent/UPSTREAM.md`。
+- Agent 的 `journal.jsonl` 只增不減，`Journal` 也把所有紀錄留在記憶體；長期運作前要加壓縮：Core 確認過、而且工作已是終態的步驟紀錄可以移到封存檔，保留最近的完成紀錄供重送。
+- `nodes.LoadOrCreatePKI` 第一次建立時依序寫入 `node-pki/ca`、`node-pki/core` 兩筆機密，第二筆失敗會留下半套，之後啟動一律拒絕；要改成同一個交易建立兩筆，或提供清除半套的復原指令。
+- `jobs.Engine.Reconcile` 對「開始過、沒結束、可重試」的步驟每次都重跑，沒有次數上限；Agent 磁碟只剩一點空間時（開始紀錄寫得進去、結束紀錄寫不進去）會一直重跑同一步驟。要在引擎加對帳重跑次數上限，超過就轉「需要處理」。

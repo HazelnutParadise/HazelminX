@@ -110,7 +110,7 @@
         "T-021",
         "T-024"
       ],
-      "status": "ready",
+      "status": "done",
       "issue": 7
     },
     {
@@ -144,7 +144,7 @@
         "T-033",
         "T-034"
       ],
-      "status": "in_progress",
+      "status": "done",
       "issue": 8
     },
     {
@@ -278,7 +278,7 @@
       "acceptance_tests": [
         "T-130"
       ],
-      "status": "ready",
+      "status": "done",
       "issue": 14
     },
     {
@@ -318,7 +318,7 @@
       "acceptance_tests": [
         "T-030"
       ],
-      "status": "blocked",
+      "status": "ready",
       "issue": 16
     },
     {
@@ -534,7 +534,7 @@
         "T-188",
         "T-233"
       ],
-      "status": "blocked",
+      "status": "ready",
       "issue": 24
     },
     {
@@ -551,7 +551,7 @@
         "SYS-010"
       ],
       "acceptance_tests": [],
-      "status": "blocked",
+      "status": "ready",
       "issue": 25
     },
     {
@@ -788,7 +788,8 @@
       "milestone": "M1",
       "blocked_by": [
         "013",
-        "008"
+        "008",
+        "007"
       ],
       "requirements": [
         "INS-009",

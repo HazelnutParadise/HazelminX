@@ -69,12 +69,12 @@ scripts/   CI 與發布腳本（簽署清單、依賴檢查）
 | Go HTTP 框架 | Gin | 1Panel 與 infra-manager 都用 Gin，移植成本最低；路由定義可產生 OpenAPI。 |
 | 平台資料庫 | SQLite（`modernc.org/sqlite`，純 Go）、WAL、`PRAGMA foreign_keys=ON` | PKG-001 要求乾淨主機無 C 編譯器；1Panel 已使用純 Go 的 glebarez/sqlite。多 Core 不共用同一檔案（35.1）。 |
 | Migration | 版本表 + 有序 SQL 檔 + Go 程式化步驟；只允許向上；啟動時比對 `schemaVersion` 拒絕舊執行檔開新資料 | DAT-006、REL-006。 |
-| Core↔Agent 協定 | Agent 主動建立 WebSocket over TLS（mTLS，雙向憑證），JSON 訊息，`protocolVersion` 與 `capabilities` 握手；事件帶單調序號；請求帶 `requestId`、`controlGeneration`、`expiresAt` | NOD-002、NOD-011、ENG-010、SEC-004。Komodo Periphery 已有 Agent 主動連 Core 的 WebSocket 客戶端（`connection/client.rs`），但身分驗證是 `mogh_pki` 的 Noise 握手而非 mTLS，Go 端沒有現成相容實作；因此 `connection/` 改為 mTLS，保留其單一 WebSocket 多工請求與終端機串流的設計。docker／stats／terminal 模組保留；`lib/command` 的程序群組隔離、逾時與取消可作低權限命令層，移植時移除接受命令字串的 API、只留參數陣列（`agent/UPSTREAM.md`），高權限動作仍走 privileged。 |
+| Core↔Agent 協定 | Agent 主動建立 WebSocket over TLS 1.3（Core 的 Agent 入口，預設 `:9801`），JSON 訊息；握手四則（hello／welcome／auth／ready）交換 `protocolVersion` 範圍、`capabilities` 與 X25519 公鑰，雙方各以 Ed25519 私鑰簽雙方 nonce、雙方 X25519 公鑰、協定版本、節點指紋、session ID、hello 原文雜湊與 welcome 參數雜湊；之後每則訊息包成帶方向序號與 HMAC-SHA256（金鑰由 X25519 共同秘密經 HKDF 導出）的訊框；Core 有自己的 CA（私鑰在機密服務），節點憑證 EKU 只有 clientAuth、Core 憑證固定名稱 `core.hazelminx.internal`；直連時另要求 TLS 用戶端憑證與握手身分一致，經會終止 TLS 的代理時只靠握手簽章，任何 HTTP Header 都不當身分；握手訊息寬鬆解碼、握手後嚴格解碼；持久事件帶每節點單調序號並由 Core 累計確認；請求帶 `requestId`、`controlGeneration`、`expiresAt`。契約在 `docs/contracts/README.md` | NOD-002、NOD-011、SEC-011、ENG-010、SEC-004。Komodo Periphery 已有 Agent 主動連 Core 的 WebSocket 客戶端（`connection/client.rs`），但身分驗證是 `mogh_pki` 的 Noise 握手而非 mTLS，Go 端沒有現成相容實作；因此 `connection/` 改為 mTLS 加握手簽章，保留其單一 WebSocket 多工請求的設計。docker／stats／terminal 模組保留；`lib/command` 以 shlex 拆參數後走 `Command::args`，可作低權限命令層，但高權限動作仍走 privileged。 |
 | GPU 指標 | NVIDIA 以 purego 動態載入 NVML（免 CGO／免綁定），AMD 與 Intel 讀 sysfs（`/sys/class/drm`、hwmon），CLI（nvidia-smi、rocm-smi、intel_gpu_top）只作退路；Rust 端對應用 `libloading` + sysfs | MON-002；Beszel 研究報告第 4 節。缺值明示，不假造跨廠相同欄位。 |
 | 協定單一來源 | `agent/crates/protocol`（Rust serde 型別）+ `docs/contracts/fixtures/*.json` 黃金樣本；Go 端 `core/internal/protocol` 以相同樣本做契約測試 | 兩種語言各自編譯，樣本保證相容。 |
 | 高權限隔離 | `hazelminx-privileged` 獨立行程（root），Unix socket，`SO_PEERCRED` 驗證呼叫者 uid；每個動作是具名 enum + 結構化參數，執行時以 `Command::args` 傳遞，不經 shell；每個請求附 Core 簽發的 Ed25519 授權憑證（權限名稱清單、有效期上限 24 小時、可依 id 撤銷），執行器以 `issuer.pub` 驗簽並逐動作比對權限；`health`／`revoke` 不排動作名額，輸出走有界通道 | 32.2、SEC-005、SEC-006、SEC-009。Komodo `lib/command` 以 shell 字串執行，不直接沿用。 |
 | 主機變更帳本 | 執行器在每個會改主機的動作前後寫帳本：動作在 `Action::ledger_decl` 宣告會改的對象（只讀動作宣告只讀），執行器先讀出變更前狀態、同步寫入意圖行，才執行，之後讀變更後狀態寫結果行。沒有宣告、帳本不可用、讀不到變更前狀態都拒絕並記安全事件。帳本在 `/var/lib/hazelminx/ledger`（root 0700，上層不得可被他人寫入），每行帶前一行的 SHA-256 形成雜湊鏈，檔案類對象另存原內容備份。Core 以 `ledger_export` 分頁取原始行，驗證雜湊鏈後保存副本。安裝器（013）用同一個 `Recorder` 記錄安裝步驟，安裝前先跑 `snapshot capture` | 增補 07 第 55.1 節、UNX-001、UNX-002、T-250。擁有權依「變更前是否存在」與「變更前後狀態是否不同」判定，之後只升不降。原始行原樣傳給 Core，Go 端以 `json.RawMessage` 驗雜湊，不必重現 Rust 的序列化。 |
-| 工作引擎 | Core 持久化工作與步驟；Agent 本機也持久化步驟與證據；重連先對帳（Agent 回報已完成步驟）再決定續跑；資源鎖以「裝置身分 + 掛載 + 正規化路徑」為鍵 | 33 章。 |
+| 工作引擎 | Core 持久化工作與步驟；Agent 在每個步驟開始前與結束後先寫入本機 append-only 紀錄（`journal.jsonl`，fsync）再回報；重連先對帳（Core 以 `step_reconcile` 查 Agent 紀錄）再決定續跑，已完成步驟不重跑，中斷的步驟只有標記可重試時才再跑；資源鎖以「裝置身分 + 掛載 + 正規化路徑」為鍵 | 33 章。 |
 | 前端 | React 19、TypeScript、Vite+（`vp`）；路由 react-router；資料 TanStack Query；表單 react-hook-form + zod；UI 以 Cloudflare Kumo（`@cloudflare/kumo`，MIT，Base UI 原語＋Tailwind v4）為元件底層，主題以 DESIGN.md token 覆蓋 Kumo 語意 token，對映表在 `docs/design/component-mapping.md`；i18n i18next（zh-TW、en）；終端機 xterm.js；編輯器 CodeMirror 6；圖表 Kumo Chart（ECharts 6），配色與規則依 DESIGN.md「資料視覺化」 | 7.2、UI-005；不複製上游品牌素材。 |
 | Zentinel 整合 | 固定版本；Core 產生完整解析後的 KDL（不含 `${VAR}`）→ Agent 經 privileged 寫入候選檔 → `zentinel --validate`（以選定版本能力為準）→ 原子換檔 → SIGHUP → 實際請求驗證 | 研究報告：無 HTTP reload API、無環境變數代換、admin listener 預設 `0.0.0.0:9090` 且無驗證（必須改綁本機並以防火牆限制）。 |
 | 可信訪客 IP | Zentinel 只處理 `X-Forwarded-For` 與 per-listener `trusted-proxies`；`CF-Connecting-IP`／Tunnel 判定由平台維護的 Zentinel agent filter 實作，輸出單一 `X-HazelminX-Client-IP` 供 WAF、限速、分析共用 | IP-002、研究報告第 6 節。 |
@@ -86,6 +86,7 @@ scripts/   CI 與發布腳本（簽署清單、依賴檢查）
 | 時間與容量 | UTC RFC 3339；位元組；排程保存 IANA 時區名稱 | 34.3。 |
 | 容器網路模型 | 每個部署單元或應用有自己的網路（Compose 預設網路）；平台管理的共用服務（資料庫、Ollama、推論 runtime）各自一個 `hzx-*` 網路，宣告依賴才接上；不使用全部互通的共用網路，1Panel 範本的 `1panel-network` 在覆寫層改掉，只有相容模式才加入；Zentinel 是原生 systemd，經受控本機回送 Port 連上游；跨主機與跨單元走增補 04 的內部位址 | 增補 06 第 54.1 節（2026-11-08 使用者核定）、第 40 章「不能只信任整段 Docker 網路」。 |
 | 主機變更帳本 | 高權限執行器在每個動作前後寫帳本（對象、變更前後狀態、擁有權、工作 ID），主機本機與 Core 各一份；安裝時記錄安裝前快照；完全移除依帳本反向處理並比對快照 | 增補 07（2026-11-08 使用者要求「刪乾淨跟沒裝過一樣」）、UN-004。 |
+| 第二驗證 | TOTP 自寫（RFC 6238，HMAC-SHA1、6 位、30 秒、容許前後一步，最後接受的時間步存資料庫防重放），種子放機密庫；Passkey 用 `go-webauthn/webauthn` v0.18.2（BSD-3-Clause），憑證記錄建立時的 `rp_id`；復原碼 10 組 `XXXX-XXXX`，以存在機密庫的金鑰做 HMAC-SHA256 後保存，用掉以條件式 UPDATE 標記；擁有者、平台管理員、主機維運者沒有第二驗證時只能走綁定路由；新增或移除憑證要 10 分鐘內再次驗證 | IAM-002、IAM-011、IAM-012。go-webauthn 是 Go 生態完整實作 WebAuthn 伺服器流程的函式庫（前身 duo-labs/webauthn），2026-09 仍有發版，涵蓋 L3 與 attestation 格式。平台資料庫只有一條連線，交易開著時不能呼叫機密庫，所以驗證在交易外做、交易內只做條件式更新。 |
 
 ## Data flow
 
@@ -105,7 +106,7 @@ scripts/   CI 與發布腳本（簽署清單、依賴檢查）
 |---|---|---|---|
 | 管理 API 與權限 | `POST/GET /management/v1/*`（httptest） | Agent 通道以 in-process fake（實作同一協定，回放黃金樣本） | 存活於內部重構；T-013、T-014 直接在此驗。 |
 | 工作引擎 | jobs 套件的 `Engine` 介面 + fake Agent | 注入斷線、磁碟滿、重複請求 | ENG-001～012 的失敗注入必須可程式化。 |
-| Core↔Agent 協定 | 黃金 JSON 樣本（Rust serde round-trip 測試 + Go 解碼測試） | 無 | 兩語言共用同一組樣本，版本變更時同時失敗。 |
+| Core↔Agent 協定 | 黃金 JSON 樣本（Rust serde round-trip 測試 + Go 解碼測試，含固定種子的簽章樣本）；互通測試以真的 `hazelminx-agent`（`--features test-actions`）連 Go hub（`HAZELMINX_AGENT_BIN`） | Core 端單元測試用 Go 寫的假 Agent；會終止 TLS 的代理用 `httputil.ReverseProxy` | 兩語言共用同一組樣本，版本變更時同時失敗；互通測試證明兩個實作真的接得起來（斷線、重開機、代理）。 |
 | 高權限執行器 | socket 層：測試客戶端送具名動作 | 動作處理器以 trait 替換（記錄而不執行） | 參數逃逸測試（T-039）在這層。 |
 | 宿主機操作 | 真實 Linux VM（CI 的 ubuntu-24.04 / debian-12 runner 或 KVM） | 無；只在標記可丟棄的 VM 執行破壞性測試 | 41.1 要求真實引擎整合。 |
 | Compose／Docker | 真實 Docker（CI service）；Podman rootless 另一 job | 無 | T-051、T-052 需原生解析結果比對。 |
@@ -146,3 +147,6 @@ CI 必跑：`go test ./... && go vet`、`cargo test --workspace && cargo clippy 
 - GitHub App 自架流程在純內網無法回呼 — 以 PAT + 定期檢查為替代（GIT-031）。
 - 1Panel 商店格式（compose + data.yml + scripts）穩定 — 風險：商店範本變更需跟隨，票 052 固定快取版本。
 - Windows Agent 範圍尚未核定 — 不影響 Linux 承諾；`platform-windows` crate 保留介面但不實作。
+- 登入第二步的挑戰與 Passkey 儀式狀態只放記憶體 — Core 重啟後要重新輸入密碼；多 Core 不共用（35.1）。
+- 未設定可信代理（票 065）前，經反向代理進來的請求來源 IP 都相同 — 密碼登入的「曾成功登入的來源」豁免會失真；第二驗證與再次驗證因此不套用這個豁免，改以每帳號計數限制。
+- Passkey 綁定網域；未設定 `--public-origin` 時以請求的 Host 推導，用 IP 開面板時 Passkey 不可用，只能用 TOTP。

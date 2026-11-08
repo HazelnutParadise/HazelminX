@@ -1,0 +1,12 @@
+{
+  "type": "reconcile_report",
+  "requestId": "rec_job_01HXYZ_0_2",
+  "jobId": "job_01HXYZ",
+  "step": 0,
+  "started": true,
+  "completed": true,
+  "failed": false,
+  "evidence": [
+    "agent://journal/17"
+  ]
+}
