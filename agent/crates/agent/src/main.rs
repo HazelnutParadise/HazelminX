@@ -1,9 +1,14 @@
 //! hazelminx-agent: the per-host executor. Runs as a low-privilege systemd
-//! service, keeps the node identity, and (from ticket 007 on) dials the Core
-//! over mTLS to receive authorized jobs.
+//! service, keeps the node identity, dials the Core over TLS (mutual
+//! certificates plus a signed handshake) and runs authorized job steps,
+//! journaling each one before reporting it.
 
+mod actions;
 mod config;
+mod connection;
 mod identity;
+mod journal;
+mod steps;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
@@ -84,14 +89,36 @@ async fn run(cfg: Config) -> Result<()> {
     let id = Identity::load_or_create(&cfg.state_dir)?;
     info!(fingerprint = %id.fingerprint(), state_dir = %cfg.state_dir.display(), "agent identity ready");
 
-    match &cfg.core_url {
-        None => info!("no core_url configured; waiting for enrollment (ticket 019)"),
-        Some(url) => {
-            warn!(core_url = %url, "core connection is not implemented yet (ticket 007); staying idle")
-        }
-    }
+    let Some(url) = cfg.core_url.clone() else {
+        info!("no core_url configured; waiting for enrollment (ticket 019)");
+        shutdown_signal().await;
+        info!("shutting down");
+        return Ok(());
+    };
 
-    shutdown_signal().await;
+    // The journal is opened before connecting: steps that were running when
+    // the agent stopped are reported as interrupted, never as done, and are
+    // not re-run until the Core reconciles them (ENG-003).
+    let journal = journal::Journal::open(&cfg.state_dir.join("jobs"))?;
+    let interrupted = journal.interrupted_steps();
+    if !interrupted.is_empty() {
+        warn!(count = interrupted.len(), steps = ?interrupted, "steps were interrupted by the last stop; they will be reconciled with the core, not re-run");
+    }
+    let steps = steps::Steps::new(
+        journal,
+        id.fingerprint(),
+        actions::specs(),
+        actions::capabilities(),
+    );
+    let opts = connection::Options {
+        core_url: url,
+        transport: cfg.core_transport,
+        proxy_ca_file: cfg.proxy_ca_file.clone(),
+        identity_dir: id.dir().to_path_buf(),
+        agent_version: env!("CARGO_PKG_VERSION").to_string(),
+    };
+    let shared = connection::Shared::new(steps, id, opts.agent_version.clone());
+    connection::run(opts, shared, shutdown_signal()).await;
     info!("shutting down");
     Ok(())
 }

@@ -1,0 +1,9 @@
+{
+  "type": "reject",
+  "code": "PROTOCOL_INCOMPATIBLE",
+  "message": "agent speaks protocol 2..3; this core supports 1..1",
+  "supported": {
+    "min": 1,
+    "max": 1
+  }
+}

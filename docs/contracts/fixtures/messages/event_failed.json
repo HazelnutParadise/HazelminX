@@ -1,0 +1,17 @@
+{
+  "type": "event",
+  "seq": 18,
+  "kind": "failed",
+  "jobId": "job_01HXYZ",
+  "step": 0,
+  "requestId": "stp_job_01HXYZ_0_1",
+  "at": "2026-11-08T03:04:07Z",
+  "evidence": [
+    "agent://journal/18"
+  ],
+  "error": {
+    "code": "ACTION_FAILED",
+    "summary": "hostname lookup failed",
+    "retryable": false
+  }
+}

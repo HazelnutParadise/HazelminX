@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -20,6 +21,7 @@ import (
 	"github.com/HazelnutParadise/hazelminx/core/internal/confirm"
 	"github.com/HazelnutParadise/hazelminx/core/internal/iam"
 	"github.com/HazelnutParadise/hazelminx/core/internal/jobs"
+	"github.com/HazelnutParadise/hazelminx/core/internal/nodes"
 	"github.com/HazelnutParadise/hazelminx/core/internal/secrets"
 	"github.com/HazelnutParadise/hazelminx/core/internal/store"
 	"github.com/HazelnutParadise/hazelminx/core/web"
@@ -51,9 +53,23 @@ func run(args []string) error {
 	slog.Info("store ready", "path", st.Path(), "schemaVersion", v)
 	slog.Info("secrets ready", "keyring", kr.Path(), "activeKey", sec.ActiveKeyID())
 
-	// Job engine (ticket 008). Handlers for host-changing kinds arrive with
-	// the Agent channel (tickets 004/007); until then no kind is registered.
+	// Agent channel (ticket 007): node PKI in the secrets store, the hub
+	// agents dial, and the step runner job handlers use. Reconnecting agents
+	// are reconciled before anything else reaches them.
+	pki, err := nodes.LoadOrCreatePKI(ctx, sec, nil)
+	if err != nil {
+		return fmt.Errorf("refusing to start, node PKI: %w", err)
+	}
 	engine := jobs.New(jobs.NewSQLStore(st.DB), jobs.Options{FreeBytes: jobs.FreeBytesOf(cfg.DataDir)})
+	var reconciler *nodes.Reconciler
+	hub := nodes.NewHub(nodes.HubOptions{PKI: pki, CoreVersion: api.Version,
+		OnReady: func(s *nodes.Session, inFlight []string) { reconciler.OnReady(s, inFlight) }})
+	runner := nodes.NewStepRunner(hub)
+	reconciler = &nodes.Reconciler{Engine: engine, Runner: runner}
+	if err := engine.Register(&nodes.InspectHandler{Runner: runner}); err != nil {
+		return err
+	}
+
 	identity, err := iam.New(st.DB, iam.Config{Secrets: sec})
 	if err != nil {
 		return err
@@ -76,6 +92,7 @@ func run(args []string) error {
 	router.MountIAM(identity, api.IAMOptions{PublicOrigin: cfg.PublicOrigin})
 	// Jobs mount on the authenticated group, so MountIAM must run first.
 	router.RegisterJobs(engine)
+	router.RegisterAgentConnections(hub)
 	router.MountListQueries(listQueries)
 	go listQueries.RunPurger(ctx, time.Hour)
 	router.MountConfirmations(confirm.New(st.DB, nil))
@@ -95,16 +112,33 @@ func run(args []string) error {
 	}
 	slog.Info("management API listening", "addr", ln.Addr().String(), "version", api.Version)
 
-	errCh := make(chan error, 1)
-	go func() { errCh <- srv.Serve(ln) }()
+	agentSrv := &http.Server{
+		Handler:           hub,
+		TLSConfig:         pki.ServerTLSConfig(),
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+	agentLn, err := net.Listen("tcp", cfg.AgentListenAddr)
+	if err != nil {
+		return fmt.Errorf("listen %s: %w", cfg.AgentListenAddr, err)
+	}
+	slog.Info("agent channel listening", "addr", agentLn.Addr().String(), "path", "/agent/v1/connect")
 
+	errCh := make(chan error, 2)
+	go func() { errCh <- srv.Serve(ln) }()
+	go func() { errCh <- agentSrv.Serve(tls.NewListener(agentLn, agentSrv.TLSConfig)) }()
+
+	shutdown := func() error {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		hub.Close()
+		return errors.Join(agentSrv.Shutdown(shutdownCtx), srv.Shutdown(shutdownCtx))
+	}
 	select {
 	case <-ctx.Done():
 		slog.Info("shutting down")
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-		defer cancel()
-		return srv.Shutdown(shutdownCtx)
+		return shutdown()
 	case err := <-errCh:
+		_ = shutdown()
 		if errors.Is(err, http.ErrServerClosed) {
 			return nil
 		}

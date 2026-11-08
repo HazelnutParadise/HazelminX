@@ -62,6 +62,7 @@ func newContractHarness(t *testing.T) *contractHarness {
 	s.RegisterJobs(e)
 	s.MountListQueries(lq)
 	s.MountConfirmations(cf)
+	s.RegisterAgentConnections(fakeAgentConnections{})
 	hs.h, hs.svc, hs.srv = s.Handler(), svc, s
 	t.Cleanup(func() {
 		select {

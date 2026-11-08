@@ -4,7 +4,7 @@
 **User Story:** 使用者可以安全執行長時間操作  
 **Milestone:** M1 單機主機管理  
 **Blocked by:** [008 使用者可以提交工作後關閉頁面，之後仍能查到進度、證據與結果](008-job-engine.md), [010 整合者可以用 /management/v1 的分頁、版本條件與工作回應操作資源](010-management-api-contract.md)  
-**Status:** blocked  
+**Status:** ready  
 **規格章節:** 33｜工作引擎：按一次按鈕後，如何可靠完成、36｜管理 API 與事件契約  
 **Issue:** [#16](https://github.com/HazelnutParadise/hazelminx/issues/16)  
 

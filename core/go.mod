@@ -3,6 +3,7 @@ module github.com/HazelnutParadise/hazelminx/core
 go 1.26.0
 
 require (
+	github.com/coder/websocket v1.8.14
 	github.com/fxamacker/cbor/v2 v2.9.4
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-webauthn/webauthn v0.18.2

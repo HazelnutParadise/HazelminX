@@ -65,3 +65,6 @@
 - Issue #20 比票檔 `020-host-overview-monitoring.md` 多出幾條驗收：GPU 欄位對齊 1Panel、GPU 程序對回所屬容器、硬體依類別分組成卡片、ROB-009，以及驗收案例 T-165、T-172、T-183。票檔是驗收條件的唯一來源，要決定把這些補進票檔，或從 issue 拿掉。
 - `agent/UPSTREAM.md` 把幾件事交給其他票決定，但那些票的驗收還沒寫：票 027 要決定終端機用哪個 Linux 帳號執行、`host.shell` 權限在 Agent 還是 `hazelminx-privileged` 檢查，以及收到 SIGTERM 時結束終端機；票 040 要決定低權限 Agent 怎麼存取 Docker socket；命令層（Komodo `lib/command`）由票 020、040、044 中最先需要的那張移植。
 - 票 007 選定 `rustls` 的加密後端（`aws-lc-rs` 或 `ring`）時，讀該 crate 實際的 LICENSE 檔，確認能與 GPL-3.0 一起散布，結果記進 `agent/UPSTREAM.md`。
+- Agent 的 `journal.jsonl` 只增不減，`Journal` 也把所有紀錄留在記憶體；長期運作前要加壓縮：Core 確認過、而且工作已是終態的步驟紀錄可以移到封存檔，保留最近的完成紀錄供重送。
+- `nodes.LoadOrCreatePKI` 第一次建立時依序寫入 `node-pki/ca`、`node-pki/core` 兩筆機密，第二筆失敗會留下半套，之後啟動一律拒絕；要改成同一個交易建立兩筆，或提供清除半套的復原指令。
+- `jobs.Engine.Reconcile` 對「開始過、沒結束、可重試」的步驟每次都重跑，沒有次數上限；Agent 磁碟只剩一點空間時（開始紀錄寫得進去、結束紀錄寫不進去）會一直重跑同一步驟。要在引擎加對帳重跑次數上限，超過就轉「需要處理」。

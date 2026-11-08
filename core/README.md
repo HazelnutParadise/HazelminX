@@ -20,15 +20,16 @@ go test ./...
 | 設定 | 旗標 | 環境變數 | 預設 |
 |---|---|---|---|
 | 管理 API 監聽位址 | `-listen` | `HAZELMINX_LISTEN_ADDR` | `127.0.0.1:9800` |
+| Agent 通道監聽位址（TLS） | `-agent-listen` | `HAZELMINX_AGENT_LISTEN` | `0.0.0.0:9801` |
 | 資料目錄 | `-data-dir` | `HAZELMINX_DATA_DIR` | `/var/lib/hazelminx` |
 | 日誌格式 | `-log-format` | `HAZELMINX_LOG_FORMAT` | `json` |
 | 使用者開啟面板的網址（Passkey 綁這個網域） | `-public-origin` | `HAZELMINX_PUBLIC_ORIGIN` | 空白，依每個請求的網址推算 |
 
-端點：`GET /healthz`（含資料庫健康）、`GET /management/v1`（操作總覽：每個操作都連到 OpenAPI 裡的說明，另列已註冊的工作種類）、`GET /management/v1/openapi.json`（OpenAPI 3.1，由路由註冊表產生）。共用契約見下一節。
+端點：`GET /healthz`（含資料庫健康）、`GET /management/v1`（操作總覽：每個操作都連到 OpenAPI 裡的說明，另列已註冊的工作種類）、`GET /management/v1/openapi.json`（OpenAPI 3.1，由路由註冊表產生）、`GET /management/v1/agent-connections`（已連線的 Agent 與最近被拒絕的連線，含雙方協定範圍）。共用契約見下一節。
 
 ## 工作引擎
 
-長操作一律建立工作（`POST /management/v1/jobs`，回 `202` 與工作 ID），工作不隨 HTTP 連線消失。每個工作種類向引擎註冊一個 `jobs.Handler`，自己定義步驟規劃、執行前再檢查、執行、復原、對帳與完成檢查；沒有註冊的種類不能提交，會回 `400 VALIDATION_FAILED`，`fields` 指出 `kind`。
+長操作一律建立工作（`POST /management/v1/jobs`，回 `202` 與工作 ID），工作不隨 HTTP 連線消失。每個工作種類向引擎註冊一個 `jobs.Handler`，自己定義步驟規劃、執行前再檢查、執行、復原、對帳與完成檢查；沒有註冊的種類不能提交，會回 `400 VALIDATION_FAILED`，`fields` 指出 `kind`。Agent 執行的種類目前只有 `node.inspect`（唯讀：問指定節點的 Agent 是誰，完成檢查是回答者的指紋等於工作指定的節點）。
 
 - 狀態依規格 33.1，表格在 `internal/jobs/state.go`；終態不可再改。
 - 同一 `requestId` 相同內容回同一工作，不同內容回 `409 REQUEST_ID_CONFLICT`。
@@ -54,6 +55,16 @@ go test ./...
 - **dryRun**：會改變受管資源的端點在 `Operation` 標 `DryRun: true`，收到 `?dryRun=true` 時回 `200 DryRunResult`（`ok`、`blockers`、`impact.direct`、`impact.indirect`、`preview`），不建立、不保留任何東西。權限照真實寫入檢查。沒標的寫入端點收到 `dryRun` 一律回 `400 DRY_RUN_UNSUPPORTED`，不會忽略參數照做。OpenAPI 以 `x-hazelminx-dry-run` 標記這些端點，作為 ROB-003 的核對清單。目前 `POST /management/v1/jobs` 支援，預覽會寫出是否視為重送、會排在哪些工作後面、空間夠不夠。
 - **確認端點**：`GET`／`POST /management/v1/confirmations/{id}`（ROB-010）。只有套用變更的同一個帳號看得到、能確認（工作階段或 API Token 都可以），其他人一律 `404`。確認要從變更套用之後才建立的連線送出（`api.ConnContext` 記下每條連線的建立時間）。變更有指定新入口時，Host 或本機位址也要相符，否則回 `409 CONFIRMATION_NEW_CONNECTION_REQUIRED`。超過時間回 `409 CONFIRMATION_EXPIRED`。指定的本機位址是 `0.0.0.0` 這類萬用位址時只比對 port。只有平台資料庫唯讀時，確認會回 `503`，其他降級不擋確認。同一資源有待確認的變更時，其他寫入回 `409 CONFIRMATION_REQUIRED`。倒數、自動回復與重啟續算由票 024 接上。Core 前面若有反向代理，Core 看不到瀏覽器那段連線，這個判定就不成立。目前管理入口由瀏覽器直連 Core。
 - **非 UTF-8 名稱**：主機來的名稱用 `RawName`：`text` 一律是有效 UTF-8（無效位元組換成 U+FFFD），原始內容不是有效 UTF-8 時另附 `bytes`（標準 base64）。兩個顯示相同的名稱以 `bytes` 區分。改名、下載等操作把整個 `RawName` 送回來，有 `bytes` 就以它為準。
+
+## Agent 通道（票 007）
+
+Agent 主動連到 `-agent-listen` 的 `/agent/v1/connect`（TLS 1.3 上的 WebSocket），節點不需要開任何入站連接埠。訊息格式、握手與版本規則在 `docs/contracts/README.md`，Go 型別在 `internal/protocol`。
+
+- 第一次啟動時在機密服務建立節點 CA 與 Core 身分（`node-pki/ca`、`node-pki/core`，私鑰加密存放）。節點憑證由 `nodes.PKI.IssueNodeCertificate` 簽發，註冊流程（票 019）會用它；Agent 要釘選的 CA 是 `PKI.CACertificatePEM()`。
+- 每次連線雙方都要證明身分：Core 驗節點憑證鏈、用途、指紋，以及節點私鑰對握手內容的簽章；直連時 TLS 用戶端憑證必須是同一節點。Agent 驗 Core 憑證鏈、`core.hazelminx.internal` 名稱與 Core 的簽章，不看 IP 或主機名。HTTP Header 一律不當身分，所以經會終止 TLS 的代理時仍有獨立的節點身分證明。握手同時以 X25519 交換金鑰，之後每則訊息帶序號與 HMAC，代理插入、重放或調換訊息都會讓會話斷線。
+- 握手訊息上限 64 KiB、hello 要在 3 秒內送到、同時握手上限 256 條且同一來源 32 條（滿了先關還沒送 hello 的、最後才關已出示有效憑證的），被拒紀錄只留 Agent 提供文字的前 256 字元。
+- 協定版本沒有交集時拒絕連線並記錄雙方範圍；同一節點已有連線時拒絕第二條（複製的虛擬機）；`Authorizer` 回 `ErrNodeRevoked` 時拒絕（撤銷清單在票 019）。
+- 工作步驟經 `nodes.StepRunner` 送到節點：Agent 沒宣告的能力不送；節點不在線是已知失敗（沒送出任何東西）；送出後斷線是 `unknown`。Agent 重連後，`nodes.Reconciler` 在會話存活期間每 15 秒掃一次該節點「狀態不明」的工作，先向 Agent 查持久紀錄再交給引擎對帳，已完成的步驟不重跑。
 
 ## 登入、第二驗證與權限（票 009、014）
 
@@ -82,6 +93,8 @@ go test ./...
 | `internal/paging` | 列表的 keyset 分頁：把排序與游標換成 SQL 的 ORDER BY 與「在這一筆之後」條件 |
 | `internal/confirm` | ROB-010 確認紀錄：建立、查詢、確認（新連線與入口判定）、標記已回復、查同一資源是否有待確認變更 |
 | `internal/jobs` | 工作引擎：狀態機、冪等鍵、資源鎖、預算、事件序號、診斷、SQLite 儲存 |
+| `internal/protocol` | Core↔Agent 訊息型別、嚴格與寬鬆解碼、版本協商、握手簽章內容；`fixturegen/` 重產 `docs/contracts/fixtures` 的確定性樣本 |
+| `internal/nodes` | 節點 PKI、Agent 連線 hub（握手、會話、心跳）、步驟執行器、重連對帳、`node.inspect` 工作種類 |
 | `internal/iam` | 帳號、角色與資源範圍、密碼雜湊、工作階段與閒置逾時、TOTP、Passkey、復原碼、再次驗證、預設拒絕的授權判定、稽核紀錄、登入嘗試限制 |
 | `internal/secrets` | 機密參照（加密值、版本、使用範圍、到期、變更紀錄）、主金鑰檔與輪替、Token 雜湊查驗 |
 | `web` | 嵌入式前端（`embedweb` build tag） |

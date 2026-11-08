@@ -111,7 +111,10 @@ type Step struct {
 	// may be re-run after an unknown outcome without reconciliation.
 	Retryable bool `json:"retryable"`
 	// WaitReason explains why a requested cancel is still waiting on this step.
-	WaitReason string     `json:"waitReason,omitempty"`
+	WaitReason string `json:"waitReason,omitempty"`
+	// Attempts counts how many times the step started executing, including
+	// attempts whose outcome reconciliation later reset.
+	Attempts   int        `json:"attempts,omitempty"`
 	StartedAt  *time.Time `json:"startedAt,omitempty"`
 	FinishedAt *time.Time `json:"finishedAt,omitempty"`
 	Evidence   []string   `json:"evidence,omitempty"`
@@ -144,6 +147,10 @@ type StepError struct {
 	Evidence         []string `json:"evidence,omitempty"`
 	SuggestedActions []string `json:"suggestedActions,omitempty"`
 	Retryable        bool     `json:"retryable"`
+	// NothingChanged: the executor refused or never received this attempt,
+	// so this attempt left nothing behind. The step still counts as executed
+	// when an earlier attempt started (Step.Attempts > 1).
+	NothingChanged bool `json:"nothingChanged,omitempty"`
 }
 
 func (e *StepError) Error() string { return e.Code + ": " + e.Summary }

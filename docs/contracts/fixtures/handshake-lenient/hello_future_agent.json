@@ -1,0 +1,24 @@
+{
+  "agentVersion": "0.1.0",
+  "capabilities": [
+    {
+      "name": "jobs",
+      "version": 1
+    },
+    {
+      "name": "agent.info",
+      "version": 1
+    }
+  ],
+  "kex": "yK-Gd_tI4_MwXoEfX8NofxPA1DiQSqFQgUHRH50Lchw",
+  "nodeCertificate": "-----BEGIN CERTIFICATE-----\nMIIBZjCCARigAwIBAgIBFDAFBgMrZXAwIjEgMB4GA1UEAxMXSGF6ZWxtaW5YIGZp\neHR1cmUgQ0EgY2EwIBcNMjYwMTAxMDAwMDAwWhgPMjEyNjAxMDEwMDAwMDBaMEsx\nSTBHBgNVBAMTQGUwYTU2YTMyZDQ3ZTg0ZDM4ZDRlZmM2OTRkYTRlMGRjOTBjZjJl\nNDRiYTBmNWIxNjA2YjYyYWY0YTIwODc2NTkwKjAFBgMrZXADIQAummrsGf7a/TGc\n+bdaP9EpMpW+pnHjv9PS8/H3Zag+i6NIMEYwDgYDVR0PAQH/BAQDAgeAMBMGA1Ud\nJQQMMAoGCCsGAQUFBwMCMB8GA1UdIwQYMBaAFBG/3nxCMlra3Lu5z5ZadPnyjtbj\nMAUGAytlcANBANDoJdl8e6PwrGA8fowNqciYkgJO+ysFXki7hYfN/3gtVzEf0xsl\nTyoIyMxRKv7T2DORKR34Fu1W0rcFSIv+qAE=\n-----END CERTIFICATE-----\n",
+  "nonce": "nPLF4d_bF4hEwTJ3tS1W7meg6nSE-FaxACLGGEfKzIY",
+  "protocol": {
+    "min": 2,
+    "max": 3
+  },
+  "type": "hello",
+  "futureField": {
+    "anything": true
+  }
+}

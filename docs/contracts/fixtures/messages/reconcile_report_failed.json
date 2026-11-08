@@ -1,0 +1,17 @@
+{
+  "type": "reconcile_report",
+  "requestId": "rec_job_01HXYZ_0_2",
+  "jobId": "job_01HXYZ",
+  "step": 0,
+  "started": true,
+  "completed": false,
+  "failed": true,
+  "evidence": [
+    "agent://journal/18"
+  ],
+  "error": {
+    "code": "ACTION_FAILED",
+    "summary": "hostname lookup failed",
+    "retryable": false
+  }
+}
