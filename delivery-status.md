@@ -9,10 +9,10 @@ M0 基礎與設計：Core 與 Agent 後端骨架（票 003、004、008、009、0
 ## Active Workstreams
 - 設計系統與原型（票 002，PR #102）→ `DESIGN.md`、`docs/design/`（30 個畫板，19 個主導覽項全部有畫面）、`DESIGN-REVIEW.md`（三輪）。
 - 1Panel 功能基線盤點（票 092，PR #99）→ `docs/baseline/`。
-- CI（票 006，已在 `main`，in_progress）→ `.github/workflows/ci.yml`：Go 與 Rust 在 x86_64、ARM64 原生機器上檢查、測試、建置、冒煙測試並產生依賴報告。剩前端 job 與嵌入前端的 Core 建置，等票 005。
+- CI（票 006，已在 `main`，in_progress）→ `.github/workflows/ci.yml`：Go 與 Rust 在 x86_64、ARM64 原生機器上檢查、測試、建置、冒煙測試並產生依賴報告。剩前端 job 與嵌入前端的 Core 建置；票 005 已在 `main`，可以接上。
 - Core↔Agent 通道（票 007，已在 `main`）→ `docs/contracts/`、`agent/crates/protocol`、Agent 連線與持久步驟紀錄、`core/internal/protocol`、`core/internal/nodes`。SEC-011 的升級路徑移到票 036。票 008 的 ENG-003 Agent 端已由 007 接上。
 - 主機變更帳本（票 113，done）→ `agent/crates/privileged/src/ledger/`（主機那份）與 `core/internal/hostledger`（Core 那份，經 007 的通道同步）。交給其他票的項目列在 Handoff Notes。
-- 前端骨架（票 005，已在 `main`，PR #126 經 #102 合併）→ `web/`：Kumo＋HazelminX 主題、外殼、i18n、深淺色、共用元件（儲存列、主機狀態列、元件停止橫條、原文＋白話摘要）、Playwright 版面與無障礙掃描；Core 嵌入版已實測。CI 還沒有前端 job（票 006）。
+- 前端骨架（票 005，done，PR #126 經 #102 合併）→ `web/`：Kumo＋HazelminX 主題、外殼、i18n、深淺色、共用元件（儲存列、主機狀態列、元件停止橫條、原文＋白話摘要）、Playwright 版面與無障礙掃描；Core 嵌入版已實測。CI 還沒有前端 job（票 006）。
 - 參考專案研究收尾 → `docs/research/`（1Panel 後端／前端、Komodo Periphery、Portainer Git Stack、Beszel 報告待補）。
 
 ## Milestones
@@ -29,10 +29,10 @@ M0 基礎與設計：Core 與 Agent 後端骨架（票 003、004、008、009、0
 None。
 
 ## Next Verifiable Output
-票 019 節點註冊：一次性註冊碼換節點憑證（用票 007 的 `nodes.PKI.IssueNodeCertificate`），寫入 Agent 的 `node.crt`／`core-ca.crt`，並以節點紀錄實作 `nodes.Authorizer` 的撤銷。票 005（PR #126）隨 PR #102（票 002）之後合併；合併後票 006 補前端 job 與嵌入前端的 Core 建置，票 017 在 `web/` 外殼上接工作中心、降級列與搜尋。
+票 019 節點註冊：一次性註冊碼換節點憑證（用票 007 的 `nodes.PKI.IssueNodeCertificate`），寫入 Agent 的 `node.crt`／`core-ca.crt`，並以節點紀錄實作 `nodes.Authorizer` 的撤銷。票 006 補前端 job 與嵌入前端的 Core 建置。票 017 已 ready，可以在 `web/` 外殼上接工作中心、降級列與搜尋。
 
 ## Next Ticket
-019 節點註冊（等 007 完成後 ready）。005 前端骨架已完成驗收（PR #126），等 PR #102 合併後再合併。014 已合併；015、016、022、023、024、025、026、047 的前置票都已 done，狀態為 ready；013 的前置票都已 done，狀態為 ready。
+019 節點註冊（等 007 完成後 ready）。005 前端骨架已合併並驗收完成（done），017 與 095 因此改為 ready。014 已合併；015、016、022、023、024、025、026、047 的前置票都已 done，狀態為 ready；013 的前置票都已 done，狀態為 ready。
 
 ## Decision Log
 | decision | rationale | timestamp | impacted_ticket_ids |

@@ -4,7 +4,7 @@
 **User Story:** 使用者可以在一致的介面完成日常管理  
 **Milestone:** M1 單機主機管理  
 **Blocked by:** [005 使用者可以開啟 React 介面並切換語言與淺深色](005-web-skeleton.md), [008 使用者可以提交工作後關閉頁面，之後仍能查到進度、證據與結果](008-job-engine.md), [010 整合者可以用 /management/v1 的分頁、版本條件與工作回應操作資源](010-management-api-contract.md)  
-**Status:** blocked  
+**Status:** ready  
 **規格章節:** 07｜介面與操作體驗  
 **Issue:** [#17](https://github.com/HazelnutParadise/hazelminx/issues/17)  
 

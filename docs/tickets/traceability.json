@@ -71,7 +71,7 @@
       "acceptance_tests": [
         "T-118"
       ],
-      "status": "in_progress",
+      "status": "done",
       "issue": 5
     },
     {
@@ -364,7 +364,7 @@
         "T-231",
         "T-232"
       ],
-      "status": "blocked",
+      "status": "ready",
       "issue": 17
     },
     {
@@ -2249,7 +2249,7 @@
         "T-122",
         "T-123"
       ],
-      "status": "blocked",
+      "status": "ready",
       "issue": 94
     },
     {
