@@ -33,6 +33,18 @@
 - **版本不符的狀態碼**：缺少或帶 `*` 回 `428 VERSION_REQUIRED`，過期回 `412 VERSION_MISMATCH`（RFC 9110 13.1.1）。`409` 留給資源狀態擋下的情況。
 - **確認的新連線判定**：確認請求所在的 TCP 連線，建立時間必須晚於變更套用時間（`api.ConnContext` 記錄）。只看「連線 ID 不同」不夠，因為瀏覽器會同時開好幾條連線。Core 前面若有反向代理，Core 看不到瀏覽器那段連線，這個判定就不成立，目前的前提是管理入口由瀏覽器直連 Core。
 
+## 設計缺口
+
+這張票的 API 已經回得出下列狀態，但 `docs/design/` 還沒有對應的畫面，由設計端補畫：
+
+- 列表底部的每頁筆數、查詢上限與逾時，以及「可瀏覽前 N 筆／總數 M」和「總數未知」兩種狀態。設計裡目前只有一顆「改成背景工作」按鈕。
+- 背景查詢的結果頁，以及結果過了 7 天被刪除（`410 LIST_QUERY_EXPIRED`）、帳號已保存 10 筆查詢（`409 LIST_QUERY_LIMIT_REACHED`）時的畫面。
+- 錯誤物件在畫面上的呈現：`fields` 對到表單欄位、`suggestedActions` 的按鈕、`alsoBlockedBy` 是否列出，以及是否把 `traceId` 給使用者回報問題用。
+- 帳號編輯（顯示名稱）時版本過期（`412 VERSION_MISMATCH`）的畫面。目前只有 compose 檔的版本衝突卡片。
+- `dryRun` 影響預覽面板：`blockers`、直接與間接影響、「會排在某個工作後面」。DESIGN.md 提到影響預覽，但沒有畫板。
+- ROB-010 的套用確認倒數：要求「從新連線或新網域開啟再按確認」的提示，以及從舊連線送出（`CONFIRMATION_NEW_CONNECTION_REQUIRED`）、已過期（`CONFIRMATION_EXPIRED`）兩種被拒狀態。
+- 其他人改同一資源時被 `CONFIRMATION_REQUIRED` 擋下的畫面，要寫出等待結束的時間。
+
 ## Delivery record
 
 需求 ID → 變更 → 測試環境 → 正常與失敗案例 → 證據 → 未驗證部分，依規格第 46.4 節填寫於 PR。

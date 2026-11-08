@@ -54,6 +54,9 @@
 - 背景列表查詢在執行期間會輪流佔用唯一的 SQLite 連線（`store` 設 `SetMaxOpenConns(1)`），大型稽核表上沒有索引的篩選會拖慢其他 API。加讀取用的第二個連線池時，背景查詢要改用它。
 - IAM 的寫入端點（建帳號、改帳號、指派與撤銷角色）還沒經過 `Server.writeBlockers`，平台資料庫唯讀時會回 `INTERNAL` 而不是 `PLATFORM_DEGRADED`。票 017 接上降級偵測時一起處理。
 - ROB-010 確認比對的 `Host` 是用戶端送來的標頭。瀏覽器無法偽造，但腳本或 API Token 可以從舊入口送新的 Host，確認一個其實連不到的網域變更。票 024 決定是否改比 TLS SNI，或限制網域變更只接受瀏覽器工作階段確認。
+- PR #123（票 014）新增的 `0006_mfa_sessions.sql` 與 `main` 上的 `0006_management_contract.sql` 重號，合併前改成 `0007` 並更新票 014 的引用。
+- 票 010 的「設計缺口」一節列出 API 已有、畫面還沒畫的狀態（列表邊界、背景查詢、錯誤呈現、版本過期、影響預覽、確認倒數），由設計端補進 `docs/design/`。
+- 寫入閘門的 `RESOURCE_READ_ONLY`、`CONTROLLER_CONFLICT`、`SCOPE_DEGRADED`、`RESOURCE_REFERENCED` 目前只有單元測試；第一個有受管資源端點的票接上 `ResourceState` 時，補一條經 API 拒絕的測試。
 - Agent 的 `journal.jsonl` 只增不減，`Journal` 也把所有紀錄留在記憶體；長期運作前要加壓縮：Core 確認過、而且工作已是終態的步驟紀錄可以移到封存檔，保留最近的完成紀錄供重送。
 - `nodes.LoadOrCreatePKI` 第一次建立時依序寫入 `node-pki/ca`、`node-pki/core` 兩筆機密，第二筆失敗會留下半套，之後啟動一律拒絕；要改成同一個交易建立兩筆，或提供清除半套的復原指令。
 - `jobs.Engine.Reconcile` 對「開始過、沒結束、可重試」的步驟每次都重跑，沒有次數上限；Agent 磁碟只剩一點空間時（開始紀錄寫得進去、結束紀錄寫不進去）會一直重跑同一步驟。要在引擎加對帳重跑次數上限，超過就轉「需要處理」。
