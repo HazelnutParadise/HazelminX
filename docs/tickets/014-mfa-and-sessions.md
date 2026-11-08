@@ -31,6 +31,21 @@
 - **T-130** 為管理員設定 Passkey，再修改管理網域。 → 先說明與檢查登入憑證影響，保留可用救援方式。
   本票做完影響檢查：`TestPasskeySecondFactorAndDomainImpact` 驗證只靠 Passkey 的擁有者換網域時回報 `safe=false` 與建議動作，補上 TOTP 後回報 `safe=true`。修改管理網域的操作屬於 SET-003（票 018），該票要在套用前呼叫這個檢查，T-130 的完整流程在那張票驗收。
 
+## 設計缺口
+
+這張票的 API 已經回得出下列狀態，但 `docs/design/` 還沒有對應的畫面，由設計端補畫：
+
+- 綁定 Passkey 的對話框：裝置命名、瀏覽器不支援、使用者取消，以及用 IP 開面板時不能用（`409 NOT_AVAILABLE`）。
+- TOTP 綁定：QR 碼和手動輸入金鑰並列、顯示伺服器時間、碼錯或綁定過期的狀態。Setup 畫板目前只有「掃描」與「輸入 6 位數」。
+- 登入第二步的錯誤狀態：碼錯（`SECOND_FACTOR_INVALID`）、挑戰過期要重新輸入密碼（`LOGIN_CHALLENGE_INVALID`）、被冷卻時的倒數（`TOO_MANY_ATTEMPTS` 的 `retryAfterSeconds`），以及 `methods` 沒有 `passkey` 時隱藏 Passkey 按鈕。
+- 再次驗證的對話框：密碼，加上第二驗證（`REAUTHENTICATION_REQUIRED` 時出現）。
+- 帳號安全設定頁：列出已綁的 TOTP 與 Passkey、移除、重新產生復原碼、剩餘復原碼數量。
+- 移除憑證的確認，以及「最後一個不能刪」（`LAST_SECOND_FACTOR`）的提示。
+- 工作階段清單：裝置、IP、最後活動、目前這一個、撤銷、登出其他裝置。
+- 閒置逾時設定（15 分鐘到 24 小時、預設 12 小時）。
+- 平台管理員或主機維運者第一次登入就被要求綁定第二驗證的畫面（`SECOND_FACTOR_ENROLLMENT_REQUIRED`），以及 setup 中斷後再登入時的「待綁定」畫面。
+- 網域變更的影響檢查結果：會失效的 Passkey、哪些帳號會沒有第二驗證、建議動作。
+
 ## Delivery record
 
 需求 ID → 變更 → 測試環境 → 正常與失敗案例 → 證據 → 未驗證部分，依規格第 46.4 節填寫於 PR。

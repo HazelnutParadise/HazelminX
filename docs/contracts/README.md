@@ -42,7 +42,7 @@ Agent 主動連到 Core 的 Agent 入口（預設 `:9801`，路徑 `/agent/v1/co
 
   `role` 是 `core` 或 `agent`。Core 以身分私鑰簽 `core` 版本，Agent 以節點私鑰簽 `agent` 版本。雙方 nonce 都是新的，所以舊握手無法重放；角色字串不同，所以一方的簽章不能拿來冒充另一方；兩個 `kex`、整份 hello 與 welcome 的參數都在簽章內，所以中間人換掉任何一方的 `kex`、改支援範圍、能力清單或心跳間隔，簽章就對不上。
 - 節點身分以 `nodeCertificate`＋`proof` 證明，不依賴 TLS 用戶端憑證，也不讀任何 HTTP Header。經會終止 TLS 的代理時仍成立；直連時 Agent 另外出示 TLS 用戶端憑證，Core 要求兩者指紋一致。
-- Agent 的 `core_transport = "pinned"`（預設）以 `core-ca.crt` 驗 TLS 伺服端；`"proxy"` 以代理的憑證鏈驗 TLS（`proxy_ca_file` 或內建公開根憑證），Core 身分改由 `coreCertificate`＋`proof` 證明。
+- Agent 的 `core_transport = "pinned"`（預設）以 `core-ca.crt` 驗 TLS 伺服端；`"proxy"` 以代理的憑證鏈驗 TLS（`proxy_ca_file`，不設則用作業系統的信任清單），Core 身分改由 `coreCertificate`＋`proof` 證明。
 - 雙方以自己的 X25519 私鑰和對方的 `kex` 算出共同秘密，再用 HKDF-SHA256（不加鹽）展開成兩把 32 位元組金鑰：`info` 是 `hazelminx-session-v1 core->agent {sessionId}` 的金鑰給 Core 送出的訊息用，`hazelminx-session-v1 agent->core {sessionId}` 的給 Agent 送出的訊息用。代理看得到握手內容，但算不出這兩把金鑰。
 - 握手訊息單則上限 64 KiB，hello 要在連線後 3 秒內送到；Core 同時進行中的握手上限 256 條、同一來源（IPv4 位址或 IPv6 /64）32 條，滿了就關掉一條讓新連線進來：先關還沒送 hello 的，最後才關已出示有效憑證、在等 auth 的，同一階段關最舊的；簽章驗過的連線不再佔名額；被拒紀錄只保留 Agent 提供文字的前 256 個字元。
 - `reject` 沒有簽章：經會終止 TLS 的代理可以偽造一則 `reject`，讓 Agent 以為被拒而等待重試。代理本來就能直接切斷連線，這只是同一種阻斷，不會讓任何指令被執行。

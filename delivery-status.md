@@ -1,7 +1,7 @@
 # Delivery Status
 
 ## Current Phase
-M0 基礎與設計：Core 與 Agent 後端骨架（票 003、004、008、009、011、012）與管理 API 共用契約（票 010）已合併進 `main`；Core↔Agent 通道（票 007）驗收完成，在草稿 PR #125 等合併；設計系統與 UI/UX 原型（票 002）進行中。
+M0 基礎與設計：Core 與 Agent 後端骨架（票 003、004、008、009、011、012）與 CI（票 006，前端部分待 005）與管理 API 共用契約（票 010）已合併進 `main`；Core↔Agent 通道（票 007）驗收完成，在草稿 PR #125 等合併；設計系統與 UI/UX 原型（票 002）進行中。
 
 ## Stage Objective
 完成 `DESIGN.md` 與主要畫面原型並通過設計審查，讓票 003、004、005、007 可以在一致的視覺與互動基準上開工；M0 結束時 Core、Agent、Web 骨架可建置並在 CI 通過。
@@ -9,7 +9,7 @@ M0 基礎與設計：Core 與 Agent 後端骨架（票 003、004、008、009、0
 ## Active Workstreams
 - 設計系統與原型（票 002，PR #102）→ `DESIGN.md`、`docs/design/`（30 個畫板，19 個主導覽項全部有畫面）、`DESIGN-REVIEW.md`（三輪）。
 - 1Panel 功能基線盤點（票 092，PR #99）→ `docs/baseline/`。
-- 已在 `main` 但驗收未完成：票 003 等 CI（票 006）。
+- CI（票 006，已在 `main`，in_progress）→ `.github/workflows/ci.yml`：Go 與 Rust 在 x86_64、ARM64 原生機器上檢查、測試、建置、冒煙測試並產生依賴報告。剩前端 job 與嵌入前端的 Core 建置，等票 005。
 - Core↔Agent 通道（票 007，已在 `main`）→ `docs/contracts/`、`agent/crates/protocol`、Agent 連線與持久步驟紀錄、`core/internal/protocol`、`core/internal/nodes`。SEC-011 的升級路徑移到票 036。票 008 的 ENG-003 Agent 端已由 007 接上。
 - 主機變更帳本（票 113，已在 `main`，in_progress）→ `agent/crates/privileged/src/ledger/`：執行器在每個會改主機的動作前後寫帳本，沒寫成就拒絕；有安裝前快照與手動修改偵測。剩下的項目列在 Handoff Notes。
 - 參考專案研究收尾 → `docs/research/`（1Panel 後端／前端、Komodo Periphery、Portainer Git Stack、Beszel 報告待補）。
@@ -31,7 +31,7 @@ None。
 票 019 節點註冊：一次性註冊碼換節點憑證（用票 007 的 `nodes.PKI.IssueNodeCertificate`），寫入 Agent 的 `node.crt`／`core-ca.crt`，並以節點紀錄實作 `nodes.Authorizer` 的撤銷。PR #102（票 002）合併後，票 005 依 `DESIGN.md` token 建立 `web/` 骨架。
 
 ## Next Ticket
-019 節點註冊（等 007 完成後 ready）、113 的 Core 副本同步（用 007 的通道）。005 前端骨架仍等票 002 完成。014 已合併；015、016、022、023、024、025、026、047 的前置票都已 done，狀態為 ready；013 還在等 003 完成驗收。
+019 節點註冊（等 007 完成後 ready）、113 的 Core 副本同步（用 007 的通道）。005 前端骨架仍等票 002 完成。014 已合併；015、016、022、023、024、025、026、047 的前置票都已 done，狀態為 ready；013 的前置票都已 done，狀態為 ready。
 
 ## Decision Log
 | decision | rationale | timestamp | impacted_ticket_ids |
@@ -73,7 +73,7 @@ None。
 - 規格：`docs/spec/HazelminX_Spec_v1.1_zh-TW.md`
 - 票務：`docs/tickets/README.md`、GitHub issues #1–#98（milestone M0–M5）
 - 草稿 PR：#99（092 基線盤點）、#102（002 設計方向）
-- 已合併 PR：#100（003）、#101（004）、#103（011）、#104（009）、#105（008）、#106（012）、#121（010）、#122（113）、#124（004）、#123（014）、#125（007）
+- 已合併 PR：#100（003）、#101（004）、#103（011）、#104（009）、#105（008）、#106（012）、#121（010）、#122（113）、#124（004）、#123（014）、#125（007）、#127（006）
 - 設計畫布：<https://claude.ai/artifact/NBXgFGYEiZVnKLraoa7Nt8>（第一頁三個方向、第二頁方向 B 定稿 12 畫板，私人）
 - 研究：`docs/research/`
 - 工作規則：`AGENTS.md`
@@ -89,6 +89,10 @@ None。
   - Core 的帳本副本（UNX-001 最後一項）：007 合併後，把 `agent/crates/privileged/src/ledger/sync.rs` 裡標 `TODO(007)` 的型別搬進 protocol crate，Go 端用 `docs/contracts/fixtures/host-ledger-batch.json` 做契約測試，Core 依節點保存驗證過的行。做完才能把 UNX-001 打勾、113 改成 done。
   - 安裝器（票 013）在第一步執行 `hazelminx-privileged snapshot capture`，安裝步驟用 `ledger::recorder::Recorder` 記錄，並讓 `/var/lib/hazelminx` 維持 root 擁有、群組與其他人不可寫。
   - `docs/tickets/README.md` 與 `traceability.json` 在 `main` 上還沒有 113 那一列（只在票 002 的設計分支）。設計分支合併後，113 要改成 `in_progress`。
-  - dnf／rpm 主機、iptables 防火牆只用模擬輸出測過，x86_64 主機沒有實測，CI（票 006）接上後補跑。
+  - dnf／rpm 主機只用模擬輸出測過。x86_64 與 ARM64 的 Ubuntu 24.04 已由 CI 以 root 在 systemd 下實測（PR #127）。
   - 主機頁看帳本等六項設計缺口，列在 PR #122 描述的「設計缺口」一節，等設計端補畫。
   - 帳本會改的對象目前只有路徑、systemd 單元、套件、使用者、群組。之後要動防火牆、容器、sysctl、設定鍵的票，要加對應的 `Target` 變體與讀取方式。
+- 票 006 還沒做完的項目：
+  - 票 005（PR #126）合併後，在 `.github/workflows/ci.yml` 加前端 job：用固定版本的 Vite+ 跑 `vp check`、`vp test`、`vp build`，不能用浮動版本。
+  - 同時讓 Core 改用 005 的 `scripts/embed-web.sh` 以 `-tags embedweb` 建置，冒煙測試從「`/` 回 503」改成「`/` 回 `index.html`」。
+  - main 分支還沒設定「CI 通過才能合併」的保護規則，要由 repo 管理者在 GitHub 設定。
