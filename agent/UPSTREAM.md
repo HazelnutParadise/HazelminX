@@ -166,7 +166,7 @@ HazelminX 的 Rust Agent 以 Komodo Periphery 為改造起點。本文件固定�
 |---|---|---|---|---|
 | `hazelminx-agent` | `crates/agent` | GPL-3.0-or-later | 已建立（票 004） | 低權限常駐服務、節點身分 |
 | `hazelminx-privileged` | `crates/privileged` | GPL-3.0-or-later | 已建立（票 012） | 固定動作的高權限執行器 |
-| 未命名 | `crates/protocol` | GPL-3.0-or-later | 未建立（票 007） | Core 與 Agent 的訊息型別 |
+| `hazelminx-protocol` | `crates/protocol` | GPL-3.0-or-later | 已建立（票 007） | Core 與 Agent 的訊息型別、握手簽章內容、訊框 MAC |
 | 未命名（執行檔 `hazelminx`） | `crates/cli` | GPL-3.0-or-later | 未建立（票 013） | 安裝、更新、診斷、救援、卸載 |
 | 未命名 | `crates/platform-linux`、`crates/platform-windows` | GPL-3.0-or-later | 未建立，未排票 | 平台相依實作。Windows 範圍未核定，只保留介面 |
 
@@ -176,40 +176,68 @@ HazelminX 的 Rust Agent 以 Komodo Periphery 為改造起點。本文件固定�
 
 | crate | 版本 | 授權 | 使用者 |
 |---|---|---|---|
-| `ed25519-dalek` | 2.2.0 | BSD-3-Clause | agent（節點身分）、privileged（授權憑證驗簽） |
-| `sha2` | 0.10.9 | MIT OR Apache-2.0 | agent（身分指紋） |
-| `rand` | 0.8.8 | MIT OR Apache-2.0 | agent（產生金鑰）、privileged（測試） |
-| `hex` | 0.4.3 | MIT OR Apache-2.0 | agent、privileged |
-| `base64` | 0.22.1 | MIT OR Apache-2.0 | privileged |
-| `time` | 0.3.55 | MIT OR Apache-2.0 | privileged（RFC 3339 有效期） |
+| `ed25519-dalek` | 2.2.0 | BSD-3-Clause | agent（節點身分、握手簽章）、privileged（授權憑證驗簽）、protocol（測試） |
+| `x25519-dalek` | 2.0.1 | BSD-3-Clause | protocol（握手金鑰交換） |
+| `hkdf` | 0.12.4 | MIT OR Apache-2.0 | protocol（導出訊框金鑰） |
+| `hmac` | 0.12.1 | MIT OR Apache-2.0 | protocol（訊框 MAC） |
+| `sha2` | 0.10.9 | MIT OR Apache-2.0 | agent、privileged、protocol |
+| `rustls` | 0.23.46 | Apache-2.0 OR ISC OR MIT | agent（TLS 1.3 用戶端） |
+| `tokio-rustls` | 0.26.6 | MIT OR Apache-2.0 | agent |
+| `rustls-pki-types` | 1.15.1 | MIT OR Apache-2.0 | agent |
+| `rustls-webpki` | 0.103.16 | ISC | agent（憑證鏈驗證） |
+| `rustls-native-certs` | 0.8.5 | Apache-2.0 OR ISC OR MIT | agent（proxy 模式未設 `proxy_ca_file` 時讀作業系統的信任清單） |
+| `tokio-tungstenite` | 0.26.2 | MIT | agent（WebSocket） |
+| `futures-util` | 0.3.34 | MIT OR Apache-2.0 | agent |
+| `url` | 2.5.8 | MIT OR Apache-2.0 | agent（Core 位址） |
+| `rand` | 0.9.5 | MIT OR Apache-2.0 | agent（產生金鑰）、protocol、privileged（測試） |
+| `hex` | 0.4.3 | MIT OR Apache-2.0 | agent、privileged、protocol |
+| `base64` | 0.22.1 | MIT OR Apache-2.0 | agent、privileged、protocol |
+| `time` | 0.3.55 | MIT OR Apache-2.0 | agent、privileged、protocol（RFC 3339 時間） |
 | `toml` | 0.9.12 | MIT OR Apache-2.0 | agent、privileged（設定檔） |
-| `serde_json` | 1.0.154 | MIT OR Apache-2.0 | privileged（socket 訊息） |
+| `serde_json` | 1.0.154 | MIT OR Apache-2.0 | agent、privileged、protocol |
 | `tracing-subscriber` | 0.3.23 | MIT | agent、privileged |
 | `tokio` | 1.54.1 | MIT | agent、privileged |
 | `clap` | 4.6.7 | MIT OR Apache-2.0 | agent、privileged |
 | `anyhow` | 1.0.104 | MIT OR Apache-2.0 | agent、privileged |
-| `serde` | 1.0.229 | MIT OR Apache-2.0 | agent、privileged |
+| `serde` | 1.0.229 | MIT OR Apache-2.0 | agent、privileged、protocol |
 | `tracing` | 0.1.44 | MIT | agent、privileged |
 | `tempfile` | 3.27.0 | MIT OR Apache-2.0 | 只用於測試 |
 
+### TLS 加密後端
+
+`rustls` 以 `ring` 0.17.14 為加密後端（`rustls`、`tokio-rustls`、`rustls-webpki` 都關掉預設 feature 改開 `ring`），不用 `aws-lc-rs`；`cargo tree -i aws-lc-rs` 與 `cargo tree -i openssl-sys` 都找不到。`tls12` feature 有編進去，但用戶端設定只允許 TLS 1.3。`ring` 的 `Cargo.toml` 宣告 `Apache-2.0 AND ISC`，實際 LICENSE 檔（2026-11-08 讀 crates.io 下載的 0.17.14 原始碼）：
+
+- `LICENSE`：新寫的程式碼用 ISC 授權，來自 BoringSSL 的程式碼依各檔檔頭，分別是 Apache-2.0 或 ISC；`src/polyfill/once_cell` 來自 once_cell，MIT 或 Apache-2.0。
+- `LICENSE-BoringSSL`：Apache License 2.0 全文。
+- `LICENSE-other-bits`：ISC 授權全文（Copyright 2015-2025 Brian Smith）。
+- 三個檔案都沒有舊版 `ring` 帶的 OpenSSL／SSLeay 授權（有廣告條款，與 GPL 不相容）。
+
+ISC 與 Apache-2.0 都能與 GPL-3.0 一起散布，散布執行檔時附上這兩份授權文字。`aws-lc-rs` 會帶進 C 建置工具鏈與 OpenSSL 授權的程式碼，所以沒有選。
+
+proxy 模式原本考慮用 `webpki-roots` 內建的公開根憑證清單，它的授權是 CDLA-Permissive-2.0（資料授權，FSF 沒有評估過與 GPL 的相容性）。改用 `rustls-native-certs` 讀作業系統的信任清單，`webpki-roots` 不在相依樹裡（`cargo tree -i webpki-roots` 找不到）。這樣也跟主機上其他 TLS 用戶端信任同一組根憑證，管理員自己加的企業 CA 也有效。
+
 ### 授權總覽
 
-目前 `agent/Cargo.lock` 解析出 117 個套件，包含間接相依、只用於測試的相依，以及只在其他平台使用的相依（例如 `r-efi`），比 Linux 執行檔實際連結的套件多。授權分布如下。`Apache-2.0 OR MIT` 與 `MIT/Apache-2.0` 和 `MIT OR Apache-2.0` 意思相同，合併計算：
+目前 `agent/Cargo.lock` 解析出 197 個套件，包含間接相依、只用於測試的相依，以及只在其他平台使用的相依（例如 `r-efi`），比 Linux 執行檔實際連結的套件多。授權分布如下。`Apache-2.0 OR MIT` 與 `MIT/Apache-2.0` 和 `MIT OR Apache-2.0` 意思相同，合併計算：
 
 | 授權 | 套件數 |
 |---|---|
-| MIT OR Apache-2.0（含 `Apache-2.0 OR MIT`、`MIT/Apache-2.0` 寫法） | 83 |
-| MIT | 19 |
-| BSD-3-Clause | 3 |
-| Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT | 3 |
+| MIT OR Apache-2.0（含 `Apache-2.0 OR MIT`、`MIT/Apache-2.0` 寫法） | 130 |
+| MIT | 24 |
+| Unicode-3.0（`url` 經 `idna` 帶進的 `icu_*`、`zerovec` 等） | 18 |
+| Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT | 5 |
+| BSD-3-Clause | 4 |
+| GPL-3.0-or-later（本專案的三個 crate） | 3 |
 | Unlicense OR MIT | 2 |
+| MIT OR Apache-2.0 OR LGPL-2.1-or-later（`r-efi` 兩個版本，選 MIT） | 2 |
+| Apache-2.0 OR ISC OR MIT | 2 |
+| ISC（`rustls-webpki`、`untrusted`） | 2 |
 | BSD-2-Clause OR Apache-2.0 OR MIT | 2 |
-| GPL-3.0-or-later（本專案的兩個 crate） | 2 |
+| Apache-2.0 AND ISC（`ring`） | 1 |
 | MIT OR Apache-2.0 OR BSD-1-Clause | 1 |
-| MIT OR Apache-2.0 OR LGPL-2.1-or-later（`r-efi`，選 MIT） | 1 |
 | (MIT OR Apache-2.0) AND Unicode-3.0（`unicode-ident`） | 1 |
 
-除了本專案自己的兩個 crate，沒有只能以 copyleft 授權使用的套件（`r-efi` 可選 MIT），也沒有 MPL-2.0。全部都能與 GPL-3.0 一起散布。
+除了本專案自己的三個 crate，沒有只能以 copyleft 授權使用的套件（`r-efi` 可選 MIT），也沒有 MPL-2.0。Unicode-3.0、ISC、Apache-2.0 都能與 GPL-3.0 一起散布，所以全部相依都能與 GPL-3.0 一起散布。
 
 目前的 Agent 程式還沒有從 Komodo 移植任何檔案，所以還沒有需要加告知的檔案。預計最先移植的是票 020 的 `stats/` 或命令層，移植時依「移植規則」加檔頭。
 

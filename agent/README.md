@@ -40,7 +40,7 @@ core_url = "https://core.example:9801"    # Core 的 Agent 通道；未設定表
 node_name = "db-01"                        # 顯示名稱；身分以金鑰指紋為準
 log_format = "json"                        # json 或 text
 core_transport = "pinned"                  # pinned（預設）或 proxy
-proxy_ca_file = "/etc/hazelminx/proxy-ca.pem"  # 只在 proxy 模式使用；不設則用內建公開根憑證
+proxy_ca_file = "/etc/hazelminx/proxy-ca.pem"  # 只在 proxy 模式使用；不設則用作業系統的信任清單
 ```
 
 `core_url` 只接受 `https://` 或 `wss://`。`pinned` 模式以 `state_dir/identity/core-ca.crt` 驗 Core 的 TLS 憑證，名稱固定是 `core.hazelminx.internal`，所以 Core 換 IP 或主機名不影響信任。`proxy` 模式給會終止 TLS 的代理用：TLS 驗代理本身的憑證，Core 身分改由握手時的 Core 憑證與簽章證明。
