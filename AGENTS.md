@@ -54,5 +54,5 @@
 - 管理網域改變後，只剩舊網域 Passkey 的強制角色帳號，系統仍算它「已有第二驗證」，不會要求重新綁定；票 018 實作網域變更時，要依 `auth/passkeys/domain-impact` 的結果處理這些帳號。
 - 沒有任何票負責「使用者自己改密碼」（規格第 05 章與各票都沒有），密碼外洩時已登入的使用者無法自救；建議補進票 015 或另開票。
 - `secureRequest`（`core/internal/api/iam_routes.go`）無條件相信 `X-Forwarded-Proto`，Cookie 的 Secure 旗標與沒設 `-public-origin` 時的 Passkey origin 都依它判斷；票 065 設定可信代理時一併只信任代理送來的值。
-- `internal/jobs` 的 `TestRecoverAfterRestartDoesNotResetOrRerun` 偶爾失敗（票 014 的審查在 base `de30d42` 也重現過），要查是測試時序還是引擎問題。
+- `internal/jobs` 的 `TestRecoverAfterRestartDoesNotResetOrRerun`（`engine_test.go:738`）不加 `-race` 時必定失敗（2026-11-08 在 `de30d42` 連跑 30 次全失敗，加 `-race` 才會過）。根因在測試：第 729 行送出的 `other` 工作搶同一個資源鎖，`j` 完成後它在同一個 `h2` 上合法執行，第 738 行卻斷言 `h2` 一步都沒執行。改成只檢查 `j` 的步驟沒有重跑（票 008）。
 - 第一次正式發版前，把 `core/internal/store/migrations/` 的所有 migration 合併成單一個 `0001` 檔，`store` 的連號檢查與 schema 版本相關測試一起更新。已經有使用者安裝的版本發出去之後，就不能再這樣合併。
