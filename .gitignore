@@ -31,6 +31,8 @@ data/
 *.sqlite
 *.pem
 *.key
+# Public test keys from fixed seeds (docs/contracts/README.md); never deployed.
+!docs/contracts/fixtures/pki/*.key
 
 # Build artifacts
 dist/
