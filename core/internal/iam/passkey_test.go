@@ -162,8 +162,15 @@ func TestPasskeySecondFactorAndDomainImpact(t *testing.T) {
 	if out := impact("panel.example.test"); out.PasskeysLost != 0 || !out.Safe {
 		t.Fatalf("same domain: %+v", out)
 	}
-	if out := impact("Admin.Panel.Example.Test."); out.PasskeysLost != 0 {
-		t.Fatalf("a subdomain keeps passkeys of its parent RP ID: %+v", out)
+	if out := impact("Panel.Example.Test."); out.PasskeysLost != 0 {
+		t.Fatalf("case and a trailing dot do not change the domain: %+v", out)
+	}
+	// Login only offers passkeys whose RP ID equals the current host, so a
+	// subdomain or parent domain loses them too; the check must agree.
+	for _, d := range []string{"admin.panel.example.test", "example.test"} {
+		if out := impact(d); out.PasskeysLost != 1 || out.Safe {
+			t.Fatalf("moving to %s must be reported as losing the passkey: %+v", d, out)
+		}
 	}
 	out := impact("new.example.org")
 	if out.PasskeysTotal != 1 || out.PasskeysLost != 1 || out.UsersLockedOut != 1 || out.Safe || len(out.Users) != 1 ||

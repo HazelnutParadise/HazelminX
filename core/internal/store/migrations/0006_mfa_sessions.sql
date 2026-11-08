@@ -35,8 +35,9 @@ CREATE TABLE IF NOT EXISTS webauthn_credentials (
 );
 CREATE INDEX IF NOT EXISTS webauthn_credentials_user_idx ON webauthn_credentials(user_id);
 
--- Single-use recovery codes, argon2id hashes only. A code is spent by
--- setting used_at; regenerating replaces the whole set.
+-- Single-use recovery codes, stored only as HMAC-SHA256 under a key kept in
+-- the secret store. A code is spent by setting used_at; regenerating
+-- replaces the whole set.
 CREATE TABLE IF NOT EXISTS recovery_codes (
     id         TEXT PRIMARY KEY,
     user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,

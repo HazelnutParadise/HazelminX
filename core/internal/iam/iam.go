@@ -135,6 +135,9 @@ type Session struct {
 	ExpiresAt  time.Time `json:"expiresAt"`
 	// SecondFactor is the method that completed the login ("" for none).
 	SecondFactor string `json:"secondFactor"`
+	// Renewed is set by Authenticate when it moved the idle expiry, so the
+	// HTTP layer re-sends the cookie with the new lifetime.
+	Renewed bool `json:"-"`
 }
 
 // Principal is who is acting: a user with their assignments, resolved once

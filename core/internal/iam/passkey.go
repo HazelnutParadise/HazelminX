@@ -280,9 +280,13 @@ func (s *Service) FinishPasskeyRegistration(ctx context.Context, p *Principal, r
 	if out.RecoveryCodes, err = s.issueRecoveryCodesIfNone(ctx, tx, p.User.ID, fresh); err != nil {
 		return nil, err
 	}
+	ended, err := s.endPasswordOnlySessions(ctx, tx, p)
+	if err != nil {
+		return nil, err
+	}
 	if err := s.record(ctx, tx, AuditEvent{ActorID: p.User.ID, ActorName: p.User.Username, Action: "passkey.register", Scope: Global,
 		ResourceKind: "passkey", ResourceID: info.ID, Result: ResultOK,
-		After: map[string]any{"name": name, "rpId": rp.ID, "recoveryCodesIssued": len(out.RecoveryCodes)}, TraceID: src.TraceID, SourceIP: src.IP}); err != nil {
+		After: map[string]any{"name": name, "rpId": rp.ID, "recoveryCodesIssued": len(out.RecoveryCodes), "otherSessionsRevoked": ended}, TraceID: src.TraceID, SourceIP: src.IP}); err != nil {
 		return nil, err
 	}
 	return out, tx.Commit()
@@ -520,7 +524,9 @@ func (s *Service) PasskeyDomainImpact(ctx context.Context, actor *Principal, dom
 			ui = &UserImpact{UserID: lp.UserID, Username: lp.Username}
 			per[lp.UserID] = ui
 		}
-		if domainCovers(lp.RPID, domain) {
+		// Login offers only passkeys whose RP ID equals the host in use
+		// (relyingParty in the API layer), so only an exact match survives.
+		if normalizeDomain(lp.RPID) == domain {
 			ui.PasskeysKept++
 		} else {
 			ui.PasskeysLost++

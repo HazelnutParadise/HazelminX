@@ -192,6 +192,13 @@ func (s *Server) requireSession(tokens iam.TokenAuthenticator) gin.HandlerFunc {
 			}
 			c.Set(principalKey, p)
 			c.Set(sessionKey, sess)
+			if sess.Renewed {
+				// The idle expiry moved; give the browser the new lifetime
+				// too, or the cookie dies at its first Max-Age.
+				renewed := *sess
+				renewed.Token = cookie
+				setSessionCookies(c, &renewed)
+			}
 			c.Next()
 			return
 		}

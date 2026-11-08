@@ -78,6 +78,9 @@ type Service struct {
 
 	recoveryMu   sync.Mutex
 	recoveryHMAC []byte // cached recovery-code key
+
+	userMu    sync.Mutex
+	userLocks map[string]*sync.Mutex // see lockUser
 }
 
 var randRead = rand.Read
@@ -90,7 +93,7 @@ func New(db *sql.DB, cfg Config) (*Service, error) {
 		return nil, err
 	}
 	return &Service{db: db, cfg: cfg, limiter: NewLimiter(cfg.Limiter, cfg.Now), dummyHash: dummy,
-		challenges: newChallengeStore(), ceremonies: newCeremonyStore()}, nil
+		challenges: newChallengeStore(), ceremonies: newCeremonyStore(), userLocks: map[string]*sync.Mutex{}}, nil
 }
 
 // Limiter exposes the attempt limiter so ticket 014 can throttle recovery codes with the same policy.
@@ -357,7 +360,7 @@ func (s *Service) Authenticate(ctx context.Context, token string) (*Principal, *
 		if err != nil {
 			return nil, nil, err
 		}
-		sess.LastSeenAt, sess.ExpiresAt = now, now.Add(idle)
+		sess.LastSeenAt, sess.ExpiresAt, sess.Renewed = now, now.Add(idle), true
 		if _, err := s.db.ExecContext(ctx, `UPDATE sessions SET last_seen_at=?, expires_at=? WHERE id=?`, ts(now), ts(sess.ExpiresAt), sess.ID); err != nil {
 			return nil, nil, err
 		}

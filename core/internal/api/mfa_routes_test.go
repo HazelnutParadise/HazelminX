@@ -368,3 +368,39 @@ func TestLongJobSurvivesSessionEnd(t *testing.T) {
 		t.Fatalf("result after signing in again: %+v", r)
 	}
 }
+
+// SET-004: while the user keeps working, the browser cookie's lifetime moves
+// with the server-side idle expiry instead of dying at its first Max-Age.
+func TestSlidingSessionRenewsCookie(t *testing.T) {
+	hs := newHarness(t)
+	owner := hs.bootstrap()
+	if r := owner.do(http.MethodPut, "/management/v1/me/session-settings", map[string]int{"idleTimeoutSeconds": 900}, nil); r.Code != http.StatusOK {
+		t.Fatal(r)
+	}
+	maxAge := func(r resp) int {
+		for _, line := range r.Hdr.Values("Set-Cookie") {
+			if strings.HasPrefix(line, SessionCookie+"=") {
+				for _, part := range strings.Split(line, ";") {
+					if v, ok := strings.CutPrefix(strings.TrimSpace(part), "Max-Age="); ok {
+						n := 0
+						for _, ch := range v {
+							n = n*10 + int(ch-'0')
+						}
+						return n
+					}
+				}
+			}
+		}
+		return -1
+	}
+	for i := 0; i < 4; i++ {
+		hs.clock = hs.clock.Add(5 * time.Minute)
+		r := owner.do(http.MethodGet, "/management/v1/auth/session", nil, nil)
+		if r.Code != http.StatusOK {
+			t.Fatalf("active user signed out after %d minutes: %+v", 5*(i+1), r)
+		}
+		if got := maxAge(r); got != 900 {
+			t.Fatalf("after %d minutes the session cookie must be re-sent with Max-Age=900, got %d (%v)", 5*(i+1), got, r.Hdr.Values("Set-Cookie"))
+		}
+	}
+}

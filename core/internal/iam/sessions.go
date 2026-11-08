@@ -172,6 +172,11 @@ func (s *Service) SetSessionIdle(ctx context.Context, p *Principal, idle time.Du
 	if _, err := tx.ExecContext(ctx, `UPDATE sessions SET last_seen_at=?, expires_at=? WHERE id=?`, ts(now), ts(now.Add(after)), p.SessionID); err != nil {
 		return nil, err
 	}
+	if after < before {
+		if err := capOtherSessions(ctx, tx, p, after); err != nil {
+			return nil, err
+		}
+	}
 	if err := s.record(ctx, tx, AuditEvent{ActorID: p.User.ID, ActorName: p.User.Username, Action: "session.settings", Scope: Global,
 		ResourceKind: "user", ResourceID: p.User.ID, Result: ResultOK,
 		Before: map[string]any{"idleTimeoutSeconds": int(before / time.Second)}, After: map[string]any{"idleTimeoutSeconds": int(after / time.Second)},
@@ -182,6 +187,38 @@ func (s *Service) SetSessionIdle(ctx context.Context, p *Principal, idle time.Du
 		return nil, err
 	}
 	return s.SessionSettings(ctx, p)
+}
+
+// capOtherSessions shortens the user's other live sessions to the new idle
+// window counted from their last activity, so an idle cookie elsewhere does
+// not outlive a shorter setting.
+func capOtherSessions(ctx context.Context, tx *sql.Tx, p *Principal, idle time.Duration) error {
+	rows, err := tx.QueryContext(ctx, `SELECT id,last_seen_at,expires_at FROM sessions WHERE user_id=? AND id<>? AND revoked_at IS NULL`, p.User.ID, p.SessionID)
+	if err != nil {
+		return err
+	}
+	type cap struct{ id, expires string }
+	var caps []cap
+	for rows.Next() {
+		var id, last, exp string
+		if err := rows.Scan(&id, &last, &exp); err != nil {
+			rows.Close()
+			return err
+		}
+		if limit := pt(last).Add(idle); limit.Before(pt(exp)) {
+			caps = append(caps, cap{id, ts(limit)})
+		}
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	for _, c := range caps {
+		if _, err := tx.ExecContext(ctx, `UPDATE sessions SET expires_at=? WHERE id=?`, c.expires, c.id); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type queryRower interface {

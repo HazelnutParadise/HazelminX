@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"sync"
 	"time"
@@ -223,6 +224,8 @@ func (s *Service) Reauthenticate(ctx context.Context, p *Principal, password str
 	if p == nil || p.Kind != "session" {
 		return ErrForbidden
 	}
+	unlock := s.lockUser(p.User.ID)
+	defer unlock()
 	key := secondFactorKey(p.User.ID)
 	if ok, _ := s.limiter.Check(key, src.IP, false); !ok {
 		return ErrThrottled
@@ -454,12 +457,34 @@ func (s *Service) newChallenge(ctx context.Context, u *User, f factorState, src 
 	return &SecondFactorChallenge{Token: token, Methods: methods, ExpiresAt: exp}, nil
 }
 
+// lockUser serializes second-factor attempts of one account. The limiter
+// and the challenge's attempt count then see every answer before the next
+// is checked, so a burst of parallel guesses gets no extra tries and two
+// valid proofs racing on one challenge open one session.
+func (s *Service) lockUser(id string) func() {
+	s.userMu.Lock()
+	m := s.userLocks[id]
+	if m == nil {
+		m = &sync.Mutex{}
+		s.userLocks[id] = m
+	}
+	s.userMu.Unlock()
+	m.Lock()
+	return m.Unlock
+}
+
 // CompleteSecondFactor finishes a login started by Login. An unknown,
 // expired or spent challenge is ErrChallengeInvalid; a wrong answer is
 // ErrSecondFactor (the challenge survives until MaxChallengeAttempts).
 func (s *Service) CompleteSecondFactor(ctx context.Context, challengeToken string, proof Proof, rp RelyingParty, src Source) (*LoginResult, error) {
 	c := s.challenges.get(challengeToken, s.now())
 	if c == nil {
+		return nil, ErrChallengeInvalid
+	}
+	unlock := s.lockUser(c.userID)
+	defer unlock()
+	// Re-read under the lock: another answer may have spent it meanwhile.
+	if c = s.challenges.get(challengeToken, s.now()); c == nil {
 		return nil, ErrChallengeInvalid
 	}
 	key := secondFactorKey(c.userID)
@@ -564,11 +589,11 @@ func (s *Service) BeginTOTP(ctx context.Context, p *Principal, src Source) (*TOT
 	}
 	now := s.now()
 	if err := s.storePendingTOTP(ctx, p, oldID, id, sec.ID, now, src); err != nil {
-		vault.Delete(ctx, sec.ID, "user:"+p.User.ID) // the transaction is closed by now
+		s.dropSecret(ctx, sec.ID, p.User.ID) // the transaction is closed by now
 		return nil, err
 	}
 	if oldSecret != "" {
-		vault.Delete(ctx, oldSecret, "user:"+p.User.ID)
+		s.dropSecret(ctx, oldSecret, p.User.ID)
 	}
 	return &TOTPEnrollment{Secret: EncodeTOTPSecret(seed), URI: TOTPURI("HazelminX", p.User.Username, seed), Digits: TOTPDigits,
 		PeriodSeconds: int(TOTPPeriod / time.Second), ServerTime: now, ExpiresAt: now.Add(totpEnrollmentTTL)}, nil
@@ -601,6 +626,8 @@ func (s *Service) ConfirmTOTP(ctx context.Context, p *Principal, code string, sr
 	if p == nil || p.Kind != "session" {
 		return nil, ErrForbidden
 	}
+	unlock := s.lockUser(p.User.ID)
+	defer unlock()
 	key := secondFactorKey(p.User.ID)
 	if ok, _ := s.limiter.Check(key, src.IP, false); !ok {
 		return nil, ErrThrottled
@@ -649,8 +676,12 @@ func (s *Service) ConfirmTOTP(ctx context.Context, p *Principal, code string, sr
 	if out.RecoveryCodes, err = s.issueRecoveryCodesIfNone(ctx, tx, p.User.ID, fresh); err != nil {
 		return nil, err
 	}
+	ended, err := s.endPasswordOnlySessions(ctx, tx, p)
+	if err != nil {
+		return nil, err
+	}
 	if err := s.record(ctx, tx, AuditEvent{ActorID: p.User.ID, ActorName: p.User.Username, Action: "totp.enroll", Scope: Global,
-		ResourceKind: "user", ResourceID: p.User.ID, Result: ResultOK, After: map[string]any{"recoveryCodesIssued": len(out.RecoveryCodes)},
+		ResourceKind: "user", ResourceID: p.User.ID, Result: ResultOK, After: map[string]any{"recoveryCodesIssued": len(out.RecoveryCodes), "otherSessionsRevoked": ended},
 		TraceID: src.TraceID, SourceIP: src.IP}); err != nil {
 		return nil, err
 	}
@@ -681,9 +712,7 @@ func (s *Service) RemoveTOTP(ctx context.Context, p *Principal, src Source) erro
 	}, map[string]any{"factor": MethodTOTP}); err != nil {
 		return err
 	}
-	if v, err := s.vault(); err == nil {
-		v.Delete(ctx, secretID, "user:"+p.User.ID)
-	}
+	s.dropSecret(ctx, secretID, p.User.ID)
 	return nil
 }
 
@@ -731,6 +760,32 @@ func (s *Service) removeFactor(ctx context.Context, p *Principal, src Source, ac
 		return err
 	}
 	return tx.Commit()
+}
+
+// endPasswordOnlySessions ends the user's other sessions that never passed a
+// second factor. Called inside the transaction that adds a factor: until
+// then an enforced account's password-only sessions were held to
+// enrolment, and they must not turn into full sessions now.
+func (s *Service) endPasswordOnlySessions(ctx context.Context, tx *sql.Tx, p *Principal) (int64, error) {
+	res, err := tx.ExecContext(ctx, `UPDATE sessions SET revoked_at=? WHERE user_id=? AND id<>? AND second_factor='' AND revoked_at IS NULL`,
+		ts(s.now()), p.User.ID, p.SessionID)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
+}
+
+// dropSecret deletes a TOTP seed nothing refers to any more. The credential
+// row is already gone, so a failure only leaves an unreachable ciphertext;
+// it is logged (by id, never the value) for the operator to clean up.
+func (s *Service) dropSecret(ctx context.Context, secretID, userID string) {
+	vault, err := s.vault()
+	if err == nil {
+		err = vault.Delete(ctx, secretID, "user:"+userID)
+	}
+	if err != nil {
+		slog.Warn("iam: could not delete an unused TOTP seed from the secret store", "secretId", secretID, "error", err)
+	}
 }
 
 func (s *Service) revealSeed(ctx context.Context, secretID, userID string) ([]byte, error) {

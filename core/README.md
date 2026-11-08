@@ -47,9 +47,9 @@ go test ./...
 - 登入失敗依帳號與來源分別限制：帳號冷卻最長 15 分鐘，來源 15 分鐘內錯 20 次就封鎖 15 分鐘。曾成功登入該帳號的來源不受帳號冷卻影響，攻擊者因此無法永久鎖死管理員。不存在的帳號也套同一規則，不洩漏帳號存在與否。第二步與再次驗證答錯另外按帳號計數，從曾登入過的來源也一樣算，因為經過反向代理時所有人的來源位址可能相同。
 - 擁有者、平台管理員與主機維運者沒有第二驗證時，只能查看自己、綁定 TOTP 或 Passkey、管理自己的工作階段與登出，其他請求（包含讀取）回 `403 SECOND_FACTOR_ENROLLMENT_REQUIRED`。這些角色不能移除最後一個第二驗證（`409 LAST_SECOND_FACTOR`）。
 - 綁定第一個 TOTP 或 Passkey 時會發 10 組復原碼，只顯示這一次。資料庫只存以機密庫金鑰計算的 HMAC 值，用過一次就失效。TOTP 種子放在機密庫，接受前後各 30 秒的時間誤差，同一組碼只能用一次。
-- 新增或移除 TOTP、Passkey，以及重新產生復原碼，都要在 10 分鐘內登入過或用 `POST /management/v1/auth/reauthenticate` 再驗證一次（密碼，加上已綁的第二驗證），否則回 `403 REAUTHENTICATION_REQUIRED`。移除第二驗證時，同一使用者的其他工作階段會一併登出。
+- 新增或移除 TOTP、Passkey，以及重新產生復原碼，都要在 10 分鐘內登入過或用 `POST /management/v1/auth/reauthenticate` 再驗證一次（密碼，加上已綁的第二驗證），否則回 `403 REAUTHENTICATION_REQUIRED`。新增第一個第二驗證時，同一使用者沒有通過第二驗證的其他工作階段會登出。移除第二驗證時，其他工作階段全部登出。
 - Passkey 綁在建立時的網域。用 IP 開面板時不能使用 Passkey。改管理網域前，可用 `GET /management/v1/auth/passkeys/domain-impact?domain=新網域`（需要全域 `platform:write`）查看哪些 Passkey 會失效，以及哪些帳號會因此沒有第二驗證。
-- 使用者在 `GET /management/v1/me/sessions` 看自己的工作階段，用 `DELETE /me/sessions/{id}` 或 `POST /me/sessions/revoke-others` 撤銷，下一個請求就會被拒。閒置逾時在 `PUT /me/session-settings` 設定，可設 15 分鐘到 24 小時，絕對上限 7 天。工作不綁工作階段，登入過期或登出後工作照常執行，重新登入可查結果。
+- 使用者在 `GET /management/v1/me/sessions` 看自己的工作階段，用 `DELETE /me/sessions/{id}` 或 `POST /me/sessions/revoke-others` 撤銷，下一個請求就會被拒。閒置逾時在 `PUT /me/session-settings` 設定，可設 15 分鐘到 24 小時，絕對上限 7 天。改短時，其他閒置中的工作階段也一起縮短。伺服器每次延長期限都會重送 Cookie。工作不綁工作階段，登入過期或登出後工作照常執行，重新登入可查結果。
 - 每次登入、建帳號、指派或撤銷角色、拒絕存取都寫入 `audit_events`（`GET /management/v1/audit-events`，只回有 `audit:read` 的範圍）。寫入前會遮罩 `password`、`token`、`secret`、`key` 這類鍵。
 - 每個 `/management/v1` 回應都帶 `X-Trace-ID`（呼叫端有送就沿用，沒送就產生），錯誤內容與稽核事件以 `traceId` 記錄同一個值。`requestId` 只用來指使用者操作的請求識別碼，也就是工作重送去重用的那個。
 - `X-Forwarded-For` 預設不信任（`api.IAMOptions.TrustedProxies` 為空），來源 IP 取連線位址；接 Zentinel 後由票 065 設定可信代理。
