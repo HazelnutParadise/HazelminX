@@ -5,7 +5,7 @@
 **Milestone:** M1 單機主機管理  
 **Blocked by:** [019 管理員可以用一次性註冊碼加入節點，並看到離線、過期、維護與撤銷狀態](019-node-enrollment.md), [017 使用者可以在主導覽、全域搜尋與工作中心之間完成日常操作](017-ui-shell.md)  
 **Status:** blocked  
-**規格章節:** 10｜主機、套件、服務與網路、29｜監控、GPU、事件與告警  
+**規格章節:** 10｜主機、套件、服務與網路、29｜監控、GPU、事件與告警、38｜效能、資源與可觀測品質要求  
 **Issue:** [#20](https://github.com/HazelnutParadise/hazelminx/issues/20)  
 
 ## What it delivers
@@ -21,6 +21,7 @@ Agent 收集 CPU 每核心、記憶體、swap、負載、磁碟 I/O 與健康、
 - [ ] **MON-005** 使用者可以查看即時與歷史趨勢。 — 完成條件：缺少資料保留缺口；歷史彙總標示解析度，不用補零製造跌幅。
 - [ ] 缺值明示未提供，不填零；歷史缺口保留缺口
 - [ ] USB bridge 不提供 SMART 時明示
+- [ ] 監控迴圈加入後，依 [`agent/PERFORMANCE.md`](../../agent/PERFORMANCE.md)「重新量測」在 2 核心 Linux 上量 `hazelminx-agent` 至少兩輪：每 10 秒監控一次時，空閒平均 CPU 低於單核心 2%、常駐記憶體低於 200 MiB（38.1 節「基本 Agent」），結果與受測 commit 記錄進 `agent/PERFORMANCE.md`。38 章全部情境的最終驗收在票 099
 
 ## Delivery record
 
