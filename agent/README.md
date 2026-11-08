@@ -1,6 +1,6 @@
 # HazelminX Rust workspace
 
-每台受管主機上的執行端。以 Komodo Periphery 為改造起點（`docs/research/komodo-periphery.md`），但連線模型、權限邊界與資料契約依 `ENG.md` 重寫。
+每台受管主機上的執行端。以 Komodo Periphery 為改造起點（`docs/research/komodo-periphery.md`），但連線模型、權限邊界與資料契約依 `ENG.md` 重寫。起點 commit、各 crate 的保留／替換／捨棄與授權見 [`UPSTREAM.md`](UPSTREAM.md)；閒置資源量測見 [`PERFORMANCE.md`](PERFORMANCE.md)。
 
 | crate | 執行檔 | 職責 | 票 |
 |---|---|---|---|
