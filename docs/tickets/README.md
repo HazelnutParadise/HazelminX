@@ -11,13 +11,13 @@
 | [001](001-repo-scaffold.md) | 維護者可以在單一 repo 取得規格、架構決策、票務與工作規則 | 基礎建設 | — | [#1](https://github.com/HazelnutParadise/hazelminx/issues/1) | done |
 | [002](002-design-system.md) | 設計師與開發者可以依 DESIGN.md 與互動原型審查主要畫面 | 設計系統 | — | [#2](https://github.com/HazelnutParadise/hazelminx/issues/2) | in_progress |
 | [003](003-core-skeleton.md) | 管理員可以啟動 hazelminx-core 並通過健康檢查 | 基礎建設 | 001 | [#3](https://github.com/HazelnutParadise/hazelminx/issues/3) | in_progress |
-| [004](004-agent-skeleton.md) | 管理員可以在主機上以 systemd 執行 hazelminx-agent 並回報身分 | 節點與 Agent | 001 | [#4](https://github.com/HazelnutParadise/hazelminx/issues/4) | in_progress |
+| [004](004-agent-skeleton.md) | 管理員可以在主機上以 systemd 執行 hazelminx-agent 並回報身分 | 節點與 Agent | 001 | [#4](https://github.com/HazelnutParadise/hazelminx/issues/4) | done |
 | [005](005-web-skeleton.md) | 使用者可以開啟 React 介面並切換語言與淺深色 | 基礎建設 | 001, 002 | [#5](https://github.com/HazelnutParadise/hazelminx/issues/5) | blocked |
 | [006](006-ci-pipeline.md) | 維護者可以在 CI 建置、測試並產生各架構成品 | 發布與供應鏈 | 003, 004, 005 | [#6](https://github.com/HazelnutParadise/hazelminx/issues/6) | blocked |
 | [007](007-core-agent-protocol.md) | Core 與 Agent 可以用版本化、雙向驗證的通道交換能力與工作事件 | 節點與 Agent | 003, 004 | [#7](https://github.com/HazelnutParadise/hazelminx/issues/7) | ready |
 | [008](008-job-engine.md) | 使用者可以提交工作後關閉頁面，之後仍能查到進度、證據與結果 | 基礎建設 | 003 | [#8](https://github.com/HazelnutParadise/hazelminx/issues/8) | in_progress |
 | [009](009-iam-foundation.md) | 擁有者可以登入、建立帳號與角色，未授權的 API 呼叫一律被拒絕 | 身分與存取 | 003 | [#9](https://github.com/HazelnutParadise/hazelminx/issues/9) | done |
-| [010](010-management-api-contract.md) | 整合者可以用 /management/v1 的分頁、版本條件與工作回應操作資源 | API、CLI 與整合 | 003, 008 | [#10](https://github.com/HazelnutParadise/hazelminx/issues/10) | blocked |
+| [010](010-management-api-contract.md) | 整合者可以用 /management/v1 的分頁、版本條件與工作回應操作資源 | API、CLI 與整合 | 003, 008 | [#10](https://github.com/HazelnutParadise/hazelminx/issues/10) | done |
 | [011](011-secrets-and-master-key.md) | 管理員可以安全保存機密，且主金鑰可輪替並驗證舊備份仍可解密 | 基礎建設 | 003 | [#11](https://github.com/HazelnutParadise/hazelminx/issues/11) | done |
 | [012](012-privileged-executor.md) | 維運者可以執行需要高權限的固定動作，而 Agent 主程序維持低權限 | 節點與 Agent | 004 | [#12](https://github.com/HazelnutParadise/hazelminx/issues/12) | done |
 | [113](113-host-change-ledger.md) | 平台對主機的每個變更都寫進變更帳本，並在安裝時記錄安裝前快照 | 主機 | 012 | [#120](https://github.com/HazelnutParadise/hazelminx/issues/120) | ready |
@@ -30,7 +30,7 @@
 |---|---|---|---|---|---|
 | [013](013-one-line-install.md) | 管理員可以一行安裝單機模式、重開機後登入，且安裝不需要任何編譯器 | 安裝、更新與卸載 | 003, 004, 009, 012 | [#13](https://github.com/HazelnutParadise/hazelminx/issues/13) | blocked |
 | [014](014-mfa-and-sessions.md) | 使用者可以設定 TOTP、Passkey、復原碼並檢視與撤銷自己的工作階段 | 身分與存取 | 009 | [#14](https://github.com/HazelnutParadise/hazelminx/issues/14) | ready |
-| [015](015-users-roles-tokens.md) | 擁有者可以管理使用者、角色、資源範圍與有期限的 API Token | 身分與存取 | 009, 010 | [#15](https://github.com/HazelnutParadise/hazelminx/issues/15) | blocked |
+| [015](015-users-roles-tokens.md) | 擁有者可以管理使用者、角色、資源範圍與有期限的 API Token | 身分與存取 | 009, 010 | [#15](https://github.com/HazelnutParadise/hazelminx/issues/15) | ready |
 | [016](016-change-plans.md) | 管理員可以預覽並批准高風險變更計畫，內容改變時原批准失效 | 身分與存取 | 008, 010 | [#16](https://github.com/HazelnutParadise/hazelminx/issues/16) | blocked |
 | [017](017-ui-shell.md) | 使用者可以在主導覽、全域搜尋與工作中心之間完成日常操作 | 基礎建設 | 005, 008, 010 | [#17](https://github.com/HazelnutParadise/hazelminx/issues/17) | blocked |
 | [018](018-platform-settings.md) | 管理員可以設定面板名稱、時區、入口、通知、更新通道與遙測 | 基礎建設 | 017 | [#18](https://github.com/HazelnutParadise/hazelminx/issues/18) | blocked |
@@ -70,7 +70,7 @@
 | [044](044-compose-projects.md) | 專案管理員可以建立專案與環境，匯入完整 Compose 並驗證後部署 | Compose 部署 | 039, 008, 016 | [#44](https://github.com/HazelnutParadise/hazelminx/issues/44) | blocked |
 | [045](045-env-layers.md) | 管理員可以分層管理 .env、介面變數與覆寫層，並預覽每個服務實際收到的值 | Compose 部署 | 044, 011 | [#45](https://github.com/HazelnutParadise/hazelminx/issues/45) | blocked |
 | [046](046-deploy-revisions.md) | 管理員可以查看部署版本、三方比較並回到相容舊版 | Compose 部署 | 045 | [#46](https://github.com/HazelnutParadise/hazelminx/issues/46) | blocked |
-| [047](047-github-connections.md) | 使用者可以用 GitHub 網頁授權或 PAT 建立可重用連線，並保存多帳號多授權 | GitHub 來源 | 009, 011, 010 | [#47](https://github.com/HazelnutParadise/hazelminx/issues/47) | blocked |
+| [047](047-github-connections.md) | 使用者可以用 GitHub 網頁授權或 PAT 建立可重用連線，並保存多帳號多授權 | GitHub 來源 | 009, 011, 010 | [#47](https://github.com/HazelnutParadise/hazelminx/issues/47) | ready |
 | [048](048-repo-picker.md) | 使用者可以瀏覽、搜尋、分頁載入可用 Repo，並選分支、commit 與 Compose 檔案 | GitHub 來源 | 047, 017 | [#48](https://github.com/HazelnutParadise/hazelminx/issues/48) | blocked |
 | [049](049-git-deploy.md) | 專案管理員可以從 GitHub 以固定 commit 隔離抓取、建置並部署，手動 URL／PAT／SSH 模式照常可用 | GitHub 來源 | 048, 044, 012 | [#49](https://github.com/HazelnutParadise/hazelminx/issues/49) | blocked |
 | [050](050-auto-deploy-webhooks.md) | 管理員可以設定 Webhook 或定期檢查觸發部署，並決定多環境與連續 commit 政策 | GitHub 來源 | 049 | [#50](https://github.com/HazelnutParadise/hazelminx/issues/50) | blocked |

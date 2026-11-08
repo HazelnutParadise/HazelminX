@@ -21,6 +21,10 @@ RuntimeDirectoryMode=0750
 RuntimeDirectoryPreserve=no
 ConfigurationDirectory=hazelminx
 LogsDirectory=hazelminx
+# Host change ledger (spec 55.1): root-only, kept across restarts and
+# upgrades; removed only by complete uninstall.
+StateDirectory=hazelminx/ledger
+StateDirectoryMode=0700
 # Only named actions run here; the attack surface is the socket, not a shell.
 ProtectHome=true
 PrivateTmp=true

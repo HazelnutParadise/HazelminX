@@ -41,6 +41,19 @@ pub enum SecurityEvent {
     GrantRevoked {
         grant_id: String,
     },
+    /// A host-changing action was refused because it could not be recorded
+    /// in the host ledger (T-250). `reason` names the rule, never a value.
+    LedgerRefused {
+        grant_id: String,
+        action: String,
+        reason: String,
+    },
+    /// The change ran but its result line could not be written.
+    LedgerResultUnrecorded {
+        grant_id: String,
+        action: String,
+        reason: String,
+    },
     ActionExecuted {
         grant_id: String,
         subject: String,

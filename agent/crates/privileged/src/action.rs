@@ -1,16 +1,21 @@
 //! The closed set of actions the executor performs. Adding one means adding a
 //! variant here (with typed parameters from [`crate::params`]), a permission
-//! name, and a handler arm in [`crate::executor::HostExecutor`]. There is
+//! name, its ledger declaration in [`Action::ledger_decl`] (what it changes,
+//! or that it only reads; spec 55.1), and a handler arm in
+//! [`crate::executor::HostExecutor`]. There is
 //! deliberately no shell, script or "raw command" variant; if one is ever
 //! added it must require [`PERM_SHELL`], which no container-level grant
 //! carries (SEC-005).
 
+use crate::ledger::entry::{ChangeKind, Target};
+use crate::ledger::recorder::{Declared, LedgerDecl};
 use crate::params::UnitName;
 use serde::{Deserialize, Serialize};
 
 pub const PERM_HOST_INFO_READ: &str = "host.info.read";
 pub const PERM_HOST_PACKAGES_READ: &str = "host.packages.read";
 pub const PERM_HOST_SERVICES_MANAGE: &str = "host.services.manage";
+pub const PERM_HOST_LEDGER_READ: &str = "host.ledger.read";
 /// Reserved for a future terminal/script action; listed so grant issuers and
 /// reviewers treat it as a separate high-risk permission (spec 32.2).
 pub const PERM_SHELL: &str = "host.shell";
@@ -26,19 +31,45 @@ pub enum Action {
     ListPackageUpdates {},
     /// `systemctl restart <unit>` followed by `systemctl is-active <unit>`.
     RestartService { unit: UnitName },
+    /// Raw host-ledger lines after `after_seq`, for Core's copy (55.1).
+    LedgerExport {
+        after_seq: u64,
+        #[serde(default)]
+        limit: Option<u32>,
+    },
 }
 
 impl Action {
     /// All kind names, in the wire spelling. Used to tell "unknown action"
     /// from "bad parameters".
-    pub const KINDS: &'static [&'static str] =
-        &["system_info", "list_package_updates", "restart_service"];
+    pub const KINDS: &'static [&'static str] = &[
+        "system_info",
+        "list_package_updates",
+        "restart_service",
+        "ledger_export",
+    ];
 
     pub fn kind(&self) -> &'static str {
         match self {
             Action::SystemInfo {} => "system_info",
             Action::ListPackageUpdates {} => "list_package_updates",
             Action::RestartService { .. } => "restart_service",
+            Action::LedgerExport { .. } => "ledger_export",
+        }
+    }
+
+    /// What this action changes on the host. Read-only actions say so;
+    /// every other action names each target and the kind of change, and the
+    /// executor records it in the host ledger before and after running.
+    pub fn ledger_decl(&self) -> LedgerDecl {
+        match self {
+            Action::SystemInfo {} | Action::ListPackageUpdates {} | Action::LedgerExport { .. } => {
+                LedgerDecl::ReadOnly
+            }
+            Action::RestartService { unit } => LedgerDecl::Changes(vec![Declared {
+                target: Target::SystemdUnit { unit: unit.clone() },
+                change: ChangeKind::Restart,
+            }]),
         }
     }
 
@@ -53,6 +84,7 @@ impl Action {
             "system_info" => Some(PERM_HOST_INFO_READ),
             "list_package_updates" => Some(PERM_HOST_PACKAGES_READ),
             "restart_service" => Some(PERM_HOST_SERVICES_MANAGE),
+            "ledger_export" => Some(PERM_HOST_LEDGER_READ),
             _ => None,
         }
     }
@@ -80,6 +112,34 @@ mod tests {
         );
         let s: Action = serde_json::from_value(json!({"kind": "system_info"})).unwrap();
         assert_eq!(s.required_permission(), PERM_HOST_INFO_READ);
+    }
+
+    #[test]
+    fn every_action_declares_its_host_changes() {
+        let unit = UnitName::try_from("nginx.service".to_string()).unwrap();
+        assert_eq!(Action::SystemInfo {}.ledger_decl(), LedgerDecl::ReadOnly);
+        assert_eq!(
+            Action::ListPackageUpdates {}.ledger_decl(),
+            LedgerDecl::ReadOnly
+        );
+        assert_eq!(
+            Action::LedgerExport {
+                after_seq: 0,
+                limit: None
+            }
+            .ledger_decl(),
+            LedgerDecl::ReadOnly
+        );
+        assert_eq!(
+            Action::RestartService { unit: unit.clone() }.ledger_decl(),
+            LedgerDecl::Changes(vec![Declared {
+                target: Target::SystemdUnit { unit },
+                change: ChangeKind::Restart
+            }])
+        );
+        let e: Action =
+            serde_json::from_value(json!({"kind": "ledger_export", "after_seq": 3})).unwrap();
+        assert_eq!(e.required_permission(), PERM_HOST_LEDGER_READ);
     }
 
     #[test]

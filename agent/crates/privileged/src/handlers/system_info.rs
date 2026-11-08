@@ -4,10 +4,10 @@
 //! host may lack some of them.
 
 use crate::executor::ActionResult;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-#[derive(Debug, Default, Clone, PartialEq, Serialize)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SystemInfo {
     pub hostname: Option<String>,
     /// `PRETTY_NAME` from os-release.

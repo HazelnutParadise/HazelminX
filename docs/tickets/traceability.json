@@ -52,7 +52,7 @@
       ],
       "requirements": [],
       "acceptance_tests": [],
-      "status": "in_progress",
+      "status": "done",
       "issue": 4
     },
     {
@@ -182,7 +182,7 @@
         "INT-001"
       ],
       "acceptance_tests": [],
-      "status": "blocked",
+      "status": "done",
       "issue": 10
     },
     {
@@ -297,7 +297,7 @@
         "IAM-010"
       ],
       "acceptance_tests": [],
-      "status": "blocked",
+      "status": "ready",
       "issue": 15
     },
     {
@@ -1104,7 +1104,7 @@
         "GH-T14",
         "GH-T15"
       ],
-      "status": "blocked",
+      "status": "ready",
       "issue": 47
     },
     {
@@ -2681,7 +2681,7 @@
       "acceptance_tests": [
         "T-250"
       ],
-      "status": "ready",
+      "status": "in_progress",
       "issue": 120
     }
   ]

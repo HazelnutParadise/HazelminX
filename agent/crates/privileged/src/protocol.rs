@@ -19,6 +19,10 @@ pub const PROTOCOL_VERSION: u32 = 1;
 pub enum Request {
     Action {
         request_id: String,
+        /// Job that caused this request (spec 33); recorded in the host
+        /// ledger for every change the action makes.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        job_id: Option<String>,
         grant: Grant,
         /// Parsed into [`crate::action::Action`] after the grant is accepted,
         /// so a bad parameter is reported as such rather than as a malformed
@@ -43,6 +47,9 @@ pub enum ErrorCode {
     InvalidParam,
     Busy,
     ActionFailed,
+    /// The action would change the host but cannot be recorded in the host
+    /// ledger (no declaration, ledger unavailable, before-state unreadable).
+    LedgerRefused,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -72,6 +79,9 @@ pub enum Response {
         version: String,
         active_actions: usize,
         max_actions: usize,
+        /// Host-changing actions are accepted only while this is true.
+        #[serde(default)]
+        ledger_ready: bool,
     },
     Revoked {
         grant_id: String,

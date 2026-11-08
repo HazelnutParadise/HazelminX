@@ -74,6 +74,10 @@ func (s State) IsActive() bool {
 	return false
 }
 
+// States lists every state in spec 33.1 order.
+var States = []State{StateCreated, StatePrechecking, StateAwaitingApproval, StateQueued, StateRunning, StateVerifying,
+	StateSucceeded, StateFailed, StateRollingBack, StateRolledBack, StateCancelRequested, StateCancelled, StateUnknown, StateNeedsAttention}
+
 // Valid reports whether s is one of the known states.
 func (s State) Valid() bool {
 	_, ok := transitions[s]
