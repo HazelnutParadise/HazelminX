@@ -206,7 +206,7 @@ def range_row(on="24 小時") -> str:
 # ---------- 節點詳情 ----------
 def node_tabs(active: str, containers: int = 10) -> str:
     """節點工作區的分頁（學 Cockpit 的單機分頁）：單一主機才有意義的東西都在這裡，側欄不另放。"""
-    items = [("概況", "NodeDetail.dc.html"), ("系統", "System.dc.html"), (f"容器 {containers}", "Containers.dc.html"), ("檔案", "Files.dc.html"), ("日誌", "NodeLogs.dc.html"), ("終端機", "NodeTerminal.dc.html")]
+    items = [("概況", "NodeDetail.dc.html"), ("系統", "System.dc.html"), (f"容器 {containers}", "Containers.dc.html"), ("檔案", "Files.dc.html"), ("日誌", "NodeLogs.dc.html"), ("終端機", "NodeTerminal.dc.html"), ("變更帳本", "NodeLedger.dc.html")]
     return ('<div class="panel"><div class="tabs" role="tablist">' + "".join(
         f'<a class="tab{" on" if l.split(" ")[0] == active else ""}" role="tab" aria-selected="{"true" if l.split(" ")[0] == active else "false"}" href="{h}">{l}</a>' for l, h in items) + "</div></div>")
 
@@ -1650,6 +1650,152 @@ def uninstall() -> str:
       </div>""")
     main = head + scope + modes + preview + f'<div class="cg">{data}{gaps}</div>' + confirm + report
     return U.shell("settings", main)
+
+
+# ---------- 主機 › 變更帳本（票 113 設計缺口） ----------
+def node_ledger() -> str:
+    head = node_head("hazel-tw-01", U.status("ok", "連線中"), "最後聯絡 2 秒前", '<button type="button" class="btn">匯出帳本</button>') + node_tabs("變更帳本")
+    state = _fp("帳本狀態", _grid(
+        _fld("本機帳本", U.status("ok", "完整 · 1,284 筆 · 最後驗證 03:40")),
+        _fld("Core 副本", U.status("ok", "已同步到第 1,284 筆")),
+        _fld("安裝前快照", U.status("ok", "11/02 02:14 · 已保存"), "移除時拿來比對"),
+        _fld("使用者後來改過", U.status("warn", "2 個檔案"), "平台寫過、之後被手動改過")))
+    def le(t, obj, how, before, after, own, job):
+        return (f'<div class="row srow"><span class="name"><span class="n mono">{obj}</span><span class="d">{t} · <a href="WorkCenter.dc.html">{job}</a></span></span><span>{own}</span>'
+                f'<span class="c3">{how}</span><span class="c4 mono">{before}</span><span class="c4 mono">{after}</span><span class="c5"></span><span>{U.actions(["more"])}</span></div>')
+    P = lambda t: U.status("info", t)
+    rows = f"""
+    <section class="panel" aria-labelledby="h-led" data-pages="1–7 / 1,284">
+      <div class="ph"><h2 id="h-led">變更紀錄</h2></div>
+      <div class="wrap" style="padding:10px 14px;border-bottom:1px solid var(--line)"><label class="inp" style="flex:1;min-width:min(220px,100%)">{U.icon("search", 14)}<input placeholder="搜尋對象，例如 /etc/ssh 或 docker" style="background:transparent;border:0;flex:1;min-width:0"></label><span style="flex:0 1 170px;min-width:140px">{_dd("類型：全部")}</span><span style="flex:0 1 170px;min-width:140px">{_dd("工作：全部")}</span><span class="chip on">全部</span><span class="chip">平台安裝</span><span class="chip">平台修改</span><span class="chip">被拒絕 1</span></div>
+      <div class="row hd srow"><span>對象 · 時間 · 工作</span><span>擁有權</span><span class="c3">改法</span><span class="c4">之前</span><span class="c4">之後</span><span class="c5"></span><span></span></div>
+      {le("03:38", "套件 openssl", "升級", "3.0.11", "3.0.13", P("平台修改"), "工作 #512")}
+      {le("11/03 10:21", "/etc/ssh/sshd_config.d/50-hazelminx.conf", "建立檔案", "不存在", "sha256:9c1e…", P("平台安裝"), "工作 #40")}
+      {le("11/02 02:31", "/etc/docker/daemon.json · log-opts", "加入設定", "沒有這個鍵", "max-size 10m · max-file 5", P("平台修改"), "工作 #12")}
+      {le("11/02 02:30", "套件 docker-ce", "安裝", "沒有安裝", "27.3.1", P("平台安裝"), "工作 #12")}
+      {le("11/02 02:29", "apt 來源 download.docker.com", "加入來源與金鑰", "不存在", "已加入", P("平台安裝"), "工作 #12")}
+      {le("11/02 02:16", "ufw 規則 8443/tcp", "加入規則", "沒有", "allow from 10.8.0.0/24", P("平台修改"), "工作 #3")}
+      {le("11/02 02:14", "使用者 hazelminx", "建立", "不存在", "uid 998", P("平台安裝"), "安裝")}
+    </section>"""
+    def dr(path, when, job):
+        return (f'<div class="row"><span class="mono">{path}</span><span class="note">平台 {when} 寫入 · {job}</span><span>{U.status("warn", "內容不同")}</span>'
+                f'<span class="wrap"><button type="button" class="btn sm">看差異</button><button type="button" class="btn sm">記為使用者的版本</button></span></div>')
+    drift = _fp("使用者後來改過 · 2", f"""
+      <div class="row hd"><span>檔案</span><span>帳本記錄</span><span>狀態</span><span></span></div>
+      {dr("/etc/ssh/sshd_config.d/50-hazelminx.conf", "11/03", "工作 #40")}
+      {dr("/etc/systemd/journald.conf.d/50-hazelminx.conf", "11/02", "安裝")}
+      <div class="wrap" style="padding:10px 14px 12px">{U.status("info", "移除平台時這些檔案不會被直接刪除或還原")}</div>""")
+    refused = _fp("被拒絕的動作 · 1", f"""
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">
+        {_chk("dng", "工作 #498 · 設定 sysctl net.ipv4.ip_forward", "這個動作沒有定義帳本內容，執行器拒絕執行（ledger_refused）", "未執行")}
+        <div class="wrap"><a class="btn sm" href="WorkCenter.dc.html">看工作 #498</a><span class="note">主機沒有任何改變</span></div>
+      </div>""")
+    snap = _fp("安裝前快照 · 11/02 02:14", f"""
+      <div class="row hd"><span>項目</span><span>安裝前</span><span>現在</span><span>差異的原因</span></div>
+      <div class="row"><span>已安裝套件</span><span class="mono">412</span><span class="mono">431</span><span class="note">平台安裝 19 個</span></div>
+      <div class="row"><span>啟用的 systemd 單元</span><span class="mono">38</span><span class="mono">43</span><span class="note">平台安裝 5 個</span></div>
+      <div class="row"><span>監聽中的 Port</span><span class="mono">22、80</span><span class="mono">22、80、443、8443</span><span class="note">Zentinel 443、管理入口 8443</span></div>
+      <div class="row"><span>使用者與群組</span><span class="mono">31</span><span class="mono">33</span><span class="note">hazelminx、docker 群組</span></div>""")
+    main = head + state + rows + f'<div class="cg">{drift}{refused}</div>' + snap
+    return U.shell("nodes", main)
+
+
+def node_ledger_broken() -> str:
+    head = node_head("hazel-tw-01", U.status("dng", "帳本無法使用"), "最後聯絡 2 秒前", '<button type="button" class="btn">下載診斷包</button>') + node_tabs("變更帳本")
+    bar = ('<div class="cdown" role="alert"><span class="t"><strong>這台主機的變更帳本無法使用 · 03:40 起</strong>'
+           f'<span>{U.status("dng", "完整性檢查失敗 · 第 1,281 筆的雜湊與下一筆的紀錄不符")}</span>'
+           '<span class="note">修好之前，這台主機的所有變更都會被拒絕；讀取、監控、日誌與終端機照常可用</span></span>'
+           '<span class="acts2"><button type="button" class="btn pri">從 Core 副本修復</button><button type="button" class="btn">看檢查結果</button></span></div>')
+    main = head + bar + _fp("修復方式", f"""
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">
+        {_chk("ok", "Core 副本完整", "Core 有到第 1,284 筆的完整副本，可以用來重建本機帳本", "可用")}
+        {_chk("warn", "Core 副本落後時", "差的筆數會列出來，需要你確認那些變更是否真的發生過", "")}
+        {_chk("warn", "沒有可用副本時", "以目前主機狀態重新建立帳本；之前的變更標成「來源不明」，完全移除時不會自動處理", "")}
+      </div>""")
+    return U.shell("nodes", main)
+
+
+# ---------- 帳號安全（票 014 設計缺口） ----------
+def account_security() -> str:
+    head = U.page_head("帳號安全 · tim", OBS, "")
+    def cred(icon_, name, detail, last, can_rm=True):
+        rm = U.actions(["rename", "trash"]) if can_rm else f'<span tabindex="0" data-tip="這是最後一個第二驗證，不能移除；先新增另一個">{U.actions(["rename"]).replace("</span>","",1)}<button type="button" class="ib" disabled aria-label="移除（最後一個）">{U.icon("trash")}</button></span></span>'
+        return f'<div class="row"><span class="name"><span class="n">{name}</span><span class="d">{detail}</span></span><span>{icon_}</span><span class="note">{last}</span><span>{rm}</span></div>'
+    second = _fp("第二驗證 · 3", f"""
+      <div class="row hd"><span>名稱</span><span>類型</span><span>最後使用</span><span></span></div>
+      {cred(U.status("info", "Passkey"), "MacBook Pro Touch ID", "panel.example.tw · 11/02 綁定", "03:38")}
+      {cred(U.status("info", "Passkey"), "YubiKey 5C", "panel.example.tw · 11/02 綁定", "11/05")}
+      {cred(U.status("info", "驗證器"), "1Password", "11/02 綁定", "從未使用")}
+      <div class="wrap" style="padding:10px 14px 12px"><button type="button" class="btn sm">{U.icon("plus", 14)}新增 Passkey</button><button type="button" class="btn sm">{U.icon("plus", 14)}新增驗證器</button></div>""")
+    rec = _fp("復原碼", f"""
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
+        <div class="wrap">{U.status("warn", "剩 3 / 10 個")}<span class="note">11/02 產生 · 已用 7 個</span></div>
+        <div class="wrap"><button type="button" class="btn">重新產生</button><span class="note">重新產生後，舊的 3 個立即失效；新的只顯示一次</span></div>
+      </div>""")
+    def ss(dev, ip, last, cur=False):
+        act = U.status("ok", "目前這一個") if cur else '<button type="button" class="btn sm">撤銷</button>'
+        return f'<div class="row srow"><span class="name"><span class="n">{dev}</span><span class="d mono">{ip}</span></span><span>{act}</span><span class="c3">{last}</span><span class="c4"></span><span class="c4"></span><span class="c5"></span><span></span></div>'
+    sess = f"""
+    <section class="panel" aria-labelledby="h-ss">
+      <div class="ph"><h2 id="h-ss">登入中的裝置 · 4</h2><div class="wrap" style="margin-left:auto"><button type="button" class="btn sm">登出其他所有裝置</button></div></div>
+      <div class="row hd srow"><span>裝置 · IP</span><span>狀態</span><span class="c3">最後活動</span><span class="c4"></span><span class="c4"></span><span class="c5"></span><span></span></div>
+      {ss("Safari · macOS", "203.0.113.7 · 台北", "剛剛", True)}
+      {ss("Chrome · Windows", "198.51.100.20 · 辦公室", "2 小時前")}
+      {ss("hx CLI", "203.0.113.7", "昨天")}
+      {ss("Firefox · Linux", "45.33.12.9 · 未知地點", "6 天前")}
+      <div class="note" style="padding:8px 14px 12px">撤銷立即生效，那台裝置下一個請求就會被要求重新登入</div>
+    </section>"""
+    idle = _fp("閒置與重新驗證", _grid(
+        _fld("閒置多久自動登出", _dd("30 分鐘"), "管理員設定的上限是 2 小時"),
+        _fld("危險操作前重新驗證", _seg(["每次", "5 分鐘內免重驗"], 1, "重新驗證"))))
+    dom = _fp("如果變更管理入口網域", f"""
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">
+        {_chk("warn", "Passkey 會失效", "2 個 Passkey 綁在 panel.example.tw，換成 hazel.example.tw 後不能用", "影響你")}
+        {_chk("dng", "沒有第二驗證的帳號", "ava 只有 Passkey，換網域後只能用復原碼登入", "影響 1 人")}
+        <div class="wrap"><button type="button" class="btn sm">通知 ava 新增驗證器</button></div>
+      </div>""")
+    main = head + f'<div class="cg">{second}{rec}</div>' + sess + f'<div class="cg">{idle}{dom}</div>'
+    return U.shell("iam", main)
+
+
+def mfa_dialogs() -> str:
+    card = "background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:12px;min-width:0"
+    def box(title, body, foot=""):
+        return f'<section style="{card}"><h2 style="font-size:16px">{title}</h2>{body}{foot}</section>'
+    qr = '<div aria-label="QR code" style="width:132px;height:132px;background:repeating-conic-gradient(var(--ink) 0 25%,var(--panel) 0 50%) 0 0/16px 16px;border:8px solid #fff;border-radius:6px;flex:none"></div>'
+    totp = box("新增驗證器", f"""
+      <div class="wrap" style="align-items:flex-start;gap:16px">{qr}<div style="display:flex;flex-direction:column;gap:8px;min-width:0;flex:1">
+        <span class="note">掃不了就手動輸入金鑰</span><div class="term" style="overflow-wrap:anywhere">JBSW Y3DP EHPK 3PXP</div>
+        <button type="button" class="btn sm">{U.icon("copy", 14)}複製金鑰</button><span class="note">伺服器時間 03:42:06 · 跟手機差太多碼會對不上</span></div></div>
+      {_fld("名稱", _in("1Password"))}{_fld("輸入 6 位數", _in("482 913", mono=True))}
+      <div class="wrap">{U.status("dng", "碼不對 · 確認手機時間與伺服器相同")}</div>""",
+      '<div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">取消</button><button type="button" class="btn pri">綁定</button></div>')
+    passkey = box("新增 Passkey", f"""
+      {_fld("裝置名稱", _in("MacBook Pro Touch ID"))}
+      {_chk("ok", "這個網址可以使用 Passkey", "panel.example.tw · HTTPS", "")}
+      {_chk("dng", "用 IP 開的面板不能綁定", "203.0.113.22 · Passkey 需要網域", "改用網域開啟")}
+      {_chk("warn", "你取消了", "瀏覽器的視窗被關掉，沒有綁定任何東西", "可以再試一次")}""",
+      '<div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">取消</button><button type="button" class="btn pri">開始</button></div>')
+    step2 = box("登入 · 驗證身分", f"""
+      <button type="button" class="btn" style="min-height:40px">使用 Passkey</button>
+      {_fld("或輸入驗證器的 6 位數", _in("", ph=True))}
+      <div class="wrap">{U.status("dng", "錯太多次 · 4:32 後再試")}</div>
+      <div class="wrap">{U.status("warn", "這次登入已逾時 · 請重新輸入密碼")}</div>
+      <a class="note" href="#rc">改用復原碼</a>""")
+    reauth = box("重新產生復原碼前 · 確認是你", f"""
+      {_fld("密碼", _in("••••••••••••", mono=True))}{_fld("驗證器 6 位數", _in("", ph=True))}""",
+      '<div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">取消</button><button type="button" class="btn pri">確認</button></div>')
+    forced = box("先設定第二驗證", f"""
+      <div class="wrap">{U.status("warn", "主機維運者必須使用第二驗證")}</div>
+      <div class="wrap">{U.status("info", "設定完成前其他頁面都不能開啟")}</div>
+      {U.steps([("密碼", "done", ""), ("第二驗證", "cur", ""), ("復原碼", "todo", "")])}
+      <div class="wrap"><button type="button" class="btn pri">新增 Passkey</button><button type="button" class="btn">新增驗證器</button></div>""")
+    rmlast = box("移除 YubiKey 5C？", f"""
+      <span class="note">移除後還有 MacBook Pro Touch ID 與 1Password 可以用</span>
+      {_chk("ok", "移除後還能登入", "最後一個第二驗證不能移除，按鈕會停用", "")}""",
+      '<div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">取消</button><button type="button" class="btn dng">移除</button></div>')
+    grid = f'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr));gap:16px;align-items:start">{totp}{passkey}{step2}{reauth}{forced}{rmlast}</div>'
+    return U.shell("iam", U.page_head("第二驗證的對話框", OBS, "") + grid)
 
 
 # ---------- 資料庫 ----------
@@ -3707,6 +3853,10 @@ SCREENS = {
     "Analytics": ("流量分析", analytics, 1440, 2400),
     "IAM": ("身分與存取", iam, 1440, 2400),
     "Uninstall": ("平台設定 · 解除安裝", uninstall, 1440, 2000),
+    "NodeLedger": ("主機 hazel-tw-01 › 變更帳本", node_ledger, 1440, 2000),
+    "NodeLedgerBroken": ("主機 › 變更帳本無法使用", node_ledger_broken, 1440, 900),
+    "AccountSecurity": ("帳號安全", account_security, 1440, 1500),
+    "MfaDialogs": ("第二驗證的對話框", mfa_dialogs, 1440, 1500),
     "Settings": ("平台設定", settings, 1440, 2600),
     "Logs": ("日誌", logs, 1440, 2200),
     "AppSettings": ("nextcloud · 網路與掛載", app_settings, 1440, 1300),

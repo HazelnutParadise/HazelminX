@@ -16,7 +16,7 @@
 | `ux-evaluation.md` | UX 評估方法清單（專家審查、量測、真人測試）、門檻與改前改後數字、畫面文字來源規則 |
 | `ux-walkthrough.md` | 認知走查（六個任務）與啟發式掃描，以及市面面板版面慣例對照 |
 | `gap-analysis.md` | 規格 vs 畫面、參考專案 vs 我們的缺口盤點，與「圖形為主」第二輪的改動清單 |
-| `screens/` | 方向 B 定稿的 66 個畫板（Claude Design 畫布格式 `.dc.html`），由 `tools/build_screens.py` 產生 |
+| `screens/` | 方向 B 定稿的 70 個畫板（Claude Design 畫布格式 `.dc.html`），由 `tools/build_screens.py` 產生 |
 | `tools/hxui.py` | 共用 token CSS、導覽、圖表元件（純 SVG，CSS hover，不用 JavaScript） |
 | `tools/build_screens.py` | 示例資料與各畫面內容；執行後重建 `screens/` |
 | `screenshots/` | Playwright 渲染結果：桌面 1440 深淺色、手機 360 |
@@ -41,6 +41,8 @@
 | ModelHub | 模型庫放在哪顆磁碟、Hugging Face 模型放不放得下、推論服務狀態 | 模型庫量表、搜尋結果、量化檔選擇、下載流程段 |
 | APIProxyService／APIProxyTokens／APIProxyFailures | API 代理的服務設定、使用者與 Token、失敗紀錄（對齊 infra-manager，並補限速、方法與路徑限制、上游驗證） | 服務表、Token 表與篩選、失敗類型排行 |
 | AppSettings | 已安裝應用加入或移出網路、改資料位置 | 網路表、掛載表、搬移流程段 |
+| NodeLedger／NodeLedgerBroken | 主機變更帳本：每個變更的之前與之後、擁有權、工作；使用者後來改過的檔案；被拒絕的動作；安裝前快照；帳本無法使用時的處理（票 113） | 帳本表、比對表、元件停止式橫條 |
+| AccountSecurity／MfaDialogs | 帳號的第二驗證、復原碼、登入中的裝置、閒置設定、網域變更影響；綁定 TOTP 與 Passkey、登入第二步錯誤、重新驗證、強制綁定（票 014） | 表格、對話框 |
 | Uninstall | 解除安裝：三種方式、逐項預覽（平台安裝／平台修改／既有）、使用者資料逐項選、維護缺口、移除後與安裝前比對的報告 | 預覽表、資料表、比對報告 |
 | ComponentDown | 平台依賴的元件（例如 Zentinel）停止時頁面長怎樣 | 元件停止橫條、停止前日誌、淡化的上次觀測值 |
 | SiteStatic／FolderPicker | 靜態網站選資料夾；不能選的照樣列出並標原因 | 目錄樹、資料夾清單 |
