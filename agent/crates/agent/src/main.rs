@@ -8,6 +8,7 @@ mod config;
 mod connection;
 mod identity;
 mod journal;
+mod ledger;
 mod steps;
 
 use anyhow::Result;
@@ -117,7 +118,12 @@ async fn run(cfg: Config) -> Result<()> {
         identity_dir: id.dir().to_path_buf(),
         agent_version: env!("CARGO_PKG_VERSION").to_string(),
     };
-    let shared = connection::Shared::new(steps, id, opts.agent_version.clone());
+    let shared = connection::Shared::new(
+        steps,
+        id,
+        opts.agent_version.clone(),
+        hazelminx_privileged::client::Client::new(&cfg.privileged_socket),
+    );
     connection::run(opts, shared, shutdown_signal()).await;
     info!("shutting down");
     Ok(())

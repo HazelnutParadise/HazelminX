@@ -159,3 +159,58 @@ jobs:
           name: hazelminx-agent-linux-${{ matrix.arch }}
           path: ${{ runner.temp }}/dist/
           if-no-files-found: error
+
+  # Core against the real agent and privileged executor binaries: the
+  # Core<->Agent interop tests (test-only actions build) and the host change
+  # ledger copy end to end (root, systemd; the runner VM is disposable).
+  interop:
+    name: interop (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: core/go.mod
+          cache-dependency-path: core/go.sum
+      - name: Install the pinned Rust toolchain (agent/rust-toolchain.toml)
+        working-directory: agent
+        run: rustup toolchain install
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            agent/target
+          key: cargo-interop-${{ matrix.arch }}-${{ hashFiles('agent/rust-toolchain.toml', 'agent/Cargo.lock') }}
+          restore-keys: cargo-interop-${{ matrix.arch }}-
+      - name: Build the agent (with test actions) and the executor
+        working-directory: agent
+        run: cargo build --locked -p hazelminx-agent -p hazelminx-privileged --features hazelminx-agent/test-actions
+      - name: Core<->Agent interop
+        working-directory: core
+        run: go test ./internal/nodes -run Interop -count=1 -v
+        env:
+          HAZELMINX_AGENT_BIN: ${{ github.workspace }}/agent/target/debug/hazelminx-agent
+      - name: Host change ledger copy, end to end (root)
+        working-directory: core
+        run: |
+          sudo --preserve-env=HAZELMINX_AGENT_BIN,HAZELMINX_PRIVILEGED_BIN,GOCACHE,GOMODCACHE,GOFLAGS \
+            HAZELMINX_DISPOSABLE_HOST=1 "$(command -v go)" test ./internal/hostledger -run Interop -count=1 -v
+        env:
+          HAZELMINX_AGENT_BIN: ${{ github.workspace }}/agent/target/debug/hazelminx-agent
+          HAZELMINX_PRIVILEGED_BIN: ${{ github.workspace }}/agent/target/debug/hazelminx-privileged
+          GOCACHE: ${{ runner.temp }}/go-build-root
+          GOMODCACHE: /home/runner/go/pkg/mod
+          GOFLAGS: -mod=readonly

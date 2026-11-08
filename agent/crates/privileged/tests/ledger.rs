@@ -52,7 +52,7 @@ async fn a_host_change_is_recorded_before_and_after_with_its_job() {
     assert_eq!(h.probe.calls.load(Ordering::SeqCst), 2, "before and after");
 
     let ledger = h.ledger.as_ref().unwrap();
-    let batch = ledger.export(0, 10).unwrap();
+    let batch = ledger.export(0, 10, None).unwrap();
     batch.verify(None).unwrap();
     let e = batch.entries().unwrap();
     assert_eq!(e.len(), 2);
@@ -104,7 +104,7 @@ async fn a_failed_change_is_recorded_as_failed() {
         .ledger
         .as_ref()
         .unwrap()
-        .export(0, 10)
+        .export(0, 10, None)
         .unwrap()
         .entries()
         .unwrap();
@@ -265,6 +265,7 @@ async fn ledger_export_pages_raw_lines_for_core() {
             Action::LedgerExport {
                 after_seq,
                 limit: Some(limit),
+                max_bytes: None,
             },
             OutputSink::discard(),
         )
@@ -279,7 +280,8 @@ async fn ledger_export_pages_raw_lines_for_core() {
     assert_eq!(
         Action::LedgerExport {
             after_seq: 0,
-            limit: None
+            limit: None,
+            max_bytes: None,
         }
         .required_permission(),
         PERM_HOST_LEDGER_READ
@@ -289,7 +291,8 @@ async fn ledger_export_pages_raw_lines_for_core() {
         none.execute(
             Action::LedgerExport {
                 after_seq: 0,
-                limit: None
+                limit: None,
+                max_bytes: None,
             },
             OutputSink::discard()
         )

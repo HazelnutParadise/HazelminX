@@ -234,6 +234,7 @@ async fn executor_records_refuses_and_snapshots_on_a_real_host() {
                 &Action::LedgerExport {
                     after_seq: 0,
                     limit: None,
+                    max_bytes: None,
                 },
                 |_, _| {},
             )

@@ -80,6 +80,9 @@ Agent 主動連到 Core 的 Agent 入口（預設 `:9801`，路徑 `/agent/v1/co
 | `step_progress` | Agent→Core | 非持久的進度與日誌；通道塞住時丟棄並以 `logsDropped` 計數 |
 | `ack` | Core→Agent | 累計確認到 `seq` 為止的事件；Agent 重連後重送未確認事件 |
 | `protocol_error` | 雙向 | 收到無法解讀的訊息 |
+| `ledger_pull` | Core→Agent | 要主機變更帳本 `afterSeq` 之後的行：`requestId`、`afterSeq`、`limit`、`grant`（給高權限執行器的授權憑證，見下方「主機變更帳本」） |
+| `ledger_page` | Agent→Core | 一頁帳本原始行：`requestId`、`ledgerId`、`afterSeq`、`lines`、`head`（`seq`、`hash`）、`more` |
+| `ledger_unavailable` | Agent→Core | 拿不到這一頁：`requestId`、`code`、`message` |
 
 ### 能力
 
@@ -89,6 +92,7 @@ Agent 主動連到 Core 的 Agent 入口（預設 `:9801`，路徑 `/agent/v1/co
 |---|---|---|
 | `jobs` | 1 | `step_execute`、`step_reconcile`、`event`、`ack` |
 | `agent.info` | 1 | 唯讀動作：回報 Agent 版本、節點指紋、作業系統、架構、主機名 |
+| `host.ledger` | 1 | `ledger_pull`、`ledger_page`、`ledger_unavailable` |
 
 Core 派送前先比對能力；Agent 沒宣告或版本較低的動作，Core 不送出，直接讓步驟失敗為 `CAPABILITY_UNSUPPORTED`。Agent 收到未宣告的動作、多餘參數欄位、別的節點、已過期或控制世代倒退的步驟，一律回 `step_rejected`，不執行。
 
@@ -108,6 +112,48 @@ Core 派送前先比對能力；Agent 沒宣告或版本較低的動作，Core �
 
 Core 收到 `step_reconcile` 的答案前，Agent 若還在跑那個步驟，會等步驟結束才回答；Core 在會話存活期間定期再問，直到拿到答案。
 
+### 主機變更帳本
+
+主機上的帳本由高權限執行器寫，只有 root 讀得到（規格增補 07 第 55.1 節）。Core 保存一份副本，做法是向 Agent 一頁一頁要：
+
+1. Core 為每一頁簽一張授權憑證：權限只有 `host.ledger.read`，有效 5 分鐘，subject 是 `system:ledger-sync`。
+2. Core 送 `ledger_pull`，`afterSeq` 是 Core 副本最後一行的序號，第一次是 0。
+3. Agent 把 `grant` 原封不動交給執行器的 `ledger_export` 動作，再把執行器回的原始行放進 `ledger_page`。
+4. Core 驗證後才保存。`more` 是 true 時繼續要下一頁。
+
+`grant` 的欄位名稱是執行器自己的格式（`id`、`subject`、`permissions`、`not_before`、`expires_at`、`signature`），和本協定其他欄位的 camelCase 不同。簽章內容是逐行文字：
+
+```text
+hazelminx-grant-v1
+{id}
+{subject}
+{not_before}
+{expires_at}
+{permissions 以逗號連接}
+```
+
+時間是 RFC 3339 UTC、只到整秒。`fixtures/grant.json` 是 Rust 端用固定金鑰簽的一張憑證，Go 端要算出同一個簽章。
+
+`lines` 的每一行和主機檔案裡的那一行逐位元組相同：`{"hash":"<hex>","entry":{…}}`。Core 照下面的規則驗證，任何一條不符，整頁都不保存：
+
+- `hash` 是 `entry` 原始位元組的 SHA-256。驗證時直接拿原始位元組算，不重新序列化。
+- 每一行只能有 `hash` 和 `entry` 兩個鍵，而且不能重複。
+- `entry.seq` 從上一頁的結尾接續，一次加 1。
+- `entry.prev_hash` 等於前一行的 `hash`。第一行接 `sha256("hazelminx-ledger-v1\n" + ledgerId)`。
+- `more` 是 false 時，最後一行要等於 `head`。
+
+`ledgerId` 和 Core 副本記錄的不同時，代表主機的帳本被重建或換掉了。Core 不保存新帳本的任何一行，並記錄 `LEDGER_REPLACED`，等人決定怎麼處理。
+
+執行器每頁最多回 500 行，Agent 另外要求一頁的行加起來不超過 192 KiB。原因是行裡的引號在訊息裡跳脫一次，在訊框裡再跳脫一次，傳輸時一頁最多會變成四倍大。編碼後的訊息仍超過 480 KiB 時，Agent 用一半的額度重新要一次。
+
+`ledger_unavailable` 代碼：
+
+| code | 意思 |
+|---|---|
+| `EXECUTOR_UNREACHABLE` | Agent 連不上執行器的 socket |
+| `EXECUTOR_REFUSED` | 執行器拒絕匯出（憑證、權限或參數不對），`message` 帶執行器的錯誤碼 |
+| `EXPORT_FAILED` | 執行器接受了但匯出失敗，例如帳本沒有開啟，或 `afterSeq` 超過主機帳本的最後一行（主機帳本比 Core 副本短） |
+
 ### `reject` 代碼
 
 `PROTOCOL_INCOMPATIBLE`、`HANDSHAKE_MALFORMED`、`IDENTITY_INVALID`（憑證鏈、用途或指紋不符）、`PROOF_INVALID`、`NODE_REVOKED`、`DUPLICATE_SESSION`（同一節點已有連線）。
@@ -119,4 +165,6 @@ Core 收到 `step_reconcile` 的答案前，Agent 若還在跑那個步驟，會
 - `fixtures/handshake-lenient/*.json`：帶未知欄位、仍須被握手解碼接受的訊息。
 - `fixtures/signature.json`：固定種子的節點、Core 與 X25519 金鑰，hello 原文與兩個雜湊、簽章內容、預期簽章、共同秘密與兩方向的會話金鑰（Ed25519 是確定性簽章，兩邊必須算出同一個值）。
 - `fixtures/frames.json`：用上面的會話金鑰封好的訊框。兩邊要算出同一個 `mac`、還原出同一個 `body`；訊框的 JSON 文字本身可能不同（Go 會把 `<`、`&` 這類字元跳脫），所以不比對整段文字。改任何一處都要被拒絕。
+- `fixtures/grant.json`：給高權限執行器的授權憑證，用固定種子（公開，只供測試）簽，含簽章內容與公鑰 PEM。
+- `fixtures/host-ledger-batch.json`：執行器 `ledger_export` 回的一頁真實帳本行，`messages/ledger_page.json` 用的是同一組行。
 - `fixtures/pki/`：測試用 CA、Core 與節點憑證（僅供測試，私鑰公開，不得用於任何部署）。

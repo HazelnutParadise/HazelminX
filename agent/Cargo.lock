@@ -436,6 +436,7 @@ dependencies = [
  "clap",
  "ed25519-dalek",
  "futures-util",
+ "hazelminx-privileged",
  "hazelminx-protocol",
  "hex",
  "rand 0.8.8",

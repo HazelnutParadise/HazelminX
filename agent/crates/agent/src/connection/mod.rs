@@ -52,10 +52,17 @@ pub struct Shared {
     broken: std::sync::atomic::AtomicBool,
     facts: AgentFacts,
     identity: Identity,
+    /// The privileged executor, for `ledger_pull`.
+    privileged: hazelminx_privileged::client::Client,
 }
 
 impl Shared {
-    pub fn new(steps: Steps, identity: Identity, agent_version: String) -> Arc<Shared> {
+    pub fn new(
+        steps: Steps,
+        identity: Identity,
+        agent_version: String,
+        privileged: hazelminx_privileged::client::Client,
+    ) -> Arc<Shared> {
         let facts = AgentFacts {
             agent_version,
             fingerprint: identity.fingerprint(),
@@ -68,6 +75,7 @@ impl Shared {
             broken: std::sync::atomic::AtomicBool::new(false),
             facts,
             identity,
+            privileged,
         })
     }
 }
@@ -643,6 +651,33 @@ fn handle(shared: &Arc<Shared>, msg: Message) -> Vec<Message> {
                 vec![]
             }
         },
+        Message::LedgerPull {
+            request_id,
+            after_seq,
+            limit,
+            grant,
+        } => {
+            // The executor round trip runs off the session loop; the answer
+            // goes out through the outbox.
+            let (shared, request_id, after_seq, limit, grant) = (
+                shared.clone(),
+                request_id.clone(),
+                *after_seq,
+                *limit,
+                grant.clone(),
+            );
+            tokio::spawn(async move {
+                let answer =
+                    crate::ledger::answer(&shared.privileged, request_id, after_seq, limit, grant)
+                        .await;
+                if let Message::LedgerUnavailable { code, message, .. } = &answer {
+                    warn!(%code, %message, "cannot export the host ledger for the core");
+                }
+                shared.outbox.lock().unwrap().push(answer);
+                shared.changed.notify_one();
+            });
+            vec![]
+        }
         Message::ProtocolError { code, message } => {
             warn!(%code, %message, "core could not read an agent message");
             vec![]

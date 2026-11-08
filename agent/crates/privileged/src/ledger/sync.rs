@@ -6,12 +6,12 @@
 //! as the exact bytes on disk, so Core verifies the hash chain without
 //! re-serializing (`json.RawMessage` in Go).
 //!
-//! TODO(007): carry [`LedgerSyncRequest`] / [`LedgerBatch`] /
-//! [`LedgerSyncAck`] over the Core↔Agent channel and add them to
-//! `agent/crates/protocol` with golden samples; Core stores verified lines
-//! per node. Until then the types live here and the agent side is the
-//! `ledger_export` action. The sample in
-//! `docs/contracts/fixtures/host-ledger-batch.json` is the wire shape.
+//! On the Core↔Agent channel the Core sends `ledger_pull` with a grant for
+//! `host.ledger.read`; the agent calls `ledger_export` with it and answers
+//! `ledger_page` (the [`LedgerBatch`] fields) or `ledger_unavailable`
+//! (docs/contracts/README.md). Core's check is `core/internal/hostledger`;
+//! [`LedgerBatch::verify`] is the same rule, and both run against
+//! `docs/contracts/fixtures/host-ledger-batch.json`.
 
 use super::entry::Entry;
 use super::store::{genesis_hash, sha256_hex};
@@ -25,15 +25,7 @@ pub struct Head {
     pub hash: String,
 }
 
-/// Core → Agent: send the lines after `after_seq`.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct LedgerSyncRequest {
-    pub after_seq: u64,
-    pub limit: u32,
-}
-
-/// Agent → Core: one page of raw lines.
+/// One page of raw lines, as `ledger_export` returns it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct LedgerBatch {
@@ -46,15 +38,6 @@ pub struct LedgerBatch {
     pub more: bool,
 }
 
-/// Core → Agent: Core has stored and verified up to `seq`.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct LedgerSyncAck {
-    pub ledger_id: String,
-    pub seq: u64,
-    pub hash: String,
-}
-
 #[derive(Deserialize)]
 struct RawLine<'a> {
     hash: String,
@@ -63,7 +46,7 @@ struct RawLine<'a> {
 }
 
 impl LedgerBatch {
-    /// What Core does with a page: `prev` is the head Core holds for this
+    /// Core's check of a page: `prev` is the head Core holds for this
     /// ledger (`None` for the first page). Returns the new head, or why the
     /// page cannot be appended.
     pub fn verify(&self, prev: Option<&Head>) -> Result<Head, String> {
@@ -131,15 +114,15 @@ mod tests {
             sample(Phase::Intent, "b.service"),
         ])
         .unwrap();
-        let all = l.export(0, 10).unwrap();
+        let all = l.export(0, 10, None).unwrap();
         let head = all.verify(None).unwrap();
         assert_eq!(head, l.head());
         assert_eq!(all.entries().unwrap().len(), 3);
 
         // Page that skips what Core has not seen.
-        let later = l.export(2, 10).unwrap();
+        let later = l.export(2, 10, None).unwrap();
         assert!(later.verify(None).is_err());
-        let first = l.export(0, 1).unwrap();
+        let first = l.export(0, 1, None).unwrap();
         let h1 = first.verify(None).unwrap();
         assert!(later.verify(Some(&h1)).is_err());
 

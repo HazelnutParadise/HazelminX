@@ -36,6 +36,10 @@ pub enum Action {
         after_seq: u64,
         #[serde(default)]
         limit: Option<u32>,
+        /// Stop before the page's lines exceed this many bytes (at least one
+        /// line is always returned), so a page fits one channel message.
+        #[serde(default)]
+        max_bytes: Option<u32>,
     },
 }
 
@@ -125,7 +129,8 @@ mod tests {
         assert_eq!(
             Action::LedgerExport {
                 after_seq: 0,
-                limit: None
+                limit: None,
+                max_bytes: None
             }
             .ledger_decl(),
             LedgerDecl::ReadOnly

@@ -11,7 +11,7 @@ M0 基礎與設計：Core 與 Agent 後端骨架（票 003、004、008、009、0
 - 1Panel 功能基線盤點（票 092，PR #99）→ `docs/baseline/`。
 - CI（票 006，已在 `main`，in_progress）→ `.github/workflows/ci.yml`：Go 與 Rust 在 x86_64、ARM64 原生機器上檢查、測試、建置、冒煙測試並產生依賴報告。剩前端 job 與嵌入前端的 Core 建置，等票 005。
 - Core↔Agent 通道（票 007，已在 `main`）→ `docs/contracts/`、`agent/crates/protocol`、Agent 連線與持久步驟紀錄、`core/internal/protocol`、`core/internal/nodes`。SEC-011 的升級路徑移到票 036。票 008 的 ENG-003 Agent 端已由 007 接上。
-- 主機變更帳本（票 113，已在 `main`，in_progress）→ `agent/crates/privileged/src/ledger/`：執行器在每個會改主機的動作前後寫帳本，沒寫成就拒絕；有安裝前快照與手動修改偵測。剩下的項目列在 Handoff Notes。
+- 主機變更帳本（票 113，done）→ `agent/crates/privileged/src/ledger/`（主機那份）與 `core/internal/hostledger`（Core 那份，經 007 的通道同步）。交給其他票的項目列在 Handoff Notes。
 - 參考專案研究收尾 → `docs/research/`（1Panel 後端／前端、Komodo Periphery、Portainer Git Stack、Beszel 報告待補）。
 
 ## Milestones
@@ -31,7 +31,7 @@ None。
 票 019 節點註冊：一次性註冊碼換節點憑證（用票 007 的 `nodes.PKI.IssueNodeCertificate`），寫入 Agent 的 `node.crt`／`core-ca.crt`，並以節點紀錄實作 `nodes.Authorizer` 的撤銷。PR #102（票 002）合併後，票 005 依 `DESIGN.md` token 建立 `web/` 骨架。
 
 ## Next Ticket
-019 節點註冊（等 007 完成後 ready）、113 的 Core 副本同步（用 007 的通道）。005 前端骨架仍等票 002 完成。014 已合併；015、016、022、023、024、025、026、047 的前置票都已 done，狀態為 ready；013 的前置票都已 done，狀態為 ready。
+019 節點註冊（等 007 完成後 ready）。005 前端骨架仍等票 002 完成。014 已合併；015、016、022、023、024、025、026、047 的前置票都已 done，狀態為 ready；013 的前置票都已 done，狀態為 ready。
 
 ## Decision Log
 | decision | rationale | timestamp | impacted_ticket_ids |
@@ -53,6 +53,7 @@ None。
 | 003、004、008 驗收未完成仍先合併進 `main`，狀態維持 in_progress | 使用者決定（2026-11-07）；003 的 CI 條件要等 006，而 006 需要 003 先合併 | 2026-11-07 | 003、004、006、008 |
 | 主機變更帳本由高權限執行器寫：每個動作宣告會改的對象，先同步寫意圖行才執行；帳本在 `/var/lib/hazelminx/ledger`（root 0700，上層不得可被他人寫入），每行帶前一行的 SHA-256；Core 拿原始行驗證後保存副本 | 增補 07 第 55.1 節要求沒寫帳本的變更一律拒絕、主機連不上 Core 時仍能只靠本機那份移除 | 2026-11-08 | 113、013、037、007 |
 | 113 驗收未完成（缺 Core 的帳本副本）仍先合併進 `main`，狀態維持 in_progress | 使用者決定（2026-11-08）；Core 副本要等 007 的通道，其餘測試都已通過 | 2026-11-08 | 113、007 |
+| Core 的帳本副本用新訊息 `ledger_pull`／`ledger_page`／`ledger_unavailable`（能力 `host.ledger`），不走工作與步驟；Core 為每一頁簽一張只有 `host.ledger.read`、5 分鐘的授權憑證；簽發金鑰在機密服務，公鑰寫在資料目錄的 `privileged-issuer.pub` | 步驟結果上限 256 KiB，而且每次同步都會留一筆工作紀錄；執行器只接受 Core 簽的憑證 | 2026-11-08 | 113、013、019 |
 | 有第二驗證的帳號，密碼正確後只拿到一次性挑戰，第二步通過才開工作階段；`setup` 建好擁有者後直接登入 | 使用者核准的介面變更（2026-11-08），對照設計稿 Login／Setup 兩步流程 | 2026-11-08 | 014、005 |
 | 票 014 先合併；「知道密碼的人可讓第二步一直冷卻」（與 IAM-012 衝突）之後另開 PR 修 | 使用者決定（2026-11-08）：尚無正式安裝，合併後的風險已比合併前小 | 2026-11-08 | 014、065 |
 | 擁有者、平台管理員、主機維運者沒有第二驗證時，工作階段只能走綁定白名單，也不能移除最後一個第二驗證 | IAM-002 高權限帳號的安全預設；主機維運者有終端機與 host:write，等同 root | 2026-11-08 | 014、015、027 |
@@ -85,10 +86,11 @@ None。
 - 在 `/Volumes/SSD` 上 `cargo build` 需設 `CARGO_TARGET_DIR` 到支援檔案鎖的磁碟（project memory 有紀錄）。
 - 票 010 新增 migration `0006_management_contract.sql`。其他平行分支若也新增 `0006`，後合併的一方要改號，並同步更新票檔裡的引用。
 - `core/internal/api` 的 IAM 測試時鐘原本寫死在 2026-11-07，從 2026-11-08 起整批失敗。票 010（PR #121）已經修正，同時修了 `TestRecoverAfterRestartDoesNotResetOrRerun` 約三成機率失敗的問題。
-- 票 113 還沒做完的項目：
-  - Core 的帳本副本（UNX-001 最後一項）：007 合併後，把 `agent/crates/privileged/src/ledger/sync.rs` 裡標 `TODO(007)` 的型別搬進 protocol crate，Go 端用 `docs/contracts/fixtures/host-ledger-batch.json` 做契約測試，Core 依節點保存驗證過的行。做完才能把 UNX-001 打勾、113 改成 done。
+- 票 113 交給其他票或還沒處理的項目：
   - 安裝器（票 013）在第一步執行 `hazelminx-privileged snapshot capture`，安裝步驟用 `ledger::recorder::Recorder` 記錄，並讓 `/var/lib/hazelminx` 維持 root 擁有、群組與其他人不可寫。
-  - `docs/tickets/README.md` 與 `traceability.json` 在 `main` 上還沒有 113 那一列（只在票 002 的設計分支）。設計分支合併後，113 要改成 `in_progress`。
+  - 安裝器與節點註冊（票 013、019）把 Core 資料目錄的 `privileged-issuer.pub` 放到主機的 `/etc/hazelminx/privileged/issuer.pub`。沒有這個檔，執行器不會啟動，Core 也拿不到帳本。
+  - Core 副本目前只有 `hostledger.Store` 可以讀，還沒有管理 API 與畫面，同步狀態（`host_ledgers.last_error_*`）也還看不到。票 037 或主機頁的票要接上。
+  - `docs/tickets/README.md` 與 `traceability.json` 在 `main` 上還沒有 113 那一列（只在票 002 的設計分支）。設計分支合併後，113 要改成 `done`。
   - dnf／rpm 主機只用模擬輸出測過。x86_64 與 ARM64 的 Ubuntu 24.04 已由 CI 以 root 在 systemd 下實測（PR #127）。
   - 主機頁看帳本等六項設計缺口，列在 PR #122 描述的「設計缺口」一節，等設計端補畫。
   - 帳本會改的對象目前只有路徑、systemd 單元、套件、使用者、群組。之後要動防火牆、容器、sysctl、設定鍵的票，要加對應的 `Target` 變體與讀取方式。

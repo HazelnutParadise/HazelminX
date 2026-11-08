@@ -32,6 +32,9 @@ pub const NONCE_BYTES: usize = 32;
 /// Capability names of protocol v1.
 pub const CAP_JOBS: &str = "jobs";
 pub const CAP_AGENT_INFO: &str = "agent.info";
+/// `ledger_pull` / `ledger_page` / `ledger_unavailable`: Core keeps a copy of
+/// the host change ledger (spec 55.1).
+pub const CAP_HOST_LEDGER: &str = "host.ledger";
 
 /// `reject` codes.
 pub mod reject_code {
@@ -58,6 +61,40 @@ pub mod step_reject_code {
 pub mod protocol_error_code {
     pub const UNKNOWN_MESSAGE: &str = "UNKNOWN_MESSAGE";
     pub const MALFORMED: &str = "MALFORMED";
+}
+
+/// `ledger_unavailable` codes.
+pub mod ledger_unavailable_code {
+    /// The agent cannot reach the privileged executor's socket.
+    pub const EXECUTOR_UNREACHABLE: &str = "EXECUTOR_UNREACHABLE";
+    /// The executor refused the export (grant, permission, parameters).
+    pub const EXECUTOR_REFUSED: &str = "EXECUTOR_REFUSED";
+    /// The executor accepted but could not export (ledger not open, or
+    /// `afterSeq` is past the host ledger's head).
+    pub const EXPORT_FAILED: &str = "EXPORT_FAILED";
+}
+
+/// A grant for the privileged executor, carried through the agent unchanged.
+/// Field names are the executor's own (snake_case), not this protocol's.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ExecutorGrant {
+    pub id: String,
+    pub subject: String,
+    pub permissions: Vec<String>,
+    /// RFC 3339 UTC, whole seconds.
+    pub not_before: String,
+    pub expires_at: String,
+    /// Hex Ed25519 signature over the executor's canonical grant bytes.
+    pub signature: String,
+}
+
+/// Last line of a host ledger: its sequence number and hash.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct LedgerHead {
+    pub seq: u64,
+    pub hash: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -227,6 +264,28 @@ pub enum Message {
         code: String,
         message: String,
     },
+    /// Core asks for the host ledger lines after `after_seq`.
+    LedgerPull {
+        request_id: String,
+        after_seq: u64,
+        limit: u32,
+        grant: ExecutorGrant,
+    },
+    /// One page of raw ledger lines, exactly as stored on the host.
+    LedgerPage {
+        request_id: String,
+        ledger_id: String,
+        after_seq: u64,
+        lines: Vec<String>,
+        head: LedgerHead,
+        more: bool,
+    },
+    /// The agent could not produce a page.
+    LedgerUnavailable {
+        request_id: String,
+        code: String,
+        message: String,
+    },
 }
 
 /// Why a message could not be decoded. `UnknownType` lets the receiver answer
@@ -323,6 +382,9 @@ const SESSION_TYPES: &[&str] = &[
     "step_progress",
     "ack",
     "protocol_error",
+    "ledger_pull",
+    "ledger_page",
+    "ledger_unavailable",
 ];
 
 /// The string `type` of a JSON object, or `Malformed`.
