@@ -496,3 +496,36 @@ func TestHandshakeSlotsEvictTheOldestPerSourceAndInTotal(t *testing.T) {
 		}
 	}
 }
+
+// A handshake that already presented a valid certificate is closed only
+// after every newer, less advanced one; a flood of new connections from the
+// same address therefore cannot cut off an agent mid-handshake, and the
+// connections closed to make room are not recorded as refusals.
+func TestFloodDoesNotEvictACertifiedHandshake(t *testing.T) {
+	core := startCore(t, HubOptions{})
+	c := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{RootCAs: coreCAPool(t, core.pki), ServerName: protocol.CoreServerName}}}
+	var conns []*websocket.Conn
+	defer func() {
+		for _, c := range conns {
+			c.CloseNow()
+		}
+	}()
+	flood := func() {
+		for i := 0; i < 2*maxHandshakesPer; i++ {
+			conn, _, err := websocket.Dial(context.Background(), core.url, &websocket.DialOptions{HTTPClient: c})
+			if err != nil {
+				t.Errorf("flood connection %d: %v", i, err)
+				return
+			}
+			conns = append(conns, conn)
+		}
+	}
+	n := newTestNode(t, core.pki)
+	a, err := dialAgent(t, core, core.url, n, agentOpts{beforeAuth: flood})
+	if err != nil || a.ready == nil {
+		t.Fatalf("agent cut off by the flood: %v %+v", err, a)
+	}
+	if _, rej := core.hub.Connections(); len(rej) != 0 {
+		t.Fatalf("evictions were recorded as refusals: %d", len(rej))
+	}
+}

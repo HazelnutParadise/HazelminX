@@ -230,14 +230,22 @@ func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	defer release()
 	conn.SetReadLimit(maxHandshakeBytes)
-	h.handshake(r, conn, release)
+	h.handshake(r, conn, slot, release)
 }
+
+// Handshake stages, in the order a slot is protected from eviction.
+const (
+	stageAwaitingHello = iota // connected, nothing received yet
+	stageCertified            // hello received and its certificate verified
+)
 
 // handshakeSlot is one handshake in progress.
 type handshakeSlot struct {
-	src   string
-	evict func()
-	gone  bool // evicted or released
+	src     string
+	evict   func()
+	stage   int
+	gone    bool // evicted or released
+	evicted bool
 }
 
 // acquireSlot registers a handshake. When the source (or the hub) already
@@ -256,24 +264,49 @@ func (h *Hub) acquireSlot(src string, evict func()) *handshakeSlot {
 		}
 	}
 	if sameSource >= maxHandshakesPer {
-		for _, sl := range h.slots {
-			if sl.src == src {
-				h.evictLocked(sl)
-				break
-			}
-		}
+		h.evictLocked(h.victimLocked(func(sl *handshakeSlot) bool { return sl.src == src }))
 	}
 	if len(h.slots) >= maxHandshakes {
-		h.evictLocked(h.slots[0])
+		h.evictLocked(h.victimLocked(func(*handshakeSlot) bool { return true }))
 	}
 	sl := &handshakeSlot{src: src, evict: evict}
 	h.slots = append(h.slots, sl)
 	return sl
 }
 
+// victimLocked picks the slot to close: the oldest at the earliest stage,
+// so a handshake that already presented a valid certificate is closed only
+// when every other candidate is just as far along.
+func (h *Hub) victimLocked(match func(*handshakeSlot) bool) *handshakeSlot {
+	var best *handshakeSlot
+	for _, sl := range h.slots { // oldest first
+		if match(sl) && (best == nil || sl.stage < best.stage) {
+			best = sl
+		}
+	}
+	return best
+}
+
 func (h *Hub) evictLocked(sl *handshakeSlot) {
+	if sl == nil {
+		return
+	}
+	sl.evicted = true
 	h.removeLocked(sl)
 	go sl.evict()
+}
+
+// advance records that a handshake reached stage.
+func (h *Hub) advance(sl *handshakeSlot, stage int) {
+	h.slotMu.Lock()
+	defer h.slotMu.Unlock()
+	sl.stage = stage
+}
+
+func (h *Hub) wasEvicted(sl *handshakeSlot) bool {
+	h.slotMu.Lock()
+	defer h.slotMu.Unlock()
+	return sl.evicted
 }
 
 func (h *Hub) removeLocked(sl *handshakeSlot) {
@@ -329,10 +362,15 @@ type handshakeFailure struct {
 	identityProven bool
 }
 
-func (h *Hub) handshake(r *http.Request, conn *websocket.Conn, handshakeDone func()) {
+func (h *Hub) handshake(r *http.Request, conn *websocket.Conn, slot *handshakeSlot, handshakeDone func()) {
 	ctx, cancel := context.WithTimeout(r.Context(), h.opts.HandshakeTimeout)
 	defer cancel()
 	fail := func(f handshakeFailure) {
+		if h.wasEvicted(slot) {
+			// Closed to make room for a newer handshake; not a refusal worth
+			// keeping (a flood would wash the real refusals out of the list).
+			return
+		}
 		msg := protocol.Reject{Type: protocol.TypeReject, Code: f.code, Message: f.message}
 		core := h.opts.Range
 		if f.supported {
@@ -373,6 +411,7 @@ func (h *Hub) handshake(r *http.Request, conn *websocket.Conn, handshakeDone fun
 		fail(with(protocol.RejectIdentityInvalid, err.Error()))
 		return
 	}
+	h.advance(slot, stageCertified)
 	base.nodeID = id.Fingerprint
 	transport := TransportProxied
 	if r.TLS != nil && len(r.TLS.PeerCertificates) > 0 {
@@ -448,6 +487,9 @@ func (h *Hub) handshake(r *http.Request, conn *websocket.Conn, handshakeDone fun
 		return
 	}
 	base.identityProven = true
+	// Proven: the slot is no longer needed, and releasing it now means a
+	// later eviction can never close this connection.
+	handshakeDone()
 
 	s := &Session{
 		hub: h, conn: conn, id: id, sessionID: sessionID, protocolVersion: version, agentVersion: hello.AgentVersion,

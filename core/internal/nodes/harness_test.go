@@ -155,6 +155,8 @@ type agentOpts struct {
 	signer ed25519.PrivateKey
 	// authProof, when set, is sent as the auth proof verbatim (replay).
 	authProof []byte
+	// beforeAuth runs after welcome is verified and before auth is sent.
+	beforeAuth func()
 	// agentVersion overrides the hello agentVersion; badNonce sends an
 	// invalid nonce.
 	agentVersion string
@@ -293,6 +295,9 @@ func dialAgent(t *testing.T, core *testCore, url string, n testNode, o agentOpts
 		proof = o.authProof
 	}
 	a.proof = proof
+	if o.beforeAuth != nil {
+		o.beforeAuth()
+	}
 	a.writeHandshake(t, protocol.Auth{Type: protocol.TypeAuth, Proof: base64.StdEncoding.EncodeToString(proof)})
 	msg, err = a.readHandshake(ctx)
 	if err != nil {

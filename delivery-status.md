@@ -1,7 +1,7 @@
 # Delivery Status
 
 ## Current Phase
-M0 基礎與設計：Core 與 Agent 後端骨架（票 003、004、008、009、011、012）已合併進 `main`；Core↔Agent 通道（票 007）在 PR 等審查；設計系統與 UI/UX 原型（票 002）進行中。
+M0 基礎與設計：Core 與 Agent 後端骨架（票 003、004、008、009、011、012）已合併進 `main`；Core↔Agent 通道（票 007）在草稿 PR #125；設計系統與 UI/UX 原型（票 002）進行中。
 
 ## Stage Objective
 完成 `DESIGN.md` 與主要畫面原型並通過設計審查，讓票 003、004、005、007 可以在一致的視覺與互動基準上開工；M0 結束時 Core、Agent、Web 骨架可建置並在 CI 通過。
@@ -59,7 +59,7 @@ None。
 - 架構決策：`ENG.md`
 - 規格：`docs/spec/HazelminX_Spec_v1.1_zh-TW.md`
 - 票務：`docs/tickets/README.md`、GitHub issues #1–#98（milestone M0–M5）
-- 草稿 PR：#99（092 基線盤點）、#102（002 設計方向）
+- 草稿 PR：#99（092 基線盤點）、#102（002 設計方向）、#125（007 Core↔Agent 通道）
 - 已合併 PR：#100（003）、#101（004）、#103（011）、#104（009）、#105（008）、#106（012）
 - 設計畫布：<https://claude.ai/artifact/NBXgFGYEiZVnKLraoa7Nt8>（第一頁三個方向、第二頁方向 B 定稿 12 畫板，私人）
 - 研究：`docs/research/`
