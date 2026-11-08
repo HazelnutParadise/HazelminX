@@ -4,7 +4,7 @@
 **User Story:** 擁有者可以控制誰能做什麼  
 **Milestone:** M1 單機主機管理  
 **Blocked by:** [009 擁有者可以登入、建立帳號與角色，未授權的 API 呼叫一律被拒絕](009-iam-foundation.md)  
-**Status:** in_progress  
+**Status:** done  
 **規格章節:** 05｜誰能用、誰能做什麼  
 **Issue:** [#14](https://github.com/HazelnutParadise/hazelminx/issues/14)  
 
