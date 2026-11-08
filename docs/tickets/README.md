@@ -82,6 +82,7 @@
 | [053](053-appstore-update-uninstall.md) | 管理員可以編輯、更新與卸載商店應用，自訂設定不被新版覆寫 | 應用商店 | 052, 046 | [#53](https://github.com/HazelnutParadise/hazelminx/issues/53) | blocked |
 | [054](054-appstore-sources.md) | 管理員可以新增受信任的第三方商店來源與本機範本 | 應用商店 | 052 | [#54](https://github.com/HazelnutParadise/hazelminx/issues/54) | blocked |
 | [112](112-app-template-network-mounts.md) | 從 1Panel 商店安裝時轉換範本（網路、Port、資料路徑、資料庫連線），應用的網路與資料位置安裝時能設、之後也能隨時改 | 應用商店 | 052, 053, 109 | [#119](https://github.com/HazelnutParadise/hazelminx/issues/119) | blocked |
+| [114](114-compose-deploy-compat.md) | 部署前讀懂既有 compose 的寫法（外部網路、容器名稱、主機路徑、主機建置、寫死的機密、對外 Port、GPU、浮動標籤），不用改 repo 就能安全部署 | Compose 部署 | 044, 049, 107, 109 | [#130](https://github.com/HazelnutParadise/hazelminx/issues/130) | blocked |
 
 ## M3 網站入口與安全防護
 
@@ -114,6 +115,7 @@
 | [075](075-gpu-chat-inference-api.md) | 管理員可以選 GPU、在網頁測試模型，並透過 Token 代理發布推論 API | AI 與模型 | 074, 062 | [#74](https://github.com/HazelnutParadise/hazelminx/issues/74) | blocked |
 | [076](076-baseline-ai-mcp.md) | 管理員可以保留基線 AI／MCP／Agent 能力，MCP 預設唯讀且危險操作需批准 | AI 與模型 | 074, 015 | [#75](https://github.com/HazelnutParadise/hazelminx/issues/75) | blocked |
 | [111](111-model-hub-hf-runtime.md) | 管理員可以建立多個模型庫、在面板搜尋並下載 Hugging Face 模型，再用內建的 vLLM 或 llama.cpp 部署推論服務 | AI 與模型 | 074, 075 | [#118](https://github.com/HazelnutParadise/hazelminx/issues/118) | blocked |
+| [115](115-object-storage.md) | 管理員可以在指定主機與磁碟建立物件儲存（預設 RustFS），管理 bucket 與限定範圍的金鑰，給應用用、當備份目的地，並接管或遷移既有 MinIO | 資料庫 | 039, 040, 077, 109 | [#131](https://github.com/HazelnutParadise/hazelminx/issues/131) | blocked |
 | [077](077-backup-accounts.md) | 管理員可以建立本機、S3、SFTP、WebDAV、雲端硬碟與 NAS 備份目的地並測試讀寫 | 備份與還原 | 011, 017 | [#76](https://github.com/HazelnutParadise/hazelminx/issues/76) | blocked |
 | [078](078-backup-jobs.md) | 使用者可以備份應用、資料庫、目錄與平台設定，含一致性、多目的地、保留與加密 | 備份與還原 | 077, 069, 046 | [#77](https://github.com/HazelnutParadise/hazelminx/issues/77) | blocked |
 | [079](079-restore.md) | 管理員可以隔離演練還原、預覽覆寫並還原到不同節點與磁碟 | 備份與還原 | 078 | [#78](https://github.com/HazelnutParadise/hazelminx/issues/78) | blocked |
@@ -165,8 +167,12 @@
 
 規格增補 07（`docs/spec/addendum-07-clean-uninstall.md`，主機變更帳本與完全移除，UNX-001～007、T-244～251），2026-11-08 使用者核定。UNX-001／002 由票 113 擁有，UNX-003～007 由 037 擁有。
 
+規格增補 08（`docs/spec/addendum-08-git-deploy-objstore.md`，既有 Compose 專案的部署相容、分支觸發與物件儲存，GDP-001～014、OBJ-001～008、T-252～267），2026-11-08 使用者核定。GDP-001～010 由票 114 擁有，GDP-011～014 由 050 擁有，OBJ-001～008 由 115 擁有。
+
+規格增補 09（`docs/spec/addendum-09-fail2ban.md`，Fail2ban 管理，F2B-001～008、T-268～275），2026-11-08 使用者核定。由票 034 擁有。
+
 ## 覆蓋檢查
 
-- 規格需求 449 條＋增補 01 的 14 條＋增補 02 的 9 條＋增補 03 的 15 條＋增補 04 的 15 條＋增補 05 的 8 條＋增補 06 的 8 條＋增補 07 的 7 條，已指派擁有票 525 條，未指派 0 條。
-- 驗收案例 186 個＋增補 01 的 9 個＋增補 02 的 8 個＋增補 03 的 37 個＋增補 04 的 32 個＋增補 05 的 10 個＋增補 06 的 8 個＋增補 07 的 8 個，已連到票 298 個。
+- 規格需求 449 條＋增補 01 的 14 條＋增補 02 的 9 條＋增補 03 的 15 條＋增補 04 的 15 條＋增補 05 的 8 條＋增補 06 的 8 條＋增補 07 的 7 條＋增補 08 的 22 條＋增補 09 的 8 條，已指派擁有票 555 條，未指派 0 條。
+- 驗收案例 186 個＋增補 01 的 9 個＋增補 02 的 8 個＋增補 03 的 37 個＋增補 04 的 32 個＋增補 05 的 10 個＋增補 06 的 8 個＋增補 07 的 8 個＋增補 08 的 16 個＋增補 09 的 8 個，已連到票 322 個。
 - 本檔由 `docs/tickets/traceability.json` 同步產生；修改票的需求範圍時同時更新兩者。

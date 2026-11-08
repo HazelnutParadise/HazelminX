@@ -748,10 +748,26 @@
         "022"
       ],
       "requirements": [
-        "SYS-011"
+        "SYS-011",
+        "F2B-001",
+        "F2B-002",
+        "F2B-003",
+        "F2B-004",
+        "F2B-005",
+        "F2B-006",
+        "F2B-007",
+        "F2B-008"
       ],
       "acceptance_tests": [
-        "T-134"
+        "T-134",
+        "T-268",
+        "T-269",
+        "T-270",
+        "T-271",
+        "T-272",
+        "T-273",
+        "T-274",
+        "T-275"
       ],
       "status": "blocked",
       "issue": 34
@@ -1181,14 +1197,22 @@
         "CMP-010",
         "GIT-018",
         "GIT-019",
-        "GIT-020"
+        "GIT-020",
+        "GDP-011",
+        "GDP-012",
+        "GDP-013",
+        "GDP-014"
       ],
       "acceptance_tests": [
         "T-059",
         "T-060",
         "GH-T17",
         "GH-T18",
-        "GH-T19"
+        "GH-T19",
+        "T-261",
+        "T-262",
+        "T-263",
+        "T-264"
       ],
       "status": "blocked",
       "issue": 50
@@ -2684,6 +2708,74 @@
       ],
       "status": "done",
       "issue": 120
+    },
+    {
+      "id": "114",
+      "file": "114-compose-deploy-compat.md",
+      "title": "部署前讀懂既有 compose 的寫法（外部網路、容器名稱、主機路徑、主機建置、寫死的機密、對外 Port、GPU、浮動標籤），不用改 repo 就能安全部署",
+      "epic": "compose",
+      "milestone": "M2",
+      "blocked_by": [
+        "044",
+        "049",
+        "107",
+        "109"
+      ],
+      "requirements": [
+        "GDP-001",
+        "GDP-002",
+        "GDP-003",
+        "GDP-004",
+        "GDP-005",
+        "GDP-006",
+        "GDP-007",
+        "GDP-008",
+        "GDP-009",
+        "GDP-010"
+      ],
+      "acceptance_tests": [
+        "T-252",
+        "T-253",
+        "T-254",
+        "T-255",
+        "T-256",
+        "T-257",
+        "T-258",
+        "T-259",
+        "T-260"
+      ],
+      "status": "blocked",
+      "issue": 130
+    },
+    {
+      "id": "115",
+      "file": "115-object-storage.md",
+      "title": "管理員可以在指定主機與磁碟建立物件儲存（預設 RustFS），管理 bucket 與限定範圍的金鑰，給應用用、當備份目的地，並接管或遷移既有 MinIO",
+      "epic": "database",
+      "milestone": "M4",
+      "blocked_by": [
+        "039",
+        "040",
+        "077",
+        "109"
+      ],
+      "requirements": [
+        "OBJ-001",
+        "OBJ-002",
+        "OBJ-003",
+        "OBJ-004",
+        "OBJ-005",
+        "OBJ-006",
+        "OBJ-007",
+        "OBJ-008"
+      ],
+      "acceptance_tests": [
+        "T-265",
+        "T-266",
+        "T-267"
+      ],
+      "status": "blocked",
+      "issue": 131
     }
   ]
 }
