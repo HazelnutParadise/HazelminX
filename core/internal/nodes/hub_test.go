@@ -5,6 +5,8 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/tls"
+	"encoding/json"
+	"errors"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -14,6 +16,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/coder/websocket"
+
+	"github.com/HazelnutParadise/hazelminx/core/internal/jobs"
 	"github.com/HazelnutParadise/hazelminx/core/internal/protocol"
 )
 
@@ -310,4 +315,123 @@ func TestThroughTLSTerminatingProxyIdentityRestsOnProofNotHeaders(t *testing.T) 
 	if len(conns) != 1 || conns[0].Transport != TransportProxied || conns[0].NodeID != victim.fp {
 		t.Fatalf("connections %+v", conns)
 	}
+}
+
+// A party in the middle (for example a TLS-terminating proxy) that relays
+// the handshake does not learn the session keys, so a frame it forges or
+// replays ends the session before anything in it is used.
+func TestForgedOrReplayedFrameEndsSession(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		frame func(a *fakeAgent, body []byte) []byte
+	}{
+		{"wrong key", func(a *fakeAgent, body []byte) []byte {
+			f, _ := protocol.SealFrame(make([]byte, 32), a.sendN+1, body)
+			return f
+		}},
+		{"replayed number", func(a *fakeAgent, body []byte) []byte {
+			f, _ := protocol.SealFrame(a.keys.Send, a.sendN, body) // already used
+			return f
+		}},
+		{"bare message without frame", func(_ *fakeAgent, body []byte) []byte { return body }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			core := startCore(t, HubOptions{})
+			a, n := connect(t, core, agentOpts{})
+			// One genuine frame first, so "replayed" has something to repeat.
+			a.write(t, protocol.Heartbeat{Type: protocol.TypeHeartbeat, At: time.Now().UTC().Truncate(time.Second)})
+			delivered := make(chan error, 1)
+			runner := NewStepRunner(core.hub)
+			job, step := testJob(n.fp)
+			go func() {
+				_, err := runner.Execute(context.Background(), job, step, &recorder{}, Action{Name: protocol.CapAgentInfo, Version: 1})
+				delivered <- err
+			}()
+			var exec *protocol.StepExecute
+			for exec == nil {
+				if m, ok := a.next(t, 2*time.Second).(*protocol.StepExecute); ok {
+					exec = m
+				}
+			}
+			forged, _ := json.Marshal(event(exec, 99, protocol.EventCompleted, map[string]string{"fingerprint": n.fp}))
+			a.writeFrame(t, tc.frame(a, forged))
+			waitFor(t, "session to close", func() bool { _, ok := core.hub.Session(n.fp); return !ok })
+			select {
+			case err := <-delivered:
+				if !errors.Is(err, jobs.ErrDisconnected) {
+					t.Fatalf("forged completion was accepted: %v", err)
+				}
+			case <-time.After(3 * time.Second):
+				t.Fatal("Execute did not return after the session closed")
+			}
+		})
+	}
+}
+
+// The auth proof covers both key-exchange keys: a proxy that replaces the
+// agent's kex (to read or forge frames) cannot produce a valid proof.
+func TestSwappedKexBreaksTheProof(t *testing.T) {
+	core := startCore(t, HubOptions{})
+	n := newTestNode(t, core.pki)
+	_, other, _ := protocol.NewKex()
+	a, err := dialAgent(t, core, core.url, n, agentOpts{signedKex: other})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a.reject == nil || a.reject.Code != protocol.RejectProofInvalid {
+		t.Fatalf("want PROOF_INVALID, got %+v", a.reject)
+	}
+}
+
+// Before the agent proves its identity the hub reads small messages only and
+// keeps only a short prefix of agent-supplied text.
+func TestUnauthenticatedClientCannotMakeTheHubHoldMuch(t *testing.T) {
+	core := startCore(t, HubOptions{})
+	n := newTestNode(t, core.pki)
+	a, err := dialAgent(t, core, core.url, n, agentOpts{agentVersion: strings.Repeat("v", 60<<10), badNonce: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a.reject == nil || a.reject.Code != protocol.RejectHandshakeMalformed {
+		t.Fatalf("want HANDSHAKE_MALFORMED, got %+v", a.reject)
+	}
+	_, rej := core.hub.Connections()
+	if len(rej) != 1 || len([]rune(rej[0].AgentVersion)) > maxRecordedText+1 {
+		t.Fatalf("recorded agent version is %d characters", len([]rune(rej[0].AgentVersion)))
+	}
+	// A hello over the handshake limit is not even read.
+	_, err = dialAgent(t, core, core.url, n, agentOpts{agentVersion: strings.Repeat("v", maxHandshakeBytes)})
+	if err == nil {
+		t.Fatal("oversized hello was answered")
+	}
+}
+
+func TestConcurrentHandshakesAreCapped(t *testing.T) {
+	core := startCore(t, HubOptions{})
+	c := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{RootCAs: coreCAPool(t, core.pki), ServerName: protocol.CoreServerName}}}
+	var conns []*websocket.Conn
+	defer func() {
+		for _, c := range conns {
+			c.CloseNow()
+		}
+	}()
+	for i := 0; i < maxHandshakes; i++ {
+		conn, _, err := websocket.Dial(context.Background(), core.url, &websocket.DialOptions{HTTPClient: c})
+		if err != nil {
+			t.Fatalf("handshake %d: %v", i, err)
+		}
+		conns = append(conns, conn) // never send hello: the slot stays taken
+	}
+	_, resp, err := websocket.Dial(context.Background(), core.url, &websocket.DialOptions{HTTPClient: c})
+	if err == nil || resp == nil || resp.StatusCode != http.StatusServiceUnavailable {
+		t.Fatalf("handshake over the cap: err=%v resp=%v", err, resp)
+	}
+	conns[0].CloseNow()
+	waitFor(t, "a slot to free up", func() bool {
+		conn, _, err := websocket.Dial(context.Background(), core.url, &websocket.DialOptions{HTTPClient: c})
+		if err == nil {
+			conns = append(conns, conn)
+		}
+		return err == nil
+	})
 }

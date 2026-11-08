@@ -30,6 +30,11 @@ type Session struct {
 	connectedAt     time.Time
 	lastSeen        atomic.Int64 // unix nanos
 
+	// keys authenticate every frame after ready; sendN and recvN count
+	// frames per direction (sendN is only touched by writeLoop).
+	keys         protocol.SessionKeys
+	sendN, recvN uint64
+
 	out       chan []byte
 	done      chan struct{}
 	closeOnce sync.Once
@@ -179,12 +184,22 @@ func (s *Session) run(ctx context.Context) {
 			s.hub.opts.Logger.Info("agent disconnected", "node", s.id.Fingerprint, "session", s.sessionID, "reason", reason)
 			return
 		}
-		s.touch()
 		if typ != websocket.MessageText {
-			s.protocolError(protocol.ErrorMalformed, "binary frames are not part of the protocol")
-			continue
+			s.securityClose("binary frame in an authenticated session")
+			return
 		}
-		msg, err := protocol.Decode(data)
+		// Every frame must carry the next sequence number and a valid MAC
+		// under this session's key; anything else (an injected, replayed or
+		// reordered frame, for example from a TLS-terminating proxy) ends
+		// the session before its content is looked at.
+		body, err := protocol.OpenFrame(s.keys.Recv, s.recvN+1, data)
+		if err != nil {
+			s.securityClose(err.Error())
+			return
+		}
+		s.recvN++
+		s.touch()
+		msg, err := protocol.Decode(body)
 		if err != nil {
 			// Never act on a message we cannot read exactly (NOD-011).
 			s.protocolError(protocol.ErrorCode(err), err.Error())
@@ -192,6 +207,11 @@ func (s *Session) run(ctx context.Context) {
 		}
 		s.handle(msg)
 	}
+}
+
+func (s *Session) securityClose(reason string) {
+	s.hub.opts.Logger.Warn("agent session closed: frame failed authentication", "node", s.id.Fingerprint, "session", s.sessionID, "reason", reason)
+	s.close(websocket.StatusPolicyViolation, "frame rejected")
 }
 
 func (s *Session) protocolError(code, message string) {
@@ -246,10 +266,16 @@ func (s *Session) deliver(requestID string, p *pending, v any) {
 func (s *Session) writeLoop(ctx context.Context) {
 	tick := time.NewTicker(s.hub.opts.Heartbeat)
 	defer tick.Stop()
-	write := func(b []byte) bool {
+	write := func(body []byte) bool {
+		s.sendN++
+		frame, err := protocol.SealFrame(s.keys.Send, s.sendN, body)
+		if err != nil {
+			s.close(websocket.StatusInternalError, "seal failed")
+			return false
+		}
 		wctx, cancel := context.WithTimeout(ctx, s.hub.opts.Heartbeat)
 		defer cancel()
-		if err := s.conn.Write(wctx, websocket.MessageText, b); err != nil {
+		if err := s.conn.Write(wctx, websocket.MessageText, frame); err != nil {
 			s.close(websocket.StatusGoingAway, "write failed")
 			return false
 		}

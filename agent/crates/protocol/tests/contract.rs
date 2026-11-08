@@ -135,6 +135,8 @@ fn sig_transcript(role: Role, sig: &Value) -> String {
         role,
         sig_str(sig, "agentNonce"),
         sig_str(sig, "coreNonce"),
+        sig_str(sig, "agentKex"),
+        sig_str(sig, "coreKex"),
         sig_protocol_version(sig),
         sig_str(sig, "nodeFingerprint"),
         sig_str(sig, "sessionId"),
@@ -573,4 +575,136 @@ fn supports_matches_by_name_among_several_capabilities() {
 #[test]
 fn supports_empty_capability_list_is_false() {
     assert!(!supports(&[], "jobs", 1));
+}
+
+// ---------- key exchange and frames ----------
+
+fn kex_secret(sig: &Value, key: &str) -> x25519_dalek::StaticSecret {
+    x25519_dalek::StaticSecret::from(sig_bytes32(sig, key))
+}
+
+#[test]
+fn derive_keys_matches_fixture_from_both_sides() {
+    let sig = signature();
+    let agent = kex_secret(&sig, "agentKexSeedHex");
+    let core = kex_secret(&sig, "coreKexSeedHex");
+    assert_eq!(
+        hazelminx_protocol::kex_public(&agent),
+        sig_str(&sig, "agentKex")
+    );
+    assert_eq!(
+        hazelminx_protocol::kex_public(&core),
+        sig_str(&sig, "coreKex")
+    );
+    let session = sig_str(&sig, "sessionId");
+    let a = hazelminx_protocol::derive_keys(Role::Agent, &agent, sig_str(&sig, "coreKex"), session)
+        .unwrap();
+    let c = hazelminx_protocol::derive_keys(Role::Core, &core, sig_str(&sig, "agentKex"), session)
+        .unwrap();
+    assert_eq!(hex::encode(c.send), sig_str(&sig, "keyCoreToAgentHex"));
+    assert_eq!(hex::encode(a.send), sig_str(&sig, "keyAgentToCoreHex"));
+    assert_eq!(a.recv, c.send);
+    assert_eq!(c.recv, a.send);
+    let other =
+        hazelminx_protocol::derive_keys(Role::Core, &core, sig_str(&sig, "agentKex"), "ses_other")
+            .unwrap();
+    assert_ne!(other.send, c.send, "keys must be bound to the session id");
+}
+
+#[test]
+fn derive_keys_rejects_bad_peer_keys() {
+    use base64::Engine;
+    let (secret, _) = hazelminx_protocol::new_kex();
+    let nopad = base64::engine::general_purpose::URL_SAFE_NO_PAD;
+    for (name, peer) in [
+        ("empty", String::new()),
+        ("short", nopad.encode([1u8; 31])),
+        (
+            "padded",
+            base64::engine::general_purpose::URL_SAFE.encode([1u8; 32]),
+        ),
+        ("low order", nopad.encode([0u8; 32])),
+        ("not base64", "!!!!".to_string()),
+    ] {
+        assert!(
+            hazelminx_protocol::derive_keys(Role::Agent, &secret, &peer, "ses_x").is_err(),
+            "{name} accepted"
+        );
+    }
+}
+
+#[test]
+fn frames_match_fixture_and_reject_tampering() {
+    let f = fixture_value("frames.json");
+    let key = |k: &str| -> [u8; 32] {
+        hex::decode(f[k].as_str().unwrap())
+            .unwrap()
+            .try_into()
+            .unwrap()
+    };
+    let c2a = key("keyCoreToAgentHex");
+    let a2c = key("keyAgentToCoreHex");
+    for (i, fr) in f["coreToAgent"].as_array().unwrap().iter().enumerate() {
+        let n = fr["n"].as_u64().unwrap();
+        let body = fr["body"].as_str().unwrap();
+        let sealed = hazelminx_protocol::seal_frame(&c2a, n, body);
+        let sv: Value = serde_json::from_str(&sealed).unwrap();
+        assert_eq!(&sv, fr, "frame {i} differs from fixture");
+        let opened = hazelminx_protocol::open_frame(&c2a, i as u64 + 1, &sealed).unwrap();
+        assert_eq!(opened, body);
+        decode(&opened).unwrap();
+    }
+    let good = serde_json::to_string(&f["agentToCore"][0]).unwrap();
+    hazelminx_protocol::open_frame(&a2c, 1, &good).unwrap();
+    let tamper = |edit: &dyn Fn(&mut Value)| {
+        let mut v: Value = serde_json::from_str(&good).unwrap();
+        edit(&mut v);
+        v.to_string()
+    };
+    let cases: Vec<(&str, [u8; 32], u64, String)> = vec![
+        ("wrong direction key", c2a, 1, good.clone()),
+        ("replayed", a2c, 2, good.clone()),
+        ("skipped", a2c, 0, good.clone()),
+        (
+            "changed body",
+            a2c,
+            1,
+            tamper(&|v| {
+                v["body"] = Value::from(r#"{"type":"heartbeat","at":"2026-11-08T03:04:06Z"}"#)
+            }),
+        ),
+        (
+            "changed mac",
+            a2c,
+            1,
+            tamper(&|v| v["mac"] = Value::from("AAAA")),
+        ),
+        ("extra field", a2c, 1, tamper(&|v| v["x"] = Value::from(1))),
+        (
+            "missing mac",
+            a2c,
+            1,
+            tamper(&|v| {
+                v.as_object_mut().unwrap().remove("mac");
+            }),
+        ),
+        ("not json", a2c, 1, "hello".to_string()),
+    ];
+    for (name, k, want, data) in cases {
+        assert!(
+            hazelminx_protocol::open_frame(&k, want, &data).is_err(),
+            "{name} accepted"
+        );
+    }
+}
+
+#[test]
+fn handshake_ignores_case_variant_keys() {
+    let text = read_fixture("handshake-lenient/hello_case_variant_key_is_ignored.json");
+    match decode_handshake(&text).unwrap() {
+        hazelminx_protocol::Handshake::Hello { nonce, .. } => {
+            assert_eq!(nonce, sig_str(&signature(), "agentNonce"))
+        }
+        other => panic!("{other:?}"),
+    }
 }

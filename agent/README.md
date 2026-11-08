@@ -51,9 +51,9 @@ proxy_ca_file = "/etc/hazelminx/proxy-ca.pem"  # 只在 proxy 模式使用；不
 
 連線與工作紀錄：
 
-- Agent 主動連 Core，握手交換協定版本與能力（`docs/contracts/README.md`）。斷線後以 1 秒起、上限 60 秒、帶隨機抖動的間隔重連；協定不相容、節點被撤銷或身分無效時等 10 分鐘，並在日誌寫出雙方的協定範圍。
+- Agent 主動連 Core，握手交換協定版本與能力（`docs/contracts/README.md`）。斷線後重連的等待時間在 0.1 秒到上限之間隨機取，上限從 2 秒起每次加倍、最多 60 秒，連線撐過一分鐘後歸零；協定不相容、節點被撤銷或身分無效時等 5 到 10 分鐘，並在日誌寫出雙方的協定範圍。握手後每則訊息都帶序號與 HMAC，收到驗不過的訊息就斷線。
 - 每個步驟開始前與結束後都先寫進 `state_dir/jobs/journal.jsonl` 並 fsync，再送給 Core。Core 確認過的序號記在 `state_dir/jobs/acked`；重連後重送未確認的事件。
-- 同一工作步驟已有完成或失敗紀錄時不重跑，直接重送那筆紀錄。Agent 重開機時正在跑的步驟記為中斷，不會被當成完成；只有 Core 對帳後送來、而且標記可重試的步驟才會再跑一次，否則回 `OUTCOME_UNKNOWN`。
+- 同一工作步驟已有完成或失敗紀錄時不重跑，直接重送那筆紀錄。寫不了紀錄時拒絕步驟（`JOURNAL_UNAVAILABLE`），步驟跑完卻寫不進結果時主動斷線，讓 Core 重連後對帳。結果超過 256 KiB 記為失敗 `RESULT_TOO_LARGE`。Agent 重開機時正在跑的步驟記為中斷，不會被當成完成；只有 Core 對帳後送來、而且標記可重試的步驟才會再跑一次，否則回 `OUTCOME_UNKNOWN`。
 - 別的節點、已過期、控制世代倒退、未宣告的動作、參數有多餘欄位的步驟一律拒絕，不執行。
 - 目前的動作：`agent.info`（唯讀）。`--features test-actions` 另外編入只供互通測試用的 `test.sleep`，正式建置沒有它。
 

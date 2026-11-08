@@ -202,6 +202,11 @@ type journalAgent struct {
 	started  map[int]bool
 	dropNext bool // close the session right after running, before reporting
 	conn     func()
+	// ignoreReconciles leaves this many reconciles unanswered (the step is
+	// "still running"); unknownOnce refuses the first execute with
+	// OUTCOME_UNKNOWN as an agent that restarted mid-step would.
+	ignoreReconciles int
+	unknownOnce      bool
 }
 
 func (j *journalAgent) handle(m any) []any {
@@ -211,6 +216,12 @@ func (j *journalAgent) handle(m any) []any {
 	case *protocol.StepExecute:
 		if ev, ok := j.done[s.Step]; ok {
 			return []any{ev}
+		}
+		if j.unknownOnce {
+			j.unknownOnce = false
+			j.started[s.Step] = true
+			return []any{&protocol.StepRejected{Type: protocol.TypeStepRejected, RequestID: s.RequestID, JobID: s.JobID, Step: s.Step,
+				Code: protocol.StepRejectOutcomeUnknown, Message: "began before a restart"}}
 		}
 		j.ran++
 		j.seq++
@@ -226,6 +237,10 @@ func (j *journalAgent) handle(m any) []any {
 		}
 		return []any{start, ev}
 	case *protocol.StepReconcile:
+		if j.ignoreReconciles > 0 {
+			j.ignoreReconciles--
+			return nil
+		}
 		_, done := j.done[s.Step]
 		return []any{&protocol.ReconcileReport{Type: protocol.TypeReconcileReport, RequestID: s.RequestID, JobID: s.JobID, Step: s.Step,
 			Started: j.started[s.Step], Completed: done}}
@@ -302,4 +317,103 @@ func waitState(e *jobs.Engine, id string, st jobs.State) (*jobs.Job, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	return e.Wait(ctx, id, func(j *jobs.Job) bool { return j.State == st })
+}
+
+// inspectEnv is an engine with node.inspect wired to a hub and reconciler
+// that ask quickly, for the reconcile tests below.
+func inspectEnv(t *testing.T) (*jobs.Engine, *testCore) {
+	t.Helper()
+	engine := newEngine(t)
+	var rc *Reconciler
+	core := startCore(t, HubOptions{OnReady: func(s *Session, inFlight []string) { rc.OnReady(s, inFlight) }})
+	runner := NewStepRunner(core.hub)
+	runner.ReconcileTimeout = 100 * time.Millisecond
+	rc = &Reconciler{Engine: engine, Runner: runner, Interval: 100 * time.Millisecond, Logger: slog.New(slog.NewTextHandler(io.Discard, nil))}
+	if err := engine.Register(&InspectHandler{Runner: runner}); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	engine.Start(ctx)
+	t.Cleanup(engine.Stop)
+	return engine, core
+}
+
+// An agent still running the step answers a reconcile only when the step
+// ends. The reconciler keeps asking while the session lives, so the job
+// settles without waiting for another reconnect.
+func TestReconcilerKeepsAskingWhileStepStillRuns(t *testing.T) {
+	engine, core := inspectEnv(t)
+	n := newTestNode(t, core.pki)
+	ja := &journalAgent{fp: n.fp, done: map[int]*protocol.Event{}, started: map[int]bool{}, dropNext: true}
+	first, err := dialAgent(t, core, core.url, n, agentOpts{})
+	if err != nil || first.ready == nil {
+		t.Fatalf("%v %+v", err, first)
+	}
+	ja.conn = func() { time.Sleep(20 * time.Millisecond); first.conn.CloseNow() }
+	first.serve(t, ja.handle)
+	job, _, err := engine.Submit(context.Background(), jobs.SubmitRequest{RequestID: "req-slow", Kind: KindNodeInspect, Node: n.fp})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if j, err := waitState(engine, job.ID, jobs.StateUnknown); err != nil {
+		t.Fatalf("not unknown: %v (%s)", err, j.State)
+	}
+	ja.mu.Lock()
+	ja.ignoreReconciles = 3
+	ja.mu.Unlock()
+	second, err := dialAgent(t, core, core.url, n, agentOpts{})
+	if err != nil || second.ready == nil {
+		t.Fatalf("reconnect: %v %+v", err, second)
+	}
+	second.serve(t, ja.handle)
+	if j, err := waitState(engine, job.ID, jobs.StateSucceeded); err != nil {
+		t.Fatalf("did not settle while the session lived: %v (%s: %s)", err, j.State, j.StateReason)
+	}
+	ja.mu.Lock()
+	defer ja.mu.Unlock()
+	if ja.ran != 1 || ja.ignoreReconciles != 0 {
+		t.Fatalf("ran %d times, %d reconciles left unanswered", ja.ran, ja.ignoreReconciles)
+	}
+}
+
+// A job can turn unknown during a live session: the agent refuses a step
+// whose earlier attempt it began before a restart. The next pass reconciles
+// it; the step is retryable, so it runs again and the job succeeds.
+func TestJobThatTurnsUnknownDuringASessionIsReconciled(t *testing.T) {
+	engine, core := inspectEnv(t)
+	n := newTestNode(t, core.pki)
+	ja := &journalAgent{fp: n.fp, done: map[int]*protocol.Event{}, started: map[int]bool{}, unknownOnce: true}
+	a, err := dialAgent(t, core, core.url, n, agentOpts{})
+	if err != nil || a.ready == nil {
+		t.Fatalf("%v %+v", err, a)
+	}
+	a.serve(t, ja.handle)
+	job, _, err := engine.Submit(context.Background(), jobs.SubmitRequest{RequestID: "req-unknown", Kind: KindNodeInspect, Node: n.fp})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if j, err := waitState(engine, job.ID, jobs.StateSucceeded); err != nil {
+		t.Fatalf("job stuck: %v (%s: %s)", err, j.State, j.StateReason)
+	}
+	if _, ok := core.hub.Session(n.fp); !ok {
+		t.Fatal("settling needed a reconnect")
+	}
+}
+
+func TestRunnerJournalUnavailableIsRetryable(t *testing.T) {
+	core := startCore(t, HubOptions{})
+	a, n := connect(t, core, agentOpts{})
+	a.serve(t, func(m any) []any {
+		if s, ok := m.(*protocol.StepExecute); ok {
+			return []any{&protocol.StepRejected{Type: protocol.TypeStepRejected, RequestID: s.RequestID, JobID: s.JobID, Step: s.Step, Code: protocol.StepRejectJournalUnavailable, Message: "disk full"}}
+		}
+		return nil
+	})
+	job, step := testJob(n.fp)
+	_, err := NewStepRunner(core.hub).Execute(context.Background(), job, step, &recorder{}, Action{Name: protocol.CapAgentInfo, Version: 1})
+	var se *jobs.StepError
+	if !errors.As(err, &se) || se.Code != protocol.StepRejectJournalUnavailable || !se.Retryable {
+		t.Fatalf("got %v", err)
+	}
 }

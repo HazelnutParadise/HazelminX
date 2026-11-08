@@ -46,6 +46,10 @@ pub struct Shared {
     outbox: Mutex<Vec<Message>>,
     /// step_reconcile requests waiting for a running step to finish.
     deferred: Mutex<Vec<Message>>,
+    /// Set when a step outcome could not be journaled: the session is ended
+    /// so the Core reconciles instead of waiting for an event that will
+    /// never come.
+    broken: std::sync::atomic::AtomicBool,
     facts: AgentFacts,
     identity: Identity,
 }
@@ -61,6 +65,7 @@ impl Shared {
             changed: Notify::new(),
             outbox: Mutex::new(Vec::new()),
             deferred: Mutex::new(Vec::new()),
+            broken: std::sync::atomic::AtomicBool::new(false),
             facts,
             identity,
         })
@@ -94,7 +99,7 @@ pub struct Backoff {
 }
 
 impl Backoff {
-    pub const BASE: Duration = Duration::from_secs(1);
+    pub const BASE: Duration = Duration::from_secs(2);
     pub const CAP: Duration = Duration::from_secs(60);
     pub const OPERATOR: Duration = Duration::from_secs(600);
     pub const STABLE: Duration = Duration::from_secs(60);
@@ -111,9 +116,15 @@ impl Backoff {
             exp.min(Self::CAP)
         };
         self.failures = self.failures.saturating_add(1);
-        // Between half and the whole ceiling, so many agents restarted at
-        // once do not reconnect in lockstep.
-        ceiling.mul_f64(0.5 + 0.5 * jitter.clamp(0.0, 1.0))
+        let jitter = jitter.clamp(0.0, 1.0);
+        if needs_operator {
+            // Waiting for a person: at least half of the long delay.
+            return ceiling.mul_f64(0.5 + 0.5 * jitter);
+        }
+        // Anywhere up to the ceiling, so agents dropped by the same Core
+        // restart spread their reconnects over the whole window instead of
+        // arriving together.
+        ceiling.mul_f64(jitter).max(Duration::from_millis(100))
     }
 }
 
@@ -198,7 +209,7 @@ async fn connect_and_serve(opts: &Options, shared: &Arc<Shared>) -> End {
         Err(HandshakeError::Other(e)) => return lost(e),
     };
     info!(session = %ready.session_id, protocol = ready.protocol_version, core_version = %ready.core_version, "connected to core");
-    let err = serve(ws, shared, ready.heartbeat).await;
+    let err = serve(ws, shared, ready.keys, ready.heartbeat).await;
     End::Lost {
         error: err,
         lived: started.elapsed(),
@@ -264,6 +275,7 @@ impl From<anyhow::Error> for HandshakeError {
 }
 
 struct Ready {
+    keys: proto::SessionKeys,
     session_id: String,
     protocol_version: u32,
     core_version: String,
@@ -277,48 +289,52 @@ async fn handshake(
 ) -> std::result::Result<Ready, HandshakeError> {
     let deadline = Duration::from_secs(10);
     let agent_nonce = proto::new_nonce();
+    let (kex_secret, agent_kex) = proto::new_kex();
     let hello = Handshake::Hello {
         protocol: proto::supported_range(),
         agent_version: shared.facts.agent_version.clone(),
         node_certificate: material.node_cert_pem.clone(),
         nonce: agent_nonce.clone(),
+        kex: agent_kex.clone(),
         capabilities: actions::capabilities(),
     };
     send(ws, &hello).await?;
     let welcome = recv_handshake(ws, deadline).await?;
-    let (version, core_version, core_cert, core_nonce, session_id, proof, heartbeat) = match welcome
-    {
-        Handshake::Welcome {
-            protocol_version,
-            core_version,
-            core_certificate,
-            nonce,
-            session_id,
-            proof,
-            heartbeat_seconds,
-            capabilities: _,
-        } => (
-            protocol_version,
-            core_version,
-            core_certificate,
-            nonce,
-            session_id,
-            proof,
-            heartbeat_seconds,
-        ),
-        Handshake::Reject {
-            code,
-            message,
-            supported,
-        } => {
-            return Err(HandshakeError::Refused {
+    let (version, core_version, core_cert, core_nonce, core_kex, session_id, proof, heartbeat) =
+        match welcome {
+            Handshake::Welcome {
+                protocol_version,
+                core_version,
+                core_certificate,
+                nonce,
+                kex,
+                session_id,
+                proof,
+                heartbeat_seconds,
+                capabilities: _,
+            } => (
+                protocol_version,
+                core_version,
+                core_certificate,
+                nonce,
+                kex,
+                session_id,
+                proof,
+                heartbeat_seconds,
+            ),
+            Handshake::Reject {
                 code,
                 message,
                 supported,
-            });
-        }
-        other => return Err(anyhow!("expected welcome, got {other:?}").into()),
-    };
+            } => {
+                return Err(HandshakeError::Refused {
+                    code,
+                    message,
+                    supported,
+                });
+            }
+            other => return Err(anyhow!("expected welcome, got {other:?}").into()),
+        };
     let ours = proto::supported_range();
     if version < ours.min || version > ours.max {
         return Err(anyhow!(
@@ -336,6 +352,8 @@ async fn handshake(
         Role::Core,
         &agent_nonce,
         &core_nonce,
+        &agent_kex,
+        &core_kex,
         version,
         &fp,
         &session_id,
@@ -346,10 +364,14 @@ async fn handshake(
     material
         .verify_core(&core_cert, core_t.as_bytes(), &proof)
         .context("core identity check failed; not continuing")?;
+    let keys = proto::derive_keys(Role::Agent, &kex_secret, &core_kex, &session_id)
+        .map_err(|e| anyhow!("welcome kex: {e}"))?;
     let agent_t = proto::transcript(
         Role::Agent,
         &agent_nonce,
         &core_nonce,
+        &agent_kex,
+        &core_kex,
         version,
         &fp,
         &session_id,
@@ -381,6 +403,7 @@ async fn handshake(
         other => return Err(anyhow!("expected ready, got {other:?}").into()),
     }
     Ok(Ready {
+        keys,
         session_id,
         protocol_version: version,
         core_version,
@@ -388,6 +411,7 @@ async fn handshake(
     })
 }
 
+/// Sends a handshake message (before ready, nothing is framed yet).
 async fn send<T: serde::Serialize>(ws: &mut Ws, msg: &T) -> Result<()> {
     ws.send(tungstenite::Message::text(proto::encode(msg)))
         .await
@@ -415,8 +439,44 @@ async fn recv_handshake(ws: &mut Ws, within: Duration) -> Result<Handshake> {
     proto::decode_handshake(&text).map_err(|e| anyhow!("core handshake message: {e}"))
 }
 
+/// The authenticated message stream of one session: every frame carries
+/// the next number for its direction and a MAC under that direction's key.
+struct Channel {
+    keys: proto::SessionKeys,
+    send_n: u64,
+    recv_n: u64,
+}
+
+impl Channel {
+    async fn send(&mut self, ws: &mut Ws, msg: &Message) -> Result<()> {
+        self.send_n += 1;
+        let frame = proto::seal_frame(&self.keys.send, self.send_n, &proto::encode(msg));
+        ws.send(tungstenite::Message::text(frame))
+            .await
+            .context("send to core")
+    }
+
+    /// Authenticates a frame from the core; any failure ends the session.
+    fn open(&mut self, frame: &str) -> Result<String> {
+        let body = proto::open_frame(&self.keys.recv, self.recv_n + 1, frame)
+            .map_err(|e| anyhow!("{e}; closing the session"))?;
+        self.recv_n += 1;
+        Ok(body)
+    }
+}
+
 /// Serves one ready session until it ends; returns why.
-async fn serve(mut ws: Ws, shared: &Arc<Shared>, heartbeat: Duration) -> anyhow::Error {
+async fn serve(
+    mut ws: Ws,
+    shared: &Arc<Shared>,
+    keys: proto::SessionKeys,
+    heartbeat: Duration,
+) -> anyhow::Error {
+    let mut ch = Channel {
+        keys,
+        send_n: 0,
+        recv_n: 0,
+    };
     // Replay every event the Core has not acknowledged, then follow the journal.
     let mut sent_up_to = shared.steps.lock().unwrap().journal().acked();
     let mut tick = tokio::time::interval(heartbeat);
@@ -428,7 +488,10 @@ async fn serve(mut ws: Ws, shared: &Arc<Shared>, heartbeat: Duration) -> anyhow:
         tokio::select! {
             biased;
             _ = shared.changed.notified() => {
-                if let Err(e) = flush(&mut ws, shared, &mut sent_up_to).await {
+                if shared.broken.swap(false, std::sync::atomic::Ordering::SeqCst) {
+                    return anyhow!("a step outcome could not be journaled; reconnecting so the core reconciles");
+                }
+                if let Err(e) = flush(&mut ws, &mut ch, shared, &mut sent_up_to).await {
                     return e;
                 }
             }
@@ -436,29 +499,28 @@ async fn serve(mut ws: Ws, shared: &Arc<Shared>, heartbeat: Duration) -> anyhow:
                 if last_rx.elapsed() > idle {
                     return anyhow!("no message from core for three heartbeat intervals");
                 }
-                let hb = Message::Heartbeat { at: now_secs() };
-                if let Err(e) = send(&mut ws, &hb).await {
+                if let Err(e) = ch.send(&mut ws, &Message::Heartbeat { at: now_secs() }).await {
                     return e;
                 }
             }
             next = ws.next() => {
-                let text = match next {
+                let frame = match next {
                     None => return anyhow!("core closed the connection"),
                     Some(Err(e)) => return anyhow!(e).context("read from core"),
                     Some(Ok(tungstenite::Message::Text(t))) => t.as_str().to_string(),
                     Some(Ok(tungstenite::Message::Close(f))) => return anyhow!("core closed the connection: {f:?}"),
-                    Some(Ok(tungstenite::Message::Binary(_))) => {
-                        last_rx = tokio::time::Instant::now();
-                        let _ = send(&mut ws, &Message::ProtocolError { code: proto::protocol_error_code::MALFORMED.into(), message: "binary frames are not part of the protocol".into() }).await;
-                        continue;
-                    }
+                    Some(Ok(tungstenite::Message::Binary(_))) => return anyhow!("binary frame in an authenticated session; closing it"),
                     Some(Ok(_)) => { last_rx = tokio::time::Instant::now(); continue; }
+                };
+                let text = match ch.open(&frame) {
+                    Ok(t) => t,
+                    Err(e) => return e,
                 };
                 last_rx = tokio::time::Instant::now();
                 match proto::decode(&text) {
                     Ok(msg) => {
                         for out in handle(shared, msg) {
-                            if let Err(e) = send(&mut ws, &out).await {
+                            if let Err(e) = ch.send(&mut ws, &out).await {
                                 return e;
                             }
                         }
@@ -467,7 +529,7 @@ async fn serve(mut ws: Ws, shared: &Arc<Shared>, heartbeat: Duration) -> anyhow:
                         // Never act on a message we cannot read exactly (NOD-011).
                         warn!(error = %e, "core sent an unreadable message; ignoring it");
                         let pe = Message::ProtocolError { code: e.protocol_error_code().into(), message: e.to_string() };
-                        if let Err(e) = send(&mut ws, &pe).await {
+                        if let Err(e) = ch.send(&mut ws, &pe).await {
                             return e;
                         }
                     }
@@ -478,7 +540,12 @@ async fn serve(mut ws: Ws, shared: &Arc<Shared>, heartbeat: Duration) -> anyhow:
 }
 
 /// Sends journal records after `sent_up_to` and queued answers.
-async fn flush(ws: &mut Ws, shared: &Arc<Shared>, sent_up_to: &mut u64) -> Result<()> {
+async fn flush(
+    ws: &mut Ws,
+    ch: &mut Channel,
+    shared: &Arc<Shared>,
+    sent_up_to: &mut u64,
+) -> Result<()> {
     let (records, outbox) = {
         let steps = shared.steps.lock().unwrap();
         let recs: Vec<_> = steps
@@ -490,11 +557,11 @@ async fn flush(ws: &mut Ws, shared: &Arc<Shared>, sent_up_to: &mut u64) -> Resul
         (recs, std::mem::take(&mut *shared.outbox.lock().unwrap()))
     };
     for r in records {
-        send(ws, &r.to_message()).await?;
+        ch.send(ws, &r.to_message()).await?;
         *sent_up_to = r.seq;
     }
     for m in outbox {
-        send(ws, &m).await?;
+        ch.send(ws, &m).await?;
     }
     Ok(())
 }
@@ -526,14 +593,35 @@ fn handle(shared: &Arc<Shared>, msg: Message) -> Vec<Message> {
                 }
                 Err(e) => {
                     error!(error = %format!("{e:#}"), "cannot journal the step; refusing it");
-                    vec![]
+                    match &msg {
+                        Message::StepExecute {
+                            request_id,
+                            job_id,
+                            step,
+                            ..
+                        } => vec![Message::StepRejected {
+                            request_id: request_id.clone(),
+                            job_id: job_id.clone(),
+                            step: *step,
+                            code: proto::step_reject_code::JOURNAL_UNAVAILABLE.into(),
+                            message: "the agent cannot write its step journal, so it runs nothing; nothing was started".into(),
+                            supported: None,
+                        }],
+                        _ => vec![],
+                    }
                 }
             }
         }
         Message::StepReconcile { .. } => match shared.steps.lock().unwrap().reconcile(&msg) {
             Ok(ReconcileAnswer::Now(m)) => vec![m],
             Ok(ReconcileAnswer::WhenFinished) => {
-                shared.deferred.lock().unwrap().push(msg.clone());
+                // Keep one waiting request per step: the newest one is the
+                // one the Core is still waiting on.
+                let mut deferred = shared.deferred.lock().unwrap();
+                if let Message::StepReconcile { job_id, step, .. } = &msg {
+                    deferred.retain(|m| !matches!(m, Message::StepReconcile { job_id: j, step: s, .. } if j == job_id && s == step));
+                }
+                deferred.push(msg.clone());
                 vec![]
             }
             Err(e) => {
@@ -555,7 +643,9 @@ fn handle(shared: &Arc<Shared>, msg: Message) -> Vec<Message> {
 fn spawn_action(shared: Arc<Shared>, ticket: RunTicket) {
     tokio::spawn(async move {
         debug!(job = %ticket.job_id, step = ticket.step, action = %ticket.action, "running step");
-        let outcome = actions::run(&shared.facts, &ticket.action, &ticket.params).await;
+        let outcome = actions::run(&shared.facts, &ticket.action, &ticket.params)
+            .await
+            .and_then(limit_result);
         let mut answers = Vec::new();
         {
             let mut steps = shared.steps.lock().unwrap();
@@ -563,6 +653,9 @@ fn spawn_action(shared: Arc<Shared>, ticket: RunTicket) {
                 // The step ran but its outcome is not durable: it will be
                 // reported as interrupted, never as done.
                 error!(job = %ticket.job_id, step = ticket.step, error = %format!("{e:#}"), "cannot journal step outcome");
+                shared
+                    .broken
+                    .store(true, std::sync::atomic::Ordering::SeqCst);
             }
             let mut deferred = shared.deferred.lock().unwrap();
             let mut keep = Vec::new();
@@ -583,6 +676,27 @@ fn spawn_action(shared: Arc<Shared>, ticket: RunTicket) {
     });
 }
 
+/// Largest step result the agent reports. Bigger results would not fit in
+/// one Core message once framed, and a stuck event would block every later
+/// one, so they become a known failure instead.
+pub const MAX_RESULT_BYTES: usize = 256 << 10;
+
+fn limit_result(
+    v: serde_json::Value,
+) -> std::result::Result<serde_json::Value, proto::StepFailure> {
+    let size = serde_json::to_vec(&v)
+        .map(|b| b.len())
+        .unwrap_or(usize::MAX);
+    if size > MAX_RESULT_BYTES {
+        return Err(proto::StepFailure {
+            code: "RESULT_TOO_LARGE".into(),
+            summary: format!("the step result is {size} bytes; the limit is {MAX_RESULT_BYTES}"),
+            retryable: false,
+        });
+    }
+    Ok(v)
+}
+
 fn now_secs() -> OffsetDateTime {
     let now = OffsetDateTime::now_utc();
     now.replace_nanosecond(0).unwrap_or(now)
@@ -593,23 +707,38 @@ mod tests {
     use super::*;
 
     #[test]
-    fn backoff_grows_to_cap_with_jitter_and_resets_after_stable_session() {
+    fn backoff_grows_to_cap_with_full_jitter_and_resets_after_stable_session() {
         let mut b = Backoff::default();
         let d: Vec<_> = (0..10)
             .map(|_| b.next(Duration::ZERO, false, 0.999_999))
             .collect();
-        assert!(d[0] <= Duration::from_secs(1));
+        assert!(d[0] <= Backoff::BASE);
         assert!(d[1] > d[0] && d[2] > d[1]);
         assert!(d.iter().all(|x| *x <= Backoff::CAP));
         assert!(d[9] > Duration::from_secs(59));
-        // Minimum jitter halves the delay but never below half.
+        // Full jitter: the delay may be anywhere from 100 ms to the ceiling.
         let mut b2 = Backoff::default();
+        assert_eq!(
+            b2.next(Duration::ZERO, false, 0.0),
+            Duration::from_millis(100)
+        );
+        let mut b3 = Backoff::default();
         for _ in 0..8 {
-            b2.next(Duration::ZERO, false, 0.0);
+            b3.next(Duration::ZERO, false, 0.5);
         }
-        assert_eq!(b2.next(Duration::ZERO, false, 0.0), Backoff::CAP / 2);
+        assert_eq!(b3.next(Duration::ZERO, false, 0.5), Backoff::CAP / 2);
         // A session that stayed up resets the ladder.
-        assert!(b.next(Backoff::STABLE, false, 0.999_999) <= Duration::from_secs(1));
+        assert!(b.next(Backoff::STABLE, false, 0.999_999) <= Backoff::BASE);
+    }
+
+    #[test]
+    fn oversized_results_become_a_known_failure() {
+        let small = serde_json::json!({"ok": true});
+        assert_eq!(limit_result(small.clone()).unwrap(), small);
+        let big = serde_json::Value::String("x".repeat(MAX_RESULT_BYTES));
+        let err = limit_result(big).unwrap_err();
+        assert_eq!(err.code, "RESULT_TOO_LARGE");
+        assert!(!err.retryable);
     }
 
     #[test]

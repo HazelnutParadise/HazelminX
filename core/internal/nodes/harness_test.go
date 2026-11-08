@@ -155,6 +155,13 @@ type agentOpts struct {
 	signer ed25519.PrivateKey
 	// authProof, when set, is sent as the auth proof verbatim (replay).
 	authProof []byte
+	// agentVersion overrides the hello agentVersion; badNonce sends an
+	// invalid nonce.
+	agentVersion string
+	badNonce     bool
+	// signedKex, when set, is the agent kex the auth proof claims while
+	// hello carried the real one (a proxy swapping keys).
+	signedKex string
 	// protocol overrides the hello range.
 	protocol *protocol.Range
 	caps     []protocol.Capability
@@ -175,6 +182,11 @@ type fakeAgent struct {
 	sessionID string
 	// proof is the auth proof this agent sent.
 	proof []byte
+	// keys and counters of the authenticated session (after ready).
+	keys  protocol.SessionKeys
+	wmu   sync.Mutex
+	sendN uint64
+	recvN uint64
 }
 
 func coreCAPool(t *testing.T, p *PKI) *x509.CertPool {
@@ -224,7 +236,19 @@ func dialAgent(t *testing.T, core *testCore, url string, n testNode, o agentOpts
 	if caps == nil {
 		caps = []protocol.Capability{{Name: protocol.CapJobs, Version: 1}, {Name: protocol.CapAgentInfo, Version: 1}}
 	}
-	a.write(t, protocol.Hello{Type: protocol.TypeHello, Protocol: r, AgentVersion: "fake-1", NodeCertificate: string(cert), Nonce: nonce, Capabilities: caps})
+	kexKey, kex, err := protocol.NewKex()
+	if err != nil {
+		t.Fatal(err)
+	}
+	version := "fake-1"
+	if o.agentVersion != "" {
+		version = o.agentVersion
+	}
+	helloNonce := nonce
+	if o.badNonce {
+		helloNonce = "short"
+	}
+	a.writeHandshake(t, protocol.Hello{Type: protocol.TypeHello, Protocol: r, AgentVersion: version, NodeCertificate: string(cert), Nonce: helloNonce, Kex: kex, Capabilities: caps})
 	msg, err := a.readHandshake(ctx)
 	if err != nil {
 		return a, err
@@ -240,19 +264,26 @@ func dialAgent(t *testing.T, core *testCore, url string, n testNode, o agentOpts
 	}
 	// Verify the core like the real agent does: certificate chain, usage,
 	// name, and proof over the core transcript.
-	if err := verifyCoreForTest(core.pki, a.welcome, nonce, n.fp); err != nil {
+	if err := verifyCoreForTest(core.pki, a.welcome, nonce, kex, n.fp); err != nil {
 		return a, err
+	}
+	if a.keys, err = protocol.DeriveKeys(protocol.RoleAgent, kexKey, a.welcome.Kex, a.welcome.SessionID); err != nil {
+		return a, err
+	}
+	signedKex := kex
+	if o.signedKex != "" {
+		signedKex = o.signedKex
 	}
 	signer := n.key
 	if o.signer != nil {
 		signer = o.signer
 	}
-	proof := ed25519.Sign(signer, protocol.Transcript(protocol.RoleAgent, nonce, a.welcome.Nonce, a.welcome.ProtocolVersion, n.fp, a.welcome.SessionID))
+	proof := ed25519.Sign(signer, protocol.Transcript(protocol.RoleAgent, nonce, a.welcome.Nonce, signedKex, a.welcome.Kex, a.welcome.ProtocolVersion, n.fp, a.welcome.SessionID))
 	if o.authProof != nil {
 		proof = o.authProof
 	}
 	a.proof = proof
-	a.write(t, protocol.Auth{Type: protocol.TypeAuth, Proof: base64.StdEncoding.EncodeToString(proof)})
+	a.writeHandshake(t, protocol.Auth{Type: protocol.TypeAuth, Proof: base64.StdEncoding.EncodeToString(proof)})
 	msg, err = a.readHandshake(ctx)
 	if err != nil {
 		return a, err
@@ -269,7 +300,7 @@ func dialAgent(t *testing.T, core *testCore, url string, n testNode, o agentOpts
 	return a, nil
 }
 
-func verifyCoreForTest(p *PKI, w *protocol.Welcome, agentNonce, fp string) error {
+func verifyCoreForTest(p *PKI, w *protocol.Welcome, agentNonce, agentKex, fp string) error {
 	block, _ := pem.Decode([]byte(w.CoreCertificate))
 	if block == nil {
 		return errors.New("core certificate PEM")
@@ -287,12 +318,22 @@ func verifyCoreForTest(p *PKI, w *protocol.Welcome, agentNonce, fp string) error
 	if err != nil {
 		return err
 	}
-	if !ed25519.Verify(c.PublicKey.(ed25519.PublicKey), protocol.Transcript(protocol.RoleCore, agentNonce, w.Nonce, w.ProtocolVersion, fp, w.SessionID), sig) {
+	if !ed25519.Verify(c.PublicKey.(ed25519.PublicKey), protocol.Transcript(protocol.RoleCore, agentNonce, w.Nonce, agentKex, w.Kex, w.ProtocolVersion, fp, w.SessionID), sig) {
 		return errors.New("core proof does not verify")
 	}
 	return nil
 }
 
+func (a *fakeAgent) writeHandshake(t *testing.T, msg any) {
+	t.Helper()
+	b, err := json.Marshal(msg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.writeFrame(t, b)
+}
+
+// write sends a session message in the next authenticated frame.
 func (a *fakeAgent) write(t *testing.T, msg any) {
 	t.Helper()
 	b, err := json.Marshal(msg)
@@ -302,13 +343,49 @@ func (a *fakeAgent) write(t *testing.T, msg any) {
 	a.writeRaw(t, b)
 }
 
-func (a *fakeAgent) writeRaw(t *testing.T, b []byte) {
+// writeRaw seals body (any bytes) in the next authenticated frame.
+func (a *fakeAgent) writeRaw(t *testing.T, body []byte) {
+	t.Helper()
+	if err := a.sendBody(body); err != nil {
+		t.Fatalf("agent write: %v", err)
+	}
+}
+
+func (a *fakeAgent) sendBody(body []byte) error {
+	a.wmu.Lock()
+	defer a.wmu.Unlock()
+	a.sendN++
+	frame, err := protocol.SealFrame(a.keys.Send, a.sendN, body)
+	if err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	return a.conn.Write(ctx, websocket.MessageText, frame)
+}
+
+// writeFrame sends bytes as they are (handshake messages, forged frames).
+func (a *fakeAgent) writeFrame(t *testing.T, b []byte) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	if err := a.conn.Write(ctx, websocket.MessageText, b); err != nil {
 		t.Fatalf("agent write: %v", err)
 	}
+}
+
+// readBody reads and authenticates the next frame from the core.
+func (a *fakeAgent) readBody(ctx context.Context) ([]byte, error) {
+	_, b, err := a.conn.Read(ctx)
+	if err != nil {
+		return nil, err
+	}
+	body, err := protocol.OpenFrame(a.keys.Recv, a.recvN+1, b)
+	if err != nil {
+		return nil, err
+	}
+	a.recvN++
+	return body, nil
 }
 
 func (a *fakeAgent) readHandshake(ctx context.Context) (any, error) {
@@ -325,7 +402,7 @@ func (a *fakeAgent) next(t *testing.T, within time.Duration) any {
 	ctx, cancel := context.WithTimeout(context.Background(), within)
 	defer cancel()
 	for {
-		_, b, err := a.conn.Read(ctx)
+		b, err := a.readBody(ctx)
 		if err != nil {
 			t.Fatalf("agent read: %v", err)
 		}
@@ -346,7 +423,7 @@ func (a *fakeAgent) next(t *testing.T, within time.Duration) any {
 func (a *fakeAgent) serve(t *testing.T, fn func(any) []any) {
 	go func() {
 		for {
-			_, b, err := a.conn.Read(context.Background())
+			b, err := a.readBody(context.Background())
 			if err != nil {
 				return
 			}
@@ -356,12 +433,12 @@ func (a *fakeAgent) serve(t *testing.T, fn func(any) []any) {
 			}
 			if _, ok := m.(*protocol.Heartbeat); ok {
 				b, _ := json.Marshal(protocol.Heartbeat{Type: protocol.TypeHeartbeat, At: time.Now().UTC().Truncate(time.Second)})
-				_ = a.conn.Write(context.Background(), websocket.MessageText, b)
+				_ = a.sendBody(b)
 				continue
 			}
 			for _, out := range fn(m) {
 				b, _ := json.Marshal(out)
-				if a.conn.Write(context.Background(), websocket.MessageText, b) != nil {
+				if a.sendBody(b) != nil {
 					return
 				}
 			}

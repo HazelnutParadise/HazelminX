@@ -118,7 +118,8 @@ func newInteropEnv(t *testing.T, hub HubOptions) *interopEnv {
 	hub.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	e.core = startCore(t, hub)
 	runner := NewStepRunner(e.core.hub)
-	reconciler = &Reconciler{Engine: e.engine, Runner: runner, Logger: hub.Logger}
+	runner.ReconcileTimeout = 500 * time.Millisecond
+	reconciler = &Reconciler{Engine: e.engine, Runner: runner, Logger: hub.Logger, Interval: 500 * time.Millisecond}
 	e.sleep = &sleepHandler{runner: runner, millis: 1500, counterFile: filepath.Join(t.TempDir(), "runs")}
 	for _, h := range []jobs.Handler{&InspectHandler{Runner: runner}, e.sleep} {
 		if err := e.engine.Register(h); err != nil {
@@ -444,6 +445,79 @@ func proxyCertificates(t *testing.T) ([]byte, tls.Certificate) {
 		t.Fatal(err)
 	}
 	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: caDER}), tls.Certificate{Certificate: [][]byte{der}, PrivateKey: key}
+}
+
+// The connection drops while a 4-second step runs and comes back before
+// the step ends. The agent answers the reconcile only when the step
+// finishes; the core keeps asking while the session lives, so the job
+// settles without another reconnect, and the step ran once.
+func TestInteropStepStillRunningAtReconnectSettlesInSession(t *testing.T) {
+	e := newInteropEnv(t, HubOptions{})
+	e.sleep.millis = 4000
+	e.start(e.url("127.0.0.1"), "")
+	s := e.waitSession(15 * time.Second)
+	job := e.submit(kindTestSleep, "sleep-long")
+	e.waitRuns(1)
+	s.close(1001, "test: network drop")
+	e.waitJob(job.ID, 10*time.Second, jobs.StateUnknown)
+	j := e.waitJob(job.ID, 30*time.Second, jobs.StateSucceeded, jobs.StateNeedsAttention, jobs.StateFailed)
+	if j.State != jobs.StateSucceeded || e.sleep.runs(t) != 1 {
+		t.Fatalf("got %s (%s) after %d runs", j.State, j.StateReason, e.sleep.runs(t))
+	}
+}
+
+// The agent cannot write its journal (here: the file is read-only). It
+// refuses the step with JOURNAL_UNAVAILABLE instead of staying silent, so
+// the job ends as a known failure and nothing ran.
+func TestInteropUnwritableJournalRefusesTheStep(t *testing.T) {
+	e := newInteropEnv(t, HubOptions{})
+	e.start(e.url("127.0.0.1"), "")
+	e.waitSession(15 * time.Second)
+	// Make sure the journal exists, then take write access away.
+	j := e.waitJob(e.submit(KindNodeInspect, "inspect-before").ID, 15*time.Second, jobs.StateSucceeded, jobs.StateFailed)
+	if j.State != jobs.StateSucceeded {
+		t.Fatalf("setup job: %s", j.State)
+	}
+	jf := filepath.Join(e.stateDir, "jobs", "journal.jsonl")
+	if err := os.Chmod(jf, 0o400); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(jf, 0o600) })
+	if os.Geteuid() == 0 {
+		t.Skip("root ignores file modes")
+	}
+	j = e.waitJob(e.submit(kindTestSleep, "sleep-ro").ID, 15*time.Second, jobs.StateFailed, jobs.StateSucceeded, jobs.StateNeedsAttention, jobs.StateUnknown)
+	if j.State != jobs.StateFailed || j.ErrorCode != protocol.StepRejectJournalUnavailable || e.sleep.runs(t) != 0 {
+		t.Fatalf("got %s %s (%s) after %d runs", j.State, j.ErrorCode, j.StateReason, e.sleep.runs(t))
+	}
+}
+
+// The journal becomes unwritable while a step runs, so its outcome cannot
+// be recorded. The agent ends the session instead of going quiet; after it
+// reconnects the core reconciles, finds the step began without a recorded
+// end and, the step not being safe to repeat, asks a person.
+func TestInteropJournalFailingMidStepEndsSessionForReconcile(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root ignores file modes")
+	}
+	e := newInteropEnv(t, HubOptions{})
+	e.start(e.url("127.0.0.1"), "")
+	first := e.waitSession(15 * time.Second)
+	job := e.submit(kindTestSleep, "sleep-journal-dies")
+	e.waitRuns(1)
+	jf := filepath.Join(e.stateDir, "jobs", "journal.jsonl")
+	if err := os.Chmod(jf, 0o400); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, "the agent to end its session", func() bool { s, ok := e.core.hub.Session(e.fp); return !ok || s != first })
+	if err := os.Chmod(jf, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	j := e.waitJob(job.ID, 30*time.Second, jobs.StateNeedsAttention, jobs.StateSucceeded, jobs.StateFailed)
+	if j.State != jobs.StateNeedsAttention || e.sleep.runs(t) != 1 {
+		t.Fatalf("got %s (%s) after %d runs", j.State, j.StateReason, e.sleep.runs(t))
+	}
+	mustContain(t, e.logs.String(), "could not be journaled")
 }
 
 func tlsToCore(t *testing.T, core *testCore) *tls.Config {

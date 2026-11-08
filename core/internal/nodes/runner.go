@@ -119,7 +119,10 @@ func (r *StepRunner) Execute(ctx context.Context, job *jobs.Job, step *jobs.Step
 			if m.Code == protocol.StepRejectOutcomeUnknown {
 				return nil, fmt.Errorf("%w: agent record shows the step began but did not finish: %s", jobs.ErrDisconnected, m.Message)
 			}
-			return nil, &jobs.StepError{Code: m.Code, Summary: "agent refused the step without running it: " + m.Message}
+			// Nothing ran. Only a journal the agent cannot write is worth a
+			// retry; the other refusals need a different request.
+			return nil, &jobs.StepError{Code: m.Code, Summary: "agent refused the step without running it: " + m.Message,
+				Retryable: m.Code == protocol.StepRejectJournalUnavailable}
 		}
 		return nil, fmt.Errorf("%w: unexpected answer %T", jobs.ErrDisconnected, v)
 	case <-s.Done():
@@ -167,7 +170,7 @@ func (r *StepRunner) Reconcile(ctx context.Context, job *jobs.Job, step *jobs.St
 	case <-s.Done():
 		return rep, fmt.Errorf("%w: session ended", jobs.ErrDisconnected)
 	case <-ctx.Done():
-		return rep, fmt.Errorf("%w: %v", jobs.ErrDisconnected, ctx.Err())
+		return rep, fmt.Errorf("%w: %w", jobs.ErrDisconnected, ctx.Err())
 	}
 }
 

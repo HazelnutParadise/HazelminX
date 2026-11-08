@@ -51,6 +51,7 @@ pub mod step_reject_code {
     pub const EXPIRED: &str = "EXPIRED";
     pub const STALE_CONTROL_GENERATION: &str = "STALE_CONTROL_GENERATION";
     pub const OUTCOME_UNKNOWN: &str = "OUTCOME_UNKNOWN";
+    pub const JOURNAL_UNAVAILABLE: &str = "JOURNAL_UNAVAILABLE";
 }
 
 /// `protocol_error` codes.
@@ -95,6 +96,8 @@ pub enum Handshake {
         /// PEM of the node certificate issued by the Core CA.
         node_certificate: String,
         nonce: String,
+        /// Ephemeral X25519 public key, base64url without padding.
+        kex: String,
         capabilities: Vec<Capability>,
     },
     Welcome {
@@ -103,6 +106,7 @@ pub enum Handshake {
         /// PEM of the Core identity certificate.
         core_certificate: String,
         nonce: String,
+        kex: String,
         session_id: String,
         /// Core signature over the `core` transcript, standard base64.
         proof: String,
@@ -391,21 +395,22 @@ pub fn negotiate(ours: ProtocolRange, theirs: ProtocolRange) -> Result<u32, Inco
     }
 }
 
-/// The exact bytes each side signs (docs/contracts/README.md).
-///
-/// Expected results: with the inputs of `fixtures/signature.json`,
-/// `Role::Core` gives `coreTranscript` and `Role::Agent` gives
-/// `agentTranscript` byte for byte.
+/// The exact bytes each side signs (docs/contracts/README.md). It covers
+/// both nonces and both key-exchange public keys, so a proxy that swaps a
+/// kex key breaks the signatures.
+#[allow(clippy::too_many_arguments)]
 pub fn transcript(
     role: Role,
     agent_nonce: &str,
     core_nonce: &str,
+    agent_kex: &str,
+    core_kex: &str,
     protocol_version: u32,
     node_fingerprint: &str,
     session_id: &str,
 ) -> String {
     format!(
-        "{TRANSCRIPT_DOMAIN}\n{}\n{agent_nonce}\n{core_nonce}\n{protocol_version}\n{node_fingerprint}\n{session_id}\n",
+        "{TRANSCRIPT_DOMAIN}\n{}\n{agent_nonce}\n{core_nonce}\n{agent_kex}\n{core_kex}\n{protocol_version}\n{node_fingerprint}\n{session_id}\n",
         role.as_str()
     )
 }
@@ -444,4 +449,151 @@ pub fn valid_nonce(s: &str) -> bool {
 /// (agent.info,1) → false; empty list → false.
 pub fn supports(caps: &[Capability], name: &str, version: u32) -> bool {
     caps.iter().any(|c| c.name == name && c.version >= version)
+}
+
+/// The key exchange failed: malformed peer key or no shared secret.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct KexError(pub String);
+
+impl std::fmt::Display for KexError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "key exchange failed: {}", self.0)
+    }
+}
+
+impl std::error::Error for KexError {}
+
+/// A session frame failed authentication or ordering; close the session.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FrameError(pub String);
+
+impl std::fmt::Display for FrameError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "session frame rejected: {}", self.0)
+    }
+}
+
+impl std::error::Error for FrameError {}
+
+/// An ephemeral X25519 key and its public key encoded for hello/welcome.
+pub fn new_kex() -> (x25519_dalek::StaticSecret, String) {
+    let secret = x25519_dalek::StaticSecret::random_from_rng(rand::rngs::OsRng);
+    let public = kex_public(&secret);
+    (secret, public)
+}
+
+/// The encoded public key of a kex secret.
+pub fn kex_public(secret: &x25519_dalek::StaticSecret) -> String {
+    use base64::Engine;
+    base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .encode(x25519_dalek::PublicKey::from(secret).as_bytes())
+}
+
+/// Per-direction MAC keys of one session.
+#[derive(Clone, PartialEq, Eq)]
+pub struct SessionKeys {
+    pub send: [u8; 32],
+    pub recv: [u8; 32],
+}
+
+impl std::fmt::Debug for SessionKeys {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("SessionKeys(..)")
+    }
+}
+
+/// HKDF info for messages sent by `from`.
+pub fn key_info(from: Role, session_id: &str) -> String {
+    let dir = match from {
+        Role::Core => "core->agent",
+        Role::Agent => "agent->core",
+    };
+    format!("{TRANSCRIPT_DOMAIN} {dir} {session_id}")
+}
+
+/// X25519 with the peer's kex, then HKDF-SHA256 into one key per
+/// direction bound to the session id; `role` is the caller's side.
+pub fn derive_keys(
+    role: Role,
+    secret: &x25519_dalek::StaticSecret,
+    peer_kex: &str,
+    session_id: &str,
+) -> Result<SessionKeys, KexError> {
+    use base64::Engine;
+    let raw = base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .decode(peer_kex)
+        .map_err(|_| KexError("peer key is not base64url".into()))?;
+    let raw: [u8; 32] = raw
+        .try_into()
+        .map_err(|_| KexError("peer key is not 32 bytes".into()))?;
+    let shared = secret.diffie_hellman(&x25519_dalek::PublicKey::from(raw));
+    if !shared.was_contributory() {
+        return Err(KexError("peer key is a low-order point".into()));
+    }
+    let hk = hkdf::Hkdf::<sha2::Sha256>::new(None, shared.as_bytes());
+    let mut c2a = [0u8; 32];
+    let mut a2c = [0u8; 32];
+    hk.expand(key_info(Role::Core, session_id).as_bytes(), &mut c2a)
+        .expect("32 bytes is a valid HKDF length");
+    hk.expand(key_info(Role::Agent, session_id).as_bytes(), &mut a2c)
+        .expect("32 bytes is a valid HKDF length");
+    Ok(match role {
+        Role::Core => SessionKeys {
+            send: c2a,
+            recv: a2c,
+        },
+        Role::Agent => SessionKeys {
+            send: a2c,
+            recv: c2a,
+        },
+    })
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Frame {
+    n: u64,
+    body: String,
+    mac: String,
+}
+
+fn frame_mac(key: &[u8; 32], n: u64, body: &str) -> hmac::Hmac<sha2::Sha256> {
+    use hmac::Mac;
+    let mut m = <hmac::Hmac<sha2::Sha256> as Mac>::new_from_slice(key).expect("any key length");
+    m.update(b"hazelminx-frame-v1\n");
+    m.update(&n.to_be_bytes());
+    m.update(body.as_bytes());
+    m
+}
+
+/// Wraps a message body as frame number `n` (docs/contracts/README.md).
+pub fn seal_frame(key: &[u8; 32], n: u64, body: &str) -> String {
+    use base64::Engine;
+    use hmac::Mac;
+    let mac = frame_mac(key, n, body).finalize().into_bytes();
+    serde_json::to_string(&Frame {
+        n,
+        body: body.to_string(),
+        mac: base64::engine::general_purpose::STANDARD.encode(mac),
+    })
+    .expect("frames always serialize")
+}
+
+/// Checks a frame (exactly n, body, mac; n == want; MAC matches in constant
+/// time) and returns its body.
+pub fn open_frame(key: &[u8; 32], want: u64, frame: &str) -> Result<String, FrameError> {
+    use base64::Engine;
+    use hmac::Mac;
+    let f: Frame =
+        serde_json::from_str(frame).map_err(|e| FrameError(format!("not a frame: {e}")))?;
+    if f.n != want {
+        return Err(FrameError(format!("frame {}, expected {want}", f.n)));
+    }
+    let mac = base64::engine::general_purpose::STANDARD
+        .decode(&f.mac)
+        .map_err(|_| FrameError("mac is not base64".into()))?;
+    frame_mac(key, f.n, &f.body)
+        .verify_slice(&mac)
+        .map_err(|_| FrameError(format!("MAC mismatch on frame {}", f.n)))?;
+    Ok(f.body)
 }

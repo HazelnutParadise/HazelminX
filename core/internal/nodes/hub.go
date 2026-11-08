@@ -67,8 +67,15 @@ type HubOptions struct {
 	Range protocol.Range
 }
 
-// maxMessageBytes bounds one inbound message.
-const maxMessageBytes = 1 << 20
+// Limits on inbound data. Before the agent has proven who it is, messages
+// are small and few handshakes may run at once, so an anonymous client
+// cannot make the hub hold much memory.
+const (
+	maxMessageBytes   = 1 << 20  // one message in an established session
+	maxHandshakeBytes = 64 << 10 // one handshake message
+	maxHandshakes     = 64       // handshakes in progress at once
+	maxRecordedText   = 256      // characters kept from agent-supplied strings in refusals
+)
 
 // maxRejections is how many recent refusals Connections reports.
 const maxRejections = 50
@@ -76,6 +83,8 @@ const maxRejections = 50
 // Hub accepts agent connections on the agent listener.
 type Hub struct {
 	opts HubOptions
+
+	handshakes chan struct{} // one slot per handshake in progress
 
 	mu         sync.Mutex
 	sessions   map[string]*Session // by node fingerprint
@@ -112,7 +121,7 @@ func NewHub(opts HubOptions) *Hub {
 	if opts.Range == (protocol.Range{}) {
 		opts.Range = protocol.SupportedRange()
 	}
-	return &Hub{opts: opts, sessions: map[string]*Session{}, orphaned: map[string][]string{}}
+	return &Hub{opts: opts, handshakes: make(chan struct{}, maxHandshakes), sessions: map[string]*Session{}, orphaned: map[string][]string{}}
 }
 
 // Rejection is a refused connection attempt, kept so operators can see
@@ -203,12 +212,35 @@ func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	select {
+	case h.handshakes <- struct{}{}:
+	default:
+		w.Header().Set("Retry-After", "5")
+		http.Error(w, "too many agent handshakes in progress", http.StatusServiceUnavailable)
+		return
+	}
+	released := false
+	release := func() {
+		if !released {
+			released = true
+			<-h.handshakes
+		}
+	}
+	defer release()
 	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{CompressionMode: websocket.CompressionDisabled})
 	if err != nil {
 		return // Accept already answered
 	}
-	conn.SetReadLimit(maxMessageBytes)
-	h.handshake(r, conn)
+	conn.SetReadLimit(maxHandshakeBytes)
+	h.handshake(r, conn, release)
+}
+
+// clip keeps agent-supplied text short in what the hub stores and logs.
+func clip(s string) string {
+	if r := []rune(s); len(r) > maxRecordedText {
+		return string(r[:maxRecordedText]) + "…"
+	}
+	return s
 }
 
 type handshakeFailure struct {
@@ -220,7 +252,7 @@ type handshakeFailure struct {
 	identityProven bool
 }
 
-func (h *Hub) handshake(r *http.Request, conn *websocket.Conn) {
+func (h *Hub) handshake(r *http.Request, conn *websocket.Conn, handshakeDone func()) {
 	ctx, cancel := context.WithTimeout(r.Context(), h.opts.HandshakeTimeout)
 	defer cancel()
 	fail := func(f handshakeFailure) {
@@ -231,13 +263,13 @@ func (h *Hub) handshake(r *http.Request, conn *websocket.Conn) {
 		}
 		// Record first: once the agent reads the reject, the refusal must
 		// already be visible to operators.
-		h.reject(Rejection{At: h.opts.Now().UTC(), RemoteAddr: r.RemoteAddr, Code: f.code, Message: f.message, NodeID: f.nodeID,
-			AgentVersion: f.agentVersion, AgentRange: f.agentRange, CoreRange: core, IdentityProven: f.identityProven})
+		h.reject(Rejection{At: h.opts.Now().UTC(), RemoteAddr: r.RemoteAddr, Code: f.code, Message: clip(f.message), NodeID: f.nodeID,
+			AgentVersion: clip(f.agentVersion), AgentRange: f.agentRange, CoreRange: core, IdentityProven: f.identityProven})
 		if b, err := protocol.Encode(msg); err == nil {
 			_ = conn.Write(ctx, websocket.MessageText, b)
 		}
 		_ = conn.Close(websocket.StatusPolicyViolation, f.code)
-		h.opts.Logger.Warn("agent connection refused", "code", f.code, "reason", f.message, "node", f.nodeID, "remote", r.RemoteAddr)
+		h.opts.Logger.Warn("agent connection refused", "code", f.code, "reason", clip(f.message), "node", f.nodeID, "remote", r.RemoteAddr)
 	}
 
 	hello, err := readHandshake[*protocol.Hello](ctx, conn)
@@ -299,11 +331,21 @@ func (h *Hub) handshake(r *http.Request, conn *websocket.Conn) {
 		fail(with(protocol.RejectHandshakeMalformed, "core could not draw a session id"))
 		return
 	}
+	kexKey, coreKex, err := protocol.NewKex()
+	if err != nil {
+		fail(with(protocol.RejectHandshakeMalformed, "core could not draw a key-exchange key"))
+		return
+	}
+	keys, err := protocol.DeriveKeys(protocol.RoleCore, kexKey, hello.Kex, sessionID)
+	if err != nil {
+		fail(with(protocol.RejectHandshakeMalformed, "hello kex: "+err.Error()))
+		return
+	}
 	coreCaps := []protocol.Capability{{Name: protocol.CapJobs, Version: 1}}
 	welcome := protocol.Welcome{
 		Type: protocol.TypeWelcome, ProtocolVersion: version, CoreVersion: h.opts.CoreVersion,
-		CoreCertificate: string(h.opts.PKI.CoreCertificatePEM()), Nonce: coreNonce, SessionID: sessionID,
-		Proof:            base64.StdEncoding.EncodeToString(h.opts.PKI.SignAsCore(protocol.Transcript(protocol.RoleCore, hello.Nonce, coreNonce, version, id.Fingerprint, sessionID))),
+		CoreCertificate: string(h.opts.PKI.CoreCertificatePEM()), Nonce: coreNonce, Kex: coreKex, SessionID: sessionID,
+		Proof:            base64.StdEncoding.EncodeToString(h.opts.PKI.SignAsCore(protocol.Transcript(protocol.RoleCore, hello.Nonce, coreNonce, hello.Kex, coreKex, version, id.Fingerprint, sessionID))),
 		HeartbeatSeconds: int(h.opts.Heartbeat / time.Second), Capabilities: coreCaps,
 	}
 	if err := writeMessage(ctx, conn, welcome); err != nil {
@@ -315,7 +357,7 @@ func (h *Hub) handshake(r *http.Request, conn *websocket.Conn) {
 		return
 	}
 	proof, err := base64.StdEncoding.DecodeString(auth.Proof)
-	if err != nil || !ed25519.Verify(id.PublicKey, protocol.Transcript(protocol.RoleAgent, hello.Nonce, coreNonce, version, id.Fingerprint, sessionID), proof) {
+	if err != nil || !ed25519.Verify(id.PublicKey, protocol.Transcript(protocol.RoleAgent, hello.Nonce, coreNonce, hello.Kex, coreKex, version, id.Fingerprint, sessionID), proof) {
 		fail(with(protocol.RejectProofInvalid, "node proof does not verify against the presented certificate"))
 		return
 	}
@@ -325,6 +367,7 @@ func (h *Hub) handshake(r *http.Request, conn *websocket.Conn) {
 		hub: h, conn: conn, id: id, sessionID: sessionID, protocolVersion: version, agentVersion: hello.AgentVersion,
 		agentRange: hello.Protocol, caps: hello.Capabilities, transport: transport, remote: r.RemoteAddr,
 		connectedAt: h.opts.Now().UTC(), out: make(chan []byte, 256), done: make(chan struct{}), pending: map[string]*pending{},
+		keys: keys,
 	}
 	s.touch()
 	h.mu.Lock()
@@ -344,9 +387,11 @@ func (h *Hub) handshake(r *http.Request, conn *websocket.Conn) {
 	h.mu.Unlock()
 
 	if err := writeMessage(ctx, conn, protocol.Ready{Type: protocol.TypeReady, SessionID: sessionID}); err != nil {
-		h.unregister(s)
+		s.close(websocket.StatusGoingAway, "could not send ready")
 		return
 	}
+	handshakeDone()
+	conn.SetReadLimit(maxMessageBytes)
 	h.opts.Logger.Info("agent connected", "node", id.Fingerprint, "session", sessionID, "protocol", version, "agentVersion", hello.AgentVersion, "transport", transport, "remote", r.RemoteAddr)
 	if h.opts.OnReady != nil {
 		go h.opts.OnReady(s, inFlight)

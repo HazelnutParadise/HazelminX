@@ -10,11 +10,15 @@
 package main
 
 import (
+	"crypto/ecdh"
 	"crypto/ed25519"
+	"crypto/hkdf"
+	"crypto/hmac"
 	"crypto/sha256"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/base64"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
@@ -96,8 +100,25 @@ func issue(ca *x509.Certificate, caKey ed25519.PrivateKey, pub ed25519.PublicKey
 	return der
 }
 
-func transcript(role, agentNonce, coreNonce string, version int, node, session string) string {
-	return fmt.Sprintf("hazelminx-session-v1\n%s\n%s\n%s\n%d\n%s\n%s\n", role, agentNonce, coreNonce, version, node, session)
+func transcript(role, agentNonce, coreNonce, agentKex, coreKex string, version int, node, session string) string {
+	return fmt.Sprintf("hazelminx-session-v1\n%s\n%s\n%s\n%s\n%s\n%d\n%s\n%s\n", role, agentNonce, coreNonce, agentKex, coreKex, version, node, session)
+}
+
+func kexKey(label string) *ecdh.PrivateKey {
+	s := sha256.Sum256([]byte("hazelminx-fixture-kex-" + label))
+	k, err := ecdh.X25519().NewPrivateKey(s[:])
+	must(err)
+	return k
+}
+
+func frameMAC(key []byte, n uint64, body string) string {
+	m := hmac.New(sha256.New, key)
+	m.Write([]byte("hazelminx-frame-v1\n"))
+	var nb [8]byte
+	binary.BigEndian.PutUint64(nb[:], n)
+	m.Write(nb[:])
+	m.Write([]byte(body))
+	return base64.StdEncoding.EncodeToString(m.Sum(nil))
 }
 
 func writeFile(dir, name, body string) {
@@ -152,25 +173,41 @@ func main() {
 	agentNonce, coreNonce := nonce("agent"), nonce("core")
 	const version = 1
 	const session = "ses_fixture0001"
-	coreT := transcript("core", agentNonce, coreNonce, version, nodeFP, session)
-	agentT := transcript("agent", agentNonce, coreNonce, version, nodeFP, session)
+	agentKexKey, coreKexKey := kexKey("agent"), kexKey("core")
+	agentKex := base64.RawURLEncoding.EncodeToString(agentKexKey.PublicKey().Bytes())
+	coreKex := base64.RawURLEncoding.EncodeToString(coreKexKey.PublicKey().Bytes())
+	shared, err := agentKexKey.ECDH(coreKexKey.PublicKey())
+	must(err)
+	c2a, err := hkdf.Key(sha256.New, shared, nil, "hazelminx-session-v1 core->agent "+session, 32)
+	must(err)
+	a2c, err := hkdf.Key(sha256.New, shared, nil, "hazelminx-session-v1 agent->core "+session, 32)
+	must(err)
+	coreT := transcript("core", agentNonce, coreNonce, agentKex, coreKex, version, nodeFP, session)
+	agentT := transcript("agent", agentNonce, coreNonce, agentKex, coreKex, version, nodeFP, session)
 	coreProof := base64.StdEncoding.EncodeToString(ed25519.Sign(coreKey, []byte(coreT)))
 	agentProof := base64.StdEncoding.EncodeToString(ed25519.Sign(nodeKey, []byte(agentT)))
 
 	writeJSON(dir, "signature.json", map[string]any{
-		"note":             "Test-only keys derived from public seeds. Never deploy.",
-		"nodeSeedHex":      hex.EncodeToString(nodeKey.Seed()),
-		"nodePublicKeyHex": hex.EncodeToString(nodeKey.Public().(ed25519.PublicKey)),
-		"nodeFingerprint":  nodeFP,
-		"coreSeedHex":      hex.EncodeToString(coreKey.Seed()),
-		"agentNonce":       agentNonce,
-		"coreNonce":        coreNonce,
-		"protocolVersion":  version,
-		"sessionId":        session,
-		"coreTranscript":   coreT,
-		"agentTranscript":  agentT,
-		"coreProof":        coreProof,
-		"agentProof":       agentProof,
+		"note":              "Test-only keys derived from public seeds. Never deploy.",
+		"nodeSeedHex":       hex.EncodeToString(nodeKey.Seed()),
+		"nodePublicKeyHex":  hex.EncodeToString(nodeKey.Public().(ed25519.PublicKey)),
+		"nodeFingerprint":   nodeFP,
+		"coreSeedHex":       hex.EncodeToString(coreKey.Seed()),
+		"agentNonce":        agentNonce,
+		"coreNonce":         coreNonce,
+		"agentKexSeedHex":   hex.EncodeToString(agentKexKey.Bytes()),
+		"coreKexSeedHex":    hex.EncodeToString(coreKexKey.Bytes()),
+		"agentKex":          agentKex,
+		"coreKex":           coreKex,
+		"sharedSecretHex":   hex.EncodeToString(shared),
+		"keyCoreToAgentHex": hex.EncodeToString(c2a),
+		"keyAgentToCoreHex": hex.EncodeToString(a2c),
+		"protocolVersion":   version,
+		"sessionId":         session,
+		"coreTranscript":    coreT,
+		"agentTranscript":   agentT,
+		"coreProof":         coreProof,
+		"agentProof":        agentProof,
 	})
 
 	caps := []map[string]any{{"name": "jobs", "version": 1}, {"name": "agent.info", "version": 1}}
@@ -181,6 +218,7 @@ func main() {
 		"agentVersion":    "0.1.0",
 		"nodeCertificate": certPEM(nodeDER),
 		"nonce":           agentNonce,
+		"kex":             agentKex,
 		"capabilities":    caps,
 	})
 	writeJSON(msgs, "welcome.json", map[string]any{
@@ -189,10 +227,27 @@ func main() {
 		"coreVersion":      "0.1.0",
 		"coreCertificate":  certPEM(coreDER),
 		"nonce":            coreNonce,
+		"kex":              coreKex,
 		"sessionId":        session,
 		"proof":            coreProof,
 		"heartbeatSeconds": 10,
 		"capabilities":     []map[string]any{{"name": "jobs", "version": 1}},
 	})
 	writeJSON(msgs, "auth.json", map[string]any{"type": "auth", "proof": agentProof})
+
+	// Two frames per direction: the first message after ready each way.
+	ackBody := `{"type":"ack","seq":17}`
+	hbBody := `{"type":"heartbeat","at":"2026-11-08T03:04:05Z"}`
+	writeJSON(dir, "frames.json", map[string]any{
+		"note":              "Frames sealed with the session keys of signature.json. n counts frames per direction from 1.",
+		"keyCoreToAgentHex": hex.EncodeToString(c2a),
+		"keyAgentToCoreHex": hex.EncodeToString(a2c),
+		"coreToAgent": []map[string]any{
+			{"n": 1, "body": ackBody, "mac": frameMAC(c2a, 1, ackBody)},
+			{"n": 2, "body": hbBody, "mac": frameMAC(c2a, 2, hbBody)},
+		},
+		"agentToCore": []map[string]any{
+			{"n": 1, "body": hbBody, "mac": frameMAC(a2c, 1, hbBody)},
+		},
+	})
 }

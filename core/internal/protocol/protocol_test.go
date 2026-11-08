@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"bytes"
+	"crypto/ecdh"
 	"crypto/ed25519"
 	"crypto/sha256"
 	"encoding/base64"
@@ -218,8 +219,9 @@ func TestDecodeHandshake_PostHandshakeFixturesAreUnknownType(t *testing.T) {
 // Lenient handshake fixtures carry unknown fields. DecodeHandshake must accept
 // them, and the protocol range or supported range must come through.
 var lenientWant = map[string]reflect.Type{
-	"hello_future_agent.json": reflect.TypeOf(&Hello{}),
-	"reject_future_core.json": reflect.TypeOf(&Reject{}),
+	"hello_future_agent.json":                reflect.TypeOf(&Hello{}),
+	"hello_case_variant_key_is_ignored.json": reflect.TypeOf(&Hello{}),
+	"reject_future_core.json":                reflect.TypeOf(&Reject{}),
 }
 
 func TestDecodeHandshake_LenientFixtures(t *testing.T) {
@@ -243,7 +245,7 @@ func TestDecodeHandshake_LenientFixtures(t *testing.T) {
 			if reflect.TypeOf(msg) != want {
 				t.Fatalf("decoded to %T, want %v", msg, want)
 			}
-			if h, ok := msg.(*Hello); ok {
+			if h, ok := msg.(*Hello); ok && name == "hello_future_agent.json" {
 				if wantRange := (Range{Min: 2, Max: 3}); h.Protocol != wantRange {
 					t.Fatalf("Protocol = %+v, want %+v", h.Protocol, wantRange)
 				}
@@ -588,6 +590,12 @@ func TestSupports(t *testing.T) {
 // signatureFixture mirrors fixtures/signature.json, read from the file.
 type signatureFixture struct {
 	AgentNonce       string `json:"agentNonce"`
+	AgentKex         string `json:"agentKex"`
+	CoreKex          string `json:"coreKex"`
+	AgentKexSeedHex  string `json:"agentKexSeedHex"`
+	CoreKexSeedHex   string `json:"coreKexSeedHex"`
+	KeyCoreToAgent   string `json:"keyCoreToAgentHex"`
+	KeyAgentToCore   string `json:"keyAgentToCoreHex"`
 	AgentProof       string `json:"agentProof"`
 	AgentTranscript  string `json:"agentTranscript"`
 	CoreNonce        string `json:"coreNonce"`
@@ -635,7 +643,7 @@ func TestTranscript_MatchesFixture(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			var got []byte
 			noPanic(t, func() {
-				got = Transcript(c.role, s.AgentNonce, s.CoreNonce, s.ProtocolVersion, s.NodeFingerprint, s.SessionID)
+				got = Transcript(c.role, s.AgentNonce, s.CoreNonce, s.AgentKex, s.CoreKex, s.ProtocolVersion, s.NodeFingerprint, s.SessionID)
 			})
 			if !bytes.Equal(got, []byte(c.want)) {
 				t.Fatalf("transcript differs\n got: %q\nwant: %q", got, c.want)
@@ -688,7 +696,7 @@ func TestSignatures_FixtureKeysSignTranscripts(t *testing.T) {
 		}
 		var transcript []byte
 		noPanic(t, func() {
-			transcript = Transcript(RoleAgent, s.AgentNonce, s.CoreNonce, s.ProtocolVersion, s.NodeFingerprint, s.SessionID)
+			transcript = Transcript(RoleAgent, s.AgentNonce, s.CoreNonce, s.AgentKex, s.CoreKex, s.ProtocolVersion, s.NodeFingerprint, s.SessionID)
 		})
 		sig := ed25519.Sign(nodePriv, transcript)
 		if got := base64.StdEncoding.EncodeToString(sig); got != s.AgentProof {
@@ -698,7 +706,7 @@ func TestSignatures_FixtureKeysSignTranscripts(t *testing.T) {
 	t.Run("core proof is the core key over the core transcript", func(t *testing.T) {
 		var transcript []byte
 		noPanic(t, func() {
-			transcript = Transcript(RoleCore, s.AgentNonce, s.CoreNonce, s.ProtocolVersion, s.NodeFingerprint, s.SessionID)
+			transcript = Transcript(RoleCore, s.AgentNonce, s.CoreNonce, s.AgentKex, s.CoreKex, s.ProtocolVersion, s.NodeFingerprint, s.SessionID)
 		})
 		sig := ed25519.Sign(corePriv, transcript)
 		if got := base64.StdEncoding.EncodeToString(sig); got != s.CoreProof {
@@ -752,4 +760,139 @@ func TestHandshakeFixtures_CarrySignatureValues(t *testing.T) {
 			t.Fatalf("proof = %s, want %s", a.Proof, s.AgentProof)
 		}
 	})
+}
+
+func kexFromSeed(t *testing.T, seedHex string) *ecdh.PrivateKey {
+	t.Helper()
+	seed, err := hex.DecodeString(seedHex)
+	if err != nil {
+		t.Fatal(err)
+	}
+	k, err := ecdh.X25519().NewPrivateKey(seed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return k
+}
+
+// Both sides derive the same pair of per-direction keys as the fixture, and
+// each side's send key is the other's receive key.
+func TestDeriveKeysMatchesFixtureFromBothSides(t *testing.T) {
+	s := loadSignature(t)
+	agent, core := kexFromSeed(t, s.AgentKexSeedHex), kexFromSeed(t, s.CoreKexSeedHex)
+	if base64.RawURLEncoding.EncodeToString(agent.PublicKey().Bytes()) != s.AgentKex || base64.RawURLEncoding.EncodeToString(core.PublicKey().Bytes()) != s.CoreKex {
+		t.Fatal("fixture kex public keys do not match their seeds")
+	}
+	ak, err := DeriveKeys(RoleAgent, agent, s.CoreKex, s.SessionID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ck, err := DeriveKeys(RoleCore, core, s.AgentKex, s.SessionID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hex.EncodeToString(ck.Send) != s.KeyCoreToAgent || hex.EncodeToString(ak.Send) != s.KeyAgentToCore {
+		t.Fatalf("send keys differ from fixture")
+	}
+	if !bytes.Equal(ak.Recv, ck.Send) || !bytes.Equal(ck.Recv, ak.Send) {
+		t.Fatal("one side's send key is not the other's receive key")
+	}
+	// A different session id gives different keys.
+	other, _ := DeriveKeys(RoleCore, core, s.AgentKex, s.SessionID+"x")
+	if bytes.Equal(other.Send, ck.Send) {
+		t.Fatal("keys are not bound to the session id")
+	}
+}
+
+func TestDeriveKeysRejectsBadPeerKeys(t *testing.T) {
+	priv, _, err := NewKex()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, peer := range map[string]string{
+		"empty":      "",
+		"short":      base64.RawURLEncoding.EncodeToString(make([]byte, 31)),
+		"padded":     base64.URLEncoding.EncodeToString(make([]byte, 32)),
+		"low order":  base64.RawURLEncoding.EncodeToString(make([]byte, 32)), // all-zero point
+		"not base64": "!!!!",
+	} {
+		if _, err := DeriveKeys(RoleCore, priv, peer, "ses_x"); !errors.Is(err, ErrKex) {
+			t.Errorf("%s: got %v, want ErrKex", name, err)
+		}
+	}
+}
+
+type framesFixture struct {
+	KeyCoreToAgent string  `json:"keyCoreToAgentHex"`
+	KeyAgentToCore string  `json:"keyAgentToCoreHex"`
+	CoreToAgent    []Frame `json:"coreToAgent"`
+	AgentToCore    []Frame `json:"agentToCore"`
+}
+
+func TestFramesMatchFixtureAndRejectTampering(t *testing.T) {
+	var f framesFixture
+	if err := json.Unmarshal(readFixture(t, "frames.json"), &f); err != nil {
+		t.Fatal(err)
+	}
+	c2a, _ := hex.DecodeString(f.KeyCoreToAgent)
+	a2c, _ := hex.DecodeString(f.KeyAgentToCore)
+	for i, fr := range f.CoreToAgent {
+		sealed, err := SealFrame(c2a, fr.N, []byte(fr.Body))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var got Frame
+		if err := json.Unmarshal(sealed, &got); err != nil || got != fr {
+			t.Fatalf("frame %d: sealed %s, fixture %+v", i, sealed, fr)
+		}
+		body, err := OpenFrame(c2a, uint64(i+1), sealed)
+		if err != nil || string(body) != fr.Body {
+			t.Fatalf("open frame %d: %v", i, err)
+		}
+		if _, err := Decode(body); err != nil {
+			t.Fatalf("frame %d body does not decode: %v", i, err)
+		}
+	}
+	good, _ := json.Marshal(f.AgentToCore[0])
+	if _, err := OpenFrame(a2c, 1, good); err != nil {
+		t.Fatal(err)
+	}
+	tamper := func(fn func(m map[string]any)) []byte {
+		var m map[string]any
+		_ = json.Unmarshal(good, &m)
+		fn(m)
+		b, _ := json.Marshal(m)
+		return b
+	}
+	cases := map[string]struct {
+		key  []byte
+		want uint64
+		data []byte
+	}{
+		"wrong direction key":  {c2a, 1, good},
+		"replayed (n too low)": {a2c, 2, good},
+		"skipped (n too high)": {a2c, 0, good},
+		"changed body":         {a2c, 1, tamper(func(m map[string]any) { m["body"] = `{"type":"heartbeat","at":"2026-11-08T03:04:06Z"}` })},
+		"changed mac":          {a2c, 1, tamper(func(m map[string]any) { m["mac"] = "AAAA" })},
+		"extra field":          {a2c, 1, tamper(func(m map[string]any) { m["x"] = 1 })},
+		"missing mac":          {a2c, 1, tamper(func(m map[string]any) { delete(m, "mac") })},
+		"not json":             {a2c, 1, []byte("hello")},
+	}
+	for name, c := range cases {
+		if _, err := OpenFrame(c.key, c.want, c.data); !errors.Is(err, ErrFrame) {
+			t.Errorf("%s: got %v, want ErrFrame", name, err)
+		}
+	}
+}
+
+// In the lenient handshake a key that differs only in case is ignored, so
+// it can never fill the real field.
+func TestHandshakeIgnoresCaseVariantKeys(t *testing.T) {
+	m, err := DecodeHandshake(readFixture(t, "handshake-lenient/hello_case_variant_key_is_ignored.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if h := m.(*Hello); h.Nonce != loadSignature(t).AgentNonce {
+		t.Fatalf("nonce %q was filled from a case-variant key", h.Nonce)
+	}
 }

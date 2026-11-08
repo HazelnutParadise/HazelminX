@@ -11,9 +11,13 @@ package protocol
 
 import (
 	"bytes"
+	"crypto/ecdh"
+	"crypto/hkdf"
+	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -61,6 +65,7 @@ const (
 	StepRejectExpired                = "EXPIRED"
 	StepRejectStaleControlGeneration = "STALE_CONTROL_GENERATION"
 	StepRejectOutcomeUnknown         = "OUTCOME_UNKNOWN"
+	StepRejectJournalUnavailable     = "JOURNAL_UNAVAILABLE"
 )
 
 // protocol_error codes.
@@ -120,12 +125,14 @@ type StepFailure struct {
 // Constructors are not needed: callers set Type with the constants above.
 
 type Hello struct {
-	Type            string       `json:"type"`
-	Protocol        Range        `json:"protocol"`
-	AgentVersion    string       `json:"agentVersion"`
-	NodeCertificate string       `json:"nodeCertificate"`
-	Nonce           string       `json:"nonce"`
-	Capabilities    []Capability `json:"capabilities"`
+	Type            string `json:"type"`
+	Protocol        Range  `json:"protocol"`
+	AgentVersion    string `json:"agentVersion"`
+	NodeCertificate string `json:"nodeCertificate"`
+	Nonce           string `json:"nonce"`
+	// Kex is the agent's ephemeral X25519 public key (base64url, no padding).
+	Kex          string       `json:"kex"`
+	Capabilities []Capability `json:"capabilities"`
 }
 
 type Welcome struct {
@@ -134,6 +141,7 @@ type Welcome struct {
 	CoreVersion      string       `json:"coreVersion"`
 	CoreCertificate  string       `json:"coreCertificate"`
 	Nonce            string       `json:"nonce"`
+	Kex              string       `json:"kex"`
 	SessionID        string       `json:"sessionId"`
 	Proof            string       `json:"proof"`
 	HeartbeatSeconds int          `json:"heartbeatSeconds"`
@@ -341,17 +349,124 @@ func decode(data []byte, types map[string]func() any, strict bool) (any, error) 
 			return nil, fmt.Errorf("%w: %s needs %q", ErrInvalidFields, typ, name)
 		}
 	}
-	dec := json.NewDecoder(bytes.NewReader(data))
-	if strict {
-		dec.DisallowUnknownFields()
+	if err := noDuplicateKeys(data); err != nil {
+		return nil, fmt.Errorf("%w: %s: %v", ErrInvalidFields, typ, err)
 	}
-	if err := dec.Decode(msg); err != nil {
+	// encoding/json matches keys case-insensitively, so keys are checked
+	// against the exact field names first: strictly they must match, and
+	// in the lenient handshake anything else is dropped before decoding so
+	// "Nonce" can never fill Nonce.
+	clean, err := exactKeys(data, t, strict)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s: %v", ErrInvalidFields, typ, err)
+	}
+	if err := json.Unmarshal(clean, msg); err != nil {
 		return nil, fmt.Errorf("%w: %s: %v", ErrInvalidFields, typ, err)
 	}
 	if ev, ok := msg.(*Event); ok && ev.Kind != EventStarted && ev.Kind != EventCompleted && ev.Kind != EventFailed {
 		return nil, fmt.Errorf("%w: event kind %q", ErrInvalidFields, ev.Kind)
 	}
 	return msg, nil
+}
+
+var rawMessageType = reflect.TypeOf(json.RawMessage(nil))
+
+// exactKeys re-encodes data keeping only keys that are exactly a json tag
+// of t (recursively for nested structs and slices of structs). Unknown keys
+// are an error when strict and dropped otherwise. Maps and RawMessage
+// values (params, result) pass through untouched.
+func exactKeys(data []byte, t reflect.Type, strict bool) ([]byte, error) {
+	for t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+	switch {
+	case t == rawMessageType, t.Kind() == reflect.Map:
+		return data, nil
+	case t.Kind() == reflect.Slice:
+		var items []json.RawMessage
+		if json.Unmarshal(data, &items) != nil {
+			return data, nil // wrong shape: let json.Unmarshal report it
+		}
+		for i, it := range items {
+			c, err := exactKeys(it, t.Elem(), strict)
+			if err != nil {
+				return nil, fmt.Errorf("[%d]: %w", i, err)
+			}
+			items[i] = c
+		}
+		return json.Marshal(items)
+	case t.Kind() == reflect.Struct && t != reflect.TypeOf(time.Time{}):
+		var obj map[string]json.RawMessage
+		if json.Unmarshal(data, &obj) != nil || obj == nil {
+			return data, nil
+		}
+		fields := map[string]reflect.Type{}
+		for i := 0; i < t.NumField(); i++ {
+			name, _, _ := strings.Cut(t.Field(i).Tag.Get("json"), ",")
+			fields[name] = t.Field(i).Type
+		}
+		out := map[string]json.RawMessage{}
+		for k, v := range obj {
+			ft, ok := fields[k]
+			if !ok {
+				if strict {
+					return nil, fmt.Errorf("unknown field %q", k)
+				}
+				continue
+			}
+			c, err := exactKeys(v, ft, strict)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", k, err)
+			}
+			out[k] = c
+		}
+		return json.Marshal(out)
+	}
+	return data, nil
+}
+
+// noDuplicateKeys rejects any JSON object (at any depth) that repeats a key;
+// encoding/json would silently keep the last one.
+func noDuplicateKeys(data []byte) error {
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
+	var walk func() error
+	walk = func() error {
+		tok, err := dec.Token()
+		if err != nil {
+			return err
+		}
+		switch tok {
+		case json.Delim('{'):
+			seen := map[string]bool{}
+			for dec.More() {
+				kt, err := dec.Token()
+				if err != nil {
+					return err
+				}
+				k := kt.(string)
+				if seen[k] {
+					return fmt.Errorf("duplicate key %q", k)
+				}
+				seen[k] = true
+				if err := walk(); err != nil {
+					return err
+				}
+			}
+			_, err = dec.Token()
+			return err
+		case json.Delim('['):
+			for dec.More() {
+				if err := walk(); err != nil {
+					return err
+				}
+			}
+			_, err = dec.Token()
+			return err
+		}
+		return nil
+	}
+	return walk()
 }
 
 // Encode marshals a message struct as compact JSON.
@@ -380,11 +495,13 @@ const (
 )
 
 // Transcript is the exact text each side signs (docs/contracts/README.md).
+// It covers both nonces and both key-exchange public keys, so a proxy that
+// replaces a kex key breaks the signatures.
 //
 // Expected result: with the inputs of fixtures/signature.json, RoleCore
 // gives coreTranscript and RoleAgent gives agentTranscript byte for byte.
-func Transcript(role Role, agentNonce, coreNonce string, protocolVersion int, nodeFingerprint, sessionID string) []byte {
-	return fmt.Appendf(nil, "%s\n%s\n%s\n%s\n%d\n%s\n%s\n", TranscriptDomain, role, agentNonce, coreNonce, protocolVersion, nodeFingerprint, sessionID)
+func Transcript(role Role, agentNonce, coreNonce, agentKex, coreKex string, protocolVersion int, nodeFingerprint, sessionID string) []byte {
+	return fmt.Appendf(nil, "%s\n%s\n%s\n%s\n%s\n%s\n%d\n%s\n%s\n", TranscriptDomain, role, agentNonce, coreNonce, agentKex, coreKex, protocolVersion, nodeFingerprint, sessionID)
 }
 
 // Fingerprint is the lowercase hex SHA-256 of a raw 32-byte Ed25519 key.
@@ -426,4 +543,133 @@ func Supports(caps []Capability, name string, version int) bool {
 		}
 	}
 	return false
+}
+
+// ErrFrame: a session frame failed authentication or ordering. The
+// receiver must close the session; nothing in the frame may be used.
+var ErrFrame = errors.New("protocol: session frame rejected")
+
+// ErrKex: a key-exchange public key is malformed or yields no shared secret.
+var ErrKex = errors.New("protocol: key exchange failed")
+
+// NewKex draws an ephemeral X25519 key and returns it with its public key
+// encoded for hello/welcome.
+func NewKex() (*ecdh.PrivateKey, string, error) {
+	k, err := ecdh.X25519().GenerateKey(rand.Reader)
+	if err != nil {
+		return nil, "", err
+	}
+	return k, base64.RawURLEncoding.EncodeToString(k.PublicKey().Bytes()), nil
+}
+
+// SessionKeys are the per-direction MAC keys of one session.
+type SessionKeys struct {
+	Send, Recv []byte
+}
+
+// DeriveKeys computes the X25519 shared secret with the peer's kex and
+// expands it with HKDF-SHA256 into one key per direction, bound to the
+// session id. role is the caller's side: the core sends with the
+// core→agent key.
+//
+// Expected results: with the seeds of fixtures/signature.json, both sides
+// derive keyCoreToAgentHex and keyAgentToCoreHex; a peer key that is not
+// 32 bytes of base64url, or a low-order point, is ErrKex.
+func DeriveKeys(role Role, priv *ecdh.PrivateKey, peerKex, sessionID string) (SessionKeys, error) {
+	raw, err := base64.RawURLEncoding.Strict().DecodeString(peerKex)
+	if err != nil || len(raw) != 32 {
+		return SessionKeys{}, fmt.Errorf("%w: peer key is not 32 bytes of base64url", ErrKex)
+	}
+	pub, err := ecdh.X25519().NewPublicKey(raw)
+	if err != nil {
+		return SessionKeys{}, fmt.Errorf("%w: %v", ErrKex, err)
+	}
+	shared, err := priv.ECDH(pub) // rejects the all-zero result of low-order points
+	if err != nil {
+		return SessionKeys{}, fmt.Errorf("%w: %v", ErrKex, err)
+	}
+	c2a, err := hkdf.Key(sha256.New, shared, nil, KeyInfo(RoleCore, sessionID), 32)
+	if err != nil {
+		return SessionKeys{}, err
+	}
+	a2c, err := hkdf.Key(sha256.New, shared, nil, KeyInfo(RoleAgent, sessionID), 32)
+	if err != nil {
+		return SessionKeys{}, err
+	}
+	if role == RoleCore {
+		return SessionKeys{Send: c2a, Recv: a2c}, nil
+	}
+	return SessionKeys{Send: a2c, Recv: c2a}, nil
+}
+
+// KeyInfo is the HKDF info string for messages sent by from.
+func KeyInfo(from Role, sessionID string) string {
+	dir := "core->agent"
+	if from == RoleAgent {
+		dir = "agent->core"
+	}
+	return TranscriptDomain + " " + dir + " " + sessionID
+}
+
+// Frame is the envelope of every message after ready: N counts frames per
+// direction from 1, Body is the message JSON as a string, MAC is
+// HMAC-SHA256(key, "hazelminx-frame-v1\n" || big-endian N || Body).
+type Frame struct {
+	N    uint64 `json:"n"`
+	Body string `json:"body"`
+	MAC  string `json:"mac"`
+}
+
+func frameMAC(key []byte, n uint64, body []byte) []byte {
+	m := hmac.New(sha256.New, key)
+	m.Write([]byte("hazelminx-frame-v1\n"))
+	var nb [8]byte
+	binary.BigEndian.PutUint64(nb[:], n)
+	m.Write(nb[:])
+	m.Write(body)
+	return m.Sum(nil)
+}
+
+// SealFrame wraps body as frame number n.
+func SealFrame(key []byte, n uint64, body []byte) ([]byte, error) {
+	return json.Marshal(Frame{N: n, Body: string(body), MAC: base64.StdEncoding.EncodeToString(frameMAC(key, n, body))})
+}
+
+// OpenFrame checks a frame and returns its body. The frame must be a JSON
+// object with exactly n, body and mac; n must equal want; the MAC must
+// match. Any failure is ErrFrame.
+//
+// Expected results: fixtures/frame.json opens with its key and n; a changed
+// body, a changed MAC, n off by one in either direction, an extra or
+// missing field → ErrFrame.
+func OpenFrame(key []byte, want uint64, data []byte) ([]byte, error) {
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil || len(fields) != 3 {
+		return nil, fmt.Errorf("%w: not a frame object", ErrFrame)
+	}
+	var f Frame
+	for k, v := range fields {
+		var err error
+		switch k {
+		case "n":
+			err = json.Unmarshal(v, &f.N)
+		case "body":
+			err = json.Unmarshal(v, &f.Body)
+		case "mac":
+			err = json.Unmarshal(v, &f.MAC)
+		default:
+			err = errors.New("unknown field")
+		}
+		if err != nil {
+			return nil, fmt.Errorf("%w: field %q", ErrFrame, k)
+		}
+	}
+	if f.N != want {
+		return nil, fmt.Errorf("%w: frame %d, expected %d", ErrFrame, f.N, want)
+	}
+	mac, err := base64.StdEncoding.Strict().DecodeString(f.MAC)
+	if err != nil || !hmac.Equal(mac, frameMAC(key, f.N, []byte(f.Body))) {
+		return nil, fmt.Errorf("%w: MAC mismatch on frame %d", ErrFrame, f.N)
+	}
+	return []byte(f.Body), nil
 }
