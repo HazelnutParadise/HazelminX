@@ -20,6 +20,7 @@ CA 與身分驗證、預設唯讀、Namespace／Deployment／StatefulSet／Daemo
 - [ ] **KUB-009** 使用者可以診斷排程、映像、探針、掛載、DNS 與網路失敗。 — 完成條件：同頁整合 Events、狀態與相關日誌，不能只顯示 CrashLoopBackOff 字樣。
 - [ ] **KUB-014** 使用者可以查看節點標籤、污點、資源配額與擴縮設定。 — 完成條件：能理解服務為何不能放到某節點；不可用容量不當作可部署容量。
 - [ ] 以 Namespace 限定權限操作別的 Namespace 時後端與叢集都拒絕
+- [ ] **ENV-005** 同一台主機的多個叢集（K3s、MicroK8s、kind、k3d、minikube）各自是管理目標，Kubernetes 頁範圍列可切換；跑在容器裡的叢集標出承載它的環境。
 
 ## Acceptance tests（第 42 章）
 

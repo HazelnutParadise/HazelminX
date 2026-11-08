@@ -24,6 +24,7 @@
   證據：`TestLongJobSurvivesSessionEnd`：送出工作後登出，再過 13 小時，工作仍在執行，完成後重新登入可查到 `succeeded`。逾時設定：`TestSessionIdleTimeoutSetting`（15 分鐘到 24 小時，設 30 分鐘後閒置 31 分鐘就失效，設 0 恢復預設 12 小時）；`TestShorterIdleTimeoutCapsOtherSessions`；持續操作時 Cookie 跟著延長：`TestSlidingSessionRenewsCookie`。
 - [x] 使用過的復原碼不能再用 — 同 IAM-002 的證據。
 - [x] 撤銷後舊瀏覽器不能再送出寫入操作 — 同 IAM-003 的證據。
+- [ ] （增補 03 51.6）設計時決定並寫進本票：Core 時間不可信、管理入口網域變更時，TOTP 與 Passkey 的影響與替代登入方式。
 
 ## Acceptance tests（第 42 章）
 

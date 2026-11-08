@@ -7,11 +7,12 @@ M0 基礎與設計：Core 與 Agent 後端骨架（票 003、004、008、009、0
 完成 `DESIGN.md` 與主要畫面原型並通過設計審查，讓票 003、004、005、007 可以在一致的視覺與互動基準上開工；M0 結束時 Core、Agent、Web 骨架可建置並在 CI 通過。
 
 ## Active Workstreams
-- 設計系統與原型（票 002，PR #102）→ `DESIGN.md`、`docs/design/`、`DESIGN-REVIEW.md`。
+- 設計系統與原型（票 002，PR #102）→ `DESIGN.md`、`docs/design/`（30 個畫板，19 個主導覽項全部有畫面）、`DESIGN-REVIEW.md`（三輪）。
 - 1Panel 功能基線盤點（票 092，PR #99）→ `docs/baseline/`。
 - CI（票 006，已在 `main`，in_progress）→ `.github/workflows/ci.yml`：Go 與 Rust 在 x86_64、ARM64 原生機器上檢查、測試、建置、冒煙測試並產生依賴報告。剩前端 job 與嵌入前端的 Core 建置，等票 005。
 - Core↔Agent 通道（票 007，已在 `main`）→ `docs/contracts/`、`agent/crates/protocol`、Agent 連線與持久步驟紀錄、`core/internal/protocol`、`core/internal/nodes`。SEC-011 的升級路徑移到票 036。票 008 的 ENG-003 Agent 端已由 007 接上。
 - 主機變更帳本（票 113，done）→ `agent/crates/privileged/src/ledger/`（主機那份）與 `core/internal/hostledger`（Core 那份，經 007 的通道同步）。交給其他票的項目列在 Handoff Notes。
+- 前端骨架（票 005，分支 `ticket/005-web-skeleton`，草稿 PR #126）→ `web/`：Kumo＋HazelminX 主題、外殼、i18n、深淺色、共用元件（儲存列、主機狀態列、元件停止橫條、原文＋白話摘要）、Playwright 版面與無障礙掃描；Core 嵌入版已實測。PR base 暫設 `ticket/002-design-system`，PR #102 合併後改 main。
 - 參考專案研究收尾 → `docs/research/`（1Panel 後端／前端、Komodo Periphery、Portainer Git Stack、Beszel 報告待補）。
 
 ## Milestones
@@ -28,10 +29,10 @@ M0 基礎與設計：Core 與 Agent 後端骨架（票 003、004、008、009、0
 None。
 
 ## Next Verifiable Output
-票 019 節點註冊：一次性註冊碼換節點憑證（用票 007 的 `nodes.PKI.IssueNodeCertificate`），寫入 Agent 的 `node.crt`／`core-ca.crt`，並以節點紀錄實作 `nodes.Authorizer` 的撤銷。PR #102（票 002）合併後，票 005 依 `DESIGN.md` token 建立 `web/` 骨架。
+票 019 節點註冊：一次性註冊碼換節點憑證（用票 007 的 `nodes.PKI.IssueNodeCertificate`），寫入 Agent 的 `node.crt`／`core-ca.crt`，並以節點紀錄實作 `nodes.Authorizer` 的撤銷。票 005（PR #126）隨 PR #102（票 002）之後合併；合併後票 006 補前端 job 與嵌入前端的 Core 建置，票 017 在 `web/` 外殼上接工作中心、降級列與搜尋。
 
 ## Next Ticket
-019 節點註冊（等 007 完成後 ready）。005 前端骨架仍等票 002 完成。014 已合併；015、016、022、023、024、025、026、047 的前置票都已 done，狀態為 ready；013 的前置票都已 done，狀態為 ready。
+019 節點註冊（等 007 完成後 ready）。005 前端骨架已完成驗收（PR #126），等 PR #102 合併後再合併。014 已合併；015、016、022、023、024、025、026、047 的前置票都已 done，狀態為 ready；013 的前置票都已 done，狀態為 ready。
 
 ## Decision Log
 | decision | rationale | timestamp | impacted_ticket_ids |
@@ -51,6 +52,10 @@ None。
 | 猜到不可見範圍的資源 ID 回與「不存在」完全相同的 404，可見但無權才回 403 | T-014 要求查詢、下載、搜尋、事件串流都不洩漏存在與否 | 2026-11-07 | 009、008、010 |
 | `/management/v1/jobs` 掛在 IAM 驗證之後：讀取要全域 `platform:read`，提交與取消要全域 `platform:write`；各工作種類的權限與範圍由票 010 定 | 合併 008 與 009 時工作 API 原本不需登入；AGENTS.md 要求危險操作在後端驗權 | 2026-11-07 | 008、009、010 |
 | 003、004、008 驗收未完成仍先合併進 `main`，狀態維持 in_progress | 使用者決定（2026-11-07）；003 的 CI 條件要等 006，而 006 需要 003 先合併 | 2026-11-07 | 003、004、006、008 |
+| Kumo 主要／危險按鈕在 `@layer base` 用 `!important` 改成實心 token＋hazel-ink 字 | Kumo 以 inline style 把 brand 調亮 30% 並鎖白字，深色榛果底對比只有 2.00:1；覆蓋 token 無效 | 2026-11-08 | 005 |
+| 對比、觸控目標、可及名稱改用 Playwright 掃描（`web/e2e/scan.ts`），另自算文字對比 | `docs/design/tools/` 只有版面掃描；axe 遇到偽元素與兄弟層的底色只回 incomplete | 2026-11-08 | 005、096 |
+| API 型別產生器放在 `web/tools/openapi/` 的獨立小套件 | openapi-typescript 需要 TypeScript 5 的編譯器 API，TypeScript 7 沒有 | 2026-11-08 | 005、010 |
+| 「使用者時區」先取瀏覽器時區 | 帳號層級時區設定還沒有擁有票的 API | 2026-11-08 | 005、015、018 |
 | 主機變更帳本由高權限執行器寫：每個動作宣告會改的對象，先同步寫意圖行才執行；帳本在 `/var/lib/hazelminx/ledger`（root 0700，上層不得可被他人寫入），每行帶前一行的 SHA-256；Core 拿原始行驗證後保存副本 | 增補 07 第 55.1 節要求沒寫帳本的變更一律拒絕、主機連不上 Core 時仍能只靠本機那份移除 | 2026-11-08 | 113、013、037、007 |
 | 113 驗收未完成（缺 Core 的帳本副本）仍先合併進 `main`，狀態維持 in_progress | 使用者決定（2026-11-08）；Core 副本要等 007 的通道，其餘測試都已通過 | 2026-11-08 | 113、007 |
 | Core 的帳本副本用新訊息 `ledger_pull`／`ledger_page`／`ledger_unavailable`（能力 `host.ledger`），不走工作與步驟；Core 為每一頁簽一張只有 `host.ledger.read`、5 分鐘的授權憑證；簽發金鑰在機密服務，公鑰寫在資料目錄的 `privileged-issuer.pub` | 步驟結果上限 256 KiB，而且每次同步都會留一筆工作紀錄；執行器只接受 Core 簽的憑證 | 2026-11-08 | 113、013、019 |
@@ -73,7 +78,7 @@ None。
 - 架構決策：`ENG.md`
 - 規格：`docs/spec/HazelminX_Spec_v1.1_zh-TW.md`
 - 票務：`docs/tickets/README.md`、GitHub issues #1–#98（milestone M0–M5）
-- 草稿 PR：#99（092 基線盤點）、#102（002 設計方向）
+- 草稿 PR：#99（092 基線盤點）、#102（002 設計方向）、#126（005 前端骨架）
 - 已合併 PR：#100（003）、#101（004）、#103（011）、#104（009）、#105（008）、#106（012）、#121（010）、#122（113）、#124（004）、#123（014）、#125（007）、#127（006）
 - 設計畫布：<https://claude.ai/artifact/NBXgFGYEiZVnKLraoa7Nt8>（第一頁三個方向、第二頁方向 B 定稿 12 畫板，私人）
 - 研究：`docs/research/`
@@ -82,7 +87,7 @@ None。
 ## Handoff Notes
 - 所有產品測試均未執行；規格裡的「必須」都是要求。
 - 參考專案原始碼放在本機暫存目錄，不進 repo；研究報告是線索，實作前以固定 commit 重新核對。
-- Vite+ 的 `vp` 尚未安裝在開發機；票 005 開工時先裝全域 CLI（`curl -fsSL https://vite.plus | bash`）。
+- `web/` 用專案內的 `vite-plus`（`./node_modules/.bin/vp`）；`package.json` 的 `devEngines` 鎖 npm 12.2.2，不要直接跑系統 npm／npx。`node_modules` 放在 SSD 上很慢，開發時可在本機磁碟的 clone 裡跑。
 - 在 `/Volumes/SSD` 上 `cargo build` 需設 `CARGO_TARGET_DIR` 到支援檔案鎖的磁碟（project memory 有紀錄）。
 - 票 010 新增 migration `0006_management_contract.sql`。其他平行分支若也新增 `0006`，後合併的一方要改號，並同步更新票檔裡的引用。
 - `core/internal/api` 的 IAM 測試時鐘原本寫死在 2026-11-07，從 2026-11-08 起整批失敗。票 010（PR #121）已經修正，同時修了 `TestRecoverAfterRestartDoesNotResetOrRerun` 約三成機率失敗的問題。
@@ -90,7 +95,6 @@ None。
   - 安裝器（票 013）在第一步執行 `hazelminx-privileged snapshot capture`，安裝步驟用 `ledger::recorder::Recorder` 記錄，並讓 `/var/lib/hazelminx` 維持 root 擁有、群組與其他人不可寫。
   - 安裝器與節點註冊（票 013、019）把 Core 資料目錄的 `privileged-issuer.pub` 放到主機的 `/etc/hazelminx/privileged/issuer.pub`。沒有這個檔，執行器不會啟動，Core 也拿不到帳本。
   - Core 副本目前只有 `hostledger.Store` 可以讀，還沒有管理 API 與畫面，同步狀態（`host_ledgers.last_error_*`）也還看不到。票 037 或主機頁的票要接上。
-  - `docs/tickets/README.md` 與 `traceability.json` 在 `main` 上還沒有 113 那一列（只在票 002 的設計分支）。設計分支合併後，113 要改成 `done`。
   - dnf／rpm 主機只用模擬輸出測過。x86_64 與 ARM64 的 Ubuntu 24.04 已由 CI 以 root 在 systemd 下實測（PR #127）。
   - 主機頁看帳本等六項設計缺口，列在 PR #122 描述的「設計缺口」一節，等設計端補畫。
   - 帳本會改的對象目前只有路徑、systemd 單元、套件、使用者、群組。之後要動防火牆、容器、sysctl、設定鍵的票，要加對應的 `Target` 變體與讀取方式。
