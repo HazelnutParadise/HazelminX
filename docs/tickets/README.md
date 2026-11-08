@@ -14,7 +14,7 @@
 | [004](004-agent-skeleton.md) | 管理員可以在主機上以 systemd 執行 hazelminx-agent 並回報身分 | 節點與 Agent | 001 | [#4](https://github.com/HazelnutParadise/hazelminx/issues/4) | in_progress |
 | [005](005-web-skeleton.md) | 使用者可以開啟 React 介面並切換語言與淺深色 | 基礎建設 | 001, 002 | [#5](https://github.com/HazelnutParadise/hazelminx/issues/5) | blocked |
 | [006](006-ci-pipeline.md) | 維護者可以在 CI 建置、測試並產生各架構成品 | 發布與供應鏈 | 003, 004, 005 | [#6](https://github.com/HazelnutParadise/hazelminx/issues/6) | blocked |
-| [007](007-core-agent-protocol.md) | Core 與 Agent 可以用版本化、雙向驗證的通道交換能力與工作事件 | 節點與 Agent | 003, 004 | [#7](https://github.com/HazelnutParadise/hazelminx/issues/7) | in_progress |
+| [007](007-core-agent-protocol.md) | Core 與 Agent 可以用版本化、雙向驗證的通道交換能力與工作事件 | 節點與 Agent | 003, 004 | [#7](https://github.com/HazelnutParadise/hazelminx/issues/7) | done |
 | [008](008-job-engine.md) | 使用者可以提交工作後關閉頁面，之後仍能查到進度、證據與結果 | 基礎建設 | 003 | [#8](https://github.com/HazelnutParadise/hazelminx/issues/8) | done |
 | [009](009-iam-foundation.md) | 擁有者可以登入、建立帳號與角色，未授權的 API 呼叫一律被拒絕 | 身分與存取 | 003 | [#9](https://github.com/HazelnutParadise/hazelminx/issues/9) | done |
 | [010](010-management-api-contract.md) | 整合者可以用 /management/v1 的分頁、版本條件與工作回應操作資源 | API、CLI 與整合 | 003, 008 | [#10](https://github.com/HazelnutParadise/hazelminx/issues/10) | blocked |
@@ -50,7 +50,7 @@
 | [033](033-move-app-data.md) | 管理員可以把應用資料安全搬到另一顆磁碟 | 磁碟與儲存 | 032, 016 | [#33](https://github.com/HazelnutParadise/hazelminx/issues/33) | blocked |
 | [034](034-baseline-host-tools.md) | 維運者可以管理 FTP／SFTP、Fail2ban、防毒等基線工具 | 主機管理 | 021, 022 | [#34](https://github.com/HazelnutParadise/hazelminx/issues/34) | blocked |
 | [035](035-logs-retention-diagnostics.md) | 管理員可以設定日誌與統計容量、保存政策並產生遮罩診斷包 | 監控與告警 | 003, 017 | [#35](https://github.com/HazelnutParadise/hazelminx/issues/35) | blocked |
-| [036](036-platform-update.md) | 管理員可以更新 HazelminX，失敗時回到相容舊版本或進入明確復原 | 安裝、更新與卸載 | 013, 008 | [#36](https://github.com/HazelnutParadise/hazelminx/issues/36) | blocked |
+| [036](036-platform-update.md) | 管理員可以更新 HazelminX，失敗時回到相容舊版本或進入明確復原 | 安裝、更新與卸載 | 013, 008, 007 | [#36](https://github.com/HazelnutParadise/hazelminx/issues/36) | blocked |
 | [037](037-offline-install-uninstall.md) | 管理員可以用離線包安裝，並解除安裝平台而保留應用與移交維護 | 安裝、更新與卸載 | 013 | [#37](https://github.com/HazelnutParadise/hazelminx/issues/37) | blocked |
 | [038](038-recovery-mode.md) | 擁有者可以在資料庫損壞或鎖死時用離線救援方式恢復管理 | 安裝、更新與卸載 | 013 | [#38](https://github.com/HazelnutParadise/hazelminx/issues/38) | blocked |
 

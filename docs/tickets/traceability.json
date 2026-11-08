@@ -110,7 +110,7 @@
     "T-021",
     "T-024"
    ],
-   "status": "in_progress",
+   "status": "done",
    "issue": 7
   },
   {
@@ -752,7 +752,8 @@
    "milestone": "M1",
    "blocked_by": [
     "013",
-    "008"
+    "008",
+    "007"
    ],
    "requirements": [
     "INS-009",
