@@ -22,6 +22,7 @@ go test ./...
 | 管理 API 監聽位址 | `-listen` | `HAZELMINX_LISTEN_ADDR` | `127.0.0.1:9800` |
 | 資料目錄 | `-data-dir` | `HAZELMINX_DATA_DIR` | `/var/lib/hazelminx` |
 | 日誌格式 | `-log-format` | `HAZELMINX_LOG_FORMAT` | `json` |
+| 使用者開啟面板的網址（Passkey 綁這個網域） | `-public-origin` | `HAZELMINX_PUBLIC_ORIGIN` | 空白，依每個請求的網址推算 |
 
 端點：`GET /healthz`（含資料庫健康）、`GET /management/v1`（操作總覽：每個操作都連到 OpenAPI 裡的說明，另列已註冊的工作種類）、`GET /management/v1/openapi.json`（OpenAPI 3.1，由路由註冊表產生）。共用契約見下一節。
 
@@ -54,12 +55,18 @@ go test ./...
 - **確認端點**：`GET`／`POST /management/v1/confirmations/{id}`（ROB-010）。只有套用變更的同一個帳號看得到、能確認（工作階段或 API Token 都可以），其他人一律 `404`。確認要從變更套用之後才建立的連線送出（`api.ConnContext` 記下每條連線的建立時間）。變更有指定新入口時，Host 或本機位址也要相符，否則回 `409 CONFIRMATION_NEW_CONNECTION_REQUIRED`。超過時間回 `409 CONFIRMATION_EXPIRED`。指定的本機位址是 `0.0.0.0` 這類萬用位址時只比對 port。只有平台資料庫唯讀時，確認會回 `503`，其他降級不擋確認。同一資源有待確認的變更時，其他寫入回 `409 CONFIRMATION_REQUIRED`。倒數、自動回復與重啟續算由票 024 接上。Core 前面若有反向代理，Core 看不到瀏覽器那段連線，這個判定就不成立。目前管理入口由瀏覽器直連 Core。
 - **非 UTF-8 名稱**：主機來的名稱用 `RawName`：`text` 一律是有效 UTF-8（無效位元組換成 U+FFFD），原始內容不是有效 UTF-8 時另附 `bytes`（標準 base64）。兩個顯示相同的名稱以 `bytes` 區分。改名、下載等操作把整個 `RawName` 送回來，有 `bytes` 就以它為準。
 
-## 首次登入與權限（票 009）
+## 登入、第二驗證與權限（票 009、014）
 
-- 沒有任何帳號時，啟動會把一次性設定碼印到 **stdout**（不進日誌），一小時內用 `POST /management/v1/setup` 建立擁有者；之後這個端點回 `409 SETUP_DONE`。
-- `POST /management/v1/auth/login` 以 argon2id 驗證密碼，成功後設 `hazelminx_session`（HttpOnly、SameSite=Strict）與 `hazelminx_csrf` Cookie，並回 `csrfToken`。寫入類請求必須帶 `X-CSRF-Token`，且 `Origin`／`Referer` 須是本站。
-- `/management/v1` 下除了 `setup` 與 `auth/login`，沒有工作階段一律 `401`。角色表在 `GET /management/v1/roles`；沒有對應授權的呼叫回 `403`，猜到別人範圍的資源 ID 一律回 `404`（與不存在的資源回應完全相同）。
-- 登入失敗依帳號與來源分別限制（帳號冷卻最長 15 分鐘、來源 15 分鐘內 20 次即封鎖 15 分鐘）；曾成功登入該帳號的來源不受帳號冷卻影響，所以攻擊者無法永久鎖死管理員。不存在的帳號也套同一規則，不洩漏帳號存在與否。
+- 沒有任何帳號時，啟動會把一次性設定碼印到 **stdout**（不進日誌），一小時內用 `POST /management/v1/setup` 建立擁有者；之後這個端點回 `409 SETUP_DONE`。建立成功後擁有者直接登入，回應與登入成功相同。
+- `POST /management/v1/auth/login` 以 argon2id 驗證密碼。帳號沒有第二驗證時，回 `{"step":"signed-in", …}`，設 `hazelminx_session`（HttpOnly、SameSite=Strict）與 `hazelminx_csrf` Cookie，並回 `csrfToken`。帳號已綁 TOTP 或 Passkey 時，回 `{"step":"second-factor","challengeToken":…,"methods":[…]}`，這時還不設 Cookie，要再用 `POST /management/v1/auth/login/second-factor` 送出驗證器 App 的 6 位數、Passkey 斷言或復原碼後才登入（Passkey 先用 `auth/login/passkey-options` 取選項）。挑戰 5 分鐘內有效、只能用一次，答錯 5 次就作廢。
+- 寫入類請求必須帶 `X-CSRF-Token`，且 `Origin`／`Referer` 須是本站。
+- `/management/v1` 下除了 `setup` 與 `auth/login*`，沒有工作階段一律 `401`。角色表在 `GET /management/v1/roles`；沒有對應授權的呼叫回 `403`，猜到別人範圍的資源 ID 一律回 `404`（與不存在的資源回應完全相同）。
+- 登入失敗依帳號與來源分別限制：帳號冷卻最長 15 分鐘，來源 15 分鐘內錯 20 次就封鎖 15 分鐘。曾成功登入該帳號的來源不受帳號冷卻影響，攻擊者因此無法永久鎖死管理員。不存在的帳號也套同一規則，不洩漏帳號存在與否。第二步與再次驗證答錯另外按帳號計數，從曾登入過的來源也一樣算，因為經過反向代理時所有人的來源位址可能相同。
+- 擁有者、平台管理員與主機維運者沒有第二驗證時，只能查看自己、綁定 TOTP 或 Passkey、管理自己的工作階段與登出，其他請求（包含讀取）回 `403 SECOND_FACTOR_ENROLLMENT_REQUIRED`。這些角色不能移除最後一個第二驗證（`409 LAST_SECOND_FACTOR`）。
+- 綁定第一個 TOTP 或 Passkey 時會發 10 組復原碼，只顯示這一次。資料庫只存以機密庫金鑰計算的 HMAC 值，用過一次就失效。TOTP 種子放在機密庫，接受前後各 30 秒的時間誤差，同一組碼只能用一次。
+- 新增或移除 TOTP、Passkey，以及重新產生復原碼，都要在 10 分鐘內登入過或用 `POST /management/v1/auth/reauthenticate` 再驗證一次（密碼，加上已綁的第二驗證），否則回 `403 REAUTHENTICATION_REQUIRED`。新增第一個第二驗證時，同一使用者沒有通過第二驗證的其他工作階段會登出。移除第二驗證時，其他工作階段全部登出。
+- Passkey 綁在建立時的網域。用 IP 開面板時不能使用 Passkey。改管理網域前，可用 `GET /management/v1/auth/passkeys/domain-impact?domain=新網域`（需要全域 `platform:write`）查看哪些 Passkey 會失效，以及哪些帳號會因此沒有第二驗證。
+- 使用者在 `GET /management/v1/me/sessions` 看自己的工作階段，用 `DELETE /me/sessions/{id}` 或 `POST /me/sessions/revoke-others` 撤銷，下一個請求就會被拒。閒置逾時在 `PUT /me/session-settings` 設定，可設 15 分鐘到 24 小時，絕對上限 7 天。改短時，其他閒置中的工作階段也一起縮短。伺服器每次延長期限都會重送 Cookie。工作不綁工作階段，登入過期或登出後工作照常執行，重新登入可查結果。
 - 每次登入、建帳號、指派或撤銷角色、拒絕存取都寫入 `audit_events`（`GET /management/v1/audit-events`，只回有 `audit:read` 的範圍）。寫入前會遮罩 `password`、`token`、`secret`、`key` 這類鍵。
 - 每個 `/management/v1` 回應都帶 `X-Trace-ID`（呼叫端有送就沿用，沒送就產生），錯誤內容與稽核事件以 `traceId` 記錄同一個值。`requestId` 只用來指使用者操作的請求識別碼，也就是工作重送去重用的那個。
 - `X-Forwarded-For` 預設不信任（`api.IAMOptions.TrustedProxies` 為空），來源 IP 取連線位址；接 Zentinel 後由票 065 設定可信代理。
@@ -71,11 +78,11 @@ go test ./...
 | `cmd/hazelminx-core` | 進入點：設定、儲存、HTTP、優雅關閉 |
 | `internal/config` | 旗標與環境變數載入、驗證 |
 | `internal/store` | SQLite 開啟、WAL、`synchronous=FULL`、開檔前 `quick_check`、只升不降的 migration（`migrations/NNNN_name.sql`） |
-| `internal/api` | Gin 路由與管理 API 共用契約（錯誤代碼表、列表、版本條件、dryRun、202 工作回應、OpenAPI）、健康檢查、總覽、工作 API、背景列表查詢、確認端點、介面靜態檔；`iam_routes.go` 是工作階段、CSRF 與授權中介層（`RequireGlobal`、`RequireScoped`）與 IAM 端點 |
+| `internal/api` | Gin 路由與管理 API 共用契約（錯誤代碼表、列表、版本條件、dryRun、202 工作回應、OpenAPI）、健康檢查、總覽、工作 API、背景列表查詢、確認端點、介面靜態檔；`iam_routes.go` 是工作階段、CSRF 與授權中介層（`RequireGlobal`、`RequireScoped`）與 IAM 端點，`mfa_routes.go` 是第二驗證、再次驗證、自己的工作階段與強制綁定白名單 |
 | `internal/paging` | 列表的 keyset 分頁：把排序與游標換成 SQL 的 ORDER BY 與「在這一筆之後」條件 |
 | `internal/confirm` | ROB-010 確認紀錄：建立、查詢、確認（新連線與入口判定）、標記已回復、查同一資源是否有待確認變更 |
 | `internal/jobs` | 工作引擎：狀態機、冪等鍵、資源鎖、預算、事件序號、診斷、SQLite 儲存 |
-| `internal/iam` | 帳號、角色與資源範圍、密碼雜湊、工作階段、預設拒絕的授權判定、稽核紀錄、登入嘗試限制 |
+| `internal/iam` | 帳號、角色與資源範圍、密碼雜湊、工作階段與閒置逾時、TOTP、Passkey、復原碼、再次驗證、預設拒絕的授權判定、稽核紀錄、登入嘗試限制 |
 | `internal/secrets` | 機密參照（加密值、版本、使用範圍、到期、變更紀錄）、主金鑰檔與輪替、Token 雜湊查驗 |
 | `web` | 嵌入式前端（`embedweb` build tag） |
 

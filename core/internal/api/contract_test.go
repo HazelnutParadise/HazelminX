@@ -42,11 +42,8 @@ func newContractHarness(t *testing.T) *contractHarness {
 	if err != nil {
 		t.Fatal(err)
 	}
-	hs := &harness{t: t, clock: time.Now().UTC().Truncate(time.Second)}
-	svc, err := iam.New(st.DB, iam.Config{PasswordParams: iam.TestPasswordParams, Now: func() time.Time { return hs.clock }})
-	if err != nil {
-		t.Fatal(err)
-	}
+	hs := &harness{t: t, clock: time.Now().UTC().Truncate(time.Second), totp: map[string]*totpDevice{}}
+	svc := newIAMService(t, st, hs)
 	bh := &blockingHandler{release: make(chan struct{})}
 	e := jobs.New(jobs.NewSQLStore(st.DB), jobs.Options{PollInterval: 10 * time.Millisecond})
 	lq := NewListQueries(st.DB, svc, e)
@@ -621,11 +618,8 @@ func newStoppedHarness(t *testing.T) (*contractHarness, func()) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	hs := &harness{t: t, clock: time.Now().UTC().Truncate(time.Second)}
-	svc, err := iam.New(st.DB, iam.Config{PasswordParams: iam.TestPasswordParams, Now: func() time.Time { return hs.clock }})
-	if err != nil {
-		t.Fatal(err)
-	}
+	hs := &harness{t: t, clock: time.Now().UTC().Truncate(time.Second), totp: map[string]*totpDevice{}}
+	svc := newIAMService(t, st, hs)
 	bh := &blockingHandler{release: make(chan struct{})}
 	e := jobs.New(jobs.NewSQLStore(st.DB), jobs.Options{PollInterval: 10 * time.Millisecond})
 	lq := NewListQueries(st.DB, svc, e)

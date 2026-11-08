@@ -43,6 +43,7 @@ type Server struct {
 
 	iam       *iam.Service     // set by MountIAM
 	protected *gin.RouterGroup // authenticated /management/v1 group
+	origin    string           // configured public origin for passkeys; "" derives it per request
 	jobs      *jobs.Engine     // set by RegisterJobs
 	confirm   *confirm.Service // set by MountConfirmations
 	// platform reports platform-level degradation (addendum 03 機制四);

@@ -58,9 +58,16 @@ const (
 	CodeListQueryExpired   = "LIST_QUERY_EXPIRED"
 	CodeListQueryLimit     = "LIST_QUERY_LIMIT_REACHED"
 	CodeTooManyAttempts    = "TOO_MANY_ATTEMPTS"
-	CodeInternal           = "INTERNAL"
-	CodeUINotEmbedded      = "UI_NOT_EMBEDDED"
-	CodeUIIndexMissing     = "UI_INDEX_MISSING"
+	// Second factors and sessions (ticket 014).
+	CodeLoginChallengeInvalid = "LOGIN_CHALLENGE_INVALID"
+	CodeSecondFactorInvalid   = "SECOND_FACTOR_INVALID"
+	CodeEnrollmentRequired    = "SECOND_FACTOR_ENROLLMENT_REQUIRED"
+	CodeReauthRequired        = "REAUTHENTICATION_REQUIRED"
+	CodeLastSecondFactor      = "LAST_SECOND_FACTOR"
+	CodeNotAvailable          = "NOT_AVAILABLE"
+	CodeInternal              = "INTERNAL"
+	CodeUINotEmbedded         = "UI_NOT_EMBEDDED"
+	CodeUIIndexMissing        = "UI_INDEX_MISSING"
 )
 
 var errorTable = []ErrorCode{
@@ -94,6 +101,12 @@ var errorTable = []ErrorCode{
 	{CodeListQueryExpired, http.StatusGone, false, "背景查詢的結果已過 7 天保存期限並已刪除；請重新提交查詢。"},
 	{CodeListQueryLimit, http.StatusConflict, false, "這個帳號保存的背景查詢已達上限；結果在提交 7 天後刪除。"},
 	{CodeTooManyAttempts, http.StatusTooManyRequests, true, "嘗試太多次，請稍後再試；retryAfterSeconds 寫出要等多久。"},
+	{CodeLoginChallengeInvalid, http.StatusUnauthorized, false, "登入第二步的挑戰已過期、已用過或答錯太多次，請重新輸入密碼。"},
+	{CodeSecondFactorInvalid, http.StatusUnauthorized, false, "驗證碼、復原碼或 Passkey 沒有通過。"},
+	{CodeEnrollmentRequired, http.StatusForbidden, false, "這個帳號的角色必須先綁定驗證器 App 或 Passkey，綁定前只能使用綁定相關的操作。"},
+	{CodeReauthRequired, http.StatusForbidden, false, "新增或移除登入憑證前，要在 10 分鐘內重新驗證密碼與第二驗證（POST /management/v1/auth/reauthenticate）。"},
+	{CodeLastSecondFactor, http.StatusConflict, false, "這個帳號至少要保留一個驗證器 App 或 Passkey；請先新增另一個再移除。"},
+	{CodeNotAvailable, http.StatusConflict, false, "這個功能在目前的環境不能使用，例如用 IP 開啟面板時不能使用 Passkey；message 寫出原因。"},
 	{CodeInternal, http.StatusInternalServerError, true, "伺服器內部錯誤；traceId 可用來查日誌。"},
 	{CodeUINotEmbedded, http.StatusServiceUnavailable, false, "這個版本沒有內嵌網頁介面，請使用管理 API。"},
 	{CodeUIIndexMissing, http.StatusInternalServerError, false, "內嵌介面缺少 index.html。"},

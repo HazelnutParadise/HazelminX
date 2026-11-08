@@ -2,6 +2,7 @@ package iam
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
@@ -13,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/HazelnutParadise/hazelminx/core/internal/secrets"
 	"github.com/google/uuid"
 )
 
@@ -23,7 +25,12 @@ type Config struct {
 	SessionIdle    time.Duration // slide window; default 12h
 	SessionMax     time.Duration // absolute lifetime; default 7d
 	SetupCodeTTL   time.Duration // default 1h
-	Now            func() time.Time
+	ChallengeTTL   time.Duration // second login step; default 5m
+	ReauthWindow   time.Duration // how long a login or reauthentication counts as recent; default 10m
+	// Secrets holds TOTP seeds and the recovery-code key (ticket 011). Nil
+	// disables TOTP and recovery codes (ErrUnavailable).
+	Secrets *secrets.Service
+	Now     func() time.Time
 }
 
 func (c Config) withDefaults() Config {
@@ -41,6 +48,12 @@ func (c Config) withDefaults() Config {
 	}
 	if c.SetupCodeTTL == 0 {
 		c.SetupCodeTTL = time.Hour
+	}
+	if c.ChallengeTTL == 0 {
+		c.ChallengeTTL = 5 * time.Minute
+	}
+	if c.ReauthWindow == 0 {
+		c.ReauthWindow = 10 * time.Minute
 	}
 	if c.Now == nil {
 		c.Now = time.Now
@@ -60,7 +73,18 @@ type Service struct {
 	setupExpires time.Time
 
 	dummyHash string // verified against for unknown usernames so timing matches
+
+	challenges *challengeStore // pending second login steps
+	ceremonies *ceremonyStore  // pending passkey ceremonies
+
+	recoveryMu   sync.Mutex
+	recoveryHMAC []byte // cached recovery-code key
+
+	userMu    sync.Mutex
+	userLocks map[string]*sync.Mutex // see lockUser
 }
+
+var randRead = rand.Read
 
 // New wires the service to the store's database (migrations already applied).
 func New(db *sql.DB, cfg Config) (*Service, error) {
@@ -69,7 +93,8 @@ func New(db *sql.DB, cfg Config) (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Service{db: db, cfg: cfg, limiter: NewLimiter(cfg.Limiter, cfg.Now), dummyHash: dummy}, nil
+	return &Service{db: db, cfg: cfg, limiter: NewLimiter(cfg.Limiter, cfg.Now), dummyHash: dummy,
+		challenges: newChallengeStore(), ceremonies: newCeremonyStore(), userLocks: map[string]*sync.Mutex{}}, nil
 }
 
 // Limiter exposes the attempt limiter so ticket 014 can throttle recovery codes with the same policy.
@@ -108,14 +133,15 @@ func (s *Service) SetupCode(ctx context.Context) (string, time.Time, error) {
 	return s.setupCode, s.setupExpires, nil
 }
 
-// CompleteSetup creates the first owner. The code is consumed atomically
-// under the mutex and the user, assignment and audit row land in one
-// transaction that re-checks "no users yet", so two racing callers cannot
-// both become owner and a failed transaction never leaves a role-less owner
-// behind (which would lock everyone out).
-func (s *Service) CompleteSetup(ctx context.Context, code, username, password string, src Source) (*User, error) {
-	if ok, _ := s.limiter.Check(setupKey, src.IP, false); !ok {
-		return nil, ErrThrottled
+// CompleteSetup creates the first owner and signs them in. The code is
+// consumed atomically under the mutex and the user, assignment, session and
+// audit rows land in one transaction that re-checks "no users yet", so two
+// racing callers cannot both become owner and a failed transaction never
+// leaves a role-less owner behind (which would lock everyone out). The
+// session is held to second-factor enrolment until the owner adds one.
+func (s *Service) CompleteSetup(ctx context.Context, code, username, password string, src Source) (*LoginResult, error) {
+	if ok, retry := s.limiter.Check(setupKey, src.IP, false); !ok {
+		return &LoginResult{RetryAfter: retry}, ErrThrottled
 	}
 	need, err := s.NeedsSetup(ctx)
 	if err != nil {
@@ -162,10 +188,14 @@ func (s *Service) CompleteSetup(ctx context.Context, code, username, password st
 		TraceID: src.TraceID, SourceIP: src.IP}); err != nil {
 		return nil, err
 	}
+	sess, err := s.openSessionTx(ctx, tx, u, src, "")
+	if err != nil {
+		return nil, err
+	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return u, nil
+	return &LoginResult{Session: sess, User: u, EnrollmentRequired: true}, nil
 }
 
 // setupKey is the limiter account key for setup attempts; '#' cannot occur
@@ -174,48 +204,87 @@ const setupKey = "#setup"
 
 // ---- login & sessions ---------------------------------------------------
 
-// Login verifies a password and opens a session. Unknown usernames, wrong
-// passwords and disabled accounts all return ErrInvalidCredentials after the
-// same hashing work; throttling returns ErrThrottled with a retry hint.
-func (s *Service) Login(ctx context.Context, username, password string, src Source) (*Session, *User, time.Duration, error) {
+// Login verifies a password. Unknown usernames, wrong passwords and
+// disabled accounts all return ErrInvalidCredentials after the same hashing
+// work; throttling returns ErrThrottled with RetryAfter set. A user without
+// a second factor is signed in (Session set); a user with one gets a
+// Challenge to finish with CompleteSecondFactor.
+func (s *Service) Login(ctx context.Context, username, password string, src Source) (*LoginResult, error) {
 	username = strings.TrimSpace(username)
 	trusted, err := s.trustedSource(ctx, username, src.IP)
 	if err != nil {
-		return nil, nil, 0, err
+		return nil, err
 	}
 	if ok, retry := s.limiter.Check(username, src.IP, trusted); !ok {
 		// Not audited: the failures that led here are already on the ledger,
 		// and a throttled source must not be able to grow it at wire speed.
-		return nil, nil, retry, ErrThrottled
+		return &LoginResult{RetryAfter: retry}, ErrThrottled
 	}
 
 	u, hash, err := s.userByUsername(ctx, username)
 	if err != nil && !errors.Is(err, ErrNotFound) {
-		return nil, nil, 0, err
+		return nil, err
 	}
 	if u == nil {
 		hash = s.dummyHash
 	}
 	match, verr := VerifyPassword(password, hash)
 	if verr != nil {
-		return nil, nil, 0, verr
+		return nil, verr
 	}
 	if u == nil || !match || u.Status != StatusActive {
 		s.limiter.Failure(username, src.IP)
 		s.record(ctx, s.db, AuditEvent{Action: "login", Scope: Global, Result: ResultFailed, Message: "invalid credentials",
 			After: map[string]any{"username": username}, TraceID: src.TraceID, SourceIP: src.IP})
-		return nil, nil, 0, ErrInvalidCredentials
+		return nil, ErrInvalidCredentials
 	}
 
+	f, err := s.factors(ctx, s.db, u.ID)
+	if err != nil {
+		return nil, err
+	}
+	if f.any() {
+		ch, err := s.newChallenge(ctx, u, f, src)
+		if err != nil {
+			return nil, err
+		}
+		s.limiter.Success(username)
+		if err := s.record(ctx, s.db, AuditEvent{ActorID: u.ID, ActorName: u.Username, Action: "login.password", Scope: Global,
+			ResourceKind: "user", ResourceID: u.ID, Result: ResultOK, Message: "second factor required",
+			After: map[string]any{"methods": ch.Methods}, TraceID: src.TraceID, SourceIP: src.IP}); err != nil {
+			return nil, err
+		}
+		return &LoginResult{User: u, Challenge: ch}, nil
+	}
+
+	pr, err := s.principal(ctx, u.ID)
+	if err != nil {
+		return nil, err
+	}
 	sess, err := s.openSession(ctx, u, src)
 	if err != nil {
-		return nil, nil, 0, err
+		return nil, err
 	}
 	s.limiter.Success(username)
-	return sess, u, 0, nil
+	return &LoginResult{Session: sess, User: u, EnrollmentRequired: RequiresSecondFactor(pr)}, nil
 }
 
 func (s *Service) openSession(ctx context.Context, u *User, src Source) (*Session, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	sess, err := s.openSessionTx(ctx, tx, u, src, "")
+	if err != nil {
+		return nil, err
+	}
+	return sess, tx.Commit()
+}
+
+// openSessionTx inserts a session and its audit row inside tx. factor is the
+// second-factor method that completed the login, "" for none.
+func (s *Service) openSessionTx(ctx context.Context, tx *sql.Tx, u *User, src Source, factor string) (*Session, error) {
 	token, err := randomToken(32)
 	if err != nil {
 		return nil, err
@@ -224,23 +293,26 @@ func (s *Service) openSession(ctx context.Context, u *User, src Source) (*Sessio
 	if err != nil {
 		return nil, err
 	}
-	now := s.now()
-	sess := &Session{ID: uuid.NewString(), UserID: u.ID, Token: token, CSRFToken: csrf, SourceIP: src.IP, UserAgent: src.UserAgent,
-		CreatedAt: now, LastSeenAt: now, ExpiresAt: now.Add(s.cfg.SessionIdle)}
-	tx, err := s.db.BeginTx(ctx, nil)
+	idle, _, err := s.userIdle(ctx, tx, u.ID)
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback()
-	if _, err := tx.ExecContext(ctx, `INSERT INTO sessions(id,user_id,token_hash,csrf_token,source_ip,user_agent,created_at,last_seen_at,expires_at)
-		VALUES(?,?,?,?,?,?,?,?,?)`, sess.ID, u.ID, hashToken(token), csrf, src.IP, src.UserAgent, ts(now), ts(now), ts(sess.ExpiresAt)); err != nil {
+	now := s.now()
+	sess := &Session{ID: uuid.NewString(), UserID: u.ID, Token: token, CSRFToken: csrf, SourceIP: src.IP, UserAgent: src.UserAgent,
+		CreatedAt: now, LastSeenAt: now, ExpiresAt: now.Add(idle), SecondFactor: factor}
+	if _, err := tx.ExecContext(ctx, `INSERT INTO sessions(id,user_id,token_hash,csrf_token,source_ip,user_agent,created_at,last_seen_at,expires_at,second_factor)
+		VALUES(?,?,?,?,?,?,?,?,?,?)`, sess.ID, u.ID, hashToken(token), csrf, src.IP, src.UserAgent, ts(now), ts(now), ts(sess.ExpiresAt), factor); err != nil {
 		return nil, err
+	}
+	var after map[string]any
+	if factor != "" {
+		after = map[string]any{"secondFactor": factor}
 	}
 	if err := s.record(ctx, tx, AuditEvent{ActorID: u.ID, ActorName: u.Username, Action: "login", Scope: Global,
-		ResourceKind: "session", ResourceID: sess.ID, Result: ResultOK, TraceID: src.TraceID, SourceIP: src.IP}); err != nil {
+		ResourceKind: "session", ResourceID: sess.ID, Result: ResultOK, After: after, TraceID: src.TraceID, SourceIP: src.IP}); err != nil {
 		return nil, err
 	}
-	return sess, tx.Commit()
+	return sess, nil
 }
 
 // Authenticate resolves a session token to a principal, sliding the idle
@@ -252,9 +324,9 @@ func (s *Service) Authenticate(ctx context.Context, token string) (*Principal, *
 	var sess Session
 	var created, lastSeen, expires string
 	var revoked sql.NullString
-	err := s.db.QueryRowContext(ctx, `SELECT id,user_id,csrf_token,source_ip,user_agent,created_at,last_seen_at,expires_at,revoked_at
+	err := s.db.QueryRowContext(ctx, `SELECT id,user_id,csrf_token,source_ip,user_agent,created_at,last_seen_at,expires_at,revoked_at,second_factor
 		FROM sessions WHERE token_hash=?`, hashToken(token)).
-		Scan(&sess.ID, &sess.UserID, &sess.CSRFToken, &sess.SourceIP, &sess.UserAgent, &created, &lastSeen, &expires, &revoked)
+		Scan(&sess.ID, &sess.UserID, &sess.CSRFToken, &sess.SourceIP, &sess.UserAgent, &created, &lastSeen, &expires, &revoked, &sess.SecondFactor)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil, ErrSessionInvalid
 	}
@@ -277,8 +349,19 @@ func (s *Service) Authenticate(ctx context.Context, token string) (*Principal, *
 		return nil, nil, ErrSessionInvalid
 	}
 	p.Kind, p.SessionID = "session", sess.ID
+	if RequiresSecondFactor(p) {
+		f, err := s.factors(ctx, s.db, p.User.ID)
+		if err != nil {
+			return nil, nil, err
+		}
+		p.EnrollmentRequired = !f.any()
+	}
 	if now.Sub(sess.LastSeenAt) > time.Minute {
-		sess.LastSeenAt, sess.ExpiresAt = now, now.Add(s.cfg.SessionIdle)
+		idle, _, err := s.userIdle(ctx, s.db, sess.UserID)
+		if err != nil {
+			return nil, nil, err
+		}
+		sess.LastSeenAt, sess.ExpiresAt, sess.Renewed = now, now.Add(idle), true
 		if _, err := s.db.ExecContext(ctx, `UPDATE sessions SET last_seen_at=?, expires_at=? WHERE id=?`, ts(now), ts(sess.ExpiresAt), sess.ID); err != nil {
 			return nil, nil, err
 		}

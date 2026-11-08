@@ -54,7 +54,7 @@ func run(args []string) error {
 	// Job engine (ticket 008). Handlers for host-changing kinds arrive with
 	// the Agent channel (tickets 004/007); until then no kind is registered.
 	engine := jobs.New(jobs.NewSQLStore(st.DB), jobs.Options{FreeBytes: jobs.FreeBytesOf(cfg.DataDir)})
-	identity, err := iam.New(st.DB, iam.Config{})
+	identity, err := iam.New(st.DB, iam.Config{Secrets: sec})
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func run(args []string) error {
 	defer engine.Stop()
 
 	router := api.New(st, web.FS())
-	router.MountIAM(identity, api.IAMOptions{})
+	router.MountIAM(identity, api.IAMOptions{PublicOrigin: cfg.PublicOrigin})
 	// Jobs mount on the authenticated group, so MountIAM must run first.
 	router.RegisterJobs(engine)
 	router.MountListQueries(listQueries)
