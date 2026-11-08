@@ -10,7 +10,7 @@ M0 基礎與設計：Core 與 Agent 後端骨架（票 003、004、008、009、0
 - 設計系統與原型（票 002，PR #102）→ `DESIGN.md`、`docs/design/`、`DESIGN-REVIEW.md`。
 - 1Panel 功能基線盤點（票 092，PR #99）→ `docs/baseline/`。
 - 已在 `main` 但驗收未完成：票 003 等 CI（票 006）；票 008 的 ENG-003 Agent 端等票 007。
-- 主機變更帳本（票 113，in_progress）→ `agent/crates/privileged/src/ledger/`：執行器在每個會改主機的動作前後寫帳本，沒寫成就拒絕；有安裝前快照與手動修改偵測。剩下 Core 的副本，要等票 007 的通道。
+- 主機變更帳本（票 113，已在 `main`，in_progress）→ `agent/crates/privileged/src/ledger/`：執行器在每個會改主機的動作前後寫帳本，沒寫成就拒絕；有安裝前快照與手動修改偵測。剩下的項目列在 Handoff Notes。
 - 參考專案研究收尾 → `docs/research/`（1Panel 後端／前端、Komodo Periphery、Portainer Git Stack、Beszel 報告待補）。
 
 ## Milestones
@@ -51,6 +51,7 @@ None。
 | `/management/v1/jobs` 掛在 IAM 驗證之後：讀取要全域 `platform:read`，提交與取消要全域 `platform:write`；各工作種類的權限與範圍由票 010 定 | 合併 008 與 009 時工作 API 原本不需登入；AGENTS.md 要求危險操作在後端驗權 | 2026-11-07 | 008、009、010 |
 | 003、004、008 驗收未完成仍先合併進 `main`，狀態維持 in_progress | 使用者決定（2026-11-07）；003 的 CI 條件要等 006，而 006 需要 003 先合併 | 2026-11-07 | 003、004、006、008 |
 | 主機變更帳本由高權限執行器寫：每個動作宣告會改的對象，先同步寫意圖行才執行；帳本在 `/var/lib/hazelminx/ledger`（root 0700，上層不得可被他人寫入），每行帶前一行的 SHA-256；Core 拿原始行驗證後保存副本 | 增補 07 第 55.1 節要求沒寫帳本的變更一律拒絕、主機連不上 Core 時仍能只靠本機那份移除 | 2026-11-08 | 113、013、037、007 |
+| 113 驗收未完成（缺 Core 的帳本副本）仍先合併進 `main`，狀態維持 in_progress | 使用者決定（2026-11-08）；Core 副本要等 007 的通道，其餘測試都已通過 | 2026-11-08 | 113、007 |
 | 主金鑰存 `<data-dir>/master.key`（多世代、舊世代永不刪）；SQLite 改 `synchronous=FULL`；`master.key` 存在而 `core.db` 不在視為遺失而非全新安裝 | 35.2 主金鑰不與資料庫同放、輪替後舊備份須可解密；DAT-002 已確認交易不可丟；T-012 不冒用空白庫 | 2026-11-07 | 011、078、013 |
 | `/management/v1` 列表統一回 `{items, page}`、以 keyset 游標翻頁；`INVALID_REQUEST`、`JOB_KIND_UNKNOWN` 併入 `VALIDATION_FAILED`，`JOB_NOT_FOUND` 併入 `NOT_FOUND`，`CONFLICT` 改名 `ALREADY_EXISTS` | 使用者決定（2026-11-08）；尚未發版，統一後前端只需處理一套格式 | 2026-11-08 | 010、005、017 |
 | 版本過期回 `412 VERSION_MISMATCH`，缺少或 `*` 回 `428 VERSION_REQUIRED`；`409` 只用於資源狀態擋下 | 使用者決定（2026-11-08）；RFC 9110 13.1.1 | 2026-11-08 | 010、015、016 |
@@ -62,7 +63,7 @@ None。
 - 規格：`docs/spec/HazelminX_Spec_v1.1_zh-TW.md`
 - 票務：`docs/tickets/README.md`、GitHub issues #1–#98（milestone M0–M5）
 - 草稿 PR：#99（092 基線盤點）、#102（002 設計方向）
-- 已合併 PR：#100（003）、#101（004）、#103（011）、#104（009）、#105（008）、#106（012）、#121（010）
+- 已合併 PR：#100（003）、#101（004）、#103（011）、#104（009）、#105（008）、#106（012）、#121（010）、#122（113）
 - 設計畫布：<https://claude.ai/artifact/NBXgFGYEiZVnKLraoa7Nt8>（第一頁三個方向、第二頁方向 B 定稿 12 畫板，私人）
 - 研究：`docs/research/`
 - 工作規則：`AGENTS.md`
@@ -74,3 +75,10 @@ None。
 - 在 `/Volumes/SSD` 上 `cargo build` 需設 `CARGO_TARGET_DIR` 到支援檔案鎖的磁碟（project memory 有紀錄）。
 - 票 010 新增 migration `0006_management_contract.sql`。其他平行分支若也新增 `0006`，後合併的一方要改號，並同步更新票檔裡的引用。
 - `core/internal/api` 的 IAM 測試時鐘原本寫死在 2026-11-07，從 2026-11-08 起整批失敗。票 010（PR #121）已經修正，同時修了 `TestRecoverAfterRestartDoesNotResetOrRerun` 約三成機率失敗的問題。
+- 票 113 還沒做完的項目：
+  - Core 的帳本副本（UNX-001 最後一項）：007 合併後，把 `agent/crates/privileged/src/ledger/sync.rs` 裡標 `TODO(007)` 的型別搬進 protocol crate，Go 端用 `docs/contracts/fixtures/host-ledger-batch.json` 做契約測試，Core 依節點保存驗證過的行。做完才能把 UNX-001 打勾、113 改成 done。
+  - 安裝器（票 013）在第一步執行 `hazelminx-privileged snapshot capture`，安裝步驟用 `ledger::recorder::Recorder` 記錄，並讓 `/var/lib/hazelminx` 維持 root 擁有、群組與其他人不可寫。
+  - `docs/tickets/README.md` 與 `traceability.json` 在 `main` 上還沒有 113 那一列（只在票 002 的設計分支）。設計分支合併後，113 要改成 `in_progress`。
+  - dnf／rpm 主機、iptables 防火牆只用模擬輸出測過，x86_64 主機沒有實測，CI（票 006）接上後補跑。
+  - 主機頁看帳本等六項設計缺口，列在 PR #122 描述的「設計缺口」一節，等設計端補畫。
+  - 帳本會改的對象目前只有路徑、systemd 單元、套件、使用者、群組。之後要動防火牆、容器、sysctl、設定鍵的票，要加對應的 `Target` 變體與讀取方式。
