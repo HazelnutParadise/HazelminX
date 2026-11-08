@@ -66,6 +66,7 @@ async fn container_read_only_grant_cannot_restart_services_or_get_a_shell() {
         .send_raw(
             serde_json::to_string(&Request::Action {
                 request_id: "r2".into(),
+                job_id: None,
                 grant: g,
                 action: json!({"kind": "shell", "cmd": "id"}),
             })
@@ -165,6 +166,7 @@ async fn parameter_rejection_is_logged_by_rule_not_value() {
         .send_raw(
             serde_json::to_string(&Request::Action {
                 request_id: "r1".into(),
+                job_id: None,
                 grant: g,
                 action: json!({"kind": "restart_service", "unit": hostile}),
             })
@@ -195,6 +197,7 @@ async fn type_mismatch_values_are_redacted_from_the_security_log() {
         .send_raw(
             serde_json::to_string(&Request::Action {
                 request_id: "r1".into(),
+                job_id: None,
                 grant: g,
                 action: json!({"kind": "restart_service", "unit": 424242}),
             })
@@ -309,6 +312,7 @@ async fn saturated_slots_and_slow_readers_do_not_block_health_or_revocation() {
         .client
         .open(&Request::Action {
             request_id: "s1".into(),
+            job_id: None,
             grant: g1.clone(),
             action: json!({"kind": "system_info"}),
         })
@@ -318,6 +322,7 @@ async fn saturated_slots_and_slow_readers_do_not_block_health_or_revocation() {
         .client
         .open(&Request::Action {
             request_id: "s2".into(),
+            job_id: None,
             grant: g2,
             action: json!({"kind": "system_info"}),
         })

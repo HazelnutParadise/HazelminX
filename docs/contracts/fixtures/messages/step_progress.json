@@ -1,0 +1,11 @@
+{
+  "type": "step_progress",
+  "jobId": "job_01HXYZ",
+  "step": 0,
+  "at": "2026-11-08T03:04:06Z",
+  "progress": 40,
+  "log": [
+    "reading /etc/os-release"
+  ],
+  "logsDropped": 0
+}

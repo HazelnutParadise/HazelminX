@@ -48,7 +48,7 @@ pub const UNIT_SUFFIXES: &[&str] = &[
 ];
 
 /// A systemd unit name such as `nginx.service` or `getty@tty1.service`.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
 pub struct UnitName(String);
 
@@ -98,7 +98,7 @@ impl From<UnitName> for String {
 pub const USER_NAME_MAX: usize = 32;
 
 /// A Linux account name (`useradd` portable rules plus an optional trailing `$`).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
 pub struct UserName(String);
 
@@ -142,7 +142,7 @@ impl From<UserName> for String {
 
 /// An absolute host path with no `.` or `..` components. Any other bytes,
 /// including whitespace, quotes and newlines, are kept as-is.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
 pub struct HostPath(PathBuf);
 
@@ -174,6 +174,53 @@ impl TryFrom<String> for HostPath {
 impl From<HostPath> for String {
     fn from(v: HostPath) -> String {
         v.0.to_string_lossy().into_owned()
+    }
+}
+
+pub const PACKAGE_NAME_MAX: usize = 128;
+
+/// A distribution package name (dpkg or rpm), e.g. `docker-ce`,
+/// `libstdc++6`, `python3.12`. Starts with an alphanumeric byte; the rest is
+/// `[A-Za-z0-9+._-]`, which covers both naming policies.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(try_from = "String", into = "String")]
+pub struct PackageName(String);
+
+impl PackageName {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl TryFrom<String> for PackageName {
+    type Error = ParamError;
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        if value.is_empty() {
+            return Err(ParamError::new("package name is empty"));
+        }
+        if value.len() > PACKAGE_NAME_MAX {
+            return Err(ParamError::new("package name is longer than 128 bytes"));
+        }
+        if !value.as_bytes()[0].is_ascii_alphanumeric() {
+            return Err(ParamError::new(
+                "package name must start with a letter or digit",
+            ));
+        }
+        if !value
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'+' | b'.' | b'_' | b'-'))
+        {
+            return Err(ParamError::new(
+                "package name contains characters outside [A-Za-z0-9+._-]",
+            ));
+        }
+        Ok(PackageName(value))
+    }
+}
+
+impl From<PackageName> for String {
+    fn from(v: PackageName) -> String {
+        v.0
     }
 }
 
@@ -321,6 +368,32 @@ mod tests {
         assert_eq!(p.as_path(), Path::new(nasty));
         for bad in ["", "relative/x", "/a/../b", "/a/./b", "/a\0b"] {
             assert!(HostPath::try_from(bad.to_string()).is_err(), "{bad:?}");
+        }
+    }
+
+    #[test]
+    fn package_name_rules() {
+        for ok in [
+            "docker-ce",
+            "libstdc++6",
+            "python3.12",
+            "nvidia_container_toolkit",
+            "0ad",
+        ] {
+            assert!(PackageName::try_from(ok.to_string()).is_ok(), "{ok}");
+        }
+        for bad in [
+            "",
+            "-x",
+            ".x",
+            "a b",
+            "a;id",
+            "a\nb",
+            "a/b",
+            "$(id)",
+            &"a".repeat(PACKAGE_NAME_MAX + 1),
+        ] {
+            assert!(PackageName::try_from(bad.to_string()).is_err(), "{bad:?}");
         }
     }
 

@@ -27,7 +27,7 @@ def _vars(t: dict) -> str:
 
 BASE_CSS = f"""
 body{{margin:0}}
-.hb{{{_vars(DARK)};font-family:"Geist","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;font-synthesis:none;line-break:strict;color:var(--ink);background:var(--bg);font-size:14px;line-height:1.5;color-scheme:dark}}
+@font-face{{font-family:"HZX CJK Punct";src:local("PingFang TC"),local("Noto Sans TC"),local("Noto Sans CJK TC"),local("Microsoft JhengHei");unicode-range:U+3000-303F,U+FF00-FFEF}}.hb{{{_vars(DARK)};font-family:"HZX CJK Punct","Geist","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;font-synthesis:none;line-break:strict;color:var(--ink);background:var(--bg);font-size:14px;line-height:1.5;color-scheme:dark}}
 .hb.theme-light{{{_vars(LIGHT)};color-scheme:light}}
 .hb *{{box-sizing:border-box}}
 .hb .mono{{font-family:"Geist Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}}
@@ -79,6 +79,10 @@ body{{margin:0}}
 .hb .nv .cnt{{margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:0 7px 0 6px;border-radius:999px;font-family:"Geist Mono",ui-monospace,monospace;font-size:11px;line-height:18px;color:var(--blue);background:color-mix(in srgb,var(--blue) 15%,transparent)}}
 .hb .nv .cnt.dng{{color:var(--danger);background:color-mix(in srgb,var(--danger) 15%,transparent)}}
 .hb .scrim{{position:fixed;inset:0;z-index:30;padding:72px 16px;background:color-mix(in srgb,#000 45%,transparent);display:flex;justify-content:center;align-items:flex-start}}.hb .cmdp{{width:100%;max-width:640px;background:var(--raised);border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 48px rgb(0 0 0/.4);overflow:hidden}}.hb .cmdq{{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}}.hb .cmdl{{max-height:520px;overflow:auto;padding:4px 0}}.hb .cmdi{{display:flex;align-items:center;gap:10px;min-height:44px;padding:6px 12px;margin:0 6px;border-radius:6px}}.hb .cmdi:hover,.hb .cmdi.on{{background:var(--panel)}}.hb .cmdi .ic{{color:var(--muted);display:inline-flex}}.hb .cmdi .kbd{{margin-left:auto}}.hb .edwrap{{display:grid;grid-template-columns:minmax(0,2fr) minmax(300px,1fr);gap:16px;align-items:start}}@media (max-width:1100px){{.hb .edwrap{{grid-template-columns:1fr}}}}.hb .editor{{font-size:12.5px;line-height:1.75;padding:8px 0;overflow-x:auto;background:#14120F;border-radius:8px;color:#EDE6DC}}.hb .editor .ln{{display:flex;padding-right:14px;white-space:pre}}.hb .editor .no{{width:44px;flex:none;text-align:right;padding-right:14px;color:#8A8278;user-select:none}}.hb .editor .ln.dng{{background:color-mix(in srgb,var(--danger) 18%,transparent);box-shadow:inset 3px 0 var(--danger)}}.hb .editor .ln.warn{{background:color-mix(in srgb,var(--warn) 14%,transparent);box-shadow:inset 3px 0 var(--warn)}}.hb .side.mini{{width:56px;padding:12px 8px}}.hb .side.mini .nv span,.hb .side.mini .navgrp{{display:none}}.hb .side.mini .nv{{justify-content:center;padding:0;position:relative}}.hb .side.mini .nv .cnt{{display:inline-flex;position:absolute;top:0;right:-2px;padding:0 4px;font-size:10px;line-height:15px}}.hb .side.mini .nv .cnt .spin{{display:none}}.hb .top .brand.mini{{width:56px;padding:0 17px}}.hb .top .brand.mini span:not(.logo){{display:none}}
+.hb .hostbar{{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:6px 16px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--danger) 10%,var(--panel));font-size:13px}}.hb .hostbar .more{{margin-left:auto}}
+.hb .tree .dis,.hb .row.dis{{opacity:.5;cursor:not-allowed}}.hb .row.dis .n,.hb .tree .dis .tn{{text-decoration:none}}
+.hb .btn:disabled{{opacity:.45;cursor:not-allowed;filter:saturate(.4)}}.hb .ib:disabled{{opacity:.4;cursor:not-allowed}}.hb .cdown{{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:12px 14px;border:1px solid var(--danger);border-left-width:4px;border-radius:8px;background:var(--panel)}}.hb .cdown .t{{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 320px}}.hb .cdown .t strong{{font-size:14px}}.hb .cdown .acts2{{display:flex;flex-wrap:wrap;gap:8px}}.hb .stale{{opacity:.62}}.hb .savebar{{position:sticky;bottom:12px;z-index:12;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:10px 14px;border:1px solid var(--hazel);border-radius:8px;background:var(--raised);box-shadow:0 6px 24px rgb(0 0 0/.35)}}.hb .savebar .dot{{width:8px;height:8px;border-radius:50%;background:var(--hazel);flex:none}}.hb .savebar .btn.pri .kbd{{margin-left:6px;opacity:.8}}.hb .savebar .sbtns{{margin-left:auto;flex-wrap:nowrap}}@media (max-width:767px){{.hb .savebar .sbtns{{flex-wrap:wrap;margin-left:0}}.hb .savebar .kbd{{display:none}}}}
+.hb .mini-diff{{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);font-size:12.5px}}
 .hb .grp{{display:flex;align-items:baseline;gap:10px;margin:10px 0 -4px;font-size:15px;font-weight:600}}.hb .grp .note{{font-weight:400}}
 .hb .spin{{width:8px;height:8px;border-radius:50%;border:1.5px solid currentColor;border-top-color:transparent;flex:none}}
 @media (prefers-reduced-motion:no-preference){{.hb .spin{{animation:hx-spin 1s linear infinite}}}}
@@ -261,7 +265,7 @@ body{{margin:0}}
 .hb .range{{display:flex;gap:4px;flex-wrap:wrap}}
 .hb .range .btn{{min-height:28px;padding:0 10px;font-size:12px;color:var(--muted);background:transparent}}
 .hb .range .btn.on{{background:var(--raised);color:var(--hazel);border-color:var(--line);font-weight:600}}
-.hb .field{{display:flex;flex-direction:column;gap:6px}}
+.hb .field{{display:flex;flex-direction:column;gap:6px}}.hb .field>.st{{align-self:flex-start}}
 .hb .field label{{font-size:12px;color:var(--muted)}}
 .hb .inp{{display:flex;align-items:center;gap:8px;min-height:36px;padding:0 10px;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--ink);width:100%}}
 .hb .inp.err{{border-color:var(--danger)}}
@@ -450,12 +454,26 @@ body{{margin:0}}
 .hb .subtabs{{display:flex;flex-wrap:wrap;gap:4px}}
 .hb .st2{{min-height:30px;padding:0 12px;border-radius:999px;border:1px solid transparent;background:transparent;color:var(--muted);font-size:13px;cursor:pointer}}
 .hb .st2:hover{{color:var(--ink);background:var(--raised)}}.hb .st2.on{{color:var(--ink);background:var(--raised);border-color:var(--line)}}
-@media (max-width:767px){{.hb .subtabs{{flex-wrap:nowrap;overflow-x:auto}}.hb .st2{{flex:none;min-height:44px}}}}
+@media (max-width:767px){{.hb .top a.ib[href="Terminal.dc.html"]{{display:none}}}}@media (max-width:767px){{.hb .subtabs{{flex-wrap:nowrap;overflow-x:auto}}.hb .st2{{flex:none;min-height:44px}}}}
 .hb .rstrip{{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 14px;border-top:1px solid var(--hairline)}}
 .hb .tier{{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:600;border:1px solid currentColor;cursor:help}}
 .hb .tier.dng{{color:var(--danger)}}.hb .tier.info{{color:var(--blue)}}.hb .tier.off{{color:var(--muted)}}
 @media (max-width:1024px){{.hb .tw{{--k5: ;}}}}
 @media (max-width:767px){{.hb .tw{{--k3: ;--k4: ;--k5: ;--k6: ;}}}}
+
+/* 操作一看就知道能點：按鈕有實底與邊框、圖示按鈕有框、連結有底線、可點的列滑過有箭頭 */
+.hb .btn{{background:var(--raised);border-color:color-mix(in srgb,var(--ink) 22%,transparent);box-shadow:0 1px 0 rgb(0 0 0/.25);cursor:pointer}}
+.hb .btn:hover{{border-color:var(--hazel);color:var(--ink)}}.hb .btn.pri:hover{{filter:brightness(1.08)}}
+.hb .btn.sm{{color:var(--ink)}}.hb .btn.sm.pri{{color:var(--hazelink)}}
+.hb .ib{{border:1px solid color-mix(in srgb,var(--ink) 18%,transparent);background:var(--raised);color:var(--ink);cursor:pointer}}.hb .ib:hover{{border-color:var(--hazel);color:var(--hazel)}}
+.hb .top .ib{{background:transparent}}
+.hb .range{{display:inline-flex;gap:2px;padding:2px;border:1px solid color-mix(in srgb,var(--ink) 18%,transparent);border-radius:6px;background:var(--panel)}}.hb .range .btn{{border-color:transparent;box-shadow:none;background:transparent;color:var(--ink)}}.hb .range .btn.on{{background:var(--raised);border-color:var(--hazel)}}
+.hb .ph .more{{border:1px solid color-mix(in srgb,var(--ink) 18%,transparent);border-radius:4px;padding:0 10px;background:var(--raised);cursor:pointer}}.hb .ph .more:hover{{border-color:var(--hazel)}}
+.hb .chip{{color:var(--ink);border-color:color-mix(in srgb,var(--ink) 25%,transparent);background:var(--raised);cursor:pointer}}.hb .chip:hover{{border-color:var(--hazel)}}
+.hb .note a,.hb .foot a,.hb .check a,.hb p a{{color:var(--hazel);text-decoration:underline;text-underline-offset:2px}}
+.hb a.row{{cursor:pointer;position:relative}}.hb a.row:hover{{background:var(--raised);box-shadow:inset 3px 0 var(--hazel)}}
+.hb a.ncard{{cursor:pointer}}.hb a.ncard:hover{{border-color:var(--hazel)}}
+.hb .hostbar .more{{border:1px solid color-mix(in srgb,var(--ink) 18%,transparent);border-radius:4px;padding:0 10px;min-height:28px;display:inline-flex;align-items:center;background:var(--raised)}}
 """
 
 ICONS = {
@@ -612,10 +630,37 @@ def topbar(current: str, jobs: int = 3, attention: int = 5, obs: str = "03:42:06
   </header>"""
 
 
+def host_bar() -> str:
+    """主機狀態列：有主機沒有回應時全站常駐一行（不能關閉，恢復後自動消失；維護中的主機不算）。"""
+    return (f'<div class="hostbar" role="status"><span class="st dng"><i aria-hidden="true"></i>1 台主機沒有回應</span>'
+            f'<span class="mono">hazel-jp-02</span><span class="note">48 秒 · wiki.example.tw 仍可連</span>'
+            f'<a class="btn sm" href="NodeOffline.dc.html">處理</a><a class="more" href="Nodes.dc.html">全部主機 →</a></div>')
+
+
+def savebar(changes: str, effect: str, primary: str, secondary: str = "") -> str:
+    """未儲存儲存列：有編輯中的變更時固定在畫面底部（全系統共用）。沒有變更時不出現，編輯器裡的儲存鈕停用。"""
+    sec = f'<button type="button" class="btn">{secondary}</button>' if secondary else ""
+    return (f'<div class="savebar" role="region" aria-label="未儲存的變更"><span class="dot" aria-hidden="true"></span>'
+            f'<span><strong>{changes}</strong><span class="note"> · {effect}</span></span>'
+            f'<span class="wrap sbtns"><button type="button" class="btn">捨棄</button>{sec}'
+            f'<button type="button" class="btn pri" aria-keyshortcuts="Meta+S">{icon("save", 14)}{primary}<span class="kbd">⌘S</span></button></span></div>')
+
+
+def component_down(name: str, host: str, since: str, exit_info: str, impact: str, can_restart: bool = True, tries: str = "", kind: str = "", busy: bool = False) -> str:
+    """平台依賴的元件停止時，依賴它的頁面頂端都放這條（ROB-013）。頁面其餘內容照常，以上次觀測值呈現。"""
+    btn = (f'<button type="button" class="btn pri" disabled>{icon("restart", 14)}重啟中…</button>' if busy
+           else f'<button type="button" class="btn pri">{icon("restart", 14)}重啟 {name}</button>' if can_restart
+           else f'<span tabindex="0" data-tip="需要 {name} 的操作權限，請找主機管理員"><button type="button" class="btn pri" disabled>{icon("restart", 14)}重啟 {name}</button></span>')
+    t = f'<span class="note">{tries}</span>' if tries else ""
+    return (f'<div class="cdown" role="alert"><span class="t"><strong>{name} 已停止 · {host} · {since}</strong>' + (f'<span class="note mono">{kind}</span>' if kind else '') + f''
+            f'<span>{status("dng", exit_info)} <span class="note">{impact}</span></span>{t}</span>'
+            f'<span class="acts2">{btn}<button type="button" class="btn">{icon("log", 14)}看日誌</button></span></div>')
+
+
 def shell(current: str, main: str, aside: str | None = None, **kw) -> str:
     aside_html = f'<aside class="aside" aria-label="需要處理與進行中的工作">{aside}</aside>' if aside else ""
     return (f'<div class="hb theme-{{{{theme}}}}" style="min-height: 100vh; display: flex; flex-direction: column">'
-            f'{topbar(current, **kw)}<div class="layout">{nav(current, **kw)}<main class="main">{main}</main>{aside_html}</div></div>')
+            f'{topbar(current, **kw)}{host_bar()}<div class="layout">{nav(current, **kw)}<main class="main">{main}</main>{aside_html}</div></div>')
 
 
 def page_head(title: str, obs: str = "03:42:06", actions: str = "", extra: str = "") -> str:
@@ -1011,7 +1056,9 @@ def tree(items: list, open_depth: int = 1) -> str:
                 ancestors.add(i); d = items[i][0]
     out = ['<div class="tree"><ul>']
     stack = []  # open details/ul pairs
-    for i, (depth, name, sz, on) in enumerate(items):
+    for i, it in enumerate(items):
+        depth, name, sz, on = it[:4]
+        dis = it[4] if len(it) > 4 else ""
         has_kids = i + 1 < n and items[i + 1][0] > depth
         while stack and stack[-1] >= depth:
             out.append("</ul></details></li>"); stack.pop()
@@ -1021,6 +1068,10 @@ def tree(items: list, open_depth: int = 1) -> str:
             stack.append(depth)
         else:
             # 目錄樹只有資料夾；子層還沒讀取的也是可展開的資料夾（展開時才向 Agent 讀取）
+            if dis:
+                # 不能選的項目照樣列出，呈現不可選的樣式，滑過顯示原因
+                out.append(f'<li class="leaf dis" aria-disabled="true" data-tip="{dis}" title="{dis}"><span class="pad"></span>{icon("lock", 14)}{icon("folder", 16)}<span class="tn">{name}</span><span class="sz">{sz}</span></li>')
+                continue
             out.append(f'<li><details><summary class="{"on" if on else ""}">{icon("chev", 14)}{icon("folder", 16)}<span class="tn" title="{name}">{name}</span><span class="sz">{sz}</span></summary>'
                        f'<ul><li class="leaf"><span class="pad"></span><span class="note">讀取中…</span></li></ul></details></li>')
     while stack:
@@ -1079,7 +1130,7 @@ def code_editor(tabs: list, lines: list, status: list, toolbar_right: str = "", 
     return ('<div class="ed">'
             f'<div class="ttabs"><div role="tablist" aria-label="開啟的檔案" style="display:flex">{t}</div></div>'
             '<div class="edtb">'
-            f'<button type="button" class="btn sm pri" aria-keyshortcuts="Meta+S">{icon("save", 14)}儲存</button>'
+            f'<button type="button" class="btn pri" aria-keyshortcuts="Meta+S">{icon("save", 14)}儲存 · 1 處變更</button>'
             + tb("undo", "復原") + tb("search", "搜尋與取代") + tb("wrapline", "自動換行") + '<span class="sep"></span>'
             + tb("history", "版本歷史") + tb("diff", "與上一版比較")
             + f'<span style="margin-left:auto" class="wrap">{toolbar_right}</span>' + tb("max", "全螢幕")

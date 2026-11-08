@@ -1,0 +1,18 @@
+{
+  "type": "step_rejected",
+  "requestId": "stp_job_01HXYZ_0_1",
+  "jobId": "job_01HXYZ",
+  "step": 0,
+  "code": "UNSUPPORTED_ACTION",
+  "message": "action disk.format v1 is not supported by this agent",
+  "supported": [
+    {
+      "name": "jobs",
+      "version": 1
+    },
+    {
+      "name": "agent.info",
+      "version": 1
+    }
+  ]
+}

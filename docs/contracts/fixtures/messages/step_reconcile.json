@@ -1,0 +1,7 @@
+{
+  "type": "step_reconcile",
+  "requestId": "rec_job_01HXYZ_0_2",
+  "jobId": "job_01HXYZ",
+  "step": 0,
+  "targetNode": "e0a56a32d47e84d38d4efc694da4e0dc90cf2e44ba0f5b1606b62af4a2087659"
+}

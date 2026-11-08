@@ -35,11 +35,14 @@ func setupOwner(t *testing.T, svc *Service) *User {
 	if err != nil || code == "" {
 		t.Fatalf("setup code: %q %v", code, err)
 	}
-	u, err := svc.CompleteSetup(ctx, code, "owner", ownerPW, Source{IP: "10.0.0.1"})
+	res, err := svc.CompleteSetup(ctx, code, "owner", ownerPW, Source{IP: "10.0.0.1"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	return u
+	if res.Session == nil || !res.EnrollmentRequired {
+		t.Fatalf("setup must sign the owner in, held to second-factor enrolment: %+v", res)
+	}
+	return res.User
 }
 
 func TestSetupIsOneShot(t *testing.T) {
@@ -118,8 +121,8 @@ func TestLoginDoesNotRevealAccounts(t *testing.T) {
 	svc, _ := newTestService(t)
 	setupOwner(t, svc)
 	ctx := context.Background()
-	_, _, _, errUnknown := svc.Login(ctx, "nobody", "whatever-password", Source{IP: "1.1.1.1"})
-	_, _, _, errWrong := svc.Login(ctx, "owner", "wrong-password-xx", Source{IP: "1.1.1.1"})
+	_, errUnknown := svc.Login(ctx, "nobody", "whatever-password", Source{IP: "1.1.1.1"})
+	_, errWrong := svc.Login(ctx, "owner", "wrong-password-xx", Source{IP: "1.1.1.1"})
 	if !errors.Is(errUnknown, ErrInvalidCredentials) || !errors.Is(errWrong, ErrInvalidCredentials) || errUnknown.Error() != errWrong.Error() {
 		t.Fatalf("unknown=%v wrong=%v", errUnknown, errWrong)
 	}
@@ -129,8 +132,12 @@ func TestLoginSessionLifecycle(t *testing.T) {
 	svc, clk := newTestService(t)
 	owner := setupOwner(t, svc)
 	ctx := context.Background()
-	sess, u, _, err := svc.Login(ctx, "Owner", ownerPW, Source{IP: "10.0.0.1", UserAgent: "test"})
-	if err != nil || u.ID != owner.ID || sess.Token == "" || sess.CSRFToken == "" {
+	res, err := svc.Login(ctx, "Owner", ownerPW, Source{IP: "10.0.0.1", UserAgent: "test"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sess, u := res.Session, res.User
+	if u.ID != owner.ID || sess.Token == "" || sess.CSRFToken == "" {
 		t.Fatalf("login: %v %+v", err, sess)
 	}
 	p, got, err := svc.Authenticate(ctx, sess.Token)
@@ -147,7 +154,8 @@ func TestLoginSessionLifecycle(t *testing.T) {
 		t.Fatalf("revoked session must fail: %v", err)
 	}
 
-	sess2, _, _, _ := svc.Login(ctx, "owner", ownerPW, Source{IP: "10.0.0.1"})
+	res2, _ := svc.Login(ctx, "owner", ownerPW, Source{IP: "10.0.0.1"})
+	sess2 := res2.Session
 	clk.advance(13 * time.Hour)
 	if _, _, err := svc.Authenticate(ctx, sess2.Token); !errors.Is(err, ErrSessionInvalid) {
 		t.Fatalf("idle session must expire: %v", err)
@@ -162,13 +170,13 @@ func TestThrottleCannotLockOutAdminPermanently(t *testing.T) {
 	setupOwner(t, svc)
 	ctx := context.Background()
 	// Owner has logged in from 10.0.0.1 before: that source is trusted.
-	if _, _, _, err := svc.Login(ctx, "owner", ownerPW, Source{IP: "10.0.0.1"}); err != nil {
+	if _, err := svc.Login(ctx, "owner", ownerPW, Source{IP: "10.0.0.1"}); err != nil {
 		t.Fatal(err)
 	}
 	attacker := Source{IP: "203.0.113.9"}
 	var throttled bool
 	for i := 0; i < 10; i++ {
-		_, _, _, err := svc.Login(ctx, "owner", "guess-number-"+string(rune('0'+i)), attacker)
+		_, err := svc.Login(ctx, "owner", "guess-number-"+string(rune('0'+i)), attacker)
 		if errors.Is(err, ErrThrottled) {
 			throttled = true
 			break
@@ -177,13 +185,13 @@ func TestThrottleCannotLockOutAdminPermanently(t *testing.T) {
 	if !throttled {
 		t.Fatal("repeated failures on one account must be throttled")
 	}
-	if _, _, _, err := svc.Login(ctx, "owner", ownerPW, Source{IP: "10.0.0.1"}); err != nil {
+	if _, err := svc.Login(ctx, "owner", ownerPW, Source{IP: "10.0.0.1"}); err != nil {
 		t.Fatalf("trusted source must still log in while the account is under attack: %v", err)
 	}
 	// Unknown accounts throttle identically, so the throttle itself leaks nothing.
 	var unknownThrottled bool
 	for i := 0; i < 10; i++ {
-		if _, _, _, err := svc.Login(ctx, "ghost", "guess-number-x", attacker); errors.Is(err, ErrThrottled) {
+		if _, err := svc.Login(ctx, "ghost", "guess-number-x", attacker); errors.Is(err, ErrThrottled) {
 			unknownThrottled = true
 			break
 		}
@@ -193,11 +201,11 @@ func TestThrottleCannotLockOutAdminPermanently(t *testing.T) {
 	}
 	// A new, untrusted source for the owner is throttled now, but only for a bounded time.
 	newDevice := Source{IP: "198.51.100.7"}
-	if _, _, _, err := svc.Login(ctx, "owner", ownerPW, newDevice); !errors.Is(err, ErrThrottled) {
+	if _, err := svc.Login(ctx, "owner", ownerPW, newDevice); !errors.Is(err, ErrThrottled) {
 		t.Fatalf("untrusted source during cool-down: %v", err)
 	}
 	clk.advance(DefaultLimiterPolicy.AccountMaxDelay + time.Second)
-	if _, _, _, err := svc.Login(ctx, "owner", ownerPW, newDevice); err != nil {
+	if _, err := svc.Login(ctx, "owner", ownerPW, newDevice); err != nil {
 		t.Fatalf("cool-down must end: %v", err)
 	}
 }

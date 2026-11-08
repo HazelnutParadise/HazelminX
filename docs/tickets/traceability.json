@@ -38,7 +38,7 @@
       ],
       "requirements": [],
       "acceptance_tests": [],
-      "status": "in_progress",
+      "status": "done",
       "issue": 3
     },
     {
@@ -52,7 +52,7 @@
       ],
       "requirements": [],
       "acceptance_tests": [],
-      "status": "in_progress",
+      "status": "done",
       "issue": 4
     },
     {
@@ -87,7 +87,7 @@
       ],
       "requirements": [],
       "acceptance_tests": [],
-      "status": "blocked",
+      "status": "in_progress",
       "issue": 6
     },
     {
@@ -110,7 +110,7 @@
         "T-021",
         "T-024"
       ],
-      "status": "ready",
+      "status": "done",
       "issue": 7
     },
     {
@@ -144,7 +144,7 @@
         "T-033",
         "T-034"
       ],
-      "status": "in_progress",
+      "status": "done",
       "issue": 8
     },
     {
@@ -182,7 +182,7 @@
         "INT-001"
       ],
       "acceptance_tests": [],
-      "status": "blocked",
+      "status": "done",
       "issue": 10
     },
     {
@@ -257,7 +257,7 @@
         "DEP-T01",
         "DEP-T02"
       ],
-      "status": "blocked",
+      "status": "ready",
       "issue": 13
     },
     {
@@ -278,7 +278,7 @@
       "acceptance_tests": [
         "T-130"
       ],
-      "status": "ready",
+      "status": "done",
       "issue": 14
     },
     {
@@ -297,7 +297,7 @@
         "IAM-010"
       ],
       "acceptance_tests": [],
-      "status": "blocked",
+      "status": "ready",
       "issue": 15
     },
     {
@@ -318,7 +318,7 @@
       "acceptance_tests": [
         "T-030"
       ],
-      "status": "blocked",
+      "status": "ready",
       "issue": 16
     },
     {
@@ -342,7 +342,8 @@
         "ROB-004",
         "ROB-005",
         "ROB-007",
-        "ROB-008"
+        "ROB-008",
+        "ROB-013"
       ],
       "acceptance_tests": [
         "T-119",
@@ -359,7 +360,9 @@
         "T-182",
         "T-185",
         "T-186",
-        "T-187"
+        "T-187",
+        "T-231",
+        "T-232"
       ],
       "status": "blocked",
       "issue": 17
@@ -519,7 +522,8 @@
       "requirements": [
         "SYS-008",
         "SYS-009",
-        "ROB-010"
+        "ROB-010",
+        "ROB-014"
       ],
       "acceptance_tests": [
         "T-037",
@@ -527,9 +531,10 @@
         "T-167",
         "T-178",
         "T-184",
-        "T-188"
+        "T-188",
+        "T-233"
       ],
-      "status": "blocked",
+      "status": "ready",
       "issue": 24
     },
     {
@@ -546,7 +551,7 @@
         "SYS-010"
       ],
       "acceptance_tests": [],
-      "status": "blocked",
+      "status": "ready",
       "issue": 25
     },
     {
@@ -764,10 +769,13 @@
       "requirements": [
         "DAT-005",
         "DAT-008",
-        "MON-008"
+        "MON-008",
+        "ROB-015"
       ],
       "acceptance_tests": [
-        "T-124"
+        "T-124",
+        "T-242",
+        "T-243"
       ],
       "status": "blocked",
       "issue": 35
@@ -780,7 +788,8 @@
       "milestone": "M1",
       "blocked_by": [
         "013",
-        "008"
+        "008",
+        "007"
       ],
       "requirements": [
         "INS-009",
@@ -811,7 +820,8 @@
       "epic": "install",
       "milestone": "M1",
       "blocked_by": [
-        "013"
+        "013",
+        "113"
       ],
       "requirements": [
         "INS-011",
@@ -822,7 +832,12 @@
         "UN-002",
         "UN-003",
         "UN-004",
-        "UN-005"
+        "UN-005",
+        "UNX-003",
+        "UNX-004",
+        "UNX-005",
+        "UNX-006",
+        "UNX-007"
       ],
       "acceptance_tests": [
         "T-002",
@@ -831,7 +846,14 @@
         "DEP-T09",
         "DEP-T10",
         "DEP-T11",
-        "DEP-T12"
+        "DEP-T12",
+        "T-244",
+        "T-245",
+        "T-246",
+        "T-247",
+        "T-248",
+        "T-249",
+        "T-251"
       ],
       "status": "blocked",
       "issue": 37
@@ -1083,7 +1105,7 @@
         "GH-T14",
         "GH-T15"
       ],
-      "status": "blocked",
+      "status": "ready",
       "issue": 47
     },
     {
@@ -2472,6 +2494,196 @@
       ],
       "status": "blocked",
       "issue": 114
+    },
+    {
+      "id": "108",
+      "file": "108-project-units-connections.md",
+      "title": "專案管理員可以在一個專案環境放多個 Compose 與 Kubernetes 部署單元，單元之間用公開變數與內部位址連線",
+      "epic": "compose",
+      "milestone": "M2",
+      "blocked_by": [
+        "044",
+        "049",
+        "086",
+        "088"
+      ],
+      "requirements": [
+        "PRJ-001",
+        "PRJ-002",
+        "PRJ-003",
+        "PRJ-004",
+        "PRJ-005",
+        "PRJ-006",
+        "PRJ-012"
+      ],
+      "acceptance_tests": [
+        "T-189",
+        "T-190",
+        "T-191",
+        "T-192",
+        "T-193",
+        "T-194",
+        "T-195",
+        "T-196",
+        "T-205",
+        "T-218"
+      ],
+      "status": "blocked",
+      "issue": 115
+    },
+    {
+      "id": "109",
+      "file": "109-env-groups-and-files.md",
+      "title": "使用者可以把環境變數分成以檔名命名的組，在每個填變數的地方上傳任意檔名的 env 檔，並看到每個服務實際收到的值",
+      "epic": "compose",
+      "milestone": "M2",
+      "blocked_by": [
+        "045",
+        "017"
+      ],
+      "requirements": [
+        "PRJ-007",
+        "PRJ-008",
+        "PRJ-009",
+        "PRJ-010",
+        "PRJ-013"
+      ],
+      "acceptance_tests": [
+        "T-197",
+        "T-198",
+        "T-199",
+        "T-200",
+        "T-201",
+        "T-206",
+        "T-207",
+        "T-213",
+        "T-214",
+        "T-215"
+      ],
+      "status": "blocked",
+      "issue": 116
+    },
+    {
+      "id": "110",
+      "file": "110-compose-semantics-zero-downtime.md",
+      "title": "部署照 Compose 與 Helm 的實際讀法處理多份 compose 檔、profile、建置變數、設定檔與 values，並且每次建置、建置完才無縫替換",
+      "epic": "compose",
+      "milestone": "M2",
+      "blocked_by": [
+        "044",
+        "046",
+        "108",
+        "109"
+      ],
+      "requirements": [
+        "PRJ-011",
+        "PRJ-014",
+        "PRJ-015"
+      ],
+      "acceptance_tests": [
+        "T-202",
+        "T-203",
+        "T-204",
+        "T-208",
+        "T-209",
+        "T-210",
+        "T-211",
+        "T-212",
+        "T-216",
+        "T-217",
+        "T-219",
+        "T-220"
+      ],
+      "status": "blocked",
+      "issue": 117
+    },
+    {
+      "id": "111",
+      "file": "111-model-hub-hf-runtime.md",
+      "title": "管理員可以建立多個模型庫、在面板搜尋並下載 Hugging Face 模型，再用內建的 vLLM 或 llama.cpp 部署推論服務",
+      "epic": "ai",
+      "milestone": "M4",
+      "blocked_by": [
+        "074",
+        "075"
+      ],
+      "requirements": [
+        "HFM-001",
+        "HFM-002",
+        "HFM-003",
+        "HFM-004",
+        "HFM-005",
+        "HFM-006",
+        "HFM-007",
+        "HFM-008"
+      ],
+      "acceptance_tests": [
+        "T-221",
+        "T-222",
+        "T-223",
+        "T-224",
+        "T-225",
+        "T-226",
+        "T-227",
+        "T-228",
+        "T-229",
+        "T-230"
+      ],
+      "status": "blocked",
+      "issue": 118
+    },
+    {
+      "id": "112",
+      "file": "112-app-template-network-mounts.md",
+      "title": "從 1Panel 商店安裝時轉換範本（網路、Port、資料路徑、資料庫連線），應用的網路與資料位置安裝時能設、之後也能隨時改",
+      "epic": "appstore",
+      "milestone": "M2",
+      "blocked_by": [
+        "052",
+        "053",
+        "109"
+      ],
+      "requirements": [
+        "APX-001",
+        "APX-002",
+        "APX-003",
+        "APX-004",
+        "APX-005",
+        "APX-006",
+        "APX-007",
+        "APX-008"
+      ],
+      "acceptance_tests": [
+        "T-234",
+        "T-235",
+        "T-236",
+        "T-237",
+        "T-238",
+        "T-239",
+        "T-240",
+        "T-241"
+      ],
+      "status": "blocked",
+      "issue": 119
+    },
+    {
+      "id": "113",
+      "file": "113-host-change-ledger.md",
+      "title": "平台對主機的每個變更都寫進變更帳本，並在安裝時記錄安裝前快照",
+      "epic": "host",
+      "milestone": "M1",
+      "blocked_by": [
+        "012"
+      ],
+      "requirements": [
+        "UNX-001",
+        "UNX-002"
+      ],
+      "acceptance_tests": [
+        "T-250"
+      ],
+      "status": "in_progress",
+      "issue": 120
     }
   ]
 }

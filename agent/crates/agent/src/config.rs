@@ -29,6 +29,28 @@ pub struct Config {
     /// Log format: `json` (default) or `text`.
     #[serde(default = "default_log_format")]
     pub log_format: String,
+    /// How the TLS server is verified: `pinned` (default) trusts only the
+    /// Core CA in `state_dir/identity/core-ca.crt` and the fixed Core name,
+    /// ignoring the URL's host; `proxy` trusts the TLS-terminating proxy's
+    /// certificate chain for the URL's host, and the Core's identity is then
+    /// proven in the handshake only.
+    #[serde(default = "default_core_transport")]
+    pub core_transport: CoreTransport,
+    /// In `proxy` mode, a PEM bundle to trust instead of the system trust
+    /// store.
+    #[serde(default)]
+    pub proxy_ca_file: Option<PathBuf>,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum CoreTransport {
+    Pinned,
+    Proxy,
+}
+
+fn default_core_transport() -> CoreTransport {
+    CoreTransport::Pinned
 }
 
 fn default_state_dir() -> PathBuf {
@@ -46,6 +68,8 @@ impl Default for Config {
             core_url: None,
             node_name: None,
             log_format: default_log_format(),
+            core_transport: default_core_transport(),
+            proxy_ca_file: None,
         }
     }
 }
@@ -98,8 +122,19 @@ impl Config {
         );
         if let Some(url) = &self.core_url {
             anyhow::ensure!(
-                url.starts_with("https://") || url.starts_with("http://"),
-                "core_url {url:?} must start with https:// (http:// is only for local tests)"
+                url.starts_with("https://") || url.starts_with("wss://"),
+                "core_url {url:?} must start with https:// or wss:// (the agent channel is always TLS)"
+            );
+        }
+        if let Some(p) = &self.proxy_ca_file {
+            anyhow::ensure!(
+                self.core_transport == CoreTransport::Proxy,
+                "proxy_ca_file is only used with core_transport = \"proxy\""
+            );
+            anyhow::ensure!(
+                p.is_absolute(),
+                "proxy_ca_file {} must be an absolute path",
+                p.display()
             );
         }
         Ok(())
@@ -161,11 +196,28 @@ mod tests {
         let err = Config::load(
             Path::new("/nonexistent"),
             Overrides {
-                core_url: Some("ftp://core".into()),
+                core_url: Some("http://core".into()),
                 ..Default::default()
             },
         )
         .unwrap_err();
         assert!(err.to_string().contains("core_url"));
+    }
+
+    #[test]
+    fn transport_defaults_to_pinned_and_proxy_ca_needs_proxy_mode() {
+        let dir = tempfile::tempdir().unwrap();
+        let p = dir.path().join("agent.toml");
+        std::fs::write(
+            &p,
+            "core_transport = \"proxy\"\nproxy_ca_file = \"/etc/ssl/proxy.pem\"\n",
+        )
+        .unwrap();
+        let cfg = Config::load(&p, Overrides::default()).unwrap();
+        assert_eq!(cfg.core_transport, CoreTransport::Proxy);
+        assert_eq!(Config::default().core_transport, CoreTransport::Pinned);
+        std::fs::write(&p, "proxy_ca_file = \"/etc/ssl/proxy.pem\"\n").unwrap();
+        let err = Config::load(&p, Overrides::default()).unwrap_err();
+        assert!(format!("{err:#}").contains("proxy_ca_file"), "{err:#}");
     }
 }

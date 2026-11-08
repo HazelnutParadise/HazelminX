@@ -1,0 +1,19 @@
+{
+  "type": "event",
+  "seq": 17,
+  "kind": "completed",
+  "jobId": "job_01HXYZ",
+  "step": 0,
+  "requestId": "stp_job_01HXYZ_0_1",
+  "at": "2026-11-08T03:04:06Z",
+  "evidence": [
+    "agent://journal/17"
+  ],
+  "result": {
+    "agentVersion": "0.1.0",
+    "fingerprint": "e0a56a32d47e84d38d4efc694da4e0dc90cf2e44ba0f5b1606b62af4a2087659",
+    "os": "linux",
+    "arch": "x86_64",
+    "hostname": "db-01"
+  }
+}

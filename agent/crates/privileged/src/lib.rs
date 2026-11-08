@@ -15,6 +15,7 @@
 //! - [`audit`]    security events (never contain secrets)
 //! - [`protocol`] socket frames
 //! - [`executor`] `Executor` trait and the real host dispatcher
+//! - [`ledger`]   host change ledger, pre-install snapshot, drift detection
 //! - [`server`]   socket listener, caller check, authorization pipeline
 //! - [`client`]   the agent-side client (also used by the tests)
 
@@ -26,6 +27,7 @@ pub mod config;
 pub mod executor;
 pub mod grant;
 pub mod handlers;
+pub mod ledger;
 pub mod params;
 pub mod protocol;
 pub mod server;

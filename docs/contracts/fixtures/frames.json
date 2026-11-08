@@ -1,0 +1,24 @@
+{
+  "agentToCore": [
+    {
+      "body": "{\"type\":\"heartbeat\",\"at\":\"2026-11-08T03:04:05Z\"}",
+      "mac": "q40DRu9WBXnKmjP2LuDgDYq8hghsE/4i0UkdwW3k5dI=",
+      "n": 1
+    }
+  ],
+  "coreToAgent": [
+    {
+      "body": "{\"type\":\"ack\",\"seq\":17}",
+      "mac": "tlcrwMT/OSRcLMrgPItXh0cMlk3ta4QljpX9uJyBN4U=",
+      "n": 1
+    },
+    {
+      "body": "{\"type\":\"heartbeat\",\"at\":\"2026-11-08T03:04:05Z\"}",
+      "mac": "uK0E/PK0dxycHusMpmGMED4paqXqoXV2hbFhmjJp8Ak=",
+      "n": 2
+    }
+  ],
+  "keyAgentToCoreHex": "e38fe2e30f0f17a08fe9d893d7a49852378d464956047ce23a6edd511cae23e6",
+  "keyCoreToAgentHex": "e3275897a8dc3dd5b09082973bd7e337320e9c47a1a1831cb6cfb7cb6b715ea5",
+  "note": "Frames sealed with the session keys of signature.json. n counts frames per direction from 1."
+}

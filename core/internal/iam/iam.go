@@ -3,9 +3,9 @@
 // login sessions, default-deny authorization, the audit ledger and login
 // attempt limiting.
 //
-// Scope of this ticket: password login and sessions only. TOTP, Passkey and
-// recovery codes are ticket 014; API Tokens are ticket 015 and only the
-// TokenAuthenticator seam exists here.
+// Second factors (TOTP, passkeys, recovery codes), session lists and the
+// per-user idle timeout are ticket 014 (mfa.go, passkey.go, sessions.go).
+// API Tokens are ticket 015 and only the TokenAuthenticator seam exists here.
 //
 // Rules the rest of core relies on:
 //   - Authorize answers deny unless a role assignment explicitly grants the
@@ -22,6 +22,7 @@ package iam
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 )
 
@@ -107,12 +108,15 @@ type Assignment struct {
 
 // User is a local account. The password hash never leaves the package.
 type User struct {
-	ID          string    `json:"id"`
-	Username    string    `json:"username"`
-	DisplayName string    `json:"displayName"`
-	Status      string    `json:"status"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
+	ID          string `json:"id"`
+	Username    string `json:"username"`
+	DisplayName string `json:"displayName"`
+	Status      string `json:"status"`
+	// Version grows by one on every change to the account or its role
+	// assignments; the API sends it as the ETag (spec 36.1).
+	Version   int64     `json:"version"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // UserStatus values.
@@ -133,6 +137,11 @@ type Session struct {
 	CreatedAt  time.Time `json:"createdAt"`
 	LastSeenAt time.Time `json:"lastSeenAt"`
 	ExpiresAt  time.Time `json:"expiresAt"`
+	// SecondFactor is the method that completed the login ("" for none).
+	SecondFactor string `json:"secondFactor"`
+	// Renewed is set by Authenticate when it moved the idle expiry, so the
+	// HTTP layer re-sends the cookie with the new lifetime.
+	Renewed bool `json:"-"`
 }
 
 // Principal is who is acting: a user with their assignments, resolved once
@@ -142,6 +151,10 @@ type Principal struct {
 	User        User         `json:"user"`
 	Assignments []Assignment `json:"assignments"`
 	SessionID   string       `json:"sessionId,omitempty"`
+	// EnrollmentRequired is set for a session of an account that must use a
+	// second factor (RequiresSecondFactor) but has none yet; the API layer
+	// then only lets it reach the enrolment routes.
+	EnrollmentRequired bool `json:"secondFactorEnrollmentRequired"`
 }
 
 // TokenAuthenticator is the seam for ticket 015. Nil means tokens are not
@@ -157,6 +170,9 @@ type Source struct {
 	// TraceID identifies one HTTP call (X-Trace-ID). It is not the
 	// operation request identifier that deduplicates jobs.
 	TraceID string
+	// RPID is the domain the browser is using, so a login challenge only
+	// offers passkeys that can work there. Empty means "unknown".
+	RPID string
 }
 
 // Errors returned by the service. Handlers map them to status codes; the
@@ -171,4 +187,18 @@ var (
 	ErrSetupDone          = errors.New("iam: setup already completed")
 	ErrSetupCode          = errors.New("iam: setup code invalid or expired")
 	ErrValidation         = errors.New("iam: validation failed")
+	// ErrVersionMismatch: the caller's version of the account is stale. The
+	// returned error is a *VersionMismatchError carrying the current version.
+	ErrVersionMismatch = errors.New("iam: version mismatch")
 )
+
+// VersionMismatchError is returned when a conditional write names a version
+// that is no longer current.
+type VersionMismatchError struct{ Current int64 }
+
+func (e *VersionMismatchError) Error() string {
+	return fmt.Sprintf("iam: version mismatch, current version is %d", e.Current)
+}
+
+// Is makes errors.Is(err, ErrVersionMismatch) true.
+func (e *VersionMismatchError) Is(target error) bool { return target == ErrVersionMismatch }

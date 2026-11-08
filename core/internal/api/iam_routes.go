@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/url"
@@ -33,6 +34,11 @@ type IAMOptions struct {
 	// deriving the client IP for throttling and audit. Empty trusts nobody,
 	// so a direct client cannot forge its source (ticket 065 wires Zentinel).
 	TrustedProxies []string
+	// PublicOrigin is the management address users open, e.g.
+	// "https://panel.example.com". Passkeys are bound to its host name. Empty
+	// derives the origin from each request (scheme and Host header); the
+	// browser still enforces that a passkey only works on its own domain.
+	PublicOrigin string
 }
 
 // MountIAM installs authentication, CSRF and authorization on /management/v1
@@ -40,38 +46,81 @@ type IAMOptions struct {
 // afterwards inherit the session requirement.
 func (s *Server) MountIAM(svc *iam.Service, opts IAMOptions) {
 	s.iam = svc
+	s.origin = strings.TrimSuffix(opts.PublicOrigin, "/")
 	_ = s.engine.SetTrustedProxies(opts.TrustedProxies)
 
-	pub := s.engine.Group("/management/v1", traceID())
-	pub.GET("/setup", s.setupStatus)
-	pub.POST("/setup", s.setupOwner)
-	pub.POST("/auth/login", s.login)
+	const base = "/management/v1"
+	pub := s.engine.Group(base)
+	s.handle(pub, base, Operation{Method: "GET", Path: base + "/setup", ID: "getSetup", Tag: "auth",
+		Summary:   "whether the first owner still has to be created",
+		Responses: []Response{{Status: 200, Body: setupStatusResponse{}}}}, s.setupStatus)
+	s.handle(pub, base, Operation{Method: "POST", Path: base + "/setup", ID: "completeSetup", Tag: "auth",
+		Summary: "create the first owner with the one-time setup code and sign them in (held to second-factor enrolment)", Request: setupRequest{},
+		Responses: []Response{{Status: 201, Body: loginResponse{}, Headers: []string{"Set-Cookie"}}},
+		Errors:    []string{CodeSetupDone, CodeSetupCodeInvalid, CodeTooManyAttempts}}, s.setupOwner)
+	s.handle(pub, base, Operation{Method: "POST", Path: base + "/auth/login", ID: "login", Tag: "auth",
+		Summary: "password login; signs in (step signed-in, sets the cookies) or, when the account has a second factor, returns a single-use challenge (step second-factor)",
+		Request: loginRequest{},
+		Responses: []Response{{Status: 200, Body: loginResponse{}, Headers: []string{"Set-Cookie"},
+			Description: "signed in, or a second-factor challenge (step tells which)"}},
+		Errors: []string{CodeInvalidCredentials, CodeTooManyAttempts}}, s.login)
+	s.mountSecondFactorLogin(pub, base)
 
-	s.protected = s.engine.Group("/management/v1", traceID(), s.requireSession(opts.Tokens), s.csrf())
+	s.protected = s.engine.Group(base, s.requireSession(opts.Tokens), s.csrf(), s.enrollmentGate())
 	p := s.protected
-	p.GET("/auth/session", s.whoami)
-	p.POST("/auth/logout", s.logout)
-	p.GET("/roles", s.listRoles)
-	p.GET("/users", s.listUsers)
-	p.POST("/users", s.createUser)
-	p.GET("/users/:id", s.getUser)
-	p.POST("/users/:id/roles", s.assignRole)
-	p.DELETE("/users/:id/roles/:assignmentId", s.revokeRole)
-	p.GET("/audit-events", s.listAudit)
-
-	s.addOperation("GET", "/management/v1/setup", "whether the first owner still has to be created")
-	s.addOperation("POST", "/management/v1/setup", "create the first owner with the one-time setup code")
-	s.addOperation("POST", "/management/v1/auth/login", "password login; sets the session cookie")
-	s.addOperation("POST", "/management/v1/auth/logout", "revoke the current session")
-	s.addOperation("GET", "/management/v1/auth/session", "current user and role assignments")
-	s.addOperation("GET", "/management/v1/roles", "role presets and the actions they grant")
-	s.addOperation("GET", "/management/v1/users", "list accounts (users:read)")
-	s.addOperation("POST", "/management/v1/users", "create a local account (users:write)")
-	s.addOperation("GET", "/management/v1/users/{id}", "one account with assignments (users:read)")
-	s.addOperation("POST", "/management/v1/users/{id}/roles", "assign a role on a scope (roles:assign)")
-	s.addOperation("DELETE", "/management/v1/users/{id}/roles/{assignmentId}", "revoke an assignment (roles:assign)")
-	s.addOperation("GET", "/management/v1/audit-events", "audit ledger page, limited to scopes with audit:read")
+	auth := func(op Operation) Operation { op.Auth = true; return op }
+	s.handle(p, base, auth(Operation{Method: "GET", Path: base + "/auth/session", ID: "getSession", Tag: "auth",
+		Summary: "current user and role assignments", Responses: []Response{{Status: 200, Body: sessionResponse{}}}}), s.whoami)
+	s.handle(p, base, auth(Operation{Method: "POST", Path: base + "/auth/logout", ID: "logout", Tag: "auth",
+		Summary: "revoke the current session", Responses: []Response{{Status: 204, Description: "signed out"}}}), s.logout)
+	s.handle(p, base, auth(Operation{Method: "GET", Path: base + "/roles", ID: "listRoles", Tag: "users",
+		Summary: "role presets and the actions they grant", Responses: []Response{{Status: 200, Body: rolesResponse{}}}}), s.listRoles)
+	s.handle(p, base, auth(Operation{Method: "GET", Path: base + "/users", ID: "listUsers", Tag: "users",
+		Summary: "list accounts", Permission: "users:read on the global scope", List: &usersList,
+		Responses: []Response{{Status: 200, Body: ListResponse[iam.UserDetail]{}}}}), s.listUsers)
+	s.handle(p, base, auth(Operation{Method: "POST", Path: base + "/users", ID: "createUser", Tag: "users",
+		Summary: "create a local account", Permission: "users:write on the global scope", Request: iam.CreateUserInput{},
+		Responses: []Response{{Status: 201, Body: userResponse{}, Headers: []string{"ETag"}}},
+		Errors:    []string{CodeAlreadyExists}}), s.createUser)
+	s.handle(p, base, auth(Operation{Method: "GET", Path: base + "/users/{id}", ID: "getUser", Tag: "users",
+		Summary: "one account with assignments; ETag carries its version", Permission: "users:read on the global scope",
+		Responses: []Response{{Status: 200, Body: userDetailResponse{}, Headers: []string{"ETag"}}}}), s.getUser)
+	s.handle(p, base, auth(Operation{Method: "PATCH", Path: base + "/users/{id}", ID: "updateUser", Tag: "users",
+		Summary: "change account fields (displayName); requires If-Match", Permission: "users:write on the global scope",
+		Request: iam.UpdateUserInput{}, Versioned: true,
+		Responses: []Response{{Status: 200, Body: userDetailResponse{}, Headers: []string{"ETag"}}}}), s.updateUser)
+	s.handle(p, base, auth(Operation{Method: "POST", Path: base + "/users/{id}/roles", ID: "assignRole", Tag: "users",
+		Summary: "assign a role on a scope; If-Match optional; advances the account version", Permission: "roles:assign on the global scope",
+		Request: assignRequest{}, Params: []Param{optionalIfMatch},
+		Responses: []Response{{Status: 201, Body: assignmentResponse{}, Headers: []string{"ETag"}}},
+		Errors:    []string{CodeAlreadyExists, CodeVersionMismatch}}), s.assignRole)
+	s.handle(p, base, auth(Operation{Method: "DELETE", Path: base + "/users/{id}/roles/{assignmentId}", ID: "revokeRole", Tag: "users",
+		Summary: "revoke an assignment; If-Match optional; advances the account version", Permission: "roles:assign on the global scope",
+		Params:    []Param{optionalIfMatch},
+		Responses: []Response{{Status: 204, Description: "revoked", Headers: []string{"ETag"}}},
+		Errors:    []string{CodeVersionMismatch}}), s.revokeRole)
+	s.handle(p, base, auth(Operation{Method: "GET", Path: base + "/audit-events", ID: "listAuditEvents", Tag: "audit",
+		Summary: "audit ledger, limited to scopes where the account holds audit:read", Permission: "audit:read on at least one scope",
+		List: &auditList, Responses: []Response{{Status: 200, Body: ListResponse[iam.AuditEvent]{}}}}), s.listAudit)
+	s.mountSecondFactors(p, base)
 }
+
+var optionalIfMatch = Param{Name: "If-Match", In: "header", Description: `optional "v<version>" of the account; when sent it must be current`,
+	Schema: jsonSchema{"type": "string", "pattern": `^"v[0-9]+"$`}}
+
+var usersList = ListSpec{Name: "users", Sorts: []string{"username", "createdAt"},
+	DefaultSort: []SortKey{{Field: "username"}}, TieBreaker: "id"}
+
+var auditList = ListSpec{Name: "audit-events", Sorts: []string{"seq", "at"},
+	DefaultSort: []SortKey{{Field: "seq", Desc: true}}, TieBreaker: "seq",
+	Filters: []FilterSpec{
+		{Name: "actorId", Summary: "events by this user id"},
+		{Name: "jobId", Summary: "events of this job"},
+		{Name: "resourceId", Summary: "events on this resource"},
+		{Name: "scopeKind", Summary: "events on this scope kind (with scopeId)", Enum: []string{"global", "node", "project", "database"}},
+		{Name: "scopeId", Summary: "events on this scope id (with scopeKind)"},
+		{Name: "afterSeq", Summary: "only events with seq greater than this; with sort=seq, follows the ledger forward", Int: true},
+	}}
 
 // Management is the authenticated /management/v1 group for later tickets.
 // It is nil until MountIAM runs.
@@ -88,48 +137,86 @@ func Principal(c *gin.Context) *iam.Principal {
 // ---- error format (36.2) -------------------------------------------------
 
 type apiError struct {
-	Code             string   `json:"code"`
-	Message          string   `json:"message"`
-	RequestID        string   `json:"requestId,omitempty"` // operation request identifier (spec 33)
-	TraceID          string   `json:"traceId,omitempty"`   // this HTTP call, also in X-Trace-ID
-	JobID            string   `json:"jobId,omitempty"`
-	Retryable        bool     `json:"retryable"`
-	RetryAfter       int      `json:"retryAfterSeconds,omitempty"`
+	Code       string `json:"code"`
+	Message    string `json:"message"`
+	RequestID  string `json:"requestId,omitempty"` // operation request identifier (spec 33)
+	TraceID    string `json:"traceId,omitempty"`   // this HTTP call, also in X-Trace-ID
+	JobID      string `json:"jobId,omitempty"`
+	ResourceID string `json:"resourceId,omitempty"`
+	Retryable  bool   `json:"retryable"`
+	RetryAfter int    `json:"retryAfterSeconds,omitempty"`
+	// Evidence links (event ids, log refs) that back the refusal (36.2).
+	Evidence []string `json:"evidence,omitempty"`
+	// SuggestedActions are possible next operations; none is pre-authorized.
 	SuggestedActions []string `json:"suggestedActions,omitempty"`
+	// Fields names the inputs a synchronous validation rejected (36.1).
+	Fields []FieldError `json:"fields,omitempty"`
+	// Details is the code-specific structured data documented in the error
+	// table (currentVersion, referencedBy, mode, confirmationId, checks…).
+	Details map[string]any `json:"details,omitempty"`
+	// AlsoBlockedBy lists lower-precedence codes that also applied.
+	AlsoBlockedBy []string `json:"alsoBlockedBy,omitempty"`
 }
 
-func fail(c *gin.Context, status int, code, msg string) {
-	c.AbortWithStatusJSON(status, apiError{Code: code, Message: msg, TraceID: c.GetString(TraceIDHdr)})
+// FieldError is one rejected input.
+type FieldError struct {
+	Field   string `json:"field"`
+	Message string `json:"message"`
 }
 
-// writeError sends an error body stamped with the call's trace id.
-func writeError(c *gin.Context, status int, e apiError) {
-	e.TraceID = c.GetString(TraceIDHdr)
-	c.JSON(status, e)
+// newError builds an error with the table's default retryability.
+func newError(code, msg string) apiError {
+	return apiError{Code: code, Message: msg, Retryable: lookupCode(code).Retryable}
 }
+
+// fail answers with code from the error table and a plain message.
+func fail(c *gin.Context, code, msg string) { respond(c, newError(code, msg)) }
 
 // notFound is the single answer for "does not exist" and "you may not know
 // whether it exists" (T-014). Nothing in it depends on the lookup result.
-func notFound(c *gin.Context) { fail(c, http.StatusNotFound, "NOT_FOUND", "no such resource") }
+func notFound(c *gin.Context) { fail(c, CodeNotFound, "no such resource") }
 
 func failErr(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, iam.ErrValidation):
-		fail(c, http.StatusBadRequest, "VALIDATION_FAILED", strings.TrimPrefix(err.Error(), "iam: validation failed: "))
+		fail(c, "VALIDATION_FAILED", strings.TrimPrefix(err.Error(), "iam: validation failed: "))
 	case errors.Is(err, iam.ErrConflict):
-		fail(c, http.StatusConflict, "CONFLICT", strings.TrimPrefix(err.Error(), "iam: conflict: "))
+		fail(c, CodeAlreadyExists, strings.TrimPrefix(err.Error(), "iam: conflict: "))
+	case errors.Is(err, iam.ErrVersionMismatch):
+		var vm *iam.VersionMismatchError
+		errors.As(err, &vm)
+		e := versionMismatch(c.Param("id"), vm.Current)
+		respond(c, e)
 	case errors.Is(err, iam.ErrForbidden):
-		fail(c, http.StatusForbidden, "FORBIDDEN", "this account is not allowed to perform the operation")
+		fail(c, "FORBIDDEN", "this account is not allowed to perform the operation")
 	case errors.Is(err, iam.ErrNotFound):
 		notFound(c)
 	case errors.Is(err, iam.ErrSetupDone):
-		fail(c, http.StatusConflict, "SETUP_DONE", "setup has already been completed")
+		fail(c, "SETUP_DONE", "setup has already been completed")
 	case errors.Is(err, iam.ErrSetupCode):
-		fail(c, http.StatusForbidden, "SETUP_CODE_INVALID", "setup code is invalid or expired")
+		fail(c, "SETUP_CODE_INVALID", "setup code is invalid or expired")
 	case errors.Is(err, iam.ErrThrottled):
-		fail(c, http.StatusTooManyRequests, "TOO_MANY_ATTEMPTS", "too many attempts; try again later")
+		fail(c, "TOO_MANY_ATTEMPTS", "too many attempts; try again later")
+	case errors.Is(err, iam.ErrInvalidCredentials):
+		fail(c, CodeInvalidCredentials, "username or password is incorrect")
+	case errors.Is(err, iam.ErrChallengeInvalid):
+		fail(c, CodeLoginChallengeInvalid, "the sign-in step expired or was already used; sign in again")
+	case errors.Is(err, iam.ErrSecondFactor):
+		fail(c, CodeSecondFactorInvalid, "the verification code, recovery code or passkey was not accepted")
+	case errors.Is(err, iam.ErrEnrollmentRequired):
+		e := newError(CodeEnrollmentRequired, "this account must add an authenticator app or passkey before doing anything else")
+		e.SuggestedActions = []string{"enroll-second-factor"}
+		respond(c, e)
+	case errors.Is(err, iam.ErrReauthRequired):
+		e := newError(CodeReauthRequired, "confirm your password and second factor again before changing sign-in methods")
+		e.SuggestedActions = []string{"reauthenticate"}
+		respond(c, e)
+	case errors.Is(err, iam.ErrLastFactor):
+		fail(c, CodeLastSecondFactor, "this account must keep at least one authenticator app or passkey; add another one first")
+	case errors.Is(err, iam.ErrUnavailable):
+		fail(c, CodeNotAvailable, strings.TrimPrefix(err.Error(), "iam: not available: "))
 	default:
-		fail(c, http.StatusInternalServerError, "INTERNAL", "internal error")
+		fail(c, "INTERNAL", "internal error")
 	}
 }
 
@@ -162,18 +249,25 @@ func (s *Server) requireSession(tokens iam.TokenAuthenticator) gin.HandlerFunc {
 			p, sess, err := s.iam.Authenticate(c.Request.Context(), cookie)
 			if err != nil {
 				clearSessionCookies(c)
-				fail(c, http.StatusUnauthorized, "UNAUTHENTICATED", "sign in to continue")
+				fail(c, "UNAUTHENTICATED", "sign in to continue")
 				return
 			}
 			c.Set(principalKey, p)
 			c.Set(sessionKey, sess)
+			if sess.Renewed {
+				// The idle expiry moved; give the browser the new lifetime
+				// too, or the cookie dies at its first Max-Age.
+				renewed := *sess
+				renewed.Token = cookie
+				setSessionCookies(c, &renewed)
+			}
 			c.Next()
 			return
 		}
 		if auth := c.GetHeader("Authorization"); tokens != nil && strings.HasPrefix(auth, "Bearer ") {
 			p, err := tokens.Authenticate(c.Request.Context(), strings.TrimPrefix(auth, "Bearer "))
 			if err != nil {
-				fail(c, http.StatusUnauthorized, "UNAUTHENTICATED", "token rejected")
+				fail(c, "UNAUTHENTICATED", "token rejected")
 				return
 			}
 			p.Kind = "token"
@@ -181,7 +275,7 @@ func (s *Server) requireSession(tokens iam.TokenAuthenticator) gin.HandlerFunc {
 			c.Next()
 			return
 		}
-		fail(c, http.StatusUnauthorized, "UNAUTHENTICATED", "sign in to continue")
+		fail(c, "UNAUTHENTICATED", "sign in to continue")
 	}
 }
 
@@ -202,14 +296,14 @@ func (s *Server) csrf() gin.HandlerFunc {
 		}
 		sess := v.(*iam.Session)
 		if c.GetHeader(CSRFHeader) != sess.CSRFToken {
-			fail(c, http.StatusForbidden, "CSRF_TOKEN_MISMATCH", "missing or wrong "+CSRFHeader+" header")
+			fail(c, "CSRF_TOKEN_MISMATCH", "missing or wrong "+CSRFHeader+" header")
 			return
 		}
 		if o := c.GetHeader("Origin"); o != "" && !sameHost(o, c.Request.Host) {
-			fail(c, http.StatusForbidden, "ORIGIN_MISMATCH", "cross-site request refused")
+			fail(c, "ORIGIN_MISMATCH", "cross-site request refused")
 			return
 		} else if r := c.GetHeader("Referer"); o == "" && r != "" && !sameHost(r, c.Request.Host) {
-			fail(c, http.StatusForbidden, "ORIGIN_MISMATCH", "cross-site request refused")
+			fail(c, "ORIGIN_MISMATCH", "cross-site request refused")
 			return
 		}
 		c.Next()
@@ -230,7 +324,7 @@ func (s *Server) RequireGlobal(a iam.Action) gin.HandlerFunc {
 		p := Principal(c)
 		if !iam.Authorize(p, a, iam.Global) {
 			s.iam.RecordDenied(c.Request.Context(), p, a, iam.Global, source(c))
-			fail(c, http.StatusForbidden, "FORBIDDEN", "this account is not allowed to perform the operation")
+			fail(c, "FORBIDDEN", "this account is not allowed to perform the operation")
 			return
 		}
 		c.Next()
@@ -249,7 +343,7 @@ func (s *Server) RequireScoped(a iam.Action, lookup ScopeLookup) gin.HandlerFunc
 		p := Principal(c)
 		scope, found, err := lookup(c)
 		if err != nil {
-			fail(c, http.StatusInternalServerError, "INTERNAL", "internal error")
+			fail(c, "INTERNAL", "internal error")
 			return
 		}
 		if !found || !iam.Visible(p, scope) {
@@ -261,7 +355,7 @@ func (s *Server) RequireScoped(a iam.Action, lookup ScopeLookup) gin.HandlerFunc
 		}
 		if !iam.Authorize(p, a, scope) {
 			s.iam.RecordDenied(c.Request.Context(), p, a, scope, source(c))
-			fail(c, http.StatusForbidden, "FORBIDDEN", "this account is not allowed to perform the operation")
+			fail(c, "FORBIDDEN", "this account is not allowed to perform the operation")
 			return
 		}
 		c.Set("hazelminx.scope", scope)
@@ -271,13 +365,65 @@ func (s *Server) RequireScoped(a iam.Action, lookup ScopeLookup) gin.HandlerFunc
 
 // ---- handlers --------------------------------------------------------------
 
+type setupStatusResponse struct {
+	NeedsSetup bool `json:"needsSetup"`
+}
+
+type userResponse struct {
+	User *iam.User `json:"user"`
+}
+
+type userDetailResponse struct {
+	User *iam.UserDetail `json:"user"`
+}
+
+// loginResponse answers login, setup and the second login step. Step is
+// "signed-in" (cookies set; User, CSRFToken, ExpiresAt and
+// SecondFactorEnrollmentRequired filled) or "second-factor" (no cookie;
+// ChallengeToken, Methods and ChallengeExpiresAt filled).
+type loginResponse struct {
+	Step                           string     `json:"step"`
+	User                           *iam.User  `json:"user,omitempty"`
+	CSRFToken                      string     `json:"csrfToken,omitempty"`
+	ExpiresAt                      *time.Time `json:"expiresAt,omitempty"`
+	SecondFactorEnrollmentRequired bool       `json:"secondFactorEnrollmentRequired"`
+	ChallengeToken                 string     `json:"challengeToken,omitempty"`
+	Methods                        []string   `json:"methods,omitempty"`
+	ChallengeExpiresAt             *time.Time `json:"challengeExpiresAt,omitempty"`
+}
+
+type sessionResponse struct {
+	Kind        string           `json:"kind"`
+	User        iam.User         `json:"user"`
+	Assignments []iam.Assignment `json:"assignments"`
+	Session     *iam.Session     `json:"session,omitempty"`
+	CSRFToken   string           `json:"csrfToken,omitempty"`
+	// SecondFactorEnrollmentRequired: the account must add a second factor
+	// before anything but enrolment works (IAM-002).
+	SecondFactorEnrollmentRequired bool `json:"secondFactorEnrollmentRequired"`
+}
+
+type roleInfo struct {
+	Role iam.Role `json:"role"`
+	// Actions is the granted action list, or ["*"] for the owner.
+	Actions []string `json:"actions"`
+}
+
+type rolesResponse struct {
+	Roles []roleInfo `json:"roles"`
+}
+
+type assignmentResponse struct {
+	Assignment *iam.Assignment `json:"assignment"`
+}
+
 func (s *Server) setupStatus(c *gin.Context) {
 	need, err := s.iam.NeedsSetup(c.Request.Context())
 	if err != nil {
 		failErr(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"needsSetup": need})
+	c.JSON(http.StatusOK, setupStatusResponse{NeedsSetup: need})
 }
 
 type setupRequest struct {
@@ -288,16 +434,37 @@ type setupRequest struct {
 
 func (s *Server) setupOwner(c *gin.Context) {
 	var in setupRequest
-	if err := c.ShouldBindJSON(&in); err != nil {
-		fail(c, http.StatusBadRequest, "VALIDATION_FAILED", "body must be JSON with setupCode, username and password")
+	if !bindJSON(c, &in, "body must be JSON with setupCode, username and password") {
 		return
 	}
-	u, err := s.iam.CompleteSetup(c.Request.Context(), in.SetupCode, in.Username, in.Password, source(c))
+	res, err := s.iam.CompleteSetup(c.Request.Context(), in.SetupCode, in.Username, in.Password, source(c))
+	if errors.Is(err, iam.ErrThrottled) {
+		throttled(c, res.RetryAfter)
+		return
+	}
 	if err != nil {
 		failErr(c, err)
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"user": u})
+	// The new owner is signed in; the session is held to second-factor
+	// enrolment until they add one (Setup board: account → 2FA → codes).
+	s.signedIn(c, http.StatusCreated, res)
+}
+
+// signedIn sets the session cookies and answers with the signed-in body.
+func (s *Server) signedIn(c *gin.Context, status int, res *iam.LoginResult) {
+	setSessionCookies(c, res.Session)
+	exp := res.Session.ExpiresAt.UTC().Truncate(time.Second)
+	c.JSON(status, loginResponse{Step: "signed-in", User: res.User, CSRFToken: res.Session.CSRFToken, ExpiresAt: &exp,
+		SecondFactorEnrollmentRequired: res.EnrollmentRequired})
+}
+
+func throttled(c *gin.Context, retry time.Duration) {
+	secs := int(retry.Seconds()) + 1
+	c.Header("Retry-After", strconv.Itoa(secs))
+	e := newError(CodeTooManyAttempts, "too many attempts; try again later")
+	e.RetryAfter = secs
+	respond(c, e)
 }
 
 type loginRequest struct {
@@ -307,28 +474,28 @@ type loginRequest struct {
 
 func (s *Server) login(c *gin.Context) {
 	var in loginRequest
-	if err := c.ShouldBindJSON(&in); err != nil {
-		fail(c, http.StatusBadRequest, "VALIDATION_FAILED", "body must be JSON with username and password")
+	if !bindJSON(c, &in, "body must be JSON with username and password") {
 		return
 	}
-	sess, u, retry, err := s.iam.Login(c.Request.Context(), in.Username, in.Password, source(c))
+	src := source(c)
+	src.RPID = s.relyingParty(c).ID
+	res, err := s.iam.Login(c.Request.Context(), in.Username, in.Password, src)
 	if errors.Is(err, iam.ErrThrottled) {
-		secs := int(retry.Seconds()) + 1
-		c.Header("Retry-After", strconv.Itoa(secs))
-		c.AbortWithStatusJSON(http.StatusTooManyRequests, apiError{Code: "TOO_MANY_ATTEMPTS", Message: "too many attempts; try again later",
-			TraceID: c.GetString(TraceIDHdr), Retryable: true, RetryAfter: secs})
-		return
-	}
-	if errors.Is(err, iam.ErrInvalidCredentials) {
-		fail(c, http.StatusUnauthorized, "INVALID_CREDENTIALS", "username or password is incorrect")
+		throttled(c, res.RetryAfter)
 		return
 	}
 	if err != nil {
 		failErr(c, err)
 		return
 	}
-	setSessionCookies(c, sess)
-	c.JSON(http.StatusOK, gin.H{"user": u, "csrfToken": sess.CSRFToken, "expiresAt": sess.ExpiresAt.UTC().Format(time.RFC3339)})
+	if res.Challenge != nil {
+		// Password accepted; no cookie until the second factor is.
+		exp := res.Challenge.ExpiresAt.UTC().Truncate(time.Second)
+		c.JSON(http.StatusOK, loginResponse{Step: "second-factor", ChallengeToken: res.Challenge.Token,
+			Methods: res.Challenge.Methods, ChallengeExpiresAt: &exp})
+		return
+	}
+	s.signedIn(c, http.StatusOK, res)
 }
 
 func (s *Server) logout(c *gin.Context) {
@@ -342,43 +509,58 @@ func (s *Server) logout(c *gin.Context) {
 
 func (s *Server) whoami(c *gin.Context) {
 	p := Principal(c)
-	out := gin.H{"kind": p.Kind, "user": p.User, "assignments": p.Assignments}
+	out := sessionResponse{Kind: p.Kind, User: p.User, Assignments: p.Assignments, SecondFactorEnrollmentRequired: p.EnrollmentRequired}
 	if v, ok := c.Get(sessionKey); ok {
-		out["session"] = v.(*iam.Session)
-		out["csrfToken"] = v.(*iam.Session).CSRFToken
+		out.Session = v.(*iam.Session)
+		out.CSRFToken = out.Session.CSRFToken
 	}
 	c.JSON(http.StatusOK, out)
 }
 
 func (s *Server) listRoles(c *gin.Context) {
-	var out []gin.H
+	out := rolesResponse{Roles: []roleInfo{}}
 	for _, r := range iam.Roles {
-		g := iam.Grants(r)
 		if r == iam.RoleOwner {
-			out = append(out, gin.H{"role": r, "actions": "*"})
+			out.Roles = append(out.Roles, roleInfo{Role: r, Actions: []string{"*"}})
 			continue
 		}
-		out = append(out, gin.H{"role": r, "actions": g})
+		var acts []string
+		for _, a := range iam.Grants(r) {
+			acts = append(acts, string(a))
+		}
+		out.Roles = append(out.Roles, roleInfo{Role: r, Actions: acts})
 	}
-	c.JSON(http.StatusOK, gin.H{"roles": out})
+	c.JSON(http.StatusOK, out)
+}
+
+// usersSource lists accounts for one principal.
+type usersSource struct {
+	svc *iam.Service
+	p   *iam.Principal
+}
+
+func (u usersSource) Count(ctx context.Context, _ ListQuery) (int, error) {
+	return u.svc.CountUsers(ctx, u.p)
+}
+func (u usersSource) Fetch(ctx context.Context, q ListQuery, n int) ([]iam.UserDetail, error) {
+	return u.svc.ListUsersPage(ctx, u.p, q.paging(n))
+}
+func (u usersSource) Key(row iam.UserDetail, sort []SortKey) []string {
+	return sortValues(sort, row.User.SortValue)
 }
 
 func (s *Server) listUsers(c *gin.Context) {
-	users, err := s.iam.ListUsers(c.Request.Context(), Principal(c))
-	if err != nil {
-		if errors.Is(err, iam.ErrForbidden) {
-			s.iam.RecordDenied(c.Request.Context(), Principal(c), iam.ActionUsersRead, iam.Global, source(c))
-		}
-		failErr(c, err)
+	if !iam.Authorize(Principal(c), iam.ActionUsersRead, iam.Global) {
+		s.iam.RecordDenied(c.Request.Context(), Principal(c), iam.ActionUsersRead, iam.Global, source(c))
+		fail(c, CodeForbidden, "this account is not allowed to perform the operation")
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"users": users})
+	runList[iam.UserDetail](c, usersList, usersSource{svc: s.iam, p: Principal(c)})
 }
 
 func (s *Server) createUser(c *gin.Context) {
 	var in iam.CreateUserInput
-	if err := c.ShouldBindJSON(&in); err != nil {
-		fail(c, http.StatusBadRequest, "VALIDATION_FAILED", "body must be JSON with username, displayName and password")
+	if !bindJSON(c, &in, "body must be JSON with username, displayName and password") {
 		return
 	}
 	u, err := s.iam.CreateUser(c.Request.Context(), Principal(c), in, source(c))
@@ -386,7 +568,8 @@ func (s *Server) createUser(c *gin.Context) {
 		failErr(c, err)
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"user": u})
+	setETag(c, u.Version)
+	c.JSON(http.StatusCreated, userResponse{User: u})
 }
 
 func (s *Server) getUser(c *gin.Context) {
@@ -395,7 +578,37 @@ func (s *Server) getUser(c *gin.Context) {
 		failErr(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"user": u})
+	setETag(c, u.Version)
+	c.JSON(http.StatusOK, userDetailResponse{User: u})
+}
+
+func (s *Server) updateUser(c *gin.Context) {
+	ctx, p := c.Request.Context(), Principal(c)
+	// Existence and permission come before the version check (51.6).
+	if _, err := s.iam.GetUser(ctx, p, c.Param("id")); err != nil {
+		failErr(c, err)
+		return
+	}
+	if !iam.Authorize(p, iam.ActionUsersWrite, iam.Global) {
+		s.iam.RecordDenied(ctx, p, iam.ActionUsersWrite, iam.Global, source(c))
+		fail(c, CodeForbidden, "this account is not allowed to perform the operation")
+		return
+	}
+	var in iam.UpdateUserInput
+	if !bindJSON(c, &in, "body must be JSON with displayName") {
+		return
+	}
+	ver, ok := requireIfMatch(c)
+	if !ok {
+		return
+	}
+	u, err := s.iam.UpdateUser(ctx, p, c.Param("id"), ver, in, source(c))
+	if err != nil {
+		failErr(c, err)
+		return
+	}
+	setETag(c, u.Version)
+	c.JSON(http.StatusOK, userDetailResponse{User: u})
 }
 
 type assignRequest struct {
@@ -403,54 +616,112 @@ type assignRequest struct {
 	Scope iam.Scope `json:"scope"`
 }
 
+// optionalVersion reads an If-Match that may be absent (0).
+func optionalVersion(c *gin.Context) (int64, bool) {
+	if c.GetHeader("If-Match") == "" {
+		return 0, true
+	}
+	return requireIfMatch(c)
+}
+
 func (s *Server) assignRole(c *gin.Context) {
 	var in assignRequest
-	if err := c.ShouldBindJSON(&in); err != nil {
-		fail(c, http.StatusBadRequest, "VALIDATION_FAILED", "body must be JSON with role and scope{kind,id}")
+	if !bindJSON(c, &in, "body must be JSON with role and scope{kind,id}") {
+		return
+	}
+	ver, ok := optionalVersion(c)
+	if !ok {
 		return
 	}
 	if in.Scope.Kind == "" {
 		in.Scope = iam.Global
 	}
-	as, err := s.iam.AssignRole(c.Request.Context(), Principal(c), c.Param("id"), in.Role, in.Scope, source(c))
+	ctx := c.Request.Context()
+	as, newVer, err := s.iam.AssignRoleIf(ctx, Principal(c), c.Param("id"), in.Role, in.Scope, ver, source(c))
 	if err != nil {
 		failErr(c, err)
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"assignment": as})
+	setETag(c, newVer)
+	c.JSON(http.StatusCreated, assignmentResponse{Assignment: as})
 }
 
 func (s *Server) revokeRole(c *gin.Context) {
-	if err := s.iam.RevokeRole(c.Request.Context(), Principal(c), c.Param("assignmentId"), source(c)); err != nil {
+	ver, ok := optionalVersion(c)
+	if !ok {
+		return
+	}
+	ctx := c.Request.Context()
+	newVer, err := s.iam.RevokeRoleIf(ctx, Principal(c), c.Param("assignmentId"), c.Param("id"), ver, source(c))
+	if err != nil {
 		failErr(c, err)
 		return
 	}
+	setETag(c, newVer)
 	c.Status(http.StatusNoContent)
 }
 
-func (s *Server) listAudit(c *gin.Context) {
-	f := iam.AuditFilter{ActorID: c.Query("actorId"), JobID: c.Query("jobId"), ResourceID: c.Query("resourceId")}
-	if k := c.Query("scopeKind"); k != "" {
-		f.Scope = &iam.Scope{Kind: iam.ScopeKind(k), ID: c.Query("scopeId")}
-	}
-	f.AfterSeq, _ = strconv.ParseInt(c.Query("afterSeq"), 10, 64)
-	f.Limit, _ = strconv.Atoi(c.Query("limit"))
-	if f.Limit <= 0 || f.Limit > iam.MaxAuditPage {
-		f.Limit = iam.MaxAuditPage
-	}
-	evs, err := s.iam.ListAudit(c.Request.Context(), Principal(c), f)
-	if err != nil {
-		if errors.Is(err, iam.ErrForbidden) {
-			s.iam.RecordDenied(c.Request.Context(), Principal(c), iam.ActionAuditRead, iam.Global, source(c))
+// auditSource lists the ledger for one principal.
+type auditSource struct {
+	svc *iam.Service
+	p   *iam.Principal
+	f   iam.AuditFilter
+}
+
+func (a auditSource) Count(ctx context.Context, _ ListQuery) (int, error) {
+	return a.svc.CountAudit(ctx, a.p, a.f)
+}
+func (a auditSource) Fetch(ctx context.Context, q ListQuery, n int) ([]iam.AuditEvent, error) {
+	f := a.f
+	f.Page = q.paging(n)
+	return a.svc.ListAudit(ctx, a.p, f)
+}
+func (a auditSource) Key(row iam.AuditEvent, sort []SortKey) []string {
+	return sortValues(sort, row.SortValue)
+}
+
+// auditFilter turns validated list filters into an AuditFilter.
+func auditFilter(q ListQuery) (iam.AuditFilter, *apiError) {
+	one := func(k string) string {
+		if v := q.Filters[k]; len(v) > 0 {
+			return v[0]
 		}
-		failErr(c, err)
+		return ""
+	}
+	f := iam.AuditFilter{ActorID: one("actorId"), JobID: one("jobId"), ResourceID: one("resourceId")}
+	if v := one("afterSeq"); v != "" {
+		f.AfterSeq, _ = strconv.ParseInt(v, 10, 64)
+	}
+	kind, id := one("scopeKind"), one("scopeId")
+	if (kind == "") != (id == "") {
+		e := newError(CodeValidationFailed, "scopeKind and scopeId go together")
+		e.Fields = []FieldError{{Field: "scopeKind", Message: "send both or neither"}, {Field: "scopeId", Message: "send both or neither"}}
+		return f, &e
+	}
+	if kind != "" {
+		f.Scope = &iam.Scope{Kind: iam.ScopeKind(kind), ID: id}
+	}
+	return f, nil
+}
+
+func (s *Server) listAudit(c *gin.Context) {
+	p := Principal(c)
+	if global, scopes := iam.ScopesFor(p, iam.ActionAuditRead); !global && len(scopes) == 0 {
+		s.iam.RecordDenied(c.Request.Context(), p, iam.ActionAuditRead, iam.Global, source(c))
+		fail(c, CodeForbidden, "this account is not allowed to perform the operation")
 		return
 	}
-	var next int64
-	if n := len(evs); n > 0 {
-		next = evs[n-1].Seq
+	q, perr := parseListQuery(c, auditList)
+	if perr != nil {
+		respond(c, *perr)
+		return
 	}
-	c.JSON(http.StatusOK, gin.H{"events": evs, "nextAfterSeq": next, "limit": f.Limit})
+	f, ferr := auditFilter(q)
+	if ferr != nil {
+		respond(c, *ferr)
+		return
+	}
+	runList[iam.AuditEvent](c, auditList, auditSource{svc: s.iam, p: p, f: f})
 }
 
 // ---- cookies ---------------------------------------------------------------
@@ -461,7 +732,9 @@ func secureRequest(c *gin.Context) bool {
 
 func setSessionCookies(c *gin.Context, sess *iam.Session) {
 	secure := secureRequest(c)
-	maxAge := int(time.Until(sess.ExpiresAt).Seconds())
+	// The lifetime comes from the session itself, not the wall clock, so it
+	// agrees with the service clock (tests inject one).
+	maxAge := int(sess.ExpiresAt.Sub(sess.LastSeenAt).Seconds())
 	http.SetCookie(c.Writer, &http.Cookie{Name: SessionCookie, Value: sess.Token, Path: "/", HttpOnly: true, Secure: secure, SameSite: http.SameSiteStrictMode, MaxAge: maxAge})
 	http.SetCookie(c.Writer, &http.Cookie{Name: CSRFCookie, Value: sess.CSRFToken, Path: "/", HttpOnly: false, Secure: secure, SameSite: http.SameSiteStrictMode, MaxAge: maxAge})
 }

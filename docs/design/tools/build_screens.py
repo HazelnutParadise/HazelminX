@@ -94,7 +94,7 @@ def overview() -> str:
       <div class="ph"><h2 id="h-nodes">主機 · 3 台</h2>{U.legend(RING_LEGEND)}<a class="more" href="Nodes.dc.html">全部主機 →</a></div>
       <div class="fleet">
         {U.node_card("hazel-tw-01", "Ubuntu 24.04 · 控制中心 · Docker · 8 核 · L4 GPU", U.status("ok", "連線中"), 37, (11.2, 31.3), (412, 931), CPU_TW[-12:], "2 秒前", (9, 10))}
-        {U.node_card("hazel-jp-02", "Debian 12 · Docker · 4 核 · 資料碟未綁定", U.status("warn", "狀態過期"), 64, (13.9, 15.5), (870, 931), CPU_JP[-12:], "03:41:18", (3, 3), stale=True)}
+        {U.node_card("hazel-jp-02", "Debian 12 · Docker · 4 核 · 資料碟未綁定", U.status("dng", "沒有回應"), 64, (13.9, 15.5), (870, 931), CPU_JP[-12:], "03:41:18", (3, 3), stale=True)}
         {U.node_card("lab-mini", "Debian 13 · Podman rootless · 4 核", U.status("info", "維護中"), 3, (1.1, 7.6), (38, 118), CPU_LAB[-12:], "5 秒前", (0, 2))}
       </div>
       <div class="note" style="padding: 0 14px 10px">* 上次觀測值，節點已過期 · 綠色段＝執行中的容器</div>
@@ -206,7 +206,7 @@ def range_row(on="24 小時") -> str:
 # ---------- 節點詳情 ----------
 def node_tabs(active: str, containers: int = 10) -> str:
     """節點工作區的分頁（學 Cockpit 的單機分頁）：單一主機才有意義的東西都在這裡，側欄不另放。"""
-    items = [("概況", "NodeDetail.dc.html"), ("系統", "System.dc.html"), (f"容器 {containers}", "Containers.dc.html"), ("檔案", "Files.dc.html"), ("日誌", "NodeLogs.dc.html"), ("終端機", "NodeTerminal.dc.html")]
+    items = [("概況", "NodeDetail.dc.html"), ("系統", "System.dc.html"), (f"容器 {containers}", "Containers.dc.html"), ("檔案", "Files.dc.html"), ("日誌", "NodeLogs.dc.html"), ("終端機", "NodeTerminal.dc.html"), ("變更帳本", "NodeLedger.dc.html")]
     return ('<div class="panel"><div class="tabs" role="tablist">' + "".join(
         f'<a class="tab{" on" if l.split(" ")[0] == active else ""}" role="tab" aria-selected="{"true" if l.split(" ")[0] == active else "false"}" href="{h}">{l}</a>' for l, h in items) + "</div></div>")
 
@@ -371,7 +371,7 @@ def projects() -> str:
     tabs = ('<div class="panel"><div class="tabs" role="tablist"><button type="button" class="tab on" role="tab" aria-selected="true">production</button>'
             '<button type="button" class="tab" role="tab" aria-selected="false">staging</button><button type="button" class="tab" aria-label="新增環境">＋ 環境</button></div>'
             f'<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr)); gap: 10px 16px; padding: 12px 14px; font-size: 13px">'
-            f'{kv("來源", "github.com/hazelnut/shop · main")}{kv("最近部署", "a3f9c1e · 02:57 · 成功 · Webhook")}{kv("節點", "hazel-tw-01")}{kv("入口", "shop.example.tw · 憑證 11 天後到期")}{kv("自動部署", "已暫停：變更計畫 #418 待批准")}</div>' + U.res_strip("HazelminX", "正式", "03:42:06", drift="shop-redis 映像 redis:7.2 → redis:7.4（主機上手動改）") + '</div>')
+            f'{kv("來源", "github.com/hazelnut/shop · main")}{kv("最近部署", "a3f9c1e · 02:57 · 成功 · Webhook")}{kv("部署單元", "3 個 · 2 台主機 · 1 個叢集")}{kv("web 單元", "hazel-tw-01")}{kv("入口", "shop.example.tw · 憑證 11 天後到期")}{kv("自動部署", "已暫停：變更計畫 #418 待批准")}</div>' + U.res_strip("HazelminX", "正式", "03:42:06", drift="shop-redis 映像 redis:7.2 → redis:7.4（主機上手動改）") + '</div>')
     svc_topo = U.topology([
         ("入口", [("dom", "shop.example.tw", "Zentinel · 憑證 11 天", "warn")]),
         ("服務", [("api", "shop-api", "8080 · 2 副本", "ok"), ("wrk", "shop-worker", "無對外 Port", "ok")]),
@@ -381,7 +381,7 @@ def projects() -> str:
     svc_topo_m = U.flowlist([("shop.example.tw", "shop-api", "Zentinel"), ("shop-api", "shop-db", "postgres"), ("shop-api", "shop-redis", "重啟中"), ("shop-worker", "shop-db", ""), ("shop-db", "shop-db-data", "84G"), ("shop-db-data", "每日備份 → S3", "03:00")])
     topo_panel = f"""
     <section class="panel" aria-labelledby="h-stopo">
-      <div class="ph"><h2 id="h-stopo">shop · production · 拓撲</h2><span class="sub">來自 compose.yaml：入口 → 服務 → 資料 → 儲存與備份；線寬＝呼叫量</span><a class="more" href="ComposeEditor.dc.html">編輯 compose.yaml →</a></div>
+      <div class="ph"><h2 id="h-stopo">web 單元 · 服務拓撲</h2><span class="sub">來自 compose.yaml：入口 → 服務 → 資料 → 儲存與備份；線寬＝呼叫量</span><a class="more" href="ComposeEditor.dc.html">編輯 compose.yaml →</a></div>
       <div style="padding: 10px 14px 6px"><div class="ch-d">{svc_topo}</div><div class="ch-m">{svc_topo_m}</div></div>
     </section>"""
     deploys = f"""
@@ -400,7 +400,7 @@ def projects() -> str:
                 f'<span class="c5">{U.sparkline(spark)}</span><span class="mono">{rps}<br><span class="note" style="color:{"var(--danger)" if err >= 1 else "var(--faint)"}">錯誤 {err:.2f}%</span></span></a>')
     services = f"""
     <section class="panel" aria-labelledby="h-svc">
-      <div class="ph"><h2 id="h-svc">服務 · 4</h2><span class="sub">來自 compose.yaml，顯示實際節點與 Port，不只名稱</span></div>
+      <div class="ph"><h2 id="h-svc">web 單元 · 服務 · 4</h2><span class="sub">來自 compose.yaml，顯示實際節點與 Port，不只名稱</span></div>
       <div class="row hd srow"><span>服務</span><span>狀態</span><span class="c3">節點 · Port</span><span class="c4">CPU</span><span class="c4">記憶體</span><span class="c5">請求 1 小時</span><span>請求／秒</span></div>
       {svc("shop-api", "ghcr.io/hazelnut/shop-api:a3f9c1e", "tw-01", "8080 → 內部", 21, (812, 2048), "38.2", 0.14, walk(12, 38, 6, 20, 60), U.status("ok", "健康 2／2"))}
       {svc("shop-worker", "ghcr.io/hazelnut/shop-worker:a3f9c1e", "tw-01", "無對外 Port", 9, (410, 1024), "—", 0.0, walk(12, 5, 2, 1, 10), U.status("ok", "健康"))}
@@ -413,7 +413,7 @@ def projects() -> str:
     rq_card = U.ts_card("shop-api · 請求／秒", rq, HOURS, unit="", fmt_val=lambda v: f"{v:.0f}", markers=[(22, "#403")], foot="來源：Zentinel 存取日誌 · 完整度 99.1%")
     er_card = U.ts_card("shop-api · 錯誤率（5xx）", er, HOURS, unit="%", vmax=2.5, fmt_val=lambda v: f"{v:.1f}%", markers=[(22, "#403")], foot="門檻 1% 告警 · 02:57 部署期間 1.9%，持續 4 分鐘")
     lat_card = U.ts_card("shop-api · 延遲", lat, HOURS, unit=" ms", wide=True, fmt_val=lambda v: f"{v:.0f}", foot="單位 ms · p50 與 p95 同一軸；p99 在表格檢視")
-    main = head + tabs + topo_panel + services + f'<div class="cg">{rq_card}{er_card}</div>{lat_card}' + deploys
+    main = head + tabs + units_panel() + connection_panel() + topo_panel + services + f'<div class="cg">{rq_card}{er_card}</div>{lat_card}' + deploys
     return U.shell("projects", main)
 
 
@@ -478,16 +478,16 @@ def containers() -> str:
     </section>"""
     images = f"""
     <section class="panel" aria-labelledby="h-img">
-      <div class="ph"><h2 id="h-img">映像 · 23 · tw-01</h2><span class="sub">段條＝使用中／未用／建置快取；拉取、推送、匯入匯出、建置、標籤</span><div class="wrap" style="margin-left:auto"><button type="button" class="btn sm">清理未使用 4.1 GiB</button></div></div>
+      <div class="ph"><h2 id="h-img">映像 · 23 · tw-01</h2><span class="sub">段條＝使用中／未用／建置快取；拉取、推送、匯入匯出、建置、標籤</span><div class="wrap" style="margin-left:auto"><button type="button" class="btn sm">清理未使用 4.1 GiB</button><a class="more" href="ContainerResources.dc.html">管理 →</a></div></div>
       <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px">{U.tall_bar([(9.8, "使用中 16", "var(--q5)"), (4.1, "未使用 7", "var(--q3)"), (1.2, "建置快取", "var(--q2)")], 15.1, unit="G")}
       <div class="scale"><i style="background:var(--q5)"></i>使用中 <i style="background:var(--q3)"></i>未使用（可回收） <i style="background:var(--q2)"></i>建置快取</div></div>
       {U.ranked([("ghcr.io/hazelnut/shop-api:a3f9c1e", 812, "812 MiB · 使用中"), ("ollama/ollama:0.5.7", 2900, "2.9 GiB · 使用中"), ("postgres:16.4", 430, "430 MiB · 使用中"), ("ghcr.io/hazelnut/shop-api:88b1d02", 810, "810 MiB · 未使用 · 可回收"), ("node:22（建置）", 1100, "1.1 GiB · 未使用")], vmax=3000)}
     </section>"""
     netvol = f"""
     <section class="panel" aria-labelledby="h-nv">
-      <div class="ph"><h2 id="h-nv">網路、儲存卷、登錄站</h2></div>
-      <div style="padding:12px 14px">{U.matrix(["shop_default（bridge）", "wiki_default（bridge）", "hazelminx_internal", "shop-db-data（volume）", "wiki-media（volume）", "ghcr.io（登錄站）", "registry.example.tw"], ["狀態", "關聯", "備註"], [
-        [("ok", "4 容器"), ("none", "shop-api、worker、db、redis"), ("none", "172.18.0.0/16 · 不對外")], [("warn", "上次觀測"), ("none", "wiki-app、wiki-db"), ("none", "jp-02")], [("ok", "2 容器"), ("none", "zentinel ↔ agent"), ("none", "僅內部")],
+      <div class="ph"><h2 id="h-nv">網路、儲存卷、登錄站</h2><a class="more" href="ContainerResources.dc.html">管理 →</a></div>
+      <div style="padding:12px 14px">{U.matrix(["shop_default（bridge）", "wiki_default（bridge）", "hzx-ollama（bridge）", "shop-db-data（volume）", "wiki-media（volume）", "ghcr.io（登錄站）", "registry.example.tw"], ["狀態", "關聯", "備註"], [
+        [("ok", "4 容器"), ("none", "shop-api、worker、db、redis"), ("none", "172.18.0.0/16 · 不對外")], [("warn", "上次觀測"), ("none", "wiki-app、wiki-db"), ("none", "jp-02")], [("ok", "2 容器"), ("none", "ollama、nextcloud"), ("none", "平台元件網路")],
         [("ok", "84 GiB"), ("none", "shop-db"), ("none", "/mnt/data · 綁定 UUID")], [("warn", "190 GiB"), ("none", "wiki-app"), ("none", "jp-02 · 未綁定")], [("ok", "已登入"), ("none", "hazelnut 組織"), ("none", "Token 61 天")], [("ok", "已登入"), ("none", "私有"), ("none", "鏡像 docker.io")],
       ], first_col="minmax(190px,1.4fr)")}</div>
     </section>"""
@@ -755,7 +755,15 @@ def deploy_check(confirm: bool = False) -> str:
         <div class="wrap" style="justify-content: flex-end"><button type="button" class="btn">取消</button><button type="button" class="btn dng" disabled aria-disabled="true" style="opacity:.6">批准並部署</button></div>
       </div>
     </div>"""
-    main = head + summary + checks + diff + modal
+    swap = f"""
+    <section class="panel" aria-labelledby="h-swap">
+      <div class="ph"><h2 id="h-swap">替換方式</h2><span class="sub">先建置；建置完才動舊容器</span></div>
+      <div class="row hd"><span>服務</span><span>部署時</span><span class="c3">原因</span></div>
+      <div class="row"><span class="mono">shop-api ×2</span><span>{U.status("ok", "無縫替換")}</span><span class="c3 note">新舊並行 → 健康檢查 → Zentinel 切換 → 排空 30 秒</span></div>
+      <div class="row"><span class="mono">shop-worker</span><span>{U.status("ok", "無縫替換")}</span><span class="c3 note">新舊同時消費佇列 · 可接受</span></div>
+      <div class="row"><span class="mono">shop-db、shop-redis</span><span>{U.status("info", "不重建")}</span><span class="c3 note">這次沒有變更</span></div>
+    </section>"""
+    main = head + summary + checks + swap + diff + modal
     return U.shell("jobs", main)
 
 
@@ -1051,7 +1059,7 @@ def events() -> str:
 def nodes(part: str | None = None) -> str:
     head = U.page_head("主機", OBS, '<a class="btn pri" href="AddNode.dc.html">新增主機</a>')
     tiles = '<div class="tiles">' + "".join([
-        U.stat_tile("節點", "3", "", "2 連線中 · 1 維護中 · jp-02 狀態過期", None),
+        U.stat_tile("主機", "3", "", "1 連線中 · 1 沒有回應 · 1 維護中", None),
         U.stat_tile("引擎環境", "6", "", "Docker 2 · Podman 2 · K3s 1 · kind 1", None),
         U.stat_tile("節點憑證", "1", "/3 需在 30 天內輪替", "tw-01 剩 12 天", False),
         U.stat_tile("待套用安全更新", "7", "套件", "<a href=\"Updates.dc.html\">jp-02 5 · lab-mini 2 → 查看</a>", None),
@@ -1064,11 +1072,12 @@ def nodes(part: str | None = None) -> str:
                 f'<span class="mono c4">{ctr}</span><span class="mono c6">{last}</span><span class="acts">{acts}</span></a>')
     fleet = f"""
     <section class="panel" aria-labelledby="h-fl" data-sort="1:desc" data-batch>
-      <div class="ph"><h2 id="h-fl">節點 · 3</h2><div class="wrap" style="margin-left:auto"><label class="inp" style="min-width:200px"><span class="note">搜尋</span><input placeholder="名稱、標籤、IP" style="background:transparent;border:0;flex:1;min-width:0"></label><span class="chip on">全部 3</span><span class="chip">production 2</span><span class="chip">lab 1</span><span class="chip">有問題 1</span><span class="range" role="group" aria-label="檢視方式"><button type="button" class="btn" aria-pressed="false">卡片</button><button type="button" class="btn on" aria-pressed="true">表格</button></span></div></div>
+      <div class="ph"><h2 id="h-fl">主機 · 4</h2><div class="wrap" style="margin-left:auto"><label class="inp" style="min-width:200px"><span class="note">搜尋</span><input placeholder="名稱、標籤、IP" style="background:transparent;border:0;flex:1;min-width:0"></label><span class="chip on">全部 4</span><span class="chip">production 2</span><span class="chip">lab 1</span><span class="chip">有問題 2</span><span class="range" role="group" aria-label="檢視方式"><button type="button" class="btn" aria-pressed="false">卡片</button><button type="button" class="btn on" aria-pressed="true">表格</button></span></div></div>
       <div class="row hd"><span>節點</span><span>狀態</span><span>CPU</span><span>記憶體</span><span class="c3">資料碟</span><span class="c5">CPU 1 小時</span><span class="c4">容器</span><span class="c6">最後聯絡</span><span></span></div>
       {nrow("hazel-jp-02", "Debian 12 · Docker 27.1 · 4 核", U.status("dng", "沒有回應 · 48 秒"), 64, (13.9, 15.5), (870, 931), CPU_JP[-12:], "3/3", "03:41:18", stale=True, href="NodeOffline.dc.html")}
       {nrow("hazel-tw-01", "Ubuntu 24.04 · 控制中心 · 8 核 · L4", U.status("ok", "連線中"), 37, (11.2, 31.3), (412, 931), CPU_TW[-12:], "9/10", "2 秒前")}
       {nrow("lab-mini", "Debian 13 · Podman 5.2 · K3s · 4 核", U.status("info", "維護中"), 3, (1.1, 7.6), (38, 118), CPU_LAB[-12:], "0/2", "5 秒前")}
+      <div class="row"><span class="name"><span class="n mono">old-nas</span><span class="d">Agent 0.0.9 · 協定 v0</span></span><span><span tabindex="0" data-tip="控制中心使用協定 v1，這台的 Agent 只支援 v0；平台不送任何命令給它">{U.status("dng", "協定不相容")}</span></span><span class="note">—</span><span class="note">—</span><span class="c3 note">—</span><span class="c5 note">—</span><span class="mono c4">—</span><span class="mono c6">03:40:02</span><span class="acts"><button type="button" class="btn sm">升級 Agent</button></span></div>
     </section>"""
     cross = f"""
     <section class="panel" aria-labelledby="h-cross">
@@ -1145,7 +1154,7 @@ def nodes(part: str | None = None) -> str:
     </section>"""
     if part:
         return {"ports": ports, "published": published, "procs": procs, "ssh": ssh}[part]
-    main = head + nodes_tabs("節點") + tiles + fleet + envs + f'<div class="cg">{cross}{engines}</div>'
+    main = head + nodes_tabs("主機") + tiles + fleet + envs + f'<div class="cg">{cross}{engines}</div>'
     return U.shell("nodes", main)
 
 
@@ -1281,11 +1290,17 @@ def appstore() -> str:
 
 
 # ---------- API 代理 ----------
+def _api_tabs(on):
+    items = [("總覽", "APIProxy.dc.html"), ("服務 · 4", "APIProxyService.dc.html"), ("使用者與 Token", "APIProxyTokens.dc.html"), ("失敗紀錄", "APIProxyFailures.dc.html")]
+    t = "".join(f'<a class="tab{" on" if i == on else ""}" role="tab" aria-selected="{"true" if i == on else "false"}" href="{h}">{n}</a>' for i, (n, h) in enumerate(items))
+    return f'<div class="panel"><div class="tabs" role="tablist">{t}</div></div>'
+
+
 def apiproxy() -> str:
     head = U.page_head("API 代理", OBS, '<button type="button" class="btn pri">新增服務</button><button type="button" class="btn">發 Token</button><button type="button" class="btn">匯入 infra-manager 資料</button>')
     tiles = '<div class="tiles">' + "".join([
-        U.stat_tile("服務", "4", "", "3 啟用 · 1 停用", None),
-        U.stat_tile("Token", "11", "", "2 個 14 天內到期", False),
+        U.stat_tile("啟用服務", "3", "", "共 4 · 1 停用 · 較 30 天前 +1", None),
+        U.stat_tile("啟用使用者 · Token", "5 · 7", "", "即將到期 2（7 天內 0）", False),
         U.stat_tile("今日請求", "18,420", "", "被拒 212（1.2%）", None, spark=[int(x) for x in walk(24, 760, 200, 200, 1300)]),
         U.stat_tile("p95 延遲", "184", "ms", "上游 162 · 代理 22", None, spark=walk(12, 180, 20, 140, 240)),
     ]) + "</div>"
@@ -1310,7 +1325,7 @@ def apiproxy() -> str:
       <div class="ranks">
         {tok("hx_live_7f3a…", "lab-bot", "/ollama", 9, 58, 60)}
         {tok("hx_live_c21e…", "partner-a", "/ollama", 41, 12, 60)}
-        {tok("hx_live_90bd…", "tim", "/ollama、/shop-admin", 77, 3, 600)}
+        {tok("hx_live_90bd…", "tim", "/ollama", 77, 3, 600)}
         {tok("hx_ci_118e…", "ci-runner", "/shop-admin", 12, 0, 120)}
       </div>
       <div class="note" style="padding:0 14px 10px">撤銷 Token 時可選「既有長連線立即斷」或「跑完這一次」；到期前 14 天通知擁有者</div>
@@ -1333,8 +1348,615 @@ def apiproxy() -> str:
       {svc("/files", U.status("ok", "啟用"), "hazelminx core · 上傳 ≤ 2 GiB", "平台 Token", "120/分", "1", walk(12, 40, 8, 20, 70))}
       {svc("/legacy-report", U.status("info", "停用"), "report:9000 @ jp-02", "Basic", "—", "0", [0] * 12)}
     </section>"""
-    main = head + tiles + topo_panel + f'<div class="cg">{tokens}{rejected}</div>' + usage + services
+    rng = '<div class="wrap"><span class="note">期間</span>' + _seg(["今天", "7 天", "30 天", "90 天", "自訂"], 0, "期間") + '<span class="note">使用量最多保留 90 天</span></div>'
+    main = head + _api_tabs(0) + f'<div class="panel" style="padding:10px 14px">{rng}</div>' + tiles + topo_panel + f'<div class="cg">{tokens}{rejected}</div>' + usage + services
     return U.shell("api", main)
+
+
+# ---------- API 代理 › 服務設定 ----------
+def apiproxy_service() -> str:
+    head = U.page_head("API 代理", OBS, '<button type="button" class="btn pri">新增服務</button><button type="button" class="btn">匯入 infra-manager 資料</button>')
+    target = _fp("服務 /ollama · 目標", _grid(
+        _fld("名稱（路徑第一段）", _in("ollama", mono=True), "客戶端呼叫 /use/ollama/…；舊客戶端的 /api/ollama/… 照樣可用"),
+        _fld("類型", _in("LLM 推論"), "自由填寫，最多 64 字；總覽依類型分組"), _fld("描述", _in("實驗室共用的本地模型")),
+        _fld("目標類型", _seg(["容器", "主機服務", "叢集服務", "外部網址"], 0, "目標類型")),
+        _fld("目標", _dd("ollama · hazel-tw-01 · Port 11434/tcp（唯一的 HTTP Port）")),
+        _fld("狀態", U.status("ok", "啟用 · 健康檢查 /api/tags 200")),
+        _fld("外部網址允許清單", _in("選「外部網址」時才需要", ph=True), "擋雲端 metadata、內網與管理 API")))
+    upstream = _fp("上游驗證與 Header", f"""
+      <div class="row hd"><span>規則</span><span>Header</span><span>值</span><span></span></div>
+      <div class="row"><span>{U.status("info", "加上")}</span><span class="mono">Authorization</span><span class="mono">Bearer ••••••（機密庫 ollama/upstream-key）</span><span>{U.actions(["more"])}</span></div>
+      <div class="row"><span>{U.status("info", "加上")}</span><span class="mono">X-Forwarded-User</span><span class="mono">呼叫者的使用者名稱</span><span>{U.actions(["more"])}</span></div>
+      <div class="row"><span>{U.status("none", "移除")}</span><span class="mono">Cookie</span><span class="mono">—</span><span>{U.actions(["more"])}</span></div>
+      <div class="wrap" style="padding:10px 14px 12px"><button type="button" class="btn sm">{U.icon("plus", 14)}新增規則</button>{U.status("ok", "客戶端的代理 Token 不會傳到上游")}</div>""")
+    limits = _fp("允許與限制", _grid(
+        _fld("允許的方法", '<div class="wrap"><span class="chip on">GET</span><span class="chip on">POST</span><span class="chip">PUT</span><span class="chip">DELETE</span></div>'),
+        _fld("允許的路徑", _in("/api/chat、/api/generate、/api/tags", mono=True), "其他路徑回 403，記在失敗紀錄"),
+        _fld("限速", _in("60 次 / 分 · 每個 Token", mono=True), "多台主機時是全域計算"),
+        _fld("用量上限", _in("10,000 次 / 日 · 每個使用者", mono=True)),
+        _fld("上傳上限", _in("50 MiB", mono=True)), _fld("逾時", _in("連線 5 秒 · 回應 300 秒", mono=True), "串流回應不受回應逾時限制"),
+        _fld("撤銷後的既有連線", _seg(["立即中斷", "這次跑完"], 1, "撤銷後"), "新請求一律立即拒絕")))
+    def tr(code, cond, resp):
+        return f'<div class="row"><span class="mono">{code}</span><span>{cond}</span><span class="note">{resp}</span></div>'
+    compat = _fp("相容 infra-manager", f"""
+      <div class="row hd"><span>回應碼</span><span>情況</span><span>回應</span></div>
+      {tr("400", "路徑少於兩段且沒有 Bearer", "無效的API路徑")}
+      {tr("404", "服務不存在或已停用", "找不到服務")}
+      {tr("403", "Token 無效、過期，或使用者停權", "無效的Token、Token已過期、用戶已被停權")}
+      {tr("502", "上游連不到", "記為上游連線失敗")}
+      <div class="wrap" style="padding:10px 14px 12px">{U.status("ok", "/use/ 讀 Bearer；/api/ 只讀網址裡的 Token，與舊版相同")}</div>""")
+    def sv(name, typ, tgt, st, req, ok, users, toks, last, on=False):
+        return (f'<a class="row srow{" sel" if on else ""}" href="#svc"><span class="name"><span class="n mono">/{name}</span><span class="d">{typ} · {tgt}</span></span><span>{st}</span>'
+                f'<span class="c3 mono">{req}</span><span class="c3 mono">{ok}</span><span class="c4 mono">{users} · {toks}</span><span class="c4">{last}</span><span></span></a>')
+    lst = f"""
+    <section class="panel" aria-labelledby="h-svl" data-sort="2:desc">
+      <div class="ph"><h2 id="h-svl">服務 · 4</h2><label class="inp" style="margin-left:auto;min-width:min(220px,100%)">{U.icon("search", 14)}<input placeholder="搜尋服務" style="background:transparent;border:0;flex:1;min-width:0"></label></div>
+      <div class="row hd srow"><span>服務</span><span>狀態</span><span class="c3">今日請求</span><span class="c3">正常回應率</span><span class="c4">使用者 · Token</span><span class="c4">最後使用</span><span></span></div>
+      {sv("ollama", "LLM 推論", "容器 ollama @ tw-01", U.status("ok", "啟用"), "14,880", "99.2%", 3, 4, "剛剛", True)}
+      {sv("shop-admin", "管理 API", "容器 shop-api @ tw-01", U.status("ok", "啟用"), "3,410", "98.1%", 2, 3, "3 小時前")}
+      {sv("files", "檔案", "主機服務 hazelminx core", U.status("ok", "啟用"), "130", "100%", 1, 1, "昨天")}
+      {sv("legacy-report", "報表", "容器 report @ jp-02", U.status("none", "停用"), "0", "—", 0, 1, "41 天前")}
+    </section>"""
+    def pp(port, src, probe, st, on=False, dis=""):
+        radio = (f'<span tabindex="0" data-tip="{dis}"><input type="radio" name="pp" disabled aria-label="{port}"></span>' if dis
+                 else f'<input type="radio" name="pp"{" checked" if on else ""} aria-label="{port}">')
+        return (f'<div class="row"><span class="wrap" style="flex-wrap:nowrap">{radio}<span class="mono">{port}</span></span>'
+                f'<span class="note">{src}</span><span class="mono">{probe}</span><span>{st}</span></div>')
+    picker = _fp("新增服務 · 選擇目標", f"""
+      <div style="padding:12px 16px 4px">{_grid(_fld("目標類型", _seg(["容器", "主機服務", "叢集服務", "外部網址"], 0, "目標類型")), _fld("容器或部署單元的服務", _dd("minio · Podman（deploy）@ lab-mini")), minw=280)}</div>
+      <div class="row hd"><span>Port</span><span>從哪裡知道</span><span>探測</span><span>可以代理</span></div>
+      {pp("9000/tcp", "映像 EXPOSE · 有監聽", "HTTP 403 /", U.status("ok", "HTTP · S3 API"), True)}
+      {pp("9001/tcp", "compose ports · 有監聽", "HTTP 200 /", U.status("ok", "HTTP · 管理介面"))}
+      {pp("9090/tcp", "有監聽 · 沒宣告", "HTTP 200 /metrics", U.status("info", "HTTP · 只在容器內"))}
+      {pp("7946/udp", "映像 EXPOSE", "—", U.status("none", "UDP · 不能代理"), dis="API 代理只轉 HTTP；UDP 不能選")}
+      <div style="padding:10px 16px 12px;display:flex;flex-direction:column;gap:8px">
+        <div class="wrap">{U.status("info", "一個服務對一個 Port")}<span tabindex="0" data-tip="要同時開放 S3 API 和管理介面，就建兩個服務，例如 /minio 與 /minio-console">{U.icon("info", 14)}</span></div>
+        <div class="wrap"><span class="note">上游路徑前綴</span><span style="flex:0 1 220px">{_in("/", mono=True)}</span><span class="note">呼叫 /use/minio/bucket → 轉到 9000/bucket</span></div>
+      </div>""")
+    def dom(host, maps, cert, st):
+        return f'<div class="row"><span class="mono">{host}</span><span class="mono">{maps}</span><span class="c5">{cert}</span><span>{st}</span><span>{U.actions(["more"])}</span></div>'
+    domains = _fp("專屬網址", f"""
+      <div class="row hd"><span>網址</span><span>對應</span><span class="c5">憑證</span><span>DNS</span><span></span></div>
+      {dom("api.example.tw", "整個 API 代理 · /use/&lt;服務&gt;/…", U.status("ok", "自動 · 剩 82 天"), U.status("ok", "已指向入口"))}
+      {dom("ollama.api.example.tw", "只到 /ollama · 不用寫 /use/ollama", U.status("ok", "自動 · 剩 82 天"), U.status("ok", "已指向入口"))}
+      {dom("llm.lab.example.tw", "只到 /ollama", U.status("warn", "等 DNS"), U.status("warn", "還沒指向 · 新增 A 紀錄 203.0.113.22"))}
+      <div style="padding:10px 16px 12px;display:flex;flex-direction:column;gap:8px">
+        <div class="term">curl https://ollama.api.example.tw/api/tags -H "Authorization: Bearer hx_live_…"</div>
+        <div class="wrap"><button type="button" class="btn sm">{U.icon("plus", 14)}新增網址</button>{U.status("info", "服務專屬網址只收 Bearer")}<span tabindex="0" data-tip="網址裡沒有 /use/服務 這一段，所以不支援把 Token 放在路徑；/use/ 與 /api/ 的舊路徑照常可用">{U.icon("info", 14)}</span></div>
+      </div>""")
+    main = head + _api_tabs(1) + lst + domains + picker + f'<div class="cg">{target}{upstream}</div>' + f'<div class="cg">{limits}{compat}</div>' + U.savebar("/ollama：2 處未儲存", "儲存後新請求立即套用", "儲存")
+    return U.shell("api", main)
+
+
+# ---------- API 代理 › 使用者與 Token ----------
+def apiproxy_tokens() -> str:
+    head = U.page_head("API 代理", OBS, '<button type="button" class="btn pri">發 Token</button><button type="button" class="btn">新增使用者</button>')
+    def user(name, st, toks, svcs, last):
+        return (f'<div class="row srow"><span class="name"><span class="n">{name}</span><span class="d">{svcs}</span></span><span>{st}</span>'
+                f'<span class="c3 mono">{toks}</span><span class="c4">{last}</span><span class="c4"></span><span class="c5"></span><span>{U.actions(["more"])}</span></div>')
+    users = f"""
+    <section class="panel" aria-labelledby="h-au">
+      <div class="ph"><h2 id="h-au">API 使用者 · 6</h2><span class="sub">只能呼叫 API，不能登入面板</span></div>
+      <div class="row hd srow"><span>使用者</span><span>狀態</span><span class="c3">Token</span><span class="c4">最後使用</span><span class="c4"></span><span class="c5"></span><span></span></div>
+      {user("tim", U.status("ok", "啟用"), "2", "/ollama、/shop-admin", "2 分鐘前")}
+      {user("lab-bot", U.status("ok", "啟用"), "2", "/ollama", "剛剛")}
+      {user("partner-a", U.status("ok", "啟用"), "1", "/ollama", "1 小時前")}
+      {user("ci-runner", U.status("ok", "啟用"), "1", "/shop-admin", "3 小時前")}
+      {user("partner-b", U.status("ok", "啟用"), "1", "/ollama", "6 天前")}
+      {user("old-intern", U.status("none", "停權"), "1", "/legacy-report", "41 天前")}
+    </section>"""
+    def tok(pre, who, svc, note, exp, used, st):
+        return (f'<div class="row srow"><span class="name"><span class="n mono">{pre}</span><span class="d">{note}</span></span><span>{st}</span>'
+                f'<span class="c3">{who}</span><span class="c3 mono">{svc}</span><span class="c4">{exp}</span><span class="c4">{used}</span>'
+                f'<span>{U.actions(["stop", "more"])}</span></div>')
+    toks = f"""
+    <section class="panel" aria-labelledby="h-tk" data-batch>
+      <div class="ph"><h2 id="h-tk">Token · 11</h2><span class="sub">一個 Token 只對一個服務；完整值只在發出時顯示一次</span></div>
+      <div class="wrap" style="padding:10px 14px;border-bottom:1px solid var(--line)"><label class="inp" style="flex:1;min-width:min(220px,100%)">{U.icon("search", 14)}<input placeholder="搜尋 Token、使用者或備註" style="background:transparent;border:0;flex:1;min-width:0"></label><span style="flex:0 1 170px;min-width:140px">{_dd("使用者：全部")}</span><span style="flex:0 1 170px;min-width:140px">{_dd("服務：全部")}</span><span class="chip on">全部</span><span class="chip">啟用 7</span><span class="chip">停用 1</span><span class="chip">已過期 2</span><span class="chip">失效 1</span><span class="chip">14 天內到期 2</span></div>
+      <div class="row hd srow"><span>Token</span><span>狀態</span><span class="c3">使用者</span><span class="c3">服務</span><span class="c4">到期</span><span class="c4">今日用量</span><span></span></div>
+      {tok("hx_live_7f3a…", "lab-bot", "/ollama", "實驗室排程", U.status("warn", "9 天後"), U.meter(58 / 60 * 100, "58/60 次/分"), U.status("ok", "啟用"))}
+      {tok("hx_live_c21e…", "partner-a", "/ollama", "合作夥伴試用", "41 天後", U.meter(20, "12/60 次/分"), U.status("ok", "啟用"))}
+      {tok("hx_live_90bd…", "tim", "/ollama", "筆電", "77 天後", U.meter(1, "3/600 次/分"), U.status("ok", "啟用"))}
+      {tok("hx_live_4e77…", "tim", "/shop-admin", "筆電", "77 天後", U.meter(0, "0/600 次/分"), U.status("none", "停用"))}
+      {tok("hx_live_b902…", "partner-b", "/ollama", "外洩後作廢", "—", "—", U.status("dng", "失效"))}
+      {tok("hx_ci_118e…", "ci-runner", "/shop-admin", "GitHub Actions", "12 天後", U.meter(0, "0/120 次/分"), U.status("ok", "啟用"))}
+      {tok("hx_live_0a1c…", "old-intern", "/legacy-report", "—", "已過期", "—", U.status("none", "已過期"))}
+    </section>"""
+    issue = _fp("發 Token", _grid(
+        _fld("使用者", _dd("lab-bot")), _fld("服務", _dd("/ollama"), "一個 Token 對一個服務，與 infra-manager 相同"),
+        _fld("到期", _seg(["30 天", "90 天", "1 年", "自訂"], 1, "到期")), _fld("備註", _in("實驗室排程 v2")),
+        _fld("限速覆寫", _in("沿用服務設定", ph=True)), _fld("來源 IP", _in("10.8.0.0/24", mono=True), "留空＝不限")) +
+        '<div class="wrap" style="padding:0 16px 14px;justify-content:flex-end"><button type="button" class="btn pri">發出</button></div>')
+    shown = _fp("Token 已發出 · 只顯示這一次", f"""
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
+        <div class="term">hx_live_5d2e9c0f6a7b41d8b3e2c9a0f1e6d7c4</div>
+        <div class="wrap"><button type="button" class="btn">{U.icon("copy", 14)}複製</button>{U.status("warn", "關掉後無法再看到完整值")}</div>
+      </div>""")
+    main = head + _api_tabs(2) + users + toks + f'<div class="cg">{issue}{shown}</div>'
+    return U.shell("api", main)
+
+
+# ---------- API 代理 › 失敗紀錄 ----------
+def apiproxy_failures() -> str:
+    head = U.page_head("API 代理", OBS, '<button type="button" class="btn">匯出 CSV</button>')
+    kinds = [("驗證失敗", 188, "var(--warn)"), ("上游回應失敗", 11, "var(--danger)"), ("上游連線失敗", 9, "var(--danger)"), ("傳輸中斷", 4, "var(--s2)"), ("本系統錯誤", 0, "var(--s3)")]
+    seg = U.ranked([(f"{n}", v, str(v)) for n, v, _ in kinds])
+    summary = f"""
+    <section class="panel" aria-labelledby="h-fs">
+      <div class="ph"><h2 id="h-fs">今日失敗 · 212</h2><span class="sub">最多保留 90 天或 100,000 筆，滿了刪最舊的</span></div>
+      {seg}
+    </section>"""
+    def fr(t, kind, reason, svc, who, code, up):
+        return (f'<div class="row srow"><span class="name"><span class="n mono">{t}</span><span class="d">{who}</span></span><span>{kind}</span>'
+                f'<span class="c3">{reason}</span><span class="c3 mono">{svc}</span><span class="c4 mono">{code}</span><span class="c4 mono">{up}</span><span></span></div>')
+    rows = f"""
+    <section class="panel" aria-labelledby="h-fl" data-pages="1–6 / 212">
+      <div class="ph"><h2 id="h-fl">失敗紀錄</h2></div>
+      <div class="wrap" style="padding:10px 14px;border-bottom:1px solid var(--line)"><span style="flex:0 1 180px;min-width:150px">{_dd("類型：全部")}</span><span style="flex:0 1 180px;min-width:150px">{_dd("服務：全部")}</span><span style="flex:0 1 150px;min-width:130px">{_dd("回應碼：全部")}</span><span style="flex:0 1 220px;min-width:180px">{_dd("11/08 00:00 – 現在")}</span><button type="button" class="btn">查詢</button></div>
+      <div class="row hd srow"><span>時間 · 呼叫者</span><span>類型</span><span class="c3">原因</span><span class="c3">服務</span><span class="c4">回應碼</span><span class="c4">上游回應碼</span><span></span></div>
+      {fr("03:41:12", U.status("warn", "驗證失敗"), "超過限速（60 次/分）", "/ollama", "lab-bot · Token #12", "429", "—")}
+      {fr("03:40:55", U.status("warn", "驗證失敗"), "Token 已過期", "/legacy-report", "old-intern · Token #3", "403", "—")}
+      {fr("03:39:31", U.status("warn", "驗證失敗"), "Token 無效或已停用", "/ollama", "—", "403", "—")}
+      {fr("03:38:20", U.status("warn", "驗證失敗"), "方法不允許（DELETE）", "/shop-admin", "ci-runner · Token #9", "403", "—")}
+      {fr("03:21:07", U.status("dng", "上游連線失敗"), "連線逾時", "/legacy-report", "tim · Token #5", "502", "—")}
+      {fr("03:05:44", U.status("dng", "上游連線失敗"), "上游 TLS 驗證失敗", "/shop-admin", "ci-runner · Token #9", "502", "—")}
+      {fr("02:58:41", U.status("dng", "上游回應失敗"), "上游回傳錯誤", "/shop-admin", "tim · Token #6", "500", "500")}
+      {fr("02:12:03", U.status("info", "傳輸中斷"), "傳輸中斷，來源未確認", "/ollama", "partner-a · Token #11", "200", "200")}
+      <div class="note" style="padding:8px 14px 12px">不記錄 Token 值與請求路徑 · 傳輸中斷可能發生在回應送出之後，所以回應碼可能是 200</div>
+    </section>"""
+    main = head + _api_tabs(3) + summary + rows
+    return U.shell("api", main)
+
+
+# ---------- 容器 › 映像、儲存卷、網路與快取 ----------
+def _locked_acts(keys, why):
+    """列尾動作：刪除停用並說明原因（ROB-003）。"""
+    return (U.actions(keys).replace("</span>", "", 1).rstrip()
+            + f'<span tabindex="0" data-tip="{why}"><button type="button" class="ib" disabled aria-label="刪除（{why}）">{U.icon("trash")}</button></span>'
+            + U.actions(["more"]).replace('<span class="acts">', "", 1))
+
+
+def container_resources() -> str:
+    head = U.page_head("容器資源", OBS, '<button type="button" class="btn pri">拉取映像</button><button type="button" class="btn">建置映像</button><button type="button" class="btn">清理…</button>')
+    tabs = ('<div class="panel"><div class="tabs" role="tablist"><a class="tab" role="tab" aria-selected="false" href="Containers.dc.html">容器 · 16</a>'
+            '<button type="button" class="tab on" role="tab" aria-selected="true">映像 · 23</button><button type="button" class="tab" role="tab" aria-selected="false">儲存卷 · 9</button>'
+            '<button type="button" class="tab" role="tab" aria-selected="false">網路 · 6</button><button type="button" class="tab" role="tab" aria-selected="false">建置快取</button>'
+            '<button type="button" class="tab" role="tab" aria-selected="false">登錄站 · 2</button></div></div>')
+    def du(kind, total, used, recl, pct):
+        return (f'<div class="row"><span>{kind}</span><span class="mono">{total}</span><span>{U.meter(pct, used)}</span><span class="mono">{recl}</span></div>')
+    space = _fp("空間 · Docker（root）@ tw-01", f"""
+      <div class="row hd"><span>類型</span><span>總共</span><span>使用中</span><span>可回收</span></div>
+      {du("映像", "15.1 GiB", "9.8 GiB · 16 個", "4.1 GiB · 7 個", 65)}
+      {du("容器可寫層", "1.3 GiB", "1.2 GiB · 14 個", "0.1 GiB · 2 個已停止", 92)}
+      {du("儲存卷", "318 GiB", "316 GiB · 7 個", "2.0 GiB · 2 個沒被使用", 99)}
+      {du("建置快取", "6.4 GiB", "—", "6.4 GiB", 0)}
+      {du("容器日誌", "3.1 GiB", "3.1 GiB", "依日誌保留設定自動清", 100)}""")
+    prune = _fp("清理預覽", f"""
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
+        <div class="wrap">{_cb("未使用的映像（7 · 4.1 GiB）", True)}{_cb("建置快取（6.4 GiB）", True)}{_cb("已停止的容器（2）", False)}{_cb("沒被使用的儲存卷（2 · 2.0 GiB）", False, "資料會消失")}</div>
+        <div class="wrap">{_cb("保留回滾要用的映像", True, "shop-api:88b1d02 仍是上一個可回滾版本")}{_cb("只清超過 7 天的", True)}</div>
+        <div class="wrap" style="justify-content:space-between">{U.status("ok", "預計回收 9.7 GiB")}<button type="button" class="btn pri">清理</button></div>
+      </div>""")
+    def img(repo, tag, digest, size, used_by, created, st):
+        return (f'<div class="row srow"><span class="name"><span class="n mono">{repo}:{tag}</span><span class="d mono">{digest}</span></span><span>{st}</span>'
+                f'<span class="c3">{used_by}</span><span class="c4 mono">{size}</span><span class="c4">{created}</span><span class="c5"></span>'
+                f'<span>{U.actions(["copy", "download", "trash", "more"]) if used_by == "—" else _locked_acts(["copy", "download"], "有容器在用，不能刪除")}</span></div>')
+    images = f"""
+    <section class="panel" aria-labelledby="h-imgs" data-sort="3:desc" data-batch data-pages="1–6 / 23">
+      <div class="ph"><h2 id="h-imgs">映像 · 23</h2><div class="wrap" style="margin-left:auto"><span class="chip on">全部</span><span class="chip">使用中 16</span><span class="chip">未使用 7</span><span class="chip">懸空 3</span><span class="chip">有更新 2</span></div></div>
+      <div class="row hd srow"><span>映像</span><span>狀態</span><span class="c3">誰在用</span><span class="c4">大小</span><span class="c4">建立</span><span class="c5"></span><span></span></div>
+      {img("ollama/ollama", "0.5.7", "sha256:91c2…", "2.9 GiB", "ollama", "41 天前", U.status("info", "有更新 0.6.1"))}
+      {img("ghcr.io/hazelnut/shop-api", "a3f9c1e", "sha256:4be1…", "812 MiB", "shop-api ×2", "今天", U.status("ok", "使用中"))}
+      {img("ghcr.io/hazelnut/shop-api", "88b1d02", "sha256:7a03…", "810 MiB", "—", "3 天前", U.status("none", "回滾用 · 保留"))}
+      {img("postgres", "16.4", "sha256:c1e8…", "430 MiB", "shop-db、nextcloud-db", "2 個月前", U.status("ok", "使用中"))}
+      {img("node", "22", "sha256:0d42…", "1.1 GiB", "—", "12 天前", U.status("none", "未使用"))}
+      {img("&lt;none&gt;", "&lt;none&gt;", "sha256:e5b0…", "640 MiB", "—", "20 天前", U.status("none", "懸空"))}
+    </section>"""
+    def vol(name, mp, size, used_by, drv, st):
+        return (f'<div class="row srow"><span class="name"><span class="n mono">{name}</span><span class="d mono">{mp}</span></span><span>{st}</span>'
+                f'<span class="c3">{used_by}</span><span class="c4 mono">{size}</span><span class="c4">{drv}</span><span class="c5"></span>'
+                f'<span>{U.actions(["download", "trash", "more"]) if used_by == "—" else _locked_acts(["download"], "有容器在用，不能刪除")}</span></div>')
+    vols = f"""
+    <section class="panel" aria-labelledby="h-vols" data-batch>
+      <div class="ph"><h2 id="h-vols">儲存卷 · 9</h2><div class="wrap" style="margin-left:auto"><button type="button" class="btn sm">{U.icon("plus", 14)}建立儲存卷</button></div></div>
+      <div class="row hd srow"><span>儲存卷</span><span>狀態</span><span class="c3">誰在用</span><span class="c4">大小</span><span class="c4">驅動</span><span class="c5"></span><span></span></div>
+      {vol("shop-production-web_uploads", "/var/lib/docker/volumes/…/_data", "84 GiB", "shop-api ×2", "local", U.status("ok", "使用中"))}
+      {vol("nextcloud-db_data", "/var/lib/docker/volumes/…/_data", "1.2 GiB", "nextcloud-db", "local", U.status("ok", "使用中"))}
+      {vol("old-report_cache", "/var/lib/docker/volumes/…/_data", "1.8 GiB", "—", "local", U.status("none", "沒被使用"))}
+      {vol("nfs-media", "nas.lan:/export/media", "—", "wiki-app", "local · nfs", U.status("ok", "使用中"))}
+    </section>"""
+    def net(name, drv, subnet, members, st, sys_=False):
+        acts = f'<span tabindex="0" data-tip="引擎內建網路，不能刪除">{U.actions(["more"])}</span>' if sys_ else U.actions(["trash", "more"])
+        return (f'<div class="row srow"><span class="name"><span class="n mono">{name}</span><span class="d">{drv}</span></span><span>{st}</span>'
+                f'<span class="c3">{members}</span><span class="c4 mono">{subnet}</span><span class="c4"></span><span class="c5"></span><span>{acts}</span></div>')
+    nets = f"""
+    <section class="panel" aria-labelledby="h-nets">
+      <div class="ph"><h2 id="h-nets">網路 · 6</h2><div class="wrap" style="margin-left:auto"><button type="button" class="btn sm">{U.icon("plus", 14)}建立網路</button></div></div>
+      <div class="row hd srow"><span>網路</span><span>狀態</span><span class="c3">裡面的容器</span><span class="c4">子網</span><span class="c4"></span><span class="c5"></span><span></span></div>
+      {net("shop-production-web_default", "bridge · 部署單元 web", "172.18.0.0/16", "shop-api ×2、shop-db、shop-redis", U.status("ok", "使用中"))}
+      {net("nextcloud_default", "bridge · 應用 nextcloud", "172.21.0.0/16", "nextcloud、nextcloud-db、nextcloud-redis", U.status("ok", "使用中"))}
+      {net("hzx-ollama", "bridge · 平台元件", "172.24.0.0/16", "ollama、nextcloud", U.status("ok", "使用中"))}
+      {net("old_default", "bridge", "172.30.0.0/16", "—", U.status("none", "沒有容器"))}
+      {net("bridge", "bridge · 引擎內建", "172.17.0.0/16", "—", U.status("none", "內建"), True)}
+      {net("host", "host · 引擎內建", "—", "—", U.status("none", "內建"), True)}
+    </section>"""
+    regs = _fp("登錄站 · 2", f"""
+      <div class="row hd"><span>登錄站</span><span>帳號</span><span>狀態</span><span></span></div>
+      <div class="row"><span class="mono">ghcr.io</span><span>hazelnut 組織</span><span>{U.status("ok", "已登入 · Token 61 天到期")}</span><span>{U.actions(["more"])}</span></div>
+      <div class="row"><span class="mono">registry.example.tw</span><span>deploy</span><span>{U.status("ok", "已登入 · 鏡像 docker.io")}</span><span>{U.actions(["more"])}</span></div>""")
+    main = (head + U.scope_bar([("Docker（root）@ tw-01", "15.1 GiB 映像"), ("Docker（root）@ jp-02", "過期"), ("Podman（deploy）@ lab-mini", "")], 0, "引擎環境")
+            + tabs + f'<div class="cg">{space}{prune}</div>' + images + vols + nets + regs)
+    return U.shell("docker", main)
+
+
+# ---------- 平台設定 › 解除安裝 ----------
+def uninstall() -> str:
+    head = _form_head([("平台設定", "Settings.dc.html")], "解除安裝", '<a class="btn" href="Settings.dc.html">取消</a>')
+    scope = _fp("範圍", _grid(_fld("移除", _seg(["整個平台", "一台主機"], 1, "範圍")), _fld("主機", _dd("hazel-tw-01")),
+                _fld("連不上的主機", U.status("info", "會產生離線移除包"), "在主機上執行 sudo hazelminx uninstall")))
+    modes = ('<section class="panel"><div class="ph"><h2>方式</h2></div><div class="fleet choices">'
+             + _choice("只移除平台", "預設", ["應用照常運作", "引擎與套件保留"], '<button type="button" class="btn sm">選擇</button>')
+             + _choice("移除平台與它建立的應用", "", ["應用與資料逐項選", "引擎與套件保留"], '<button type="button" class="btn sm">選擇</button>')
+             + _choice("完全移除", "回到安裝前", ["平台裝的引擎、套件、設定都移除", "改過的設定還原成安裝前"], U.status("ok", "已選"), on=True)
+             + "</div></section>")
+    def it(name, own, act, why):
+        return f'<div class="row srow"><span class="name"><span class="n mono">{name}</span><span class="d">{why}</span></span><span>{own}</span><span class="c3">{act}</span><span class="c4"></span><span class="c4"></span><span class="c5"></span><span></span></div>'
+    P = lambda t: U.status("info", t)
+    preview = f"""
+    <section class="panel" aria-labelledby="h-unp" data-pages="1–11 / 47">
+      <div class="ph"><h2 id="h-unp">預覽 · hazel-tw-01 · 47 項</h2><div class="wrap" style="margin-left:auto"><span class="chip on">全部</span><span class="chip">移除 31</span><span class="chip">還原 9</span><span class="chip">不動 5</span><span class="chip">要你決定 2</span></div></div>
+      <div class="row hd srow"><span>項目 · 帳本來源</span><span>擁有權</span><span class="c3">處理</span><span class="c4"></span><span class="c4"></span><span class="c5"></span><span></span></div>
+      {it("Docker Engine 27.3", P("平台安裝"), '<span class="wrap">' + U.status("warn", "要你決定") + _seg(["移除", "保留"], -1, "Docker") + '</span>', "11/02 工作 #12 · 有使用者自己建的容器 dev-scratch")}
+      {it("zentinel.service · Zentinel 0.9", P("平台安裝"), U.status("dng", "移除"), "11/02 工作 #14")}
+      {it("cloudflared.service", P("平台安裝"), U.status("dng", "移除"), "11/02 工作 #19")}
+      {it("apt：download.docker.com ＋ 簽章金鑰", P("平台安裝"), U.status("dng", "移除"), "11/02 工作 #12")}
+      {it("hazelminx 使用者與群組", P("平台安裝"), U.status("dng", "移除"), "11/02 安裝")}
+      {it("/etc/docker/daemon.json · log-opts", P("平台修改"), U.status("ok", "還原 · 安裝前不存在"), "11/02 工作 #12")}
+      {it("journald · SystemMaxUse", P("平台修改"), U.status("ok", "還原成 500M"), "11/02 安裝 · 原本 500M，平台沒放寬")}
+      {it("ufw · 平台加的 6 條規則", P("平台修改"), U.status("ok", "只刪這 6 條"), "其他 8 條是原本就有的")}
+      {it("/etc/ssh/sshd_config.d/50-hazelminx.conf", P("平台安裝"), '<span class="wrap">' + U.status("warn", "要你決定 · 你改過") + _seg(["刪除", "保留"], -1, "sshd") + '</span>', "11/03 工作 #40 · 之後內容被手動改過")}
+      {it("nginx 1.24", U.status("none", "既有"), U.status("none", "不動"), "安裝前就有")}
+      {it("node-exporter（使用者自己的容器）", U.status("none", "既有"), U.status("none", "不動"), "不是平台建立的")}
+    </section>"""
+    def dat(name, where, size, keep=True):
+        return (f'<div class="row"><span class="wrap" style="flex-wrap:nowrap"><input type="checkbox"{"" if keep else " checked"} aria-label="刪除 {name}"><span class="name"><span class="n">{name}</span><span class="d mono">{where}</span></span></span>'
+                f'<span class="mono">{size}</span><span>{U.status("ok", "保留") if keep else U.status("dng", "刪除")}</span><span><button type="button" class="btn sm">{U.icon("download", 14)}匯出</button></span></div>')
+    data = _fp("使用者資料 · 勾選的才刪除", f"""
+      <div class="row hd"><span>資料</span><span>大小</span><span>處理</span><span></span></div>
+      {dat("shop-db 資料庫", "shop-production-web_db · 儲存卷", "84 GiB")}
+      {dat("shop 上傳檔案", "shop-production-web_uploads · 儲存卷", "12 GiB")}
+      {dat("nextcloud 使用者檔案", "/mnt/fast/hazelminx/apps/nextcloud/data", "212 GiB")}
+      {dat("模型庫 fast", "/mnt/fast/hazelminx/models", "61 GiB", keep=False)}
+      {dat("本機備份", "/mnt/data/hazelminx/backups", "140 GiB", keep=False)}
+      <div class="wrap" style="padding:10px 14px 12px">{U.status("info", "S3 上的備份不在主機上，不會被刪除")}</div>""")
+    gaps = _fp("保留下來的東西會失去", f"""
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">
+        {_chk("warn", "憑證續期", "shop.example.tw 憑證 11 天後到期，之後沒有人續期", "保留資料但應用會被移除")}
+        {_chk("warn", "備份排程", "shop-db 每天 03:00 的備份停止", "已有的備份不刪")}
+        {_chk("ok", "對外入口", "完全移除後沒有 Zentinel，主機上不會留下沒人管的對外入口", "")}
+      </div>""")
+    confirm = _fp("確認", f"""
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
+        <div class="wrap"><span class="note">輸入主機名稱</span><span style="flex:0 1 260px">{_in("hazel-tw-01", mono=True)}</span>{U.status("warn", "還有 2 項要你決定")}</div>
+        <div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">下載離線移除包</button><button type="button" class="btn dng" disabled>開始完全移除</button></div>
+      </div>""")
+    report = _fp("移除後的比對報告 · 範例", f"""
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">
+        <div class="wrap">{U.status("ok", "與安裝前相同 41 項")}{U.status("warn", "不同 3 項")}{U.status("info", "需要重開機 1 項")}</div>
+        <div class="term">不同：shop-db 資料（使用者選擇保留）
+不同：/etc/ssh/sshd_config.d/50-hazelminx.conf（使用者改過，選擇保留）
+不同：Docker Engine（有使用者自己的容器，選擇保留）
+重開機：nvidia_uvm 核心模組
+報告：/var/log/hazelminx-uninstall-20261108T0412Z.txt · sudo hazelminx uninstall --report</div>
+      </div>""")
+    main = head + scope + modes + preview + f'<div class="cg">{data}{gaps}</div>' + confirm + report
+    return U.shell("settings", main)
+
+
+# ---------- 主機 › 變更帳本（票 113 設計缺口） ----------
+def node_ledger() -> str:
+    head = node_head("hazel-tw-01", U.status("ok", "連線中"), "最後聯絡 2 秒前", '<button type="button" class="btn">匯出帳本</button>') + node_tabs("變更帳本")
+    state = _fp("帳本狀態", _grid(
+        _fld("本機帳本", U.status("ok", "完整 · 1,284 筆 · 最後驗證 03:40")),
+        _fld("Core 副本", U.status("ok", "已同步到第 1,284 筆")),
+        _fld("安裝前快照", U.status("ok", "11/02 02:14 · 已保存"), "移除時拿來比對"),
+        _fld("使用者後來改過", U.status("warn", "2 個檔案"), "平台寫過、之後被手動改過")))
+    def le(t, obj, how, before, after, own, job):
+        return (f'<div class="row srow"><span class="name"><span class="n mono">{obj}</span><span class="d">{t} · <a href="WorkCenter.dc.html">{job}</a></span></span><span>{own}</span>'
+                f'<span class="c3">{how}</span><span class="c4 mono">{before}</span><span class="c4 mono">{after}</span><span class="c5"></span><span>{U.actions(["more"])}</span></div>')
+    P = lambda t: U.status("info", t)
+    rows = f"""
+    <section class="panel" aria-labelledby="h-led" data-pages="1–7 / 1,284">
+      <div class="ph"><h2 id="h-led">變更紀錄</h2></div>
+      <div class="wrap" style="padding:10px 14px;border-bottom:1px solid var(--line)"><label class="inp" style="flex:1;min-width:min(220px,100%)">{U.icon("search", 14)}<input placeholder="搜尋對象，例如 /etc/ssh 或 docker" style="background:transparent;border:0;flex:1;min-width:0"></label><span style="flex:0 1 170px;min-width:140px">{_dd("類型：全部")}</span><span style="flex:0 1 170px;min-width:140px">{_dd("工作：全部")}</span><span class="chip on">全部</span><span class="chip">平台安裝</span><span class="chip">平台修改</span><span class="chip">被拒絕 1</span></div>
+      <div class="row hd srow"><span>對象 · 時間 · 工作</span><span>擁有權</span><span class="c3">改法</span><span class="c4">之前</span><span class="c4">之後</span><span class="c5"></span><span></span></div>
+      {le("03:38", "套件 openssl", "升級", "3.0.11", "3.0.13", P("平台修改"), "工作 #512")}
+      {le("11/03 10:21", "/etc/ssh/sshd_config.d/50-hazelminx.conf", "建立檔案", "不存在", "sha256:9c1e…", P("平台安裝"), "工作 #40")}
+      {le("11/02 02:31", "/etc/docker/daemon.json · log-opts", "加入設定", "沒有這個鍵", "max-size 10m · max-file 5", P("平台修改"), "工作 #12")}
+      {le("11/02 02:30", "套件 docker-ce", "安裝", "沒有安裝", "27.3.1", P("平台安裝"), "工作 #12")}
+      {le("11/02 02:29", "apt 來源 download.docker.com", "加入來源與金鑰", "不存在", "已加入", P("平台安裝"), "工作 #12")}
+      {le("11/02 02:16", "ufw 規則 8443/tcp", "加入規則", "沒有", "allow from 10.8.0.0/24", P("平台修改"), "工作 #3")}
+      {le("11/02 02:14", "使用者 hazelminx", "建立", "不存在", "uid 998", P("平台安裝"), "安裝")}
+    </section>"""
+    def dr(path, when, job):
+        return (f'<div class="row"><span class="mono">{path}</span><span class="note">平台 {when} 寫入 · {job}</span><span>{U.status("warn", "內容不同")}</span>'
+                f'<span class="wrap"><button type="button" class="btn sm">看差異</button><button type="button" class="btn sm">記為使用者的版本</button></span></div>')
+    drift = _fp("使用者後來改過 · 2", f"""
+      <div class="row hd"><span>檔案</span><span>帳本記錄</span><span>狀態</span><span></span></div>
+      {dr("/etc/ssh/sshd_config.d/50-hazelminx.conf", "11/03", "工作 #40")}
+      {dr("/etc/systemd/journald.conf.d/50-hazelminx.conf", "11/02", "安裝")}
+      <div class="wrap" style="padding:10px 14px 12px">{U.status("info", "移除平台時這些檔案不會被直接刪除或還原")}</div>""")
+    refused = _fp("被拒絕的動作 · 1", f"""
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">
+        {_chk("dng", "工作 #498 · 設定 sysctl net.ipv4.ip_forward", "這個動作沒有定義帳本內容，執行器拒絕執行（ledger_refused）", "未執行")}
+        <div class="wrap"><a class="btn sm" href="WorkCenter.dc.html">看工作 #498</a><span class="note">主機沒有任何改變</span></div>
+      </div>""")
+    snap = _fp("安裝前快照 · 11/02 02:14", f"""
+      <div class="row hd"><span>項目</span><span>安裝前</span><span>現在</span><span>差異的原因</span></div>
+      <div class="row"><span>已安裝套件</span><span class="mono">412</span><span class="mono">431</span><span class="note">平台安裝 19 個</span></div>
+      <div class="row"><span>啟用的 systemd 單元</span><span class="mono">38</span><span class="mono">43</span><span class="note">平台安裝 5 個</span></div>
+      <div class="row"><span>監聽中的 Port</span><span class="mono">22、80</span><span class="mono">22、80、443、8443</span><span class="note">Zentinel 443、管理入口 8443</span></div>
+      <div class="row"><span>使用者與群組</span><span class="mono">31</span><span class="mono">33</span><span class="note">hazelminx、docker 群組</span></div>""")
+    main = head + state + rows + f'<div class="cg">{drift}{refused}</div>' + snap
+    return U.shell("nodes", main)
+
+
+def node_ledger_broken() -> str:
+    head = node_head("hazel-tw-01", U.status("dng", "帳本無法使用"), "最後聯絡 2 秒前", '<button type="button" class="btn">下載診斷包</button>') + node_tabs("變更帳本")
+    bar = ('<div class="cdown" role="alert"><span class="t"><strong>這台主機的變更帳本無法使用 · 03:40 起</strong>'
+           f'<span>{U.status("dng", "完整性檢查失敗 · 第 1,281 筆的雜湊與下一筆的紀錄不符")}</span>'
+           '<span class="note">修好之前，這台主機的所有變更都會被拒絕；讀取、監控、日誌與終端機照常可用</span></span>'
+           '<span class="acts2"><button type="button" class="btn pri">從 Core 副本修復</button><button type="button" class="btn">看檢查結果</button></span></div>')
+    main = head + bar + _fp("修復方式", f"""
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">
+        {_chk("ok", "Core 副本完整", "Core 有到第 1,284 筆的完整副本，可以用來重建本機帳本", "可用")}
+        {_chk("warn", "Core 副本落後時", "差的筆數會列出來，需要你確認那些變更是否真的發生過", "")}
+        {_chk("warn", "沒有可用副本時", "以目前主機狀態重新建立帳本；之前的變更標成「來源不明」，完全移除時不會自動處理", "")}
+      </div>""")
+    return U.shell("nodes", main)
+
+
+# ---------- 帳號安全（票 014 設計缺口） ----------
+def account_security() -> str:
+    head = U.page_head("帳號安全 · tim", OBS, "")
+    def cred(icon_, name, detail, last, can_rm=True):
+        rm = U.actions(["rename", "trash"]) if can_rm else f'<span tabindex="0" data-tip="這是最後一個第二驗證，不能移除；先新增另一個">{U.actions(["rename"]).replace("</span>","",1)}<button type="button" class="ib" disabled aria-label="移除（最後一個）">{U.icon("trash")}</button></span></span>'
+        return f'<div class="row"><span class="name"><span class="n">{name}</span><span class="d">{detail}</span></span><span>{icon_}</span><span class="note">{last}</span><span>{rm}</span></div>'
+    second = _fp("第二驗證 · 3", f"""
+      <div class="row hd"><span>名稱</span><span>類型</span><span>最後使用</span><span></span></div>
+      {cred(U.status("info", "Passkey"), "MacBook Pro Touch ID", "panel.example.tw · 11/02 綁定", "03:38")}
+      {cred(U.status("info", "Passkey"), "YubiKey 5C", "panel.example.tw · 11/02 綁定", "11/05")}
+      {cred(U.status("info", "驗證器"), "1Password", "11/02 綁定", "從未使用")}
+      <div class="wrap" style="padding:10px 14px 12px"><button type="button" class="btn sm">{U.icon("plus", 14)}新增 Passkey</button><button type="button" class="btn sm">{U.icon("plus", 14)}新增驗證器</button></div>""")
+    rec = _fp("復原碼", f"""
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
+        <div class="wrap">{U.status("warn", "剩 3 / 10 個")}<span class="note">11/02 產生 · 已用 7 個</span></div>
+        <div class="wrap"><button type="button" class="btn">重新產生</button><span class="note">重新產生後，舊的 3 個立即失效；新的只顯示一次</span></div>
+      </div>""")
+    def ss(dev, ip, last, cur=False):
+        act = U.status("ok", "目前這一個") if cur else '<button type="button" class="btn sm">撤銷</button>'
+        return f'<div class="row srow"><span class="name"><span class="n">{dev}</span><span class="d mono">{ip}</span></span><span>{act}</span><span class="c3">{last}</span><span class="c4"></span><span class="c4"></span><span class="c5"></span><span></span></div>'
+    sess = f"""
+    <section class="panel" aria-labelledby="h-ss">
+      <div class="ph"><h2 id="h-ss">登入中的裝置 · 4</h2><div class="wrap" style="margin-left:auto"><button type="button" class="btn sm">登出其他所有裝置</button></div></div>
+      <div class="row hd srow"><span>裝置 · IP</span><span>狀態</span><span class="c3">最後活動</span><span class="c4"></span><span class="c4"></span><span class="c5"></span><span></span></div>
+      {ss("Safari · macOS", "203.0.113.7 · 台北", "剛剛", True)}
+      {ss("Chrome · Windows", "198.51.100.20 · 辦公室", "2 小時前")}
+      {ss("hx CLI", "203.0.113.7", "昨天")}
+      {ss("Firefox · Linux", "45.33.12.9 · 未知地點", "6 天前")}
+      <div class="note" style="padding:8px 14px 12px">撤銷立即生效，那台裝置下一個請求就會被要求重新登入</div>
+    </section>"""
+    idle = _fp("閒置與重新驗證", _grid(
+        _fld("閒置多久自動登出", _dd("12 小時（預設）"), "可以設 15 分鐘到 24 小時"),
+        _fld("危險操作前重新驗證", _seg(["每次", "5 分鐘內免重驗"], 1, "重新驗證"))))
+    dom = _fp("如果變更管理入口網域", f"""
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">
+        {_chk("warn", "Passkey 會失效", "2 個 Passkey 綁在 panel.example.tw，換成 hazel.example.tw 後不能用", "影響你")}
+        {_chk("dng", "沒有第二驗證的帳號", "ava 只有 Passkey，換網域後只能用復原碼登入", "影響 1 人")}
+        <div class="wrap"><button type="button" class="btn sm">通知 ava 新增驗證器</button></div>
+      </div>""")
+    main = head + f'<div class="cg">{second}{rec}</div>' + sess + f'<div class="cg">{idle}{dom}</div>'
+    return U.shell("iam", main)
+
+
+def mfa_dialogs() -> str:
+    card = "background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:12px;min-width:0"
+    def box(title, body, foot=""):
+        return f'<section style="{card}"><h2 style="font-size:16px">{title}</h2>{body}{foot}</section>'
+    qr = '<div aria-label="QR code" style="width:132px;height:132px;background:repeating-conic-gradient(var(--ink) 0 25%,var(--panel) 0 50%) 0 0/16px 16px;border:8px solid #fff;border-radius:6px;flex:none"></div>'
+    totp = box("新增驗證器", f"""
+      <div class="wrap" style="align-items:flex-start;gap:16px">{qr}<div style="display:flex;flex-direction:column;gap:8px;min-width:0;flex:1">
+        <span class="note">掃不了就手動輸入金鑰</span><div class="term" style="overflow-wrap:anywhere">JBSW Y3DP EHPK 3PXP</div>
+        <button type="button" class="btn sm">{U.icon("copy", 14)}複製金鑰</button><span class="note">伺服器時間 03:42:06 · 跟手機差太多碼會對不上</span></div></div>
+      {_fld("名稱", _in("1Password"))}{_fld("輸入 6 位數", _in("482 913", mono=True))}
+      <div class="wrap">{U.status("dng", "碼不對 · 確認手機時間與伺服器相同")}</div>""",
+      '<div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">取消</button><button type="button" class="btn pri">綁定</button></div>')
+    passkey = box("新增 Passkey", f"""
+      {_fld("裝置名稱", _in("MacBook Pro Touch ID"))}
+      {_chk("ok", "這個網址可以使用 Passkey", "panel.example.tw · HTTPS", "")}
+      {_chk("dng", "用 IP 開的面板不能綁定", "203.0.113.22 · Passkey 需要網域", "改用網域開啟")}
+      {_chk("warn", "你取消了", "瀏覽器的視窗被關掉，沒有綁定任何東西", "可以再試一次")}""",
+      '<div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">取消</button><button type="button" class="btn pri">開始</button></div>')
+    step2 = box("登入 · 驗證身分", f"""
+      <button type="button" class="btn" style="min-height:40px">使用 Passkey</button>
+      {_fld("或輸入驗證器的 6 位數", _in("", ph=True))}
+      <div class="wrap">{U.status("dng", "錯太多次 · 4:32 後再試")}</div>
+      <div class="wrap">{U.status("warn", "這次登入已逾時 · 請重新輸入密碼")}</div>
+      <a class="note" href="#rc">改用復原碼</a>""")
+    reauth = box("重新產生復原碼前 · 確認是你", f"""
+      {_fld("密碼", _in("••••••••••••", mono=True))}{_fld("驗證器 6 位數", _in("", ph=True))}""",
+      '<div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">取消</button><button type="button" class="btn pri">確認</button></div>')
+    forced = box("先設定第二驗證", f"""
+      <div class="wrap">{U.status("warn", "主機維運者必須使用第二驗證")}</div>
+      <div class="wrap">{U.status("info", "設定完成前其他頁面都不能開啟")}</div>
+      {U.steps([("密碼", "done", ""), ("第二驗證", "cur", ""), ("復原碼", "todo", "")])}
+      <div class="wrap"><button type="button" class="btn pri">新增 Passkey</button><button type="button" class="btn">新增驗證器</button></div>""")
+    rmlast = box("移除 YubiKey 5C？", f"""
+      <span class="note">移除後還有 MacBook Pro Touch ID 與 1Password 可以用</span>
+      {_chk("ok", "移除後還能登入", "最後一個第二驗證不能移除，按鈕會停用", "")}""",
+      '<div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">取消</button><button type="button" class="btn dng">移除</button></div>')
+    grid = f'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr));gap:16px;align-items:start">{totp}{passkey}{step2}{reauth}{forced}{rmlast}</div>'
+    return U.shell("iam", U.page_head("第二驗證的對話框", OBS, "") + grid)
+
+
+# ---------- 列表邊界、背景查詢與錯誤呈現（票 010 設計缺口） ----------
+def _pager(left, right=""):
+    return (f'<div class="pager" style="flex-wrap:wrap"><span>{left}</span>{right}<span class="pg"><button type="button" class="ib" aria-label="上一頁" aria-disabled="true">{U.icon("chev")}</button>'
+            f'<span>每頁 50</span><button type="button" class="ib" aria-label="下一頁">{U.icon("chev")}</button></span></div>')
+
+
+def list_and_errors() -> str:
+    head = U.page_head("列表、背景查詢與錯誤", OBS, "")
+    def demo(title, footer):
+        return (f'<section class="panel"><div class="ph"><h2>{title}</h2></div>'
+                '<div class="row hd"><span>時間</span><span>誰</span><span>動作</span></div>'
+                '<div class="row"><span class="mono">03:38:50</span><span>tim</span><span>套件更新 openssl</span></div>'
+                '<div class="row"><span class="mono">03:30:07</span><span>tim · CLI</span><span>hx jobs list</span></div>' + footer + '</section>')
+    bg = '<button type="button" class="btn sm">改成背景查詢</button>'
+    lists = (demo("一般：總數已知", _pager("顯示 1–50 / 1,284"))
+             + demo("超過查詢上限", _pager(f'可瀏覽前 10,000 筆 · 總數 41,220 <span tabindex="0" data-tip="超過的部分要用背景查詢，或縮小篩選範圍">{U.icon("info", 14)}</span>', bg))
+             + demo("查詢逾時", _pager(f'顯示 1–50 · 總數未知 <span tabindex="0" data-tip="這次查詢超過 15 秒，只先列出已找到的；背景查詢會跑完整個範圍">{U.icon("info", 14)}</span>', bg)))
+    lists = f'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(400px,100%),1fr));gap:16px">{lists}</div>'
+    def q(name, st, rows, exp, acts):
+        return (f'<div class="row srow"><span class="name"><span class="n">{name}</span><span class="d">{exp}</span></span><span>{st}</span>'
+                f'<span class="c3 mono">{rows}</span><span class="c4"></span><span class="c4"></span><span class="c5"></span><span>{acts}</span></div>')
+    queries = f"""
+    <section class="panel" aria-labelledby="h-bq">
+      <div class="ph"><h2 id="h-bq">我的背景查詢 · 10 / 10</h2></div>
+      <div class="row hd srow"><span>查詢 · 保存到</span><span>狀態</span><span class="c3">結果</span><span class="c4"></span><span class="c4"></span><span class="c5"></span><span></span></div>
+      {q("操作稽核 · 全部節點 · 10/01–11/08", U.status("ok", "完成"), "41,220 筆", "保存到 11/15", '<a class="btn sm" href="#r">看結果</a>' + U.actions(["download", "trash"]))}
+      {q("容器日誌 · shop-api · 關鍵字 timeout", U.status("info", "執行中 62%"), "—", "開始於 03:40", U.actions(["stop"]))}
+      {q("網站存取 · shop.example.tw · 5xx", U.status("ok", "完成"), "1,982 筆", "保存到 11/09", '<a class="btn sm" href="#r">看結果</a>' + U.actions(["download", "trash"]))}
+      <div style="padding:10px 14px 12px;display:flex;flex-direction:column;gap:8px">
+        {_chk("warn", "已經保存 10 筆查詢", "刪掉一筆舊的才能再新增（LIST_QUERY_LIMIT_REACHED）", "")}
+        {_chk("dng", "這筆結果已經刪除", "背景查詢的結果保存 7 天，11/01 的「登入紀錄」已過期（LIST_QUERY_EXPIRED）", "重新查詢")}
+      </div>
+    </section>"""
+    form = _fp("錯誤呈現 · 新增使用者", f"""
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:12px">
+        <div class="cdown" role="alert" style="border-color:var(--danger)"><span class="t"><strong>沒有建立使用者</strong>
+          <span>有 2 個欄位要修正 · 另外還有 1 個原因會擋下這個動作</span>
+          <span class="wrap">{U.status("warn", "平台資料庫目前唯讀（PLATFORM_DEGRADED）")}</span></span>
+          <span class="acts2"><button type="button" class="btn sm">{U.icon("copy", 14)}複製追蹤碼 tr_7f3a91</button></span></div>
+        {_grid(_fld("帳號", _in("Ava", mono=True) + '<span class="st dng" style="align-self:flex-start"><i></i>只能用小寫英文、數字與 -</span>'),
+               _fld("Email", _in("ava@", mono=True) + '<span class="st dng" style="align-self:flex-start"><i></i>Email 格式不正確</span>'),
+               _fld("角色", _dd("只能看")))}
+        <div class="wrap" style="justify-content:flex-end"><a class="btn" href="Events.dc.html">看平台狀態</a><button type="button" class="btn pri" disabled>建立</button></div>
+      </div>""")
+    main = head + lists + queries + form
+    return U.shell("iam", main)
+
+
+# ---------- 變更安全：版本衝突、影響預覽、確認倒數（票 010 設計缺口） ----------
+def change_safety() -> str:
+    head = U.page_head("變更前後的檢查", OBS, "")
+    def fc(name, mine, theirs):
+        return f'<div class="row"><span>{name}</span><span class="mono">{mine}</span><span class="mono">{theirs}</span></div>'
+    ver = _fp("編輯使用者 ava · 有人先改過了", f"""
+      <div style="padding:12px 16px 4px">{_chk("warn", "你編輯時，tim 在 03:41 存了新版本", "直接存會蓋掉他的修改，所以沒有存（VERSION_MISMATCH）", "")}</div>
+      <div class="row hd"><span>欄位</span><span>你的版本</span><span>目前的版本</span></div>
+      {fc("顯示名稱", "Ava Chen", "Ava C.")}
+      {fc("角色", "可以部署", "可以部署")}
+      <div class="wrap" style="padding:10px 16px 12px;justify-content:flex-end"><button type="button" class="btn">放棄我的修改</button><button type="button" class="btn">載入目前版本再改</button><button type="button" class="btn pri">用我的版本覆蓋</button></div>""")
+    def imp(name, how, depth):
+        return f'<div class="row"><span class="mono">{name}</span><span>{how}</span><span>{U.status("info" if depth == "直接" else "none", depth)}</span></div>'
+    preview = _fp("影響預覽 · 停止 zentinel.service（hazel-tw-01）", f"""
+      <div style="padding:12px 16px 4px;display:flex;flex-direction:column;gap:8px">
+        {_chk("dng", "會擋下這個動作", "shop.example.tw 的憑證續期工作 #533 正在用 Zentinel", "等它完成")}
+        {_chk("warn", "會排在工作後面", "工作 #533 預計 1 分鐘內完成，之後才會執行", "")}
+      </div>
+      <div class="row hd"><span>受影響</span><span>會怎樣</span><span>關係</span></div>
+      {imp("shop.example.tw", "無法連線", "直接")}
+      {imp("staging.shop", "無法連線", "直接")}
+      {imp("API 代理 /ollama", "專屬網址 ollama.api.example.tw 無法連線", "直接")}
+      {imp("shop-api ×2", "收不到外部請求，容器照常執行", "間接")}
+      {imp("wiki.example.tw", "不受影響，由 jp-02 的 Zentinel 提供", "不受影響")}
+      <div class="wrap" style="padding:10px 16px 12px;justify-content:flex-end"><button type="button" class="btn">取消</button><button type="button" class="btn dng" disabled>停止</button></div>""")
+    cd = f"""
+    <section class="panel"><div class="ph"><h2>套用後要確認 · 新增防火牆規則（hazel-tw-01）</h2></div>
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
+        <div class="cdown" role="alert" style="border-color:var(--warn)"><span class="t"><strong>47 秒內沒確認就會自動復原</strong>
+          <span>開新分頁打開 <span class="mono">https://panel.example.tw</span> → 在新分頁按「確認保留」</span></span>
+          <span class="acts2"><button type="button" class="btn pri">確認保留</button><button type="button" class="btn">現在復原</button></span></div>
+        {_chk("dng", "這個確認沒有生效", "確認要從套用之後才建立的連線送出；這個分頁是套用前開的（CONFIRMATION_<wbr>NEW_<wbr>CONNECTION_<wbr>REQUIRED）", "開新分頁")}
+        {_chk("dng", "已經過了確認時間", "03:43:12 自動復原成套用前的規則（CONFIRMATION_EXPIRED）", "看工作 #541")}
+      </div>
+    </section>"""
+    waiting = _fp("別人的變更在等確認", f"""
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
+        {_chk("warn", "hazel-tw-01 的防火牆正在等 tim 確認", "確認或復原之前，這台主機的防火牆不能修改（CONFIRMATION_REQUIRED）", "最晚 03:44:12")}
+        <div class="wrap"><a class="btn sm" href="WorkCenter.dc.html">看工作 #541</a><button type="button" class="btn sm">確認後通知我</button></div>
+      </div>""")
+    main = head + f'<div class="cg">{ver}{waiting}</div>' + preview + cd
+    return U.shell("security", main)
+
+
+# ---------- 外殼的各種狀態（票 005 設計缺口） ----------
+def shell_states() -> str:
+    head = U.page_head("外殼的各種狀態", OBS, "")
+    card = "background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0"
+    def box(title, body):
+        return f'<section style="{card}"><h2 style="font-size:14px">{title}</h2>{body}</section>'
+    menu = box("帳號選單", f"""
+      <div style="border:1px solid var(--line);border-radius:8px;background:var(--raised);display:flex;flex-direction:column">
+        <div style="padding:10px 12px;border-bottom:1px solid var(--line)"><strong>tim</strong><div class="note">擁有者 · tim@hazelnut.tw</div></div>
+        <a class="nv" href="AccountSecurity.dc.html" style="padding:8px 12px">{U.icon("user", 14)} 帳號安全</a>
+        <a class="nv" href="Terminal.dc.html" style="padding:8px 12px">{U.icon("terminal", 14)} 終端機</a>
+        <button type="button" class="nv" style="padding:8px 12px;text-align:left">{U.icon("globe", 14)} 語言 · 繁體中文</button>
+        <button type="button" class="nv" style="padding:8px 12px;text-align:left;border-top:1px solid var(--line)">登出</button>
+      </div>""")
+    signed_out = box("未登入時的頂列", f"""
+      <div class="top" style="border:1px solid var(--line);border-radius:8px"><span class="brand"><span class="logo" aria-hidden="true"></span><span>HazelminX</span></span>
+        <div class="tright"><button type="button" class="ib" aria-label="切換淺色或深色">{U.icon("sun")}</button><button type="button" class="ib" aria-label="語言">{U.icon("globe")}</button></div></div>
+      <div class="wrap">{U.status("info", "只有品牌、主題與語言；其他圖示都不顯示")}</div>""")
+    obs = box("觀測時間還沒有資料", f"""
+      <div class="wrap"><span class="obs" style="display:inline">觀測 <span class="mono">—</span></span>{U.status("info", "第一次資料到了才顯示時間")}</div>
+      <div class="wrap"><span class="obs" style="display:inline">觀測 <span class="mono">03:42:06</span> · 每 10 秒</span>{U.status("warn", "超過 40 秒沒更新")}</div>""")
+    def page(title, body, acts):
+        return box(title, f'<div style="border:1px dashed var(--line);border-radius:8px;padding:24px;display:flex;flex-direction:column;gap:10px;align-items:flex-start">{body}<div class="wrap">{acts}</div></div>')
+    empty = page("還沒有內容的頁面", '<strong>還沒有部署任何專案</strong>',
+                 '<a class="btn pri" href="GitHubSource.dc.html">從 GitHub 匯入</a><a class="btn" href="AppStore.dc.html">應用商店</a>')
+    nf = page("404 · 找不到頁面", '<strong>找不到這個頁面</strong><span class="mono note">/projects/shop-old</span>',
+              '<a class="btn pri" href="Overview.dc.html">回總覽</a><a class="btn" href="CommandPalette.dc.html">搜尋</a>')
+    err = page("頁面載入失敗", f'<strong>這一頁沒有載入成功</strong>{U.status("dng", "Core 回應 502 · 追蹤碼 tr_91c0aa")}',
+               '<button type="button" class="btn pri">重新載入</button><button type="button" class="btn">複製追蹤碼</button>')
+    loading = box("第一次載入", '<div style="display:flex;flex-direction:column;gap:8px">'
+                  + "".join(f'<span style="height:{h}px;border-radius:6px;background:var(--line);opacity:.6;width:{w}%"></span>' for h, w in ((20, 40), (12, 90), (12, 75), (12, 82)))
+                  + '</div><div class="wrap">' + U.status("info", "超過 2 秒才顯示骨架，避免閃一下") + '</div>')
+    raw = box("原文加白話摘要", f"""
+      <div class="wrap">{U.status("dng", "設定檢查沒通過：shop.example.tw 的上游找不到")}</div>
+      <details><summary class="note">看原文（zentinel --validate）</summary><div class="term" style="white-space:pre-wrap;overflow-wrap:anywhere">ERROR route shop.example.tw: upstream "shop-api:8080" not resolvable
+config check failed, refusing to start</div></details>""")
+    cdown_states = box("元件停止橫條的其他狀態", f"""
+      {U.component_down("Zentinel", "hazel-tw-01", "重啟中 · 第 1 次", "啟動中", "等健康檢查", kind="systemd 服務 · zentinel.service", busy=True)}
+      {U.component_down("Ollama", "hazel-tw-01", "6 分鐘前", "退出碼 137 · 記憶體不足（OOM）", "AI 推論無法使用", tries="重啟 2 次都失敗 · 平台不會自動再試")}
+      {U.component_down("Zentinel", "hazel-tw-01", "4 分鐘前", "退出碼 1", "網站無法連線", can_restart=False, kind="systemd 服務")}""")
+    def sb(text, effect, state):
+        return (f'<div class="savebar" style="position:static"><span class="dot" aria-hidden="true"></span><span><strong>{text}</strong><span class="note"> · {effect}</span></span>'
+                f'<span class="wrap sbtns">{state}</span></div>')
+    savebars = box("儲存列的其他狀態", f"""
+      {sb(".env：1 處未儲存", "儲存中", '<button type="button" class="btn" disabled>捨棄</button><button type="button" class="btn pri" disabled>' + U.icon("restart", 14) + '儲存中…</button>')}
+      {sb(".env：1 處未儲存", "沒有存成功 · 磁碟唯讀（PLATFORM_DEGRADED）", '<button type="button" class="btn">捨棄</button><button type="button" class="btn pri">再試一次</button>')}
+      <div style="border:1px solid var(--line);border-radius:8px;background:var(--raised);padding:14px;display:flex;flex-direction:column;gap:10px" role="dialog" aria-label="離開前">
+        <strong>.env 有 1 處沒存，要離開嗎？</strong>
+        <div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">留在這頁</button><button type="button" class="btn">不存，離開</button><button type="button" class="btn pri">儲存後離開</button></div></div>""")
+    collapsed = box("側欄收合", f"""
+      <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
+        <nav style="width:56px;border:1px solid var(--line);border-radius:8px;padding:6px;display:flex;flex-direction:column;gap:4px;align-items:center" aria-label="收合的側欄">
+          <span tabindex="0" data-tip="總覽" class="ib">{U.icon("overview")}</span>
+          <span tabindex="0" data-tip="工作中心 · 3 個進行中" class="ib" style="position:relative">{U.icon("jobs")}<b class="badge" style="background:var(--hazel)">3</b></span>
+          <span tabindex="0" data-tip="事件與告警 · 5" class="ib" style="position:relative">{U.icon("events")}<b class="badge dng">5</b></span>
+          <span style="width:24px;height:1px;background:var(--line);margin:4px 0" aria-hidden="true"></span>
+          <span tabindex="0" data-tip="專案與服務" class="ib">{U.icon("projects")}</span>
+          <span tabindex="0" data-tip="容器" class="ib">{U.icon("docker")}</span>
+        </nav>
+        <div style="display:flex;flex-direction:column;gap:6px;min-width:0;flex:1">
+          <div class="wrap">{U.status("info", "群組標題換成分隔線")}</div><div class="wrap">{U.status("info", "計數變成圖示右上角的小徽章")}</div><div class="wrap">{U.status("info", "名稱在滑過或 Tab 移到時顯示")}</div>
+        </div></div>""")
+    grid = (f'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr));gap:16px;align-items:start">'
+            f'{menu}{signed_out}{obs}{collapsed}{empty}{nf}{err}{loading}{raw}</div>')
+    main = head + grid + f'<div class="cg">{cdown_states}{savebars}</div>'
+    return U.shell("overview", main)
 
 
 # ---------- 資料庫 ----------
@@ -1401,8 +2023,8 @@ def database() -> str:
 
 # ---------- AI ----------
 def ai() -> str:
-    head = U.page_head("AI", OBS, '<button type="button" class="btn pri">下載模型</button><button type="button" class="btn">安裝 Ollama</button><button type="button" class="btn">新增 MCP 服務</button><button type="button" class="btn">新增 Agent</button>')
-    tabs = ('<div class="panel"><div class="tabs" role="tablist"><button type="button" class="tab on" role="tab" aria-selected="true">模型與推論</button><button type="button" class="tab" role="tab" aria-selected="false">Agent · 2</button>'
+    head = U.page_head("AI", OBS, '<button type="button" class="btn">安裝 Ollama</button><button type="button" class="btn">新增 MCP 服務</button><button type="button" class="btn">新增 Agent</button>')
+    tabs = ('<div class="panel"><div class="tabs" role="tablist"><button type="button" class="tab on" role="tab" aria-selected="true">模型與推論</button><a class="tab" role="tab" aria-selected="false" href="ModelHub.dc.html">模型庫 · Hugging Face</a><button type="button" class="tab" role="tab" aria-selected="false">Agent · 2</button>'
             '<button type="button" class="tab" role="tab" aria-selected="false">MCP 服務 · 3</button><button type="button" class="tab" role="tab" aria-selected="false">GPU</button><button type="button" class="tab" role="tab" aria-selected="false">推論 API</button></div></div>')
     inst = f"""
     <section class="panel" aria-labelledby="h-ol">
@@ -1418,17 +2040,30 @@ def ai() -> str:
           <div class="ft"><span class="note">GPU：未偵測到 · 模式：CPU</span></div></a>
       </div>
     </section>"""
-    def model(name, size, quota_pct, node, st, digest, src, note):
-        return (f'<a class="row srow" href="#m"><span class="name"><span class="n">{name}</span><span class="d">{src} · {digest}</span></span><span>{st}</span><span class="c3 mono">{node}</span><span class="c4">{U.meter(quota_pct, size, warn=101, danger=101)}</span><span class="c4 note">{note}</span><span class="c5"></span><span></span></a>')
+    def model(name, size, quota_pct, node, st, digest, src, note, loaded=None):
+        load = "" if loaded is None else f'<button type="button" class="btn sm">{"卸載" if loaded else "載入"}</button>'
+        acts = U.actions(["stop"]) if loaded is None else U.actions(["term", "trash", "more"])
+        return (f'<div class="row srow"><span class="name"><a class="n" href="#m">{name}</a><span class="d">{src} · {digest}</span></span><span>{st}</span><span class="c3 mono">{node}</span><span class="c4">{U.meter(quota_pct, size, warn=101, danger=101)}</span><span class="c4 note">{note}</span><span class="c5">{load}</span><span>{acts}</span></div>')
     models = f"""
     <section class="panel" aria-labelledby="h-md" data-sort="0:asc" data-batch>
-      <div class="ph"><h2 id="h-md">模型 · 5</h2><span class="sub">量表＝佔該節點模型配額的比例；digest 用來確認下載完整</span><div class="wrap" style="margin-left:auto"><label class="inp" style="min-width:220px"><span class="note">搜尋來源</span><input placeholder="ollama.com、Hugging Face、私有" style="background:transparent;border:0;flex:1;min-width:0"></label></div></div>
+      <div class="ph"><h2 id="h-md">模型 · 5</h2><span class="sub">量表＝佔該節點模型配額的比例；digest 用來確認下載完整</span><div class="wrap" style="margin-left:auto"><button type="button" class="btn sm">同步清單</button></div></div>
+      <div class="wrap" style="padding:10px 14px;border-bottom:1px solid var(--line)"><label class="inp" style="flex:1;min-width:min(240px,100%)"><span class="note">模型</span><input value="deepseek-r1:32b" aria-label="要下載的模型名稱" style="background:transparent;border:0;flex:1;min-width:0"></label><span style="flex:0 1 220px;min-width:160px">{_dd("ollama @ tw-01")}</span><button type="button" class="btn pri">{U.icon("download", 14)}下載模型</button></div>
       <div class="row hd srow"><span>模型</span><span>狀態</span><span class="c3">節點</span><span class="c4">大小 / 配額</span><span class="c4">備註</span><span class="c5"></span><span></span></div>
-      {model("qwen2.5:14b", "9.0 GiB", 7.5, "tw-01", U.status("ok", "已載入 · GPU"), "sha256:7c1a…", "ollama.com", "Apache-2.0 · 2 請求中")}
-      {model("llama3.1:8b", "4.9 GiB", 4, "tw-01", U.status("info", "未載入"), "sha256:42e0…", "ollama.com", "Llama 授權")}
-      {model("nomic-embed-text", "274 MiB", 0.2, "tw-01", U.status("ok", "已載入 · 嵌入"), "sha256:0a90…", "ollama.com", "02:00 批次嵌入用")}
+      {model("qwen2.5:14b", "9.0 GiB", 7.5, "tw-01", U.status("ok", "已載入 · GPU"), "sha256:7c1a…", "ollama.com", "Apache-2.0 · 2 請求中", True)}
+      {model("llama3.1:8b", "4.9 GiB", 4, "tw-01", U.status("info", "未載入"), "sha256:42e0…", "ollama.com", "Agent wiki-qa 使用中", False)}
+      {model("nomic-embed-text", "274 MiB", 0.2, "tw-01", U.status("ok", "已載入 · 嵌入"), "sha256:0a90…", "ollama.com", "02:00 批次嵌入用", True)}
       {model("deepseek-r1:32b", "19.9 GiB", 16.6, "tw-01", U.status("warn", "下載中 71%"), "—", "ollama.com", "預估 6 分 · 速率 48 MB/s")}
-      {model("qwen2.5:7b", "4.7 GiB", 11.7, "lab-mini", U.status("ok", "已載入 · CPU"), "sha256:b11c…", "ollama.com", "4 tok/s")}
+      {model("qwen2.5:7b", "4.7 GiB", 11.7, "lab-mini", U.status("ok", "已載入 · CPU"), "sha256:b11c…", "ollama.com", "4 tok/s", True)}
+    </section>"""
+    delm = f"""
+    <section class="panel" aria-labelledby="h-delm" role="dialog" aria-modal="false">
+      <div class="ph"><h2 id="h-delm">刪除模型 llama3.1:8b（tw-01）？</h2></div>
+      <div style="padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+        <div class="kv"><span class="k">釋放空間</span><span class="v mono">4.9 GiB</span></div>
+        <div class="kv"><span class="k">使用中</span><span class="v">{U.status("warn", "Agent wiki-qa")}</span></div>
+        <div class="kv"><span class="k">其他節點</span><span class="v">lab-mini 沒有這個模型</span></div>
+        <div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">取消</button><button type="button" class="btn">先停用 wiki-qa</button><button type="button" class="btn dng">刪除模型</button></div>
+      </div>
     </section>"""
     pull = f"""
     <section class="panel" aria-labelledby="h-pull">
@@ -1460,8 +2095,118 @@ def ai() -> str:
       <div style="padding:12px 14px;display:flex;gap:20px;flex-wrap:wrap">{U.ring(58 / 60 * 100, "58", "lab-bot /60 分", warn=85, danger=95)}{U.ring(20, "12", "partner-a /60 分", warn=85, danger=95)}{U.ring(0.5, "3", "tim /600 分", warn=85, danger=95)}
         <div style="display:flex;flex-direction:column;gap:4px;min-width:220px"><span class="note">今日 tokens 產出</span><span class="mono" style="font-size:20px;font-weight:600">1.9M</span>{U.sparkline([int(x) for x in walk(24, 80, 30, 10, 180)], w=200)}</div></div>
     </section>"""
-    main = head + U.scope_bar([("全部節點", "2 推論服務"), ("hazel-tw-01", "GPU L4"), ("lab-mini", "CPU")]) + tabs + inst + models + f'<div class="cg">{pull}{chat}</div>' + mcp + api
+    main = head + U.scope_bar([("全部節點", "2 推論服務"), ("hazel-tw-01", "GPU L4"), ("lab-mini", "CPU")]) + tabs + inst + models + f'<div class="cg">{pull}{delm}</div>' + chat + mcp + api
     return U.shell("ai", main)
+
+
+# ---------- AI › 模型庫（Hugging Face） ----------
+def model_hub() -> str:
+    head = U.page_head("AI", OBS, '<button type="button" class="btn">{}新增模型庫</button><button type="button" class="btn pri">部署推論服務</button>'.format(U.icon("plus", 14)))
+    tabs = ('<div class="panel"><div class="tabs" role="tablist"><a class="tab" role="tab" aria-selected="false" href="AI.dc.html">模型與推論</a>'
+            '<button type="button" class="tab on" role="tab" aria-selected="true">模型庫 · Hugging Face</button><button type="button" class="tab" role="tab" aria-selected="false">Agent · 2</button>'
+            '<button type="button" class="tab" role="tab" aria-selected="false">MCP 服務 · 3</button><button type="button" class="tab" role="tab" aria-selected="false">GPU</button></div></div>')
+    def lib(name, host, disk, path, pct, used, n, st):
+        return (f'<div class="row srow"><span class="name"><span class="n">{name}</span><span class="d mono">{path}</span></span><span>{st}</span>'
+                f'<span class="c3 mono">{host}</span><span class="c3">{disk}</span><span class="c4">{U.meter(pct, used)}</span><span class="c4 mono">{n}</span>'
+                f'<span>{U.actions(["move", "more"])}</span></div>')
+    libs = f"""
+    <section class="panel" aria-labelledby="h-lib">
+      <div class="ph"><h2 id="h-lib">模型庫 · 4</h2><span class="sub">每顆資料磁碟有預設位置，第一次用才建立；綁磁碟 UUID</span></div>
+      <div class="row hd srow"><span>模型庫</span><span>狀態</span><span class="c3">主機</span><span class="c3">磁碟</span><span class="c4">使用 / 配額</span><span class="c4">模型</span><span></span></div>
+      {lib("fast", "tw-01", "nvme1n1 · /mnt/fast", "/mnt/fast/hazelminx/models", 31, "61 / 200 GiB", "4", U.status("ok", "可用"))}
+      {lib("data", "tw-01", "sdb1 · /mnt/data", "/mnt/data/hazelminx/models", 9, "18 / 200 GiB", "2", U.status("ok", "可用"))}
+      {lib("mini", "lab-mini", "sda1 · /", "/var/lib/hazelminx/models", 23, "9 / 40 GiB", "1", U.status("ok", "可用"))}
+      {lib("usb", "lab-mini", "sdc1 · 未掛載", "/mnt/usb/hazelminx/models", 0, "— / 500 GiB", "3", U.status("dng", "磁碟不在"))}
+    </section>"""
+    def res(name, org, lic, upd, params, dl, fmt, fit, gated=False):
+        lock = f' {U.status("warn", "需要同意條款")}' if gated else ""
+        return (f'<div class="row srow"><span class="name"><a class="n" href="#hf">{org}/{name}</a><span class="d">{lic} · 更新 {upd}</span></span><span>{fit}{lock}</span>'
+                f'<span class="c3 mono">{params}</span><span class="c3">{fmt}</span><span class="c4 mono">{dl}</span><span class="c4"></span>'
+                f'<span><button type="button" class="btn sm">選擇檔案</button></span></div>')
+    search = f"""
+    <section class="panel" aria-labelledby="h-hfs">
+      <div class="ph"><h2 id="h-hfs">搜尋 Hugging Face</h2><span class="sub">放不放得下是依目標主機的記憶體與模型庫空間估算</span></div>
+      <div style="padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+        <div class="wrap"><label class="inp" style="flex:1;min-width:min(240px,100%)">{U.icon("search", 14)}<input value="qwen2.5 7b" aria-label="搜尋模型" style="background:transparent;border:0;flex:1;min-width:0"></label><span style="flex:0 1 200px;min-width:160px">{_dd("目標：lab-mini · mini")}</span><span style="flex:0 1 160px;min-width:140px">{_dd("排序：下載數")}</span></div>
+        <div class="wrap"><span class="note">格式</span><span class="chip on">GGUF</span><span class="chip">safetensors</span><span class="note" style="margin-left:8px">任務</span><span class="chip on">文字生成</span><span class="chip">嵌入</span><span class="note" style="margin-left:8px">參數</span><span class="chip on">≤ 14B</span><span class="note" style="margin-left:8px">授權</span><span class="chip">可商用</span></div>
+      </div>
+      <div class="row hd srow"><span>模型</span><span>放不放得下</span><span class="c3">參數</span><span class="c3">格式</span><span class="c4">下載數</span><span class="c4"></span><span></span></div>
+      {res("Qwen2.5-7B-Instruct-GGUF", "Qwen", "Apache-2.0", "3 週前", "7.6B", "1.2M", "GGUF", U.status("ok", "放得下 · CPU"))}
+      {res("Meta-Llama-3.1-8B-Instruct-GGUF", "bartowski", "Llama 3.1", "2 個月前", "8.0B", "890K", "GGUF", U.status("ok", "放得下 · CPU"), True)}
+      {res("Qwen2.5-14B-Instruct-GGUF", "Qwen", "Apache-2.0", "3 週前", "14.8B", "640K", "GGUF", U.status("warn", "記憶體不夠 · 只有 Q2"))}
+      {res("Qwen2.5-7B-Instruct", "Qwen", "Apache-2.0", "3 週前", "7.6B", "3.4M", "safetensors", U.status("none", "需要 NVIDIA GPU · 換主機"))}
+    </section>"""
+    def qf(file, size, fit, on):
+        return (f'<div class="row"><span class="wrap" style="flex-wrap:nowrap"><input type="radio" name="q"{" checked" if on else ""} aria-label="{file}"><span class="mono">{file}</span></span>'
+                f'<span class="mono">{size}</span><span>{fit}</span></div>')
+    pick = f"""
+    <section class="panel" aria-labelledby="h-pick">
+      <div class="ph"><h2 id="h-pick">Qwen/Qwen2.5-7B-Instruct-GGUF</h2><span class="sub">只下載選的那個檔，不整個 repo 一起拉</span></div>
+      <div class="row hd"><span>檔案</span><span>大小</span><span>lab-mini（16 GiB 記憶體）</span></div>
+      {qf("qwen2.5-7b-instruct-q4_k_m.gguf", "4.7 GiB", U.status("ok", "放得下 · 約 9 tok/s"), True)}
+      {qf("qwen2.5-7b-instruct-q8_0.gguf", "8.1 GiB", U.status("ok", "放得下 · 較慢"), False)}
+      {qf("qwen2.5-7b-instruct-fp16.gguf", "15.2 GiB", U.status("dng", "記憶體不夠"), False)}
+      <div style="padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+        <div class="wrap"><span class="note">可用 runtime</span>{U.status("ok", "llama.cpp")}<span tabindex="0" data-tip="lab-mini 沒有 NVIDIA GPU">{U.status("none", "vLLM 不適用")}</span></div>
+        <div class="wrap"><span style="flex:1;min-width:min(220px,100%)">{_dd("下載到：mini（lab-mini · 剩 31 GiB）")}</span><button type="button" class="btn pri">{U.icon("download", 14)}下載 4.7 GiB</button></div>
+      </div>
+    </section>"""
+    dl = f"""
+    <section class="panel" aria-labelledby="h-hfd">
+      <div class="ph"><h2 id="h-hfd">下載 · bartowski/Meta-Llama-3.1-8B-Instruct-GGUF → fast</h2><span class="sub">關頁照跑；中斷會續傳</span></div>
+      <div style="padding:12px 14px">{U.pipeline([("空間檢查", "done", "即時", "61+4.9 < 200 GiB"), ("Hugging Face Token", "done", "機密庫", "已同意條款"), ("下載", "cur", "62% · 3.0/4.9G", "41 MB/s"), ("核對 sha256", "todo", "—", "每個檔案")])}</div>
+    </section>"""
+    def svc(name, rt, model, host, gpu, tps, st):
+        return (f'<div class="row srow"><span class="name"><span class="n">{name}</span><span class="d mono">{model}</span></span><span>{st}</span>'
+                f'<span class="c3">{rt}</span><span class="c3 mono">{host}</span><span class="c6">{gpu}</span><span class="c4 mono">{tps}</span>'
+                f'<span>{U.actions(["log", "stop", "more"])}</span></div>')
+    svcs = f"""
+    <section class="panel" aria-labelledby="h-rt">
+      <div class="ph"><h2 id="h-rt">推論服務 · 3</h2><span class="sub">只綁本機；對外走 API 代理</span><a class="more" href="APIProxy.dc.html">API 代理 →</a></div>
+      <div class="row hd srow"><span>服務</span><span>狀態</span><span class="c3">runtime</span><span class="c3">主機</span><span class="c6">GPU 記憶體</span><span class="c4">tok/s</span><span></span></div>
+      {svc("qwen-7b-vllm", "vLLM 0.6", "Qwen/Qwen2.5-7B-Instruct", "tw-01", U.meter(78, "18.7 / 24 GiB"), "61", U.status("ok", "執行中"))}
+      {svc("qwen-7b-cpu", "llama.cpp", "qwen2.5-7b-instruct-q4_k_m.gguf", "lab-mini", '<span class="note">CPU · 8 執行緒</span>', "9", U.status("ok", "執行中"))}
+      {svc("embed-bge", "llama.cpp", "bge-m3-q8_0.gguf", "lab-mini", '<span class="note">CPU</span>', "—", U.status("dng", "沒啟動 · 模型庫 usb 磁碟不在"))}
+    </section>"""
+    main = head + U.scope_bar([("全部主機", "4 模型庫"), ("hazel-tw-01", "GPU L4"), ("lab-mini", "CPU")]) + tabs + libs + search + f'<div class="cg">{pick}{dl}</div>' + svcs
+    return U.shell("ai", main)
+
+
+# ---------- 系統元件停止（ROB-013） ----------
+def component_down_page() -> str:
+    head = U.page_head("網站與入口", OBS, '<span tabindex="0" data-tip="Zentinel 停止中，新增的站點不會生效"><button type="button" class="btn pri" disabled>新增站點</button></span><button type="button" class="btn">申請憑證</button><button type="button" class="btn">Zentinel 設定</button>')
+    bar = U.component_down("Zentinel", "hazel-tw-01", "4 分鐘前", "退出碼 1 · 設定檢查失敗", "shop.example.tw、staging.shop 目前無法連線", kind="systemd 服務 · zentinel.service")
+    log = f"""
+    <section class="panel" aria-labelledby="h-zl">
+      <div class="ph"><h2 id="h-zl">停止前最後的日誌 · journalctl -u zentinel</h2><a class="more" href="Logs.dc.html">完整日誌 →</a></div>
+      <div style="padding:12px 14px"><div class="term" style="white-space:pre-wrap;overflow-wrap:anywhere">03:38:02 INFO  reload requested (SIGHUP)
+03:38:02 ERROR route shop.example.tw: upstream "shop-api:8080" not resolvable
+03:38:02 ERROR config check failed, refusing to start
+03:38:02 exit status 1</div></div>
+    </section>"""
+    def site(dom, st, req, up):
+        return (f'<div class="row srow stale"><span class="name"><span class="n mono">{dom}</span><span class="d">上次觀測 03:38</span></span><span>{st}</span>'
+                f'<span class="c3 mono">{req}</span><span class="c4">{up}</span><span class="c4"></span><span class="c5"></span>'
+                f'<span><span tabindex="0" data-tip="Zentinel 停止中，套用不會生效">{U.actions(["more"])}</span></span></div>')
+    sites = f"""
+    <section class="panel" aria-labelledby="h-zs">
+      <div class="ph"><h2 id="h-zs">站點 · 3</h2></div>
+      <div class="row hd srow"><span>站點</span><span>狀態</span><span class="c3">今日請求</span><span class="c4">上游</span><span class="c4"></span><span class="c5"></span><span></span></div>
+      {site("shop.example.tw", U.status("dng", "無法連線"), "41,220 *", "shop-api:8080")}
+      {site("staging.shop", U.status("dng", "無法連線"), "802 *", "shop-api:8080 · stg")}
+      {site("wiki.example.tw", U.status("ok", "正常 · 由 jp-02 提供"), "18,904", "wiki-app:3000")}
+    </section>"""
+    def cert(dom, days, st):
+        return f'<div class="row"><span class="mono">{dom}</span><span class="mono">{days}</span><span>{st}</span></div>'
+    certs = f"""
+    <section class="panel" aria-labelledby="h-zc">
+      <div class="ph"><h2 id="h-zc">憑證</h2></div>
+      <div class="row hd"><span>網域</span><span>剩餘</span><span>續期</span></div>
+      {cert("shop.example.tw", "11 天", U.status("warn", "Zentinel 停止中 · 恢復後續期"))}
+      {cert("wiki.example.tw", "71 天", U.status("ok", "自動"))}
+    </section>"""
+    main = head + bar + log + sites + certs
+    return U.shell("web", main)
 
 
 # ---------- 檔案 ----------
@@ -1520,11 +2265,15 @@ def files() -> str:
     ]
     editor = f"""
     <section class="panel" aria-labelledby="h-ed">
-      <div class="ph"><h2 id="h-ed" class="mono">/mnt/data/apps/shop/.env</h2><span class="note">hazel-tw-01 · root:root · -rw-------</span><div class="wrap" style="margin-left:auto"><span class="note">存檔後要重建 shop-api 才生效</span><button type="button" class="btn sm pri">存檔並重建 shop-api</button></div></div>
+      <div class="ph"><h2 id="h-ed" class="mono">/mnt/data/apps/shop/.env</h2><span class="note">hazel-tw-01 · root:root · -rw-------</span><div class="wrap" style="margin-left:auto"></div></div>
       <div style="padding:12px 14px">{U.code_editor([("compose.yaml", False, False), (".env", True, True)], env_lines,
         ["第 6 行，第 30 欄", "dotenv", "UTF-8", "LF", "812 B → 824 B", "未儲存", "外部修改：ops-ann 03:40:12"],
         '<label class="inp" style="min-height:28px;width:auto"><span class="note">語言</span><select aria-label="語言" style="background:transparent;border:0"><option>dotenv</option></select></label>',
-        banner=U.status("warn", "ops-ann 03:40:12 存了新版本") + '<span class="wrap" style="margin-left:auto"><button type="button" class="btn sm">看差異</button><button type="button" class="btn sm">用我的版本覆蓋</button><button type="button" class="btn sm">放棄我的修改</button></span>')}</div>
+        banner=('<div style="display:flex;flex-direction:column;gap:8px;width:100%">'
+                '<div class="wrap">' + U.status("warn", "這個檔案在你編輯時被改過") + '<span>ops-ann 在 03:40:12 存了新版本 · 他改第 4 行 · 你改第 6 行 · 沒有重疊</span></div>'
+                '<div class="mini-diff"><span class="note">第 4 行 · ops-ann</span><span class="mono"><span style="color:var(--danger)">− REDIS_URL=redis://shop-redis:6379</span><br><span style="color:var(--ok)">+ REDIS_URL=redis://shop-redis:6379/1</span></span>'
+                '<span class="note">第 6 行 · 你</span><span class="mono"><span style="color:var(--danger)">− CHECKOUT_TIMEOUT_MS=5000</span><br><span style="color:var(--ok)">+ CHECKOUT_TIMEOUT_MS=8000</span></span></div>'
+                '<div class="wrap"><button type="button" class="btn sm pri">合併兩邊的修改</button><button type="button" class="btn sm">只留我的 · ops-ann 第 4 行的修改會不見</button><button type="button" class="btn sm">改用 ops-ann 的版本 · 我的修改會不見</button></div></div>'))}</div>
     </section>"""
     transfers = f"""
     <section class="panel" aria-labelledby="h-tr">
@@ -1534,7 +2283,7 @@ def files() -> str:
         <div><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span>跨節點複製 uploads/ → hazel-jp-02</span>{U.status("warn", "等待 jp-02")}</div>{U.pipeline([("校驗來源", "done", "7.2G", "sha256 清單"), ("傳輸", "wait", "暫停", "jp-02 狀態過期"), ("校驗目的", "todo", "—", ""), ("完成", "todo", "—", "")])}</div>
       </div>
     </section>"""
-    main = head + scope + toolbar + crumbs + fm + editor + transfers
+    main = head + scope + toolbar + crumbs + fm + editor + transfers + U.savebar(".env：1 處未儲存", "先處理 ops-ann 的修改才能儲存 · 存檔後要重建 shop-api 才會生效", "合併後儲存並重建 shop-api", "合併後只儲存")
     return U.shell("files", main)
 
 
@@ -1781,17 +2530,20 @@ def system() -> str:
       {svc("apt-daily-upgrade.timer", U.status("ok", "下次 03:00"), "計時器", "啟用", (0, 1), "—", "安全更新")}
       {svc("hazelminx-backup.timer", U.status("ok", "下次 03:00"), "計時器", "啟用", (0, 1), "—", "shop-db")}
     </section>"""
+    def urow(name, login, admin, keys, last):
+        return (f'<div class="row"><span class="wrap" style="flex-wrap:nowrap">{U.icon("user", 14)}<span class="mono">{name}</span></span>'
+                f'<span>{login}</span><span>{admin}</span><span class="c3">{keys}</span><span class="c4">{last}</span>'
+                f'<span>{U.actions(["rename", "more"])}</span></div>')
+    def tipst(kind, text, tip):
+        return f'<span tabindex="0" data-tip="{tip}">{U.status(kind, text)}</span>'
     users = f"""
-    <section class="panel" aria-labelledby="h-us">
-      <div class="ph"><h2 id="h-us">Linux 使用者與 sudo</h2><span class="sub">平台帳號與 Linux 帳號是兩回事；這裡是宿主機的</span></div>
-      <div style="padding:12px 14px">{U.matrix(["root", "tim", "deploy", "www-data", "postgres（容器內）"], ["登入", "sudo", "SSH 金鑰", "群組", "最後登入"], [
-        [("warn", "密碼 281 天"), ("ok", "全部"), ("ok", "1 把"), ("none", "root"), ("ok", "03:38 本機")],
-        [("ok", "金鑰"), ("ok", "全部 · 免密"), ("ok", "2 把"), ("none", "sudo、docker"), ("ok", "03:38 203.0.113.7")],
-        [("ok", "金鑰"), ("warn", "docker 群組＝root 等效"), ("ok", "1 把"), ("none", "docker"), ("ok", "昨天 · CI")],
-        [("none", "不可登入"), ("none", "無"), ("none", ""), ("none", "www-data"), ("none", "—")],
-        [("none", "不適用"), ("none", "不適用"), ("none", ""), ("none", "容器 UID 999"), ("none", "—")],
-      ], first_col="minmax(120px,1fr)")}</div>
-      <div class="note" style="padding:0 14px 10px">docker 群組等於 root：deploy 帳號建議改用平台的部署工作，不直接進 docker 群組</div>
+    <section class="panel" aria-labelledby="h-us" data-pages="1–4 / 4">
+      <div class="ph"><h2 id="h-us">Linux 使用者</h2><span class="sub">這台主機上的 Linux 帳號，跟平台的登入帳號分開</span><div class="wrap" style="margin-left:auto"><span class="chip">顯示系統帳號（28）</span><button type="button" class="btn sm">{U.icon("plus", 14)}新增使用者</button></div></div>
+      <div class="row hd"><span>帳號</span><span>登入方式</span><span>管理權限</span><span class="c3">SSH 金鑰</span><span class="c4">最後登入</span><span></span></div>
+      {urow("root", tipst("warn", "密碼 · 281 天沒改", "root 可以用密碼登入，而且密碼 281 天沒改"), U.status("none", "root 本身"), "1 把", "03:38 · 本機")}
+      {urow("tim", U.status("ok", "SSH 金鑰"), U.status("ok", "sudo · 不用密碼"), "2 把", "03:38 · 203.0.113.7")}
+      {urow("deploy", U.status("ok", "SSH 金鑰"), tipst("warn", "docker 群組 · 等同 root", "docker 群組的成員可以把整個主機磁碟掛進容器，權限等同 root"), "1 把", "昨天 · CI")}
+      {urow("www-data", U.status("none", "不能登入"), U.status("none", "無"), "—", "—")}
     </section>"""
     net = f"""
     <section class="panel" aria-labelledby="h-net">
@@ -1897,7 +2649,7 @@ def iam() -> str:
 # ---------- 平台設定 ----------
 def settings() -> str:
     head = U.page_head("平台設定", OBS, f'<button type="button" class="btn">匯出設定</button><button type="button" class="btn">診斷包</button><button type="button" class="btn" aria-disabled="true" data-tip="需要第二位擁有者批准；送出後建立變更計畫" style="opacity:.6">{U.icon("lock", 14)}輪替主金鑰</button><button type="button" class="btn pri">檢查更新</button>')
-    tabs = ('<div class="panel"><div class="tabs" role="tablist">' + "".join(f'<button type="button" class="tab{" on" if i == 0 else ""}" role="tab" aria-selected="{"true" if i == 0 else "false"}">{t}</button>' for i, t in enumerate(["基本", "管理入口與安全", "通知", "更新", "快照與匯入匯出", "整合", "遙測", "關於"])) + '</div></div>')
+    tabs = ('<div class="panel"><div class="tabs" role="tablist">' + "".join(f'<button type="button" class="tab{" on" if i == 0 else ""}" role="tab" aria-selected="{"true" if i == 0 else "false"}">{t}</button>' for i, t in enumerate(["基本", "管理入口與安全", "通知", "更新", "快照與匯入匯出", "整合", "遙測", "解除安裝", "關於"])) + '</div></div>')
     def card(title, rows, note=""):
         body = "".join(f'<div style="display:flex;justify-content:space-between;gap:10px;min-height:32px;align-items:center;border-top:1px solid var(--line);padding:4px 0"><span class="note">{k}</span><span style="text-align:right">{v}</span></div>' for k, v in rows)
         n = f'<span class="note" style="margin-top:6px">{note}</span>' if note else ""
@@ -1960,7 +2712,7 @@ def settings() -> str:
         [("warn", "未連接"), ("none", "需 Analytics 讀取 Token"), ("none", "—")], [("none", "關閉（預設）"), ("none", "—"), ("none", "—")],
       ], first_col="minmax(180px,1.4fr)")}</div>
     </section>"""
-    main = head + tabs + basic + entrance + notify + update + f'<div class="cg">{snap}{integ}</div>'
+    main = head + tabs + basic + entrance + notify + update + f'<div class="cg">{snap}{integ}</div>' + U.savebar("通知設定：2 處未儲存", "按儲存才會生效", "儲存")
     return U.shell("settings", main)
 
 
@@ -2005,7 +2757,22 @@ def logs() -> str:
 03:42:02 185.220.101.9 GET /wp-login.php 404 1ms waf=detect:scanner-ua
 03:42:03 203.0.113.7 POST /api/cart 502 60001ms up=shop-api:8080 err=upstream timeout</div></div>
     </section>"""
-    main = head + U.scope_bar([("全部節點", "3"), ("hazel-tw-01", "Docker"), ("hazel-jp-02", "Docker · 過期"), ("lab-mini", "Podman · K3s")]) + tabs + vol + viewer + audit + f'<div class="cg">{ssh}{web}</div>'
+    def ret(kind, where, used, limit, keep, last, st):
+        return (f'<div class="row srow"><span class="name"><span class="n">{kind}</span><span class="d mono">{where}</span></span><span>{st}</span>'
+                f'<span class="c3">{U.meter(used, limit)}</span><span class="c4">{keep}</span><span class="c4 mono">{last}</span><span class="c5"></span><span>{U.actions(["more"])}</span></div>')
+    retention = f"""
+    <section class="panel" aria-labelledby="h-ret">
+      <div class="ph"><h2 id="h-ret">保留與自動清理 · hazel-tw-01</h2><div class="wrap" style="margin-left:auto"><button type="button" class="btn sm">預覽並立即清理</button></div></div>
+      <div class="row hd srow"><span>日誌</span><span>自動清理</span><span class="c3">用量 / 上限</span><span class="c4">保留</span><span class="c4">上次清理</span><span class="c5"></span><span></span></div>
+      {ret("系統日誌（journald）", "SystemMaxUse · MaxRetentionSec", 61, "610 MiB / 1 GiB", "30 天", "03:00", U.status("ok", "開啟 · 預設"))}
+      {ret("平台建立的容器", "每個容器 5 個檔 × 10 MiB", 34, "最多 50 MiB / 容器", "依大小輪替", "持續", U.status("ok", "開啟 · 預設"))}
+      {ret("既有容器 · 3 個", "wiki-app、old-report、ollama", 0, "2.8 GiB · 沒有上限", "—", "—", U.status("warn", "沒有日誌輪替"))}
+      {ret("Zentinel 存取日誌", "/var/log/zentinel", 40, "1.2 GiB / 3 GiB", "7 天", "03:00", U.status("ok", "開啟 · 預設"))}
+      {ret("/var/log（logrotate）", "主機原本的設定", 22, "880 MiB", "依各組設定", "06:25", U.status("info", "沿用主機設定"))}
+      {ret("稽核紀錄", "平台資料庫", 9, "180 MiB", "90 天 · 不自動清", "—", U.status("none", "不在自動清理"))}
+      <div class="wrap" style="padding:10px 14px 12px"><button type="button" class="btn sm">下次部署時替既有容器加上輪替</button></div>
+    </section>"""
+    main = head + U.scope_bar([("全部節點", "3"), ("hazel-tw-01", "Docker"), ("hazel-jp-02", "Docker · 過期"), ("lab-mini", "Podman · K3s")]) + tabs + vol + retention + viewer + audit + f'<div class="cg">{ssh}{web}</div>'
     return U.shell("logs", main)
 
 
@@ -2076,7 +2843,7 @@ def app_install() -> str:
     def inp(val, ro=False, mono=True):
         return f'<div class="inp"><span class="{"mono" if mono else ""}" style="flex:1">{val}</span>{"" if not ro else U.icon("eye")}</div>'
     def sel(val):
-        return f'<div class="inp"><span style="flex:1">{val}</span>{U.icon("down")}</div>'
+        return f'<div class="inp"><span style="flex:1;min-width:0;overflow-wrap:anywhere">{val}</span>{U.icon("down")}</div>'
     meta = f"""
     <section class="panel">
       <div style="display:flex;gap:14px;padding:14px 16px;align-items:flex-start;flex-wrap:wrap">
@@ -2107,27 +2874,65 @@ def app_install() -> str:
     <section class="panel"><div class="ph"><h2>資源與網路</h2></div>
       <div style="padding:14px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:14px">
         {field("CPU 上限", inp("2 核"))}{field("記憶體上限", inp("4 GiB"), "最低 2 GiB")}{field("GPU", sel("不使用"))}
+        {field("加入網路", '<div class="wrap"><span class="chip on">nextcloud_default（專用，自動建立）</span><span class="chip">hzx-ollama · 連 Ollama</span><span tabindex="0" data-tip="範本寫的共用網路；加入後會跟所有 1Panel 應用互通"><span class="chip">1panel-network</span></span><span class="chip">＋ 其他網路</span></div>', "安裝後也可以隨時加入或移出")}
+        {field("資料位置 · /var/www/html", sel("/mnt/data/apps/nextcloud/html（預設）"), "每顆資料磁碟有預設位置；也可以選資料夾")}
+        {field("資料位置 · /var/www/html/data", sel("/mnt/fast/hazelminx/apps/nextcloud/data"), "使用者檔案；放在比較快的磁碟")}
         {field("對外", sel("只透過 Zentinel（不開主機 Port）"), "選「開放主機 Port」會寫進防火牆矩陣")}{field("網域", inp("cloud.example.tw"), "Zentinel 站點 · 自動申請憑證")}{field("映像拉取", sel("安裝時拉取 · 登錄站 docker.io"))}
       </div></section>"""
+    def cv(item, orig, ours):
+        return f'<div class="row"><span>{item}</span><span class="mono">{orig}</span><span class="mono">{ours}</span></div>'
     advanced = f"""
-    <section class="panel"><div class="ph"><h2>進階</h2><div class="wrap" style="margin-left:auto"><span class="chip on">表單</span><span class="chip">編輯 compose 原始檔</span></div></div>
-      <div style="padding:12px 16px"><div class="term" style="min-height:120px">services:
-  nextcloud:
-    image: nextcloud:31.0.2-apache
-    container_name: ${{CONTAINER_NAME}}
-    env_file: .env
-    volumes:
-      - ./data:/var/www/html
-    networks: [1panel-network]
-    restart: always</div><span class="help">不認識的欄位保留；無法無損轉成表單時只開放原始編輯</span></div>
+    <section class="panel"><div class="ph"><h2>範本轉換</h2><span class="sub">只寫在平台的覆寫層，商店原始範本不改</span><div class="wrap" style="margin-left:auto"><span class="chip on">對照</span><span class="chip">編輯 compose 原始檔</span></div></div>
+      <div class="row hd"><span>項目</span><span>範本原本</span><span>平台調整</span></div>
+      {cv("網路", "1panel-network（外部）", "nextcloud_default")}
+      {cv("容器名稱", "${CONTAINER_NAME}", "nextcloud")}
+      {cv("Port", "8081:80（所有位址）", "127.0.0.1:8081:80 · Zentinel 對外")}
+      {cv("資料", "./data", "依上面兩個資料位置")}
+      {cv("時區", "Asia/Shanghai", "Asia/Taipei（主機設定）")}
+      {cv("標籤", "createdBy: Apps", "保留 ＋ 平台服務 ID")}
     </section>"""
     preflight = f"""
     <section class="panel"><div class="ph"><h2>安裝前檢查</h2></div>
-      <div style="padding:12px 16px">{U.pipeline([("節點", "done", "tw-01", "amd64 · Docker 27.3"), ("相依", "done", "shop-db", "新 DB nextcloud"), ("Port", "done", "8081 空", ""), ("資料目錄", "done", "519 GiB", "綁定 UUID"), ("記憶體", "done", "20 GiB 可用", "需 2 GiB"), ("入口", "todo", "cloud.example.tw", "憑證申請")])}</div>
+      <div style="padding:12px 16px">{U.pipeline([("節點", "done", "tw-01", "amd64 · Docker 27.3"), ("相依", "done", "PostgreSQL 16", "新建 · 專用"), ("Port", "done", "8081 空", ""), ("資料目錄", "done", "519 GiB", "綁定 UUID"), ("記憶體", "done", "20 GiB 可用", "需 2 GiB"), ("入口", "todo", "cloud.example.tw", "憑證申請")])}</div>
       <div style="padding:0 16px 12px;display:flex;flex-direction:column;gap:6px"><span class="note">安裝＝一個工作：拉取映像 → 建立網路與資料目錄 → 啟動 → 健康檢查 → 綁定入口。關掉頁面照跑。</span>
       <div class="wrap"><button type="button" class="btn pri">安裝</button><button type="button" class="btn">只建立不啟動</button><button type="button" class="btn">加入批次安裝</button></div></div>
     </section>"""
     main = head + meta + basic + params + f'<div class="cg">{resources}{advanced}</div>' + preflight
+    return U.shell("store", main)
+
+
+# ---------- 已安裝應用 › 網路與掛載 ----------
+def app_settings() -> str:
+    head = _form_head([("應用商店", "AppStore.dc.html"), ("已安裝", "AppStore.dc.html")], "nextcloud · 網路與掛載", '<a class="btn" href="AppStore.dc.html">返回</a>')
+    def net(name, kind, sub, who, why, removable=True):
+        act = U.actions(["more"]) if removable else f'<span tabindex="0" data-tip="應用自己的網路，移出後服務之間會連不到">{U.actions(["more"])}</span>'
+        rm = '<button type="button" class="btn sm">移出</button>' if removable else ""
+        return (f'<div class="row"><span class="name"><span class="n mono">{name}</span><span class="d">{kind} · {sub}</span></span>'
+                f'<span>{who}</span><span class="note">{why}</span><span>{rm}</span><span>{act}</span></div>')
+    nets = _fp("網路 · 2", f"""
+      <div class="row hd"><span>網路</span><span>也在裡面的</span><span>為什麼加入</span><span></span><span></span></div>
+      {net("nextcloud_default", "bridge", "172.21.0.0/16", "nextcloud-db、nextcloud-redis（專用）", "應用自己的網路", False)}
+      {net("hzx-ollama", "bridge", "172.24.0.0/16", "ollama", "Nextcloud Assistant 連 Ollama")}
+      <div class="wrap" style="padding:10px 14px 12px"><span style="flex:1;min-width:min(220px,100%)">{_dd("加入網路：選擇或新建")}</span><button type="button" class="btn">加入</button></div>
+      <div class="wrap" style="padding:0 14px 12px">{U.status("info", "加入與移出不必重建容器")}<span tabindex="0" data-tip="平台用 docker network connect 立即生效，並寫進覆寫層，下次部署或更新也保留">{U.icon("info", 14)}</span></div>""")
+    def mnt(inside, where, disk, size, kind):
+        return (f'<div class="row"><span class="mono">{inside}</span><span class="name"><span class="n mono">{where}</span><span class="d">{kind}</span></span>'
+                f'<span>{disk}</span><span class="mono">{size}</span><span><button type="button" class="btn sm">改位置</button></span></div>')
+    mounts = _fp("資料掛載 · 3", f"""
+      <div class="row hd"><span>容器內</span><span>主機上</span><span>磁碟</span><span>大小</span><span></span></div>
+      {mnt("/var/www/html", "/mnt/data/apps/nextcloud/html", "sdb1 · /mnt/data", "1.4 GiB", "資料夾")}
+      {mnt("/var/www/html/data", "/mnt/data/apps/nextcloud/data", "sdb1 · /mnt/data", "212 GiB", "資料夾 · 使用者檔案")}
+      {mnt("/var/lib/postgresql/data", "nextcloud-db_data", "sda1 · /", "1.2 GiB", "Docker 儲存卷")}""")
+    move = _fp("改位置 · /var/www/html/data", f"""
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:12px">
+        {_grid(_fld("新位置", _dd("/mnt/fast（預設位置）"), "→ /mnt/fast/hazelminx/apps/nextcloud/data；也可以選資料夾"),
+               _fld("方式", _seg(["搬移資料", "只改掛載點"], 0, "方式"), "新位置已經有資料時才用「只改掛載點」"),
+               _fld("空間", U.status("ok", "需要 212 GiB · /mnt/fast 剩 641 GiB")),
+               _fld("停機", U.status("warn", "約 2 分鐘"), "大部分在服務照跑時先複製，只有最後同步時停止"))}
+        {U.pipeline([("空間檢查", "done", "即時", "212 / 641 GiB"), ("先複製", "todo", "服務照跑", "約 38 分"), ("停止 nextcloud", "todo", "", "約 2 分"), ("最後同步與核對", "todo", "", "檔案數與大小"), ("改掛載並啟動", "todo", "", "健康檢查"), ("保留舊資料", "todo", "", "7 天後再刪")])}
+        <div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">排進維護時段</button><button type="button" class="btn pri">開始搬移</button></div>
+      </div>""")
+    main = head + nets + mounts + move
     return U.shell("store", main)
 
 
@@ -2279,7 +3084,7 @@ def host_services() -> str:
         <div class="field"><label for="rmc">輸入 <span class="mono">bind@hazel-tw-01</span> 以確認</label><div class="inp"><input id="rmc" style="background:transparent;border:0;flex:1"></div></div>
         <div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">取消</button><button type="button" class="btn dng" disabled aria-disabled="true" style="opacity:.6">移除</button></div>
       </div></div></section>"""
-    main = head + scope + tiles + modules + installed + zones + records + f'<div class="cg">{apply}{history}</div>' + rdiff + remove
+    main = head + scope + tiles + modules + installed + zones + records + f'<div class="cg">{apply}{history}</div>' + U.savebar("example.tw 紀錄：1 筆新增、1 筆修改", "按套用才會寫進 BIND，並先跑 named-checkzone", "套用到 BIND") + rdiff + remove
     return U.shell("svcmod", main)
 
 
@@ -2390,7 +3195,7 @@ def _in(val, mono=False, ph=False, tail=""):
 
 
 def _dd(val):
-    return f'<div class="inp"><span style="flex:1;min-width:0">{val}</span>{U.icon("down")}</div>'
+    return f'<div class="inp"><span style="flex:1;min-width:0;overflow-wrap:anywhere">{val}</span>{U.icon("down")}</div>'
 
 
 def _seg(opts, on=0, label="選項"):
@@ -2454,10 +3259,10 @@ def container_create() -> str:
         ['<span class="mono">REPORT_TZ</span>', _in("Asia/Taipei", mono=True), _dd("直接填")],
         ['<span class="mono">DB_URL</span>', _in("postgres://report@shop-db:5432/report", mono=True), _dd("直接填")],
         ['<span class="mono">SMTP_PASSWORD</span>', U.attr("lock", "存在機密庫，容器啟動時注入", "機密 report/smtp"), _dd("機密庫")]], add="新增變數"),
-        extra='<button type="button" class="btn sm" style="margin-left:auto">從 .env 匯入</button>')
+        extra=f'<a class="btn sm" style="margin-left:auto" href="EnvUpload.dc.html">{U.icon("upload", 14)}上傳 env 檔</a>')
     run = _fp("資源與執行", _grid(
         _fld("CPU 上限", _in("1 核")), _fld("記憶體上限", _in("1 GiB"), "tw-01 可用 20 GiB"),
-        _fld("重啟政策", _dd("unless-stopped")), _fld("執行身分", _in("1000:1000", mono=True), "映像預設 root，這裡改成一般使用者"),
+        _fld("重啟政策", _dd("unless-stopped")), _fld("日誌", _dd("輪替 · 5 個檔 × 10 MiB（預設）"), "可以改上限或關掉"), _fld("執行身分", _in("1000:1000", mono=True), "映像預設 root，這裡改成一般使用者"),
         _fld("健康檢查", _in("curl -f http://localhost:8080/healthz", mono=True), "每 10 秒 · 逾時 3 秒 · 失敗 3 次算不健康"),
         _fld("網路", _dd("shop_default（與 shop-db 同網路）")), _fld("GPU", _dd("不使用")), _fld("標籤", _in("team=report", mono=True))))
     preview = _fp("建立前檢查", f"""
@@ -2477,7 +3282,7 @@ def site_create() -> str:
     head = _form_head([("網站與入口", "Websites.dc.html")], "新增站點", '<a class="btn" href="Websites.dc.html">取消</a><button type="button" class="btn pri">建立站點</button>')
     kinds = ('<section class="panel"><div class="ph"><h2>類型</h2></div><div class="fleet choices">'
              + _choice("反向代理", "最常用", ["轉到專案服務、容器或主機 Port"], U.status("ok", "已選"), on=True)
-             + _choice("靜態網站", "", ["由 Zentinel 直接提供檔案"], '<button type="button" class="btn sm">選擇</button>')
+             + _choice("靜態網站", "", ["由 Zentinel 直接提供檔案"], '<a class="btn sm" href="SiteStatic.dc.html">選擇</a>')
              + _choice("執行環境", "PHP · Node", ["用平台管理的執行環境容器"], '<button type="button" class="btn sm">選擇</button>')
              + _choice("重新導向", "", ["整個網域轉到另一個網址"], '<button type="button" class="btn sm">選擇</button>') + "</div></section>")
     domains = _fp("網域", _erows(["網域", "DNS", "衝突"], [
@@ -2516,7 +3321,18 @@ def firewall_rule() -> str:
       <div class="row hd"><span>節點</span><span>防火牆</span><span>目前規則</span></div>
       <label class="row"><span class="wrap"><input type="checkbox"><span class="mono">hazel-tw-01</span></span><span>ufw</span><span class="mono">14 條</span></label>
       <label class="row"><span class="wrap"><input type="checkbox" checked><span class="mono">hazel-jp-02</span></span><span>nftables</span><span class="mono">9 條</span></label>
-      <label class="row"><span class="wrap"><input type="checkbox"><span class="mono">lab-mini</span></span><span>ufw</span><span class="mono">6 條</span></label>""")
+      <div class="row"><span class="wrap"><span tabindex="0" data-tip="先選定 lab-mini 由哪個防火牆寫入"><input type="checkbox" disabled aria-label="lab-mini"></span><span class="mono">lab-mini</span></span><span>{U.status("warn", "ufw ＋ firewalld")}</span><span class="mono">6 ＋ 11 條</span></div>""")
+    def layer(name, backend, n, role):
+        return f'<div class="row"><span class="mono">{name}</span><span class="mono">{backend}</span><span class="mono">{n}</span><span>{role}</span></div>'
+    multi = _fp("lab-mini · 2 個防火牆同時啟用", f"""
+      <div class="row hd"><span>誰在管</span><span>寫在哪</span><span>規則</span><span>平台</span></div>
+      {layer("ufw", "iptables-nft · filter", "6", U.status("none", "未選定"))}
+      {layer("firewalld", "nftables · inet firewalld", "11", U.status("none", "未選定"))}
+      {layer("Podman（netavark）", "nftables · netavark", "引擎自己的", U.status("none", "不動"))}
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
+        <div class="wrap">{U.status("warn", "封包要每一層都放行才進得來")}<span tabindex="0" data-tip="ufw 開了 5432、firewalld 沒開，外部還是連不到；任何一層擋掉就擋掉">{U.icon("info", 14)}</span></div>
+        <div class="wrap"><span class="note">平台寫入（還沒選）</span>{_seg(["ufw", "firewalld"], -1, "主要防火牆")}<button type="button" class="btn sm">停用 ufw（變更計畫）</button></div>
+      </div>""")
     rule = _fp("規則", _grid(
         _fld("動作", _seg(["只允許這些來源，其他擋掉", "擋掉這些來源", "限速"], 0, "動作")), _fld("方向", _seg(["進站", "出站"], 0, "方向")),
         _fld("協定", _seg(["TCP", "UDP", "兩者"], 0, "協定")), _fld("Port", _in("5432", mono=True)),
@@ -2534,7 +3350,7 @@ def firewall_rule() -> str:
       <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
         {U.pipeline([("排入", "done", "03:44", "等 jp-02"), ("寫入規則", "wait", "主機恢復後", "DOCKER-USER"), ("確認", "todo", "60 秒內", "從新連線確認"), ("沒確認就回復", "todo", "", "回到套用前")])}
       </div>""")
-    main = head + f'<div class="cg">{where}{rule}</div>' + impact + confirm
+    main = head + f'<div class="cg">{where}{rule}</div>' + multi + impact + confirm
     return U.shell("security", main)
 
 
@@ -2546,7 +3362,8 @@ def cron_create() -> str:
              + _choice("備份", "", ["改到儲存與備份建立"], '<a class="btn sm" href="BackupCreate.dc.html">前往</a>')
              + _choice("呼叫 URL", "HTTP", ["GET / POST，記錄回應碼"], '<button type="button" class="btn sm">選擇</button>')
              + _choice("容器內指令", "exec", ["在指定容器裡執行"], '<button type="button" class="btn sm">選擇</button>')
-             + _choice("清理", "", ["日誌、映像、暫存檔"], '<button type="button" class="btn sm">選擇</button>') + "</div></section>")
+             + _choice("清理", "", ["日誌、映像、暫存檔"], '<button type="button" class="btn sm">選擇</button>')
+             + _choice("升級套件", "apt · dnf", ["只套安全更新或全部", "在維護時段跑；要重開機時另外排", "主機已開自動安全更新時會提醒重複"], '<button type="button" class="btn sm">選擇</button>') + "</div></section>")
     run = _fp("執行", _grid(
         _fld("名稱", _in("report-nightly")), _fld("節點", _dd("hazel-tw-01")),
         _fld("執行身分", _dd("deploy（非 root）")), _fld("工作目錄", _in("/mnt/data/apps/report", mono=True)),
@@ -2713,7 +3530,7 @@ def compose_editor() -> str:
       <div class="row"><span class="mono">shop-worker</span><span class="mono">shop-worker:${{TAG}}</span><span class="mono">1</span></div>
       <div class="row"><span class="mono">shop-redis</span><span class="mono">redis:latest</span><span class="mono">1</span></div>
       <div class="row"><span class="mono">shop-db</span><span class="mono">postgres:16.4</span><span class="mono">1</span></div>""")
-    main = head + f'<div class="edwrap">{editor}<div style="display:flex;flex-direction:column;gap:16px;min-width:0">{issues}{parsed}</div></div>'
+    main = head + f'<div class="edwrap">{editor}<div style="display:flex;flex-direction:column;gap:16px;min-width:0">{issues}{parsed}</div></div>' + U.savebar("compose.yaml：3 處未儲存", "儲存成草稿後，要建立變更計畫才會部署", "儲存草稿", "儲存並預覽變更計畫")
     return U.shell("projects", main, collapsed=True)
 
 
@@ -2795,7 +3612,7 @@ def import_configure() -> str:
     envs = _fp("環境變數", _erows(["名稱", "值", "類型"], [
         ['<span class="mono">DATABASE_URL</span>', _in("postgres://report@shop-db:5432/report", mono=True), _dd("一般")],
         ['<span class="mono">SMTP_PASSWORD</span>', _in("••••••••••", tail=U.icon("eye")), _dd("機密（存機密庫）")]], add="新增變數"),
-        extra='<button type="button" class="btn sm" style="margin-left:auto">貼上 .env</button>')
+        extra=f'<a class="btn sm" style="margin-left:auto" href="EnvUpload.dc.html">{U.icon("upload", 14)}上傳 env 檔</a>')
     domain = _fp("網址與 HTTPS", _grid(
         _fld("網址", _in("report.example.tw", mono=True)), _fld("HTTPS", _seg(["自動申請（推薦）", "先不要"], 0, "HTTPS")),
         _fld("DNS 設定", f'<div class="banner" style="display:flex;flex-direction:column;gap:6px;align-items:flex-start">{U.status("warn", "還沒指向這台主機")}<span>到你的 DNS 服務新增一筆紀錄：</span><span class="mono">A　report　203.0.113.22</span><button type="button" class="btn sm">{U.icon("copy", 14)}複製</button></div>', "設定好後這裡會自動變綠，再申請憑證")))
@@ -2894,23 +3711,274 @@ def updates() -> str:
     return U.shell("nodes", main)
 
 
+
+# ---------- 專案：部署單元 ----------
+def units_panel() -> str:
+    topo = U.topology([
+        ("對外", [("dom", "shop.example.tw", "Zentinel · HTTPS", "ok")]),
+        ("部署單元", [("web", "web", "Compose · tw-01 Docker", "ok"), ("wrk", "worker", "Compose · jp-02 Docker", "warn")]),
+        ("被引用", [("srch", "search", "Helm · lab-k3s / shop", "ok")]),
+    ], [("dom", "web", .8, ""), ("web", "srch", .5, ""), ("wrk", "srch", .3, ""), ("wrk", "web", .2, "dim")])
+    topo_m = U.flowlist([("shop.example.tw", "web", "對外"), ("web", "search", "SEARCH_URL"), ("worker", "search", "SEARCH_URL"), ("worker", "web", "API_URL")])
+    def u(name, kind, target, st, ver, swap, acts):
+        return (f'<div class="row"><span class="name"><span class="n mono">{name}</span><span class="d">{kind}</span></span><span>{st}</span><span class="mono c3">{target}</span>'
+                f'<span class="mono c4">{ver}</span><span>{swap}</span><span class="wrap" style="justify-content:flex-end;flex-wrap:nowrap">{acts}</span></div>')
+    cfg = '<a class="btn sm" href="UnitConfig.dc.html">設定</a>'
+    return f"""
+    <section class="panel" aria-labelledby="h-units">
+      <div class="ph"><h2 id="h-units">部署單元 · 3</h2><div class="wrap" style="margin-left:auto"><button type="button" class="btn sm">＋ 單元</button><button type="button" class="btn sm pri">部署全部</button></div></div>
+      <div style="padding:10px 14px 6px"><div class="ch-d">{topo}</div><div class="ch-m">{topo_m}</div></div>
+      <div class="row hd"><span>單元</span><span>狀態</span><span class="c3">部署到</span><span class="c4">版本</span><span>替換方式</span><span></span></div>
+      {u("web", "Compose · deploy/compose.yaml", "tw-01 · Docker（root）", U.status("ok", "執行中"), "a3f9c1e", U.status("ok", "無縫替換"), cfg)}
+      {u("worker", "Compose · worker/compose.yaml", "jp-02 · Docker（root）", U.status("warn", "主機沒有回應"), "a3f9c1e", U.status("ok", "無縫替換"), cfg)}
+      {u("search", "Helm · charts/search", "lab-k3s · namespace shop", U.status("ok", "3／3 就緒"), "chart 1.4.2", U.status("ok", "滾動更新"), cfg)}
+    </section>"""
+
+
+def connection_panel() -> str:
+    eye = f'<button type="button" class="ib" aria-label="複製">{U.icon("copy")}</button>'
+    def pub(k, v, on, refs):
+        tog = f'<label class="wrap" style="flex-wrap:nowrap"><input type="checkbox"{" checked" if on else ""} aria-label="公開 {k}">公開</label>'
+        return f'<div class="row"><span class="mono">{k}</span><span class="wr"><span class="mono" style="overflow-wrap:anywhere;white-space:normal">{v}</span></span><span>{tog}</span><span class="c3">{refs}</span></div>'
+    def ref(k, expr, val, st):
+        return f'<div class="row"><span class="mono">{k}</span><span class="wr"><span class="mono" style="overflow-wrap:anywhere;white-space:normal">{expr}</span></span><span class="wr"><span class="mono" style="overflow-wrap:anywhere;white-space:normal">{val}</span></span><span>{st}</span></div>'
+    return f"""
+    <section class="panel" aria-labelledby="h-conn">
+      <div class="ph"><h2 id="h-conn">search · 連線</h2>{_seg(["web", "worker", "search"], 2, "單元")}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:10px 16px;padding:12px 14px;font-size:13px">
+        {kv("內部位址（入口服務 search）", '<span class="wrap" style="flex-wrap:nowrap"><span class="mono">search.production.shop.internal</span>' + eye + "</span>")}
+        {kv("對內 Port", '<span class="mono">http 9200 · transport 9300</span>')}
+        {kv("對外網址", '<span class="note">未設定</span>')}
+        {kv("從其他主機連入", "tw-01：私有網路 · jp-02：加密轉送，只開 9200")}
+      </div>
+      <div class="row hd"><span>公開的變數</span><span>值</span><span>公開</span><span class="c3">被誰引用</span></div>
+      {pub("SEARCH_URL", "http://${search.HZX_HOST}:${search.HZX_PORT_HTTP}", True, "web、worker")}
+      {pub("SEARCH_ADMIN_TOKEN", "••••••••（機密）", False, "—")}
+      <div class="ph" style="border-top:1px solid var(--line)"><h2>web 引用了誰</h2></div>
+      <div class="row hd"><span>變數</span><span>寫法</span><span>解析結果</span><span>檢查</span></div>
+      {ref("SEARCH_URL", "${search.SEARCH_URL}", "http://search.production.shop.internal:9200", U.status("ok", "連得到"))}
+      {ref("ADMIN_TOKEN", "${search.SEARCH_ADMIN_TOKEN}", "—", U.status("dng", "search 沒有公開這個變數"))}
+    </section>"""
+
+
+# ---------- 單元設定 ----------
+def unit_config() -> str:
+    head = _form_head([("專案與服務", "Projects.dc.html"), ("shop", "ProjectDetail.dc.html"), ("production", "ProjectDetail.dc.html")], "單元 web · 設定", '<a class="btn" href="ProjectDetail.dc.html">取消</a><button type="button" class="btn pri">儲存</button>')
+    def f(path, on, order, note):
+        return (f'<div class="row"><span class="wrap" style="flex-wrap:nowrap"><input type="checkbox"{" checked" if on else ""} aria-label="使用 {path}"><span class="mono">{path}</span></span>'
+                f'<span class="mono">{order}</span><span class="c3">{note}</span><span>{U.actions(["more"])}</span></div>')
+    files = _fp("Compose 檔", f"""
+      <div style="padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+        <div class="wrap">{_seg(["自動（同 compose 預設）", "指定檔案（像 Portainer）"], 1, "模式")}<span class="note">指定檔案時不會自動合併 compose.override.yaml，要用就勾進清單</span></div>
+      </div>
+      <div class="row hd"><span>repo 裡找到的 compose 檔</span><span>順序</span><span class="c3">說明</span><span></span></div>
+      {f("deploy/compose.yaml", True, "1 主檔", "4 個服務")}
+      {f("deploy/monitoring.yml", True, "2", "加上 node-exporter")}
+      {f("compose.override.yaml", False, "—", U.status("warn", "把 ./src 掛進 shop-api · 疑似開發用"))}
+      {f("compose.yaml", False, "—", "根目錄 · 舊版")}
+      <div style="padding:10px 14px 12px"><button type="button" class="btn sm">預覽合併結果</button> <span class="note">平台的覆寫層永遠排在最後</span></div>""")
+    prof = _fp("Profile", f"""
+      <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+        <div class="wrap">{_cb("預設（沒有 profile 的服務）", True)}{_cb("debug", False)}{_cb("metrics", True)}</div>
+        <div class="wrap">{U.status("info", "shop-debug 不會啟動 · profile debug 未啟用")}</div>
+      </div>""")
+    swap = _fp("替換方式", f"""
+      <div class="row hd"><span>服務</span><span>部署時</span><span class="c3">原因</span><span></span></div>
+      <div class="row"><span class="mono">shop-api</span><span>{U.status("ok", "無縫替換")}</span><span class="c3 note">經 Zentinel · 健康檢查 /healthz</span><span>{_seg(["自動", "先停再起"], 0, "shop-api")}</span></div>
+      <div class="row"><span class="mono">shop-worker</span><span>{U.status("ok", "無縫替換")}</span><span class="c3 note">佇列消費者 · 新舊同時消費可接受</span><span>{_seg(["自動", "先停再起"], 0, "shop-worker")}</span></div>
+      <div class="row"><span class="mono">shop-db</span><span>{U.status("warn", "先停再起 · 約 6 秒 · 需要批准")}</span><span class="c3"><span class="mono">compose.yaml:23</span> container_name · 單寫入資料</span><span></span></div>
+      <div class="row"><span class="mono">shop-redis</span><span>{U.status("warn", "先停再起 · 約 2 秒 · 需要批准")}</span><span class="c3"><span class="mono">compose.yaml:31</span> ports 6379:6379 · 單寫入資料</span><span></span></div>""")
+    build = _fp("建置", _grid(
+        _fld("每次部署", _seg(["重新建置（推薦）", "沒變時沿用上次的映像"], 0, "建置")),
+        _fld("快取", _cb("這次不用快取", False)),
+        _fld("建置時變數", _dd("build.env（3 個）"), "以 build args 提供，不會進到執行中的容器"),
+        _fld("Compose 專案名稱", '<span class="mono">shop-production-web</span>', "改單元名稱也不會變；儲存卷是 shop-production-web_uploads")))
+    cfiles = _fp("設定檔", f"""
+      <div class="row hd"><span>名稱（路徑）</span><span>掛到</span><span class="c3">版本</span><span></span></div>
+      <div class="row"><span class="mono">deploy/nginx.conf</span><span class="mono">shop-api:/etc/nginx/nginx.conf</span><span class="c3">v4 · 10/30</span><span>{U.actions(["rename", "more"])}</span></div>
+      <div class="row"><span class="mono">secrets/stripe.pem</span><span class="mono">secrets: stripe_key</span><span class="c3">機密庫</span><span>{U.actions(["rename", "more"])}</span></div>
+      <div style="padding:8px 14px 12px"><button type="button" class="btn sm">{U.icon("upload", 14)}上傳設定檔</button></div>""")
+    main = head + files + f'<div class="cg">{prof}{build}</div>' + swap + cfiles + U.savebar("web 單元設定：3 處未儲存", "下次部署才會套用", "儲存", "儲存並部署")
+    return U.shell("projects", main)
+
+
+# ---------- 環境變數（四層變數組） ----------
+def env_groups_page(upload: bool = False) -> str:
+    head = f"""
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px">
+      <div class="name">{U.crumbs([("專案與服務", "Projects.dc.html"), ("shop", "ProjectDetail.dc.html")])}<h1>環境變數</h1></div>
+      <div class="wrap" style="margin-left: auto">{_seg(["production", "staging"], 0, "專案環境")}<a class="btn pri" href="EnvUpload.dc.html">{U.icon("upload", 14)}上傳 env 檔</a></div>
+    </div>"""
+    def g(name, n, refs, on=False, note=""):
+        return (f'<a class="row{" sel" if on else ""}" href="#g"><span class="name"><span class="n mono">{name}</span><span class="d">{n} 個 · {refs}</span></span><span>{note}</span></a>')
+    groups = f"""
+    <section class="panel" aria-labelledby="h-gl">
+      <div class="ph"><h2 id="h-gl">變數組</h2><button type="button" class="btn sm" style="margin-left:auto">＋ 新增組</button></div>
+      <div class="ph"><span class="note">專案 · 所有環境共用 · 不放機密</span></div>
+      {g("shared.env", 2, "web、worker 引用")}
+      <div class="ph"><span class="note">專案環境 · production</span></div>
+      {g("app.env", 6, "web、worker 引用", on=True)}
+      <div class="ph"><span class="note">單元 · web</span></div>
+      {g(".env", 2, "Compose 替換用", note=U.status("info", "替換"))}
+      {g("app.env", 2, "蓋過專案環境的同名組")}
+      {g("build.env", 3, "建置時", note=U.status("info", "建置時"))}
+      <div class="ph"><span class="note">服務覆寫 · shop-api</span></div>
+      {g("（覆寫層 environment）", 1, "只給 shop-api")}
+    </section>"""
+    eye = f'<button type="button" class="ib" aria-label="顯示值">{U.icon("eye")}</button>'
+    def v(k, val, secret=False):
+        vv = f'<span class="wrap" style="flex-wrap:nowrap"><span class="mono">••••••••</span>{eye}</span>' if secret else f'<span class="wr"><span class="mono" style="overflow-wrap:anywhere;white-space:normal">{val}</span></span>'
+        return f'<div class="row"><span class="mono">{k}</span><span>{vv}</span><span>{"機密" if secret else "一般"}</span><span>{U.actions(["rename", "trash"])}</span></div>'
+    detail = f"""
+    <section class="panel" aria-labelledby="h-gd">
+      <div class="ph"><h2 id="h-gd" class="mono">app.env</h2><span class="note">專案環境 production · web、worker 用 env_file 引用</span>
+        <div class="wrap" style="margin-left:auto"><button type="button" class="btn sm">改名</button><button type="button" class="btn sm">原始文字</button><button type="button" class="btn sm">{U.icon("download", 14)}匯出</button></div></div>
+      <div class="row hd"><span>名稱</span><span>值</span><span>種類</span><span></span></div>
+      {v("DATABASE_URL", "postgres://shop@shop-db:5432/shop")}
+      {v("REDIS_URL", "redis://shop-redis:6379")}
+      {v("LOG_LEVEL", "info")}
+      {v("MAIL_FROM", "shop@example.tw")}
+      {v("DB_PASSWORD", "", True)}
+      {v("STRIPE_KEY", "", True)}
+    </section>"""
+    rename = _fp("改名 app.env → web.env 會影響", f"""
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">
+        {_chk("ok", "覆寫層 · worker 的 env_file", "一起改成 web.env", "自動更新")}
+        {_chk("warn", "Git · deploy/compose.yaml:12  env_file: app.env", "平台改不到 Git；app.env 保留為別名，標「Git 仍使用舊名稱」", "保留別名")}
+        <div class="wrap"><button type="button" class="btn pri sm">改名</button><button type="button" class="btn sm">取消</button></div>
+      </div>""")
+    def e(k, val, src, over):
+        return f'<div class="row"><span class="mono">{k}</span><span class="mono">{val}</span><span class="note">{src}</span><span class="c3 note">{over}</span></div>'
+    eff = f"""
+    <section class="panel" aria-labelledby="h-eff">
+      <div class="ph"><h2 id="h-eff">shop-api 實際收到的值</h2>{_seg(["shop-api", "shop-worker", "shop-db"], 0, "服務")}</div>
+      <div class="row hd"><span>名稱</span><span>最終值</span><span>來源</span><span class="c3">被蓋掉</span></div>
+      {e("LOG_LEVEL", "warn", "服務覆寫", "compose environment: error · web/app.env: debug · production/app.env: info")}
+      {e("APP_NAME", "Shop", "專案 shared.env:1", "映像 ENV: app")}
+      {e("DATABASE_URL", "postgres://shop@shop-db…", "production/app.env:1", "—")}
+      {e("CHECKOUT_TIMEOUT_MS", "8000", "web/app.env:2", "—")}
+      {e("DB_PASSWORD", "••••••••", "production/app.env:5 · 機密", "—")}
+      {e("NODE_ENV", "production", "compose environment（compose.yaml:14）", "映像 ENV: development")}
+    </section>"""
+    main = head + f'<div class="cg">{groups}{detail}</div>' + f'<div class="cg">{eff}{rename}</div>' + U.savebar("app.env：1 處未儲存（LOG_LEVEL info → warn）", "web、worker 要重新部署才會收到", "儲存並重新部署", "只儲存")
+    return U.shell("projects", main)
+
+
+def env_upload() -> str:
+    page = env_groups_page()
+    def p(k, kind, old, new, line):
+        return f'<div class="row"><span class="mono">{k}</span><span>{kind}</span><span class="mono">{old}</span><span class="mono">{new}</span><span class="note">{line}</span></div>'
+    dlg = f"""
+    <div class="cmdp" role="dialog" aria-labelledby="h-up" style="max-width:720px">
+      <div class="ph"><h2 id="h-up">上傳 env 檔</h2></div>
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:12px">
+        <div class="wrap">{U.icon("files")}<span class="mono">prod.env</span><span class="note">2.1 KB · 24 行 · UTF-8 · LF</span></div>
+        {_grid(_fld("組名（就是 env_file 的檔名）", _in("prod.env", mono=True), "預設是上傳的檔名，可以改"), _fld("放在", _seg(["單元 web", "專案環境 production", "專案"], 0, "放在")), minw=220)}
+        <section class="panel" aria-label="預覽"><div class="row hd"><span>名稱</span><span>變更</span><span>目前</span><span>上傳後</span><span>行</span></div>
+        {p("API_BASE", U.status("ok", "新增"), "—", "https://api.example.tw", "3")}
+        {p("LOG_LEVEL", U.status("warn", "變更"), "info", "warn", "7 · 19 重複 · 以 19 為準")}
+        {p("DB_PASSWORD", U.status("info", "新增 · 判定為機密"), "—", "••••••••", "11")}
+        {p("MULTILINE_CERT", U.status("ok", "新增"), "—", "-----BEGIN…（3 行）", "14–16")}</section>
+        <div class="wrap">{U.status("dng", "第 21 行無效：=oops（缺名稱）")}<span class="note">其餘 22 行照常匯入 · 現有但檔案裡沒有的 4 個變數保留</span></div>
+        <div class="wrap"><button type="button" class="btn pri">匯入成 prod.env</button><button type="button" class="btn">取消</button></div>
+      </div>
+    </div>"""
+    i = page.index('<main class="main">') + len('<main class="main">')
+    return page[:i] + f'<div class="scrim">{dlg}</div>' + page[i:]
+
+
+
+# ---------- 新增站點：靜態網站 ----------
+def site_static() -> str:
+    head = _form_head([("網站與入口", "Websites.dc.html"), ("新增站點", "SiteCreate.dc.html")], "靜態網站", '<a class="btn" href="Websites.dc.html">取消</a><button type="button" class="btn pri">建立站點</button>')
+    kinds = ('<section class="panel"><div class="ph"><h2>類型</h2></div><div class="fleet choices">'
+             + _choice("反向代理", "", ["轉到專案服務、容器或主機 Port"], '<a class="btn sm" href="SiteCreate.dc.html">選擇</a>')
+             + _choice("靜態網站", "", ["由 Zentinel 直接提供檔案"], U.status("ok", "已選"), on=True)
+             + _choice("執行環境", "PHP · Node", ["用平台管理的執行環境容器"], '<button type="button" class="btn sm">選擇</button>')
+             + _choice("重新導向", "", ["整個網域轉到另一個網址"], '<button type="button" class="btn sm">選擇</button>') + "</div></section>")
+    def disk(name, mnt, free, default, created, on=False):
+        st = U.status("ok", "已建立") if created else U.status("info", "第一次用時建立")
+        return (f'<div class="ncard{" on" if on else ""}"><div class="nh"><span class="n mono">{mnt}</span><span class="d">{name}</span></div>'
+                f'{U.meter(free[0] / free[1] * 100, f"{free[0]}/{free[1]} GiB")}<span class="note">預設位置</span><span class="mono">{default}</span>'
+                f'<div class="wrap">{st}{U.status("ok", "已選") if on else chr(32)}</div></div>')
+    where = f"""
+    <section class="panel" aria-labelledby="h-loc">
+      <div class="ph"><h2 id="h-loc">檔案放在哪裡</h2><span class="note">Zentinel @ hazel-tw-01 直接讀取，所以要在 tw-01 上</span></div>
+      <div style="padding:12px 14px 4px">{_seg(["用預設位置", "選擇資料夾…", "上傳檔案", "從 Git 部署"], 0, "來源")}</div>
+      <div class="fleet choices">
+        {disk("資料碟 · sdb1", "/mnt/data", (412, 931), "/mnt/data/sites/report.example.tw", True, on=True)}
+        {disk("系統碟 · nvme0n1p2", "/", (36, 94), "/srv/sites/report.example.tw", False)}
+        {disk("NFS · tw-01:/mnt/data/nfs", "/mnt/nfs/backup", (19, 200), "/mnt/nfs/backup/sites/report.example.tw", False)}
+      </div>
+      <div style="padding:0 14px 14px;display:flex;flex-direction:column;gap:8px">
+        {_fld("實際路徑", _in("/mnt/data/sites/report.example.tw", mono=True, tail='<a class="btn sm" href="FolderPicker.dc.html">選擇資料夾…</a>'))}
+        <div class="wrap">{U.status("ok", "Zentinel（zentinel 使用者）可以讀取")}{U.status("info", "資料夾還不存在 · 建立站點時建立，擁有者 deploy:zentinel 750")}</div>
+      </div>
+    </section>"""
+    serve = _fp("怎麼提供", _grid(
+        _fld("首頁", _in("index.html", mono=True)), _fld("找不到頁面時", _seg(["404 頁", "回到 index.html（單頁應用）"], 1, "找不到頁面")),
+        _fld("目錄列表", _seg(["關", "開"], 0, "目錄列表")), _fld("快取", _dd("HTML 不快取 · 其他 7 天"))))
+    domains = _fp("網域與 HTTPS", _grid(_fld("網域", _in("report.example.tw", mono=True)), _fld("HTTPS", _seg(["自動申請（推薦）", "先不要"], 0, "HTTPS"))))
+    main = head + kinds + where + f'<div class="cg">{serve}{domains}</div>' + _fp("建立", '<div style="height:4px"></div>' + _submit("建立站點"))
+    return U.shell("web", main)
+
+
+def folder_picker() -> str:
+    page = site_static()
+    tree = U.tree([(0, "/mnt/data", "931G", False), (1, "apps", "402G", False), (2, "shop", "290G", False), (2, "wiki", "48G", False), (1, "sites", "1.4G", False), (2, "docs.example.tw", "220M", False, "站點 docs.example.tw 正在用"), (2, "report.example.tw", "—", True), (1, "backups", "38G", False), (0, "/srv", "12G", False), (1, "sites", "—", False), (0, "/mnt/nfs/backup", "19G", False),
+                   (0, "/etc", "24M", False, "系統目錄不能選"), (0, "/boot", "312M", False, "系統目錄不能選"), (0, "/proc", "—", False, "系統目錄不能選"), (0, "/sys", "—", False, "系統目錄不能選")], open_depth=1)
+    def r(name, kind, size, note="", dis=""):
+        cls = ' dis" aria-disabled="true" data-tip="' + dis if dis else ""
+        lock = U.icon("lock", 14) + " " if dis else ""
+        return f'<div class="row{cls}"><span class="name"><span class="n mono">{lock}{name}</span><span class="d">{kind}</span></span><span class="mono">{size}</span><span class="note">{dis or note}</span></div>'
+    dlg = f"""
+    <div class="cmdp" role="dialog" aria-labelledby="h-fp" style="max-width:860px">
+      <div class="ph"><h2 id="h-fp">選擇資料夾 · hazel-tw-01</h2></div>
+      <div style="padding:10px 14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--line)">
+        <div class="crumbs"><a href="#r" aria-label="根目錄">{U.icon("storage", 14)}</a><span class="sep">/</span><a href="#1">mnt</a><span class="sep">/</span><a href="#2">data</a><span class="sep">/</span><a href="#3">sites</a></div>
+        <button type="button" class="btn sm" style="margin-left:auto">{U.icon("newfolder", 14)}新資料夾</button>
+      </div>
+      <div class="fm" style="grid-template-columns:minmax(200px,260px) 1fr">
+        <div class="pane treep" style="padding:6px 8px;overflow:auto">{tree}</div>
+        <section class="panel" style="border:0;border-radius:0" aria-label="sites 的內容">
+          <div class="row hd"><span>名稱</span><span>大小</span><span>說明</span></div>
+          {r("docs.example.tw", "資料夾", "220 MiB", dis="站點 docs.example.tw 正在用 · 不能選")}
+          {r("report.example.tw", "資料夾 · 還不存在", "—", "建立站點時建立")}
+          {r("README.txt", "檔案", "2 KiB", dis="這裡要選資料夾 · 檔案不能選")}
+        </section>
+      </div>
+      <div style="padding:10px 14px;display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line)">
+        <div class="wrap"><span class="note">選取</span><span class="mono">/mnt/data/sites/report.example.tw</span>{U.status("ok", "Zentinel 可以讀取")}</div>
+        <div class="wrap note">只列 tw-01 上的資料夾 · 不能選的項目照樣列出，滑過看原因</div>
+        <div class="wrap"><button type="button" class="btn pri">選這個資料夾</button><button type="button" class="btn">取消</button></div>
+      </div>
+    </div>"""
+    i = page.index('<main class="main">') + len('<main class="main">')
+    return page[:i] + f'<div class="scrim">{dlg}</div>' + page[i:]
+
+
 SCREENS = {
     # name: (title, builder, w, h_guess, mobile)
     "Overview": ("總覽", overview, 1440, 1700),
     "NodeDetail": ("節點 hazel-tw-01", node_detail, 1440, 1700),
     "Projects": ("專案與服務", project_list, 1440, 900),
     "ProjectDetail": ("專案 shop", projects, 1440, 1700),
+    "ContainerResources": ("容器 · 映像、儲存卷、網路與快取", container_resources, 1440, 2200),
     "Containers": ("容器", containers, 1440, 1500),
     "ContainerDetail": ("容器 shop-api-1", container_detail, 1440, 1500),
     "WorkCenter": ("工作中心", work_center, 1440, 1700),
     "NodeOffline": ("主機 hazel-jp-02 沒有回應", node_offline, 1440, 1100),
     "ImportConfigure": ("GitHub 匯入 · 偵測與設定", import_configure, 1440, 1300),
-    "ProjectEnv": ("專案 shop › 環境變數", project_env, 1440, 900),
+    "ProjectEnv": ("專案 shop › 環境變數（變數組）", env_groups_page, 1440, 1100),
+    "EnvUpload": ("上傳 env 檔", env_upload, 1440, 1100),
+    "UnitConfig": ("單元 web › 設定", unit_config, 1440, 1400),
     "UserInvite": ("邀請同事", user_invite, 1440, 1100),
     "Setup": ("第一次啟動", setup, 1440, 900),
     "Updates": ("跨主機安全更新", updates, 1440, 800),
     "ContainerCreate": ("建立容器", container_create, 1440, 1800),
     "SiteCreate": ("新增站點", site_create, 1440, 1700),
+    "SiteStatic": ("新增站點 · 靜態網站", site_static, 1440, 1300),
+    "FolderPicker": ("選擇資料夾", folder_picker, 1440, 1300),
     "FirewallRule": ("新增防火牆規則", firewall_rule, 1440, 1300),
     "CronCreate": ("新增計畫任務", cron_create, 1440, 1500),
     "BackupCreate": ("新增備份任務", backup_create, 1440, 1900),
@@ -2925,6 +3993,7 @@ SCREENS = {
     "DeployConfirm": ("批准確認", lambda: deploy_check(True), 1440, 1900),
     "States": ("錯誤與空狀態", states, 1440, 1300),
     "Websites": ("網站與入口", websites, 1440, 2200),
+    "ComponentDown": ("網站與入口 · Zentinel 已停止", component_down_page, 1440, 1100),
     "Storage": ("儲存與備份", storage, 1440, 2300),
     "Events": ("事件與告警", events, 1440, 2200),
     "Nodes": ("主機", nodes, 1440, 2600),
@@ -2932,16 +4001,29 @@ SCREENS = {
     "Terminal": ("終端機", terminal, 1440, 1800),
     "Kubernetes": ("Kubernetes", kubernetes, 1440, 2200),
     "AppStore": ("應用商店", appstore, 1440, 2400),
+    "APIProxyService": ("API 代理 · 服務設定", apiproxy_service, 1440, 1300),
+    "APIProxyTokens": ("API 代理 · 使用者與 Token", apiproxy_tokens, 1440, 1500),
+    "APIProxyFailures": ("API 代理 · 失敗紀錄", apiproxy_failures, 1440, 1100),
     "APIProxy": ("API 代理", apiproxy, 1440, 2200),
     "Database": ("資料庫", database, 1440, 2600),
     "AI": ("AI", ai, 1440, 2600),
+    "ModelHub": ("AI · 模型庫", model_hub, 1440, 2200),
     "Files": ("檔案", files, 1440, 2200),
     "Cron": ("計畫任務", cron, 1440, 2600),
     "Security": ("安全防護", security, 1440, 2400),
     "Analytics": ("流量分析", analytics, 1440, 2400),
     "IAM": ("身分與存取", iam, 1440, 2400),
+    "Uninstall": ("平台設定 · 解除安裝", uninstall, 1440, 2000),
+    "NodeLedger": ("主機 hazel-tw-01 › 變更帳本", node_ledger, 1440, 2000),
+    "NodeLedgerBroken": ("主機 › 變更帳本無法使用", node_ledger_broken, 1440, 900),
+    "AccountSecurity": ("帳號安全", account_security, 1440, 1500),
+    "MfaDialogs": ("第二驗證的對話框", mfa_dialogs, 1440, 1500),
+    "ListAndErrors": ("列表、背景查詢與錯誤", list_and_errors, 1440, 1600),
+    "ChangeSafety": ("變更前後的檢查", change_safety, 1440, 1500),
+    "ShellStates": ("外殼的各種狀態", shell_states, 1440, 1800),
     "Settings": ("平台設定", settings, 1440, 2600),
     "Logs": ("日誌", logs, 1440, 2200),
+    "AppSettings": ("nextcloud · 網路與掛載", app_settings, 1440, 1300),
     "AppInstall": ("安裝應用（1Panel 市集）", app_install, 1440, 1800),
     "HostServices": ("服務模組（Webmin 等價）", host_services, 1440, 1900),
     "ContainersEmpty": ("容器引擎未安裝", containers_empty, 1440, 1900),
@@ -3031,7 +4113,7 @@ def table_affordances(html: str) -> str:
             sec = re.sub(r'<(a|div) class="row ([^"]*)"([^>]*)>', lambda r: f'<{r.group(1)} class="row {r.group(2)} batch"{r.group(3)}><span class="ck"><input type="checkbox" aria-label="{"全選" if "hd" in r.group(2).split() else "選取"}"{" checked" if "sel" in r.group(2).split() else ""}></span>', sec)
         if pages:
             footer = (f'<div class="pager"><span>顯示 {pages.group(1)}</span><span class="pg"><button type="button" class="ib" aria-label="上一頁" aria-disabled="true">{U.icon("chev")}</button>'
-                      f'<span>每頁 25</span><button type="button" class="ib" aria-label="下一頁">{U.icon("chev")}</button></span></div>')
+                      f'<span>每頁 50</span><button type="button" class="ib" aria-label="下一頁">{U.icon("chev")}</button></span></div>')
             sec = sec[: sec.rfind("</section>")] + footer + "</section>"
         return sec
     return re.sub(r'<section class="panel"([^>]*)>.*?</section>', fix, html, flags=re.S)

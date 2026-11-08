@@ -2,16 +2,19 @@ package iam
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/HazelnutParadise/hazelminx/core/internal/paging"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/HazelnutParadise/hazelminx/core/internal/secrets"
 	"github.com/google/uuid"
 )
 
@@ -22,7 +25,12 @@ type Config struct {
 	SessionIdle    time.Duration // slide window; default 12h
 	SessionMax     time.Duration // absolute lifetime; default 7d
 	SetupCodeTTL   time.Duration // default 1h
-	Now            func() time.Time
+	ChallengeTTL   time.Duration // second login step; default 5m
+	ReauthWindow   time.Duration // how long a login or reauthentication counts as recent; default 10m
+	// Secrets holds TOTP seeds and the recovery-code key (ticket 011). Nil
+	// disables TOTP and recovery codes (ErrUnavailable).
+	Secrets *secrets.Service
+	Now     func() time.Time
 }
 
 func (c Config) withDefaults() Config {
@@ -40,6 +48,12 @@ func (c Config) withDefaults() Config {
 	}
 	if c.SetupCodeTTL == 0 {
 		c.SetupCodeTTL = time.Hour
+	}
+	if c.ChallengeTTL == 0 {
+		c.ChallengeTTL = 5 * time.Minute
+	}
+	if c.ReauthWindow == 0 {
+		c.ReauthWindow = 10 * time.Minute
 	}
 	if c.Now == nil {
 		c.Now = time.Now
@@ -59,7 +73,18 @@ type Service struct {
 	setupExpires time.Time
 
 	dummyHash string // verified against for unknown usernames so timing matches
+
+	challenges *challengeStore // pending second login steps
+	ceremonies *ceremonyStore  // pending passkey ceremonies
+
+	recoveryMu   sync.Mutex
+	recoveryHMAC []byte // cached recovery-code key
+
+	userMu    sync.Mutex
+	userLocks map[string]*sync.Mutex // see lockUser
 }
+
+var randRead = rand.Read
 
 // New wires the service to the store's database (migrations already applied).
 func New(db *sql.DB, cfg Config) (*Service, error) {
@@ -68,7 +93,8 @@ func New(db *sql.DB, cfg Config) (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Service{db: db, cfg: cfg, limiter: NewLimiter(cfg.Limiter, cfg.Now), dummyHash: dummy}, nil
+	return &Service{db: db, cfg: cfg, limiter: NewLimiter(cfg.Limiter, cfg.Now), dummyHash: dummy,
+		challenges: newChallengeStore(), ceremonies: newCeremonyStore(), userLocks: map[string]*sync.Mutex{}}, nil
 }
 
 // Limiter exposes the attempt limiter so ticket 014 can throttle recovery codes with the same policy.
@@ -107,14 +133,15 @@ func (s *Service) SetupCode(ctx context.Context) (string, time.Time, error) {
 	return s.setupCode, s.setupExpires, nil
 }
 
-// CompleteSetup creates the first owner. The code is consumed atomically
-// under the mutex and the user, assignment and audit row land in one
-// transaction that re-checks "no users yet", so two racing callers cannot
-// both become owner and a failed transaction never leaves a role-less owner
-// behind (which would lock everyone out).
-func (s *Service) CompleteSetup(ctx context.Context, code, username, password string, src Source) (*User, error) {
-	if ok, _ := s.limiter.Check(setupKey, src.IP, false); !ok {
-		return nil, ErrThrottled
+// CompleteSetup creates the first owner and signs them in. The code is
+// consumed atomically under the mutex and the user, assignment, session and
+// audit rows land in one transaction that re-checks "no users yet", so two
+// racing callers cannot both become owner and a failed transaction never
+// leaves a role-less owner behind (which would lock everyone out). The
+// session is held to second-factor enrolment until the owner adds one.
+func (s *Service) CompleteSetup(ctx context.Context, code, username, password string, src Source) (*LoginResult, error) {
+	if ok, retry := s.limiter.Check(setupKey, src.IP, false); !ok {
+		return &LoginResult{RetryAfter: retry}, ErrThrottled
 	}
 	need, err := s.NeedsSetup(ctx)
 	if err != nil {
@@ -161,10 +188,14 @@ func (s *Service) CompleteSetup(ctx context.Context, code, username, password st
 		TraceID: src.TraceID, SourceIP: src.IP}); err != nil {
 		return nil, err
 	}
+	sess, err := s.openSessionTx(ctx, tx, u, src, "")
+	if err != nil {
+		return nil, err
+	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return u, nil
+	return &LoginResult{Session: sess, User: u, EnrollmentRequired: true}, nil
 }
 
 // setupKey is the limiter account key for setup attempts; '#' cannot occur
@@ -173,48 +204,87 @@ const setupKey = "#setup"
 
 // ---- login & sessions ---------------------------------------------------
 
-// Login verifies a password and opens a session. Unknown usernames, wrong
-// passwords and disabled accounts all return ErrInvalidCredentials after the
-// same hashing work; throttling returns ErrThrottled with a retry hint.
-func (s *Service) Login(ctx context.Context, username, password string, src Source) (*Session, *User, time.Duration, error) {
+// Login verifies a password. Unknown usernames, wrong passwords and
+// disabled accounts all return ErrInvalidCredentials after the same hashing
+// work; throttling returns ErrThrottled with RetryAfter set. A user without
+// a second factor is signed in (Session set); a user with one gets a
+// Challenge to finish with CompleteSecondFactor.
+func (s *Service) Login(ctx context.Context, username, password string, src Source) (*LoginResult, error) {
 	username = strings.TrimSpace(username)
 	trusted, err := s.trustedSource(ctx, username, src.IP)
 	if err != nil {
-		return nil, nil, 0, err
+		return nil, err
 	}
 	if ok, retry := s.limiter.Check(username, src.IP, trusted); !ok {
 		// Not audited: the failures that led here are already on the ledger,
 		// and a throttled source must not be able to grow it at wire speed.
-		return nil, nil, retry, ErrThrottled
+		return &LoginResult{RetryAfter: retry}, ErrThrottled
 	}
 
 	u, hash, err := s.userByUsername(ctx, username)
 	if err != nil && !errors.Is(err, ErrNotFound) {
-		return nil, nil, 0, err
+		return nil, err
 	}
 	if u == nil {
 		hash = s.dummyHash
 	}
 	match, verr := VerifyPassword(password, hash)
 	if verr != nil {
-		return nil, nil, 0, verr
+		return nil, verr
 	}
 	if u == nil || !match || u.Status != StatusActive {
 		s.limiter.Failure(username, src.IP)
 		s.record(ctx, s.db, AuditEvent{Action: "login", Scope: Global, Result: ResultFailed, Message: "invalid credentials",
 			After: map[string]any{"username": username}, TraceID: src.TraceID, SourceIP: src.IP})
-		return nil, nil, 0, ErrInvalidCredentials
+		return nil, ErrInvalidCredentials
 	}
 
+	f, err := s.factors(ctx, s.db, u.ID)
+	if err != nil {
+		return nil, err
+	}
+	if f.any() {
+		ch, err := s.newChallenge(ctx, u, f, src)
+		if err != nil {
+			return nil, err
+		}
+		s.limiter.Success(username)
+		if err := s.record(ctx, s.db, AuditEvent{ActorID: u.ID, ActorName: u.Username, Action: "login.password", Scope: Global,
+			ResourceKind: "user", ResourceID: u.ID, Result: ResultOK, Message: "second factor required",
+			After: map[string]any{"methods": ch.Methods}, TraceID: src.TraceID, SourceIP: src.IP}); err != nil {
+			return nil, err
+		}
+		return &LoginResult{User: u, Challenge: ch}, nil
+	}
+
+	pr, err := s.principal(ctx, u.ID)
+	if err != nil {
+		return nil, err
+	}
 	sess, err := s.openSession(ctx, u, src)
 	if err != nil {
-		return nil, nil, 0, err
+		return nil, err
 	}
 	s.limiter.Success(username)
-	return sess, u, 0, nil
+	return &LoginResult{Session: sess, User: u, EnrollmentRequired: RequiresSecondFactor(pr)}, nil
 }
 
 func (s *Service) openSession(ctx context.Context, u *User, src Source) (*Session, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	sess, err := s.openSessionTx(ctx, tx, u, src, "")
+	if err != nil {
+		return nil, err
+	}
+	return sess, tx.Commit()
+}
+
+// openSessionTx inserts a session and its audit row inside tx. factor is the
+// second-factor method that completed the login, "" for none.
+func (s *Service) openSessionTx(ctx context.Context, tx *sql.Tx, u *User, src Source, factor string) (*Session, error) {
 	token, err := randomToken(32)
 	if err != nil {
 		return nil, err
@@ -223,23 +293,26 @@ func (s *Service) openSession(ctx context.Context, u *User, src Source) (*Sessio
 	if err != nil {
 		return nil, err
 	}
-	now := s.now()
-	sess := &Session{ID: uuid.NewString(), UserID: u.ID, Token: token, CSRFToken: csrf, SourceIP: src.IP, UserAgent: src.UserAgent,
-		CreatedAt: now, LastSeenAt: now, ExpiresAt: now.Add(s.cfg.SessionIdle)}
-	tx, err := s.db.BeginTx(ctx, nil)
+	idle, _, err := s.userIdle(ctx, tx, u.ID)
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback()
-	if _, err := tx.ExecContext(ctx, `INSERT INTO sessions(id,user_id,token_hash,csrf_token,source_ip,user_agent,created_at,last_seen_at,expires_at)
-		VALUES(?,?,?,?,?,?,?,?,?)`, sess.ID, u.ID, hashToken(token), csrf, src.IP, src.UserAgent, ts(now), ts(now), ts(sess.ExpiresAt)); err != nil {
+	now := s.now()
+	sess := &Session{ID: uuid.NewString(), UserID: u.ID, Token: token, CSRFToken: csrf, SourceIP: src.IP, UserAgent: src.UserAgent,
+		CreatedAt: now, LastSeenAt: now, ExpiresAt: now.Add(idle), SecondFactor: factor}
+	if _, err := tx.ExecContext(ctx, `INSERT INTO sessions(id,user_id,token_hash,csrf_token,source_ip,user_agent,created_at,last_seen_at,expires_at,second_factor)
+		VALUES(?,?,?,?,?,?,?,?,?,?)`, sess.ID, u.ID, hashToken(token), csrf, src.IP, src.UserAgent, ts(now), ts(now), ts(sess.ExpiresAt), factor); err != nil {
 		return nil, err
+	}
+	var after map[string]any
+	if factor != "" {
+		after = map[string]any{"secondFactor": factor}
 	}
 	if err := s.record(ctx, tx, AuditEvent{ActorID: u.ID, ActorName: u.Username, Action: "login", Scope: Global,
-		ResourceKind: "session", ResourceID: sess.ID, Result: ResultOK, TraceID: src.TraceID, SourceIP: src.IP}); err != nil {
+		ResourceKind: "session", ResourceID: sess.ID, Result: ResultOK, After: after, TraceID: src.TraceID, SourceIP: src.IP}); err != nil {
 		return nil, err
 	}
-	return sess, tx.Commit()
+	return sess, nil
 }
 
 // Authenticate resolves a session token to a principal, sliding the idle
@@ -251,9 +324,9 @@ func (s *Service) Authenticate(ctx context.Context, token string) (*Principal, *
 	var sess Session
 	var created, lastSeen, expires string
 	var revoked sql.NullString
-	err := s.db.QueryRowContext(ctx, `SELECT id,user_id,csrf_token,source_ip,user_agent,created_at,last_seen_at,expires_at,revoked_at
+	err := s.db.QueryRowContext(ctx, `SELECT id,user_id,csrf_token,source_ip,user_agent,created_at,last_seen_at,expires_at,revoked_at,second_factor
 		FROM sessions WHERE token_hash=?`, hashToken(token)).
-		Scan(&sess.ID, &sess.UserID, &sess.CSRFToken, &sess.SourceIP, &sess.UserAgent, &created, &lastSeen, &expires, &revoked)
+		Scan(&sess.ID, &sess.UserID, &sess.CSRFToken, &sess.SourceIP, &sess.UserAgent, &created, &lastSeen, &expires, &revoked, &sess.SecondFactor)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil, ErrSessionInvalid
 	}
@@ -276,8 +349,19 @@ func (s *Service) Authenticate(ctx context.Context, token string) (*Principal, *
 		return nil, nil, ErrSessionInvalid
 	}
 	p.Kind, p.SessionID = "session", sess.ID
+	if RequiresSecondFactor(p) {
+		f, err := s.factors(ctx, s.db, p.User.ID)
+		if err != nil {
+			return nil, nil, err
+		}
+		p.EnrollmentRequired = !f.any()
+	}
 	if now.Sub(sess.LastSeenAt) > time.Minute {
-		sess.LastSeenAt, sess.ExpiresAt = now, now.Add(s.cfg.SessionIdle)
+		idle, _, err := s.userIdle(ctx, s.db, sess.UserID)
+		if err != nil {
+			return nil, nil, err
+		}
+		sess.LastSeenAt, sess.ExpiresAt, sess.Renewed = now, now.Add(idle), true
 		if _, err := s.db.ExecContext(ctx, `UPDATE sessions SET last_seen_at=?, expires_at=? WHERE id=?`, ts(now), ts(sess.ExpiresAt), sess.ID); err != nil {
 			return nil, nil, err
 		}
@@ -367,7 +451,7 @@ func (s *Service) insertUser(ctx context.Context, ex execer, username, password,
 		return nil, err
 	}
 	now := s.now()
-	u := &User{ID: uuid.NewString(), Username: username, DisplayName: displayName, Status: StatusActive, CreatedAt: now, UpdatedAt: now}
+	u := &User{ID: uuid.NewString(), Username: username, DisplayName: displayName, Status: StatusActive, Version: 1, CreatedAt: now, UpdatedAt: now}
 	_, err = ex.ExecContext(ctx, `INSERT INTO users(id,username,display_name,password_hash,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?)`,
 		u.ID, u.Username, u.DisplayName, hash, u.Status, ts(now), ts(now))
 	if err != nil {
@@ -382,38 +466,50 @@ func (s *Service) insertUser(ctx context.Context, ex execer, username, password,
 // AssignRole grants role on scope to a user. Only principals with
 // roles:assign (owner) may do it; owner may only be granted globally.
 func (s *Service) AssignRole(ctx context.Context, actor *Principal, userID string, role Role, scope Scope, src Source) (*Assignment, error) {
+	as, _, err := s.AssignRoleIf(ctx, actor, userID, role, scope, 0, src)
+	return as, err
+}
+
+// AssignRoleIf is AssignRole conditional on the account version (0 = any).
+// The assignment is part of the account's representation, so it advances
+// the version; the new version is returned.
+func (s *Service) AssignRoleIf(ctx context.Context, actor *Principal, userID string, role Role, scope Scope, ifVersion int64, src Source) (*Assignment, int64, error) {
 	if !Authorize(actor, ActionRolesAssign, Global) {
 		s.RecordDenied(ctx, actor, ActionRolesAssign, Global, src)
-		return nil, ErrForbidden
+		return nil, 0, ErrForbidden
 	}
 	if !ValidRole(role) {
-		return nil, fmt.Errorf("%w: unknown role %q", ErrValidation, role)
+		return nil, 0, fmt.Errorf("%w: unknown role %q", ErrValidation, role)
 	}
 	if err := validScope(scope); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if role == RoleOwner && scope.Kind != ScopeGlobal {
-		return nil, fmt.Errorf("%w: owner can only be assigned globally", ErrValidation)
+		return nil, 0, fmt.Errorf("%w: owner can only be assigned globally", ErrValidation)
 	}
 	target, err := s.GetUser(ctx, actor, userID)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer tx.Rollback()
+	ver, err := s.bumpVersion(ctx, tx, userID, ifVersion)
+	if err != nil {
+		return nil, 0, err
+	}
 	as, err := s.insertAssignment(ctx, tx, userID, role, scope, actor.User.ID)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if err := s.record(ctx, tx, AuditEvent{ActorID: actor.User.ID, ActorName: actor.User.Username, Action: "role.assign", Scope: scope,
 		ResourceKind: "user", ResourceID: userID, Result: ResultOK,
 		After: map[string]any{"username": target.Username, "role": role, "scope": scope}, TraceID: src.TraceID, SourceIP: src.IP}); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return as, tx.Commit()
+	return as, ver, tx.Commit()
 }
 
 func (s *Service) insertAssignment(ctx context.Context, tx *sql.Tx, userID string, role Role, scope Scope, by string) (*Assignment, error) {
@@ -432,35 +528,56 @@ func (s *Service) insertAssignment(ctx context.Context, tx *sql.Tx, userID strin
 
 // RevokeRole removes one assignment.
 func (s *Service) RevokeRole(ctx context.Context, actor *Principal, assignmentID string, src Source) error {
+	_, err := s.RevokeRoleIf(ctx, actor, assignmentID, "", 0, src)
+	return err
+}
+
+// RevokeRoleIf is RevokeRole for the assignment of userID (any user when
+// empty), conditional on that account's version (0 = any). It advances the
+// version and returns the new one.
+func (s *Service) RevokeRoleIf(ctx context.Context, actor *Principal, assignmentID, userID string, ifVersion int64, src Source) (int64, error) {
 	if !Authorize(actor, ActionRolesAssign, Global) {
 		s.RecordDenied(ctx, actor, ActionRolesAssign, Global, src)
-		return ErrForbidden
+		return 0, ErrForbidden
 	}
 	var as Assignment
 	var kind string
 	err := s.db.QueryRowContext(ctx, `SELECT id,user_id,role,scope_kind,scope_id FROM role_assignments WHERE id=?`, assignmentID).
 		Scan(&as.ID, &as.UserID, &as.Role, &kind, &as.Scope.ID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return ErrNotFound
+		return 0, ErrNotFound
 	}
 	if err != nil {
-		return err
+		return 0, err
 	}
 	as.Scope.Kind = ScopeKind(kind)
+	if userID != "" && as.UserID != userID {
+		return 0, ErrNotFound
+	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer tx.Rollback()
-	if _, err := tx.ExecContext(ctx, `DELETE FROM role_assignments WHERE id=?`, assignmentID); err != nil {
-		return err
+	ver, err := s.bumpVersion(ctx, tx, as.UserID, ifVersion)
+	if err != nil {
+		return 0, err
+	}
+	// A concurrent revoke may have deleted it after the read above; then
+	// nothing changed here, and no version or audit entry is written.
+	res, err := tx.ExecContext(ctx, `DELETE FROM role_assignments WHERE id=?`, assignmentID)
+	if err != nil {
+		return 0, err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return 0, ErrNotFound
 	}
 	if err := s.record(ctx, tx, AuditEvent{ActorID: actor.User.ID, ActorName: actor.User.Username, Action: "role.revoke", Scope: as.Scope,
 		ResourceKind: "user", ResourceID: as.UserID, Result: ResultOK,
 		Before: map[string]any{"role": as.Role, "scope": as.Scope}, TraceID: src.TraceID, SourceIP: src.IP}); err != nil {
-		return err
+		return 0, err
 	}
-	return tx.Commit()
+	return ver, tx.Commit()
 }
 
 // UserDetail is a user with their assignments.
@@ -471,10 +588,56 @@ type UserDetail struct {
 
 // ListUsers returns every account with assignments; requires users:read.
 func (s *Service) ListUsers(ctx context.Context, actor *Principal) ([]UserDetail, error) {
+	return s.ListUsersPage(ctx, actor, paging.Query{Sort: []paging.SortKey{{Field: "username"}, {Field: "id"}}, Limit: -1})
+}
+
+// UserSortColumns maps list sort fields to user columns.
+var UserSortColumns = map[string]paging.Column{
+	"username":  {Expr: "username COLLATE NOCASE"},
+	"createdAt": {Expr: "created_at"},
+	"id":        {Expr: "id"},
+}
+
+// SortValue returns the value of a sort field of u, as UserSortColumns
+// compares it.
+func (u User) SortValue(field string) string {
+	switch field {
+	case "username":
+		return u.Username
+	case "createdAt":
+		return ts(u.CreatedAt)
+	default:
+		return u.ID
+	}
+}
+
+// CountUsers counts accounts; requires users:read.
+func (s *Service) CountUsers(ctx context.Context, actor *Principal) (int, error) {
+	if !Authorize(actor, ActionUsersRead, Global) {
+		return 0, ErrForbidden
+	}
+	var n int
+	err := s.db.QueryRowContext(ctx, `SELECT count(*) FROM users`).Scan(&n)
+	return n, err
+}
+
+// ListUsersPage returns one keyset page of accounts with assignments;
+// requires users:read. A negative q.Limit means no limit.
+func (s *Service) ListUsersPage(ctx context.Context, actor *Principal, q paging.Query) ([]UserDetail, error) {
 	if !Authorize(actor, ActionUsersRead, Global) {
 		return nil, ErrForbidden
 	}
-	rows, err := s.db.QueryContext(ctx, `SELECT id,username,display_name,status,created_at,updated_at FROM users ORDER BY username`)
+	order, where, args, err := q.SQL(UserSortColumns)
+	if err != nil {
+		return nil, err
+	}
+	query := `SELECT id,username,display_name,status,version,created_at,updated_at FROM users`
+	if where != "" {
+		query += " WHERE " + where
+	}
+	query += " ORDER BY " + order + " LIMIT ?"
+	args = append(args, q.Limit)
+	rows, err := s.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -482,12 +645,16 @@ func (s *Service) ListUsers(ctx context.Context, actor *Principal) ([]UserDetail
 	for rows.Next() {
 		var u User
 		var c, m string
-		if err := rows.Scan(&u.ID, &u.Username, &u.DisplayName, &u.Status, &c, &m); err != nil {
+		if err := rows.Scan(&u.ID, &u.Username, &u.DisplayName, &u.Status, &u.Version, &c, &m); err != nil {
 			rows.Close()
 			return nil, err
 		}
 		u.CreatedAt, u.UpdatedAt = pt(c), pt(m)
 		out = append(out, UserDetail{User: u})
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return nil, err
 	}
 	rows.Close()
 	for i := range out {
@@ -503,7 +670,73 @@ func (s *Service) ListUsers(ctx context.Context, actor *Principal) ([]UserDetail
 	return out, nil
 }
 
-// GetUser returns one account; ErrNotFound both when missing and when the
+// UpdateUserInput is a partial update; nil fields are left as they are.
+type UpdateUserInput struct {
+	DisplayName *string `json:"displayName,omitempty"`
+}
+
+// UpdateUser changes account fields when ifVersion is the current version
+// (a *VersionMismatchError otherwise); requires users:write.
+func (s *Service) UpdateUser(ctx context.Context, actor *Principal, id string, ifVersion int64, in UpdateUserInput, src Source) (*UserDetail, error) {
+	if !Authorize(actor, ActionUsersWrite, Global) {
+		s.RecordDenied(ctx, actor, ActionUsersWrite, Global, src)
+		return nil, ErrForbidden
+	}
+	before, err := s.GetUser(ctx, actor, id)
+	if err != nil {
+		return nil, err
+	}
+	if in.DisplayName == nil {
+		return nil, fmt.Errorf("%w: nothing to change; send displayName", ErrValidation)
+	}
+	name := strings.TrimSpace(*in.DisplayName)
+	if len([]rune(name)) > 128 {
+		return nil, fmt.Errorf("%w: displayName must be at most 128 characters", ErrValidation)
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	if _, err := s.bumpVersion(ctx, tx, id, ifVersion); err != nil {
+		return nil, err
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE users SET display_name=? WHERE id=?`, name, id); err != nil {
+		return nil, err
+	}
+	if err := s.record(ctx, tx, AuditEvent{ActorID: actor.User.ID, ActorName: actor.User.Username, Action: "user.update", Scope: Global,
+		ResourceKind: "user", ResourceID: id, Result: ResultOK,
+		Before: map[string]any{"displayName": before.DisplayName}, After: map[string]any{"displayName": name},
+		TraceID: src.TraceID, SourceIP: src.IP}); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return s.GetUser(ctx, actor, id)
+}
+
+// bumpVersion advances the account version inside tx and returns the new
+// version. ifVersion 0 means unconditional; otherwise it must be the
+// current version.
+func (s *Service) bumpVersion(ctx context.Context, tx *sql.Tx, userID string, ifVersion int64) (int64, error) {
+	res, err := tx.ExecContext(ctx, `UPDATE users SET version=version+1, updated_at=? WHERE id=? AND (?=0 OR version=?)`,
+		ts(s.now()), userID, ifVersion, ifVersion)
+	if err != nil {
+		return 0, err
+	}
+	var cur int64
+	if err := tx.QueryRowContext(ctx, `SELECT version FROM users WHERE id=?`, userID).Scan(&cur); errors.Is(err, sql.ErrNoRows) {
+		return 0, ErrNotFound
+	} else if err != nil {
+		return 0, err
+	}
+	if n, _ := res.RowsAffected(); n == 1 {
+		return cur, nil
+	}
+	return 0, &VersionMismatchError{Current: cur}
+}
+
 // actor may not read users.
 func (s *Service) GetUser(ctx context.Context, actor *Principal, id string) (*UserDetail, error) {
 	if !Authorize(actor, ActionUsersRead, Global) {
@@ -519,8 +752,8 @@ func (s *Service) GetUser(ctx context.Context, actor *Principal, id string) (*Us
 func (s *Service) userByUsername(ctx context.Context, username string) (*User, string, error) {
 	var u User
 	var hash, c, m string
-	err := s.db.QueryRowContext(ctx, `SELECT id,username,display_name,password_hash,status,created_at,updated_at FROM users WHERE username=? COLLATE NOCASE`, username).
-		Scan(&u.ID, &u.Username, &u.DisplayName, &hash, &u.Status, &c, &m)
+	err := s.db.QueryRowContext(ctx, `SELECT id,username,display_name,password_hash,status,version,created_at,updated_at FROM users WHERE username=? COLLATE NOCASE`, username).
+		Scan(&u.ID, &u.Username, &u.DisplayName, &hash, &u.Status, &u.Version, &c, &m)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, "", ErrNotFound
 	}
@@ -531,11 +764,25 @@ func (s *Service) userByUsername(ctx context.Context, username string) (*User, s
 	return &u, hash, nil
 }
 
+// PrincipalByID loads the current principal of an account, for work that
+// runs after the request (background list queries re-check permissions at
+// run time). A disabled account has no assignments.
+func (s *Service) PrincipalByID(ctx context.Context, userID string) (*Principal, error) {
+	p, err := s.principal(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if p.User.Status != StatusActive {
+		p.Assignments = nil
+	}
+	return p, nil
+}
+
 func (s *Service) principal(ctx context.Context, userID string) (*Principal, error) {
 	var u User
 	var c, m string
-	err := s.db.QueryRowContext(ctx, `SELECT id,username,display_name,status,created_at,updated_at FROM users WHERE id=?`, userID).
-		Scan(&u.ID, &u.Username, &u.DisplayName, &u.Status, &c, &m)
+	err := s.db.QueryRowContext(ctx, `SELECT id,username,display_name,status,version,created_at,updated_at FROM users WHERE id=?`, userID).
+		Scan(&u.ID, &u.Username, &u.DisplayName, &u.Status, &u.Version, &c, &m)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -642,12 +889,50 @@ func (s *Service) record(ctx context.Context, ex execer, ev AuditEvent) error {
 // audit:read. A filter on a scope outside that set yields an empty page, the
 // same answer as for a scope that does not exist.
 func (s *Service) ListAudit(ctx context.Context, actor *Principal, f AuditFilter) ([]AuditEvent, error) {
+	where, args, err := auditWhere(actor, f)
+	if err != nil {
+		return nil, err
+	}
+	order := "seq"
+	if len(f.Page.Sort) > 0 {
+		o, w, a, err := f.Page.SQL(AuditSortColumns)
+		if err != nil {
+			return nil, err
+		}
+		order, f.Limit = o, f.Page.Limit
+		if w != "" {
+			where = append(where, w)
+			args = append(args, a...)
+		}
+	}
+	if len(f.Page.Sort) == 0 && (f.Limit <= 0 || f.Limit > MaxAuditPage) {
+		f.Limit = MaxAuditPage
+	}
+	args = append(args, f.Limit)
+	rows, err := s.db.QueryContext(ctx, `SELECT seq,id,at,coalesce(actor_id,''),actor_name,action,scope_kind,scope_id,resource_kind,resource_id,job_id,node_id,result,message,before_json,after_json,trace_id,source_ip
+		FROM audit_events WHERE `+strings.Join(where, " AND ")+` ORDER BY `+order+` LIMIT ?`, args...)
+	if err != nil {
+		return nil, err
+	}
+	return scanAudit(rows)
+}
+
+// CountAudit counts the events ListAudit could return for f (paging
+// ignored).
+func (s *Service) CountAudit(ctx context.Context, actor *Principal, f AuditFilter) (int, error) {
+	where, args, err := auditWhere(actor, f)
+	if err != nil {
+		return 0, err
+	}
+	var n int
+	err = s.db.QueryRowContext(ctx, `SELECT count(*) FROM audit_events WHERE `+strings.Join(where, " AND "), args...).Scan(&n)
+	return n, err
+}
+
+func auditWhere(actor *Principal, f AuditFilter) ([]string, []any, error) {
 	global, scopes := ScopesFor(actor, ActionAuditRead)
 	if !global && len(scopes) == 0 {
-		return nil, ErrForbidden
-	}
-	if f.Limit <= 0 || f.Limit > MaxAuditPage {
-		f.Limit = MaxAuditPage
+		return nil, nil, ErrForbidden
 	}
 	where := []string{"seq > ?"}
 	args := []any{f.AfterSeq}
@@ -675,12 +960,10 @@ func (s *Service) ListAudit(ctx context.Context, actor *Principal, f AuditFilter
 		where = append(where, "resource_id=?")
 		args = append(args, f.ResourceID)
 	}
-	args = append(args, f.Limit)
-	rows, err := s.db.QueryContext(ctx, `SELECT seq,id,at,coalesce(actor_id,''),actor_name,action,scope_kind,scope_id,resource_kind,resource_id,job_id,node_id,result,message,before_json,after_json,trace_id,source_ip
-		FROM audit_events WHERE `+strings.Join(where, " AND ")+` ORDER BY seq LIMIT ?`, args...)
-	if err != nil {
-		return nil, err
-	}
+	return where, args, nil
+}
+
+func scanAudit(rows *sql.Rows) ([]AuditEvent, error) {
 	defer rows.Close()
 	out := []AuditEvent{}
 	for rows.Next() {

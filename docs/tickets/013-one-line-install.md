@@ -4,7 +4,7 @@
 **User Story:** 管理員可以安裝與啟動平台  
 **Milestone:** M1 單機主機管理  
 **Blocked by:** [003 管理員可以啟動 hazelminx-core 並通過健康檢查](003-core-skeleton.md), [004 管理員可以在主機上以 systemd 執行 hazelminx-agent 並回報身分](004-agent-skeleton.md), [009 擁有者可以登入、建立帳號與角色，未授權的 API 呼叫一律被拒絕](009-iam-foundation.md), [012 維運者可以執行需要高權限的固定動作，而 Agent 主程序維持低權限](012-privileged-executor.md)  
-**Status:** blocked  
+**Status:** ready  
 **規格章節:** 08｜安裝、更新、開機自啟與解除安裝、37｜安裝位置、版本更新與平台自我修復、39｜跨功能流程：從按鈕到真正完成  
 **Issue:** [#13](https://github.com/HazelnutParadise/hazelminx/issues/13)  
 

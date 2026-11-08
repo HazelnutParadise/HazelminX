@@ -1,0 +1,14 @@
+{
+  "type": "step_execute",
+  "requestId": "stp_job_01HXYZ_0_1",
+  "jobId": "job_01HXYZ",
+  "step": 0,
+  "stepName": "collect agent info",
+  "action": "agent.info",
+  "actionVersion": 1,
+  "params": {},
+  "controlGeneration": 3,
+  "expiresAt": "2026-11-08T03:09:05Z",
+  "retryable": true,
+  "irreversible": false
+}

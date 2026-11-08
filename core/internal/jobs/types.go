@@ -3,6 +3,7 @@ package jobs
 import (
 	"encoding/json"
 	"errors"
+	"github.com/HazelnutParadise/hazelminx/core/internal/paging"
 	"time"
 )
 
@@ -110,7 +111,10 @@ type Step struct {
 	// may be re-run after an unknown outcome without reconciliation.
 	Retryable bool `json:"retryable"`
 	// WaitReason explains why a requested cancel is still waiting on this step.
-	WaitReason string     `json:"waitReason,omitempty"`
+	WaitReason string `json:"waitReason,omitempty"`
+	// Attempts counts how many times the step started executing, including
+	// attempts whose outcome reconciliation later reset.
+	Attempts   int        `json:"attempts,omitempty"`
 	StartedAt  *time.Time `json:"startedAt,omitempty"`
 	FinishedAt *time.Time `json:"finishedAt,omitempty"`
 	Evidence   []string   `json:"evidence,omitempty"`
@@ -143,6 +147,10 @@ type StepError struct {
 	Evidence         []string `json:"evidence,omitempty"`
 	SuggestedActions []string `json:"suggestedActions,omitempty"`
 	Retryable        bool     `json:"retryable"`
+	// NothingChanged: the executor refused or never received this attempt,
+	// so this attempt left nothing behind. The step still counts as executed
+	// when an earlier attempt started (Step.Attempts > 1).
+	NothingChanged bool `json:"nothingChanged,omitempty"`
 }
 
 func (e *StepError) Error() string { return e.Code + ": " + e.Summary }
@@ -286,10 +294,39 @@ type StepReport struct {
 }
 
 // ListOptions filters Engine.List. Results are newest first unless
-// Ascending is set.
+// Ascending is set; Page, when it has a Sort, replaces Limit and Ascending
+// with a keyset page (sort fields: createdAt, updatedAt, kind, state, id).
 type ListOptions struct {
 	States    []State
 	Kind      string
+	Node      string
 	Limit     int
 	Ascending bool
+	Page      paging.Query
+}
+
+// JobSortColumns maps list sort fields to job columns.
+var JobSortColumns = map[string]paging.Column{
+	"createdAt": {Expr: "created_at"},
+	"updatedAt": {Expr: "updated_at"},
+	"kind":      {Expr: "kind"},
+	"state":     {Expr: "state"},
+	"id":        {Expr: "id"},
+}
+
+// SortValue returns the value of a sort field of j, as JobSortColumns
+// compares it.
+func (j *Job) SortValue(field string) string {
+	switch field {
+	case "createdAt":
+		return j.CreatedAt.UTC().Format(time.RFC3339Nano)
+	case "updatedAt":
+		return j.UpdatedAt.UTC().Format(time.RFC3339Nano)
+	case "kind":
+		return j.Kind
+	case "state":
+		return string(j.State)
+	default:
+		return j.ID
+	}
 }

@@ -13,6 +13,8 @@ type Store interface {
 	GetJob(ctx context.Context, id string) (*Job, error)
 	GetJobByRequestID(ctx context.Context, requestID string) (*Job, error)
 	ListJobs(ctx context.Context, opts ListOptions) ([]*Job, error)
+	// CountJobs counts the jobs matching the filters of opts.
+	CountJobs(ctx context.Context, opts ListOptions) (int, error)
 	// UpdateJob writes every mutable field of j.
 	UpdateJob(ctx context.Context, j *Job) error
 	// Touch updates the heartbeat and progress of a job without rewriting

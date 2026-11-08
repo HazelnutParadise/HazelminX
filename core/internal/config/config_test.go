@@ -37,9 +37,11 @@ func TestFlagOverridesEnv(t *testing.T) {
 
 func TestValidation(t *testing.T) {
 	cases := map[string][]string{
-		"listen without port": {"-listen", "localhost"},
-		"relative data dir":   {"-data-dir", "data"},
-		"bad log format":      {"-log-format", "xml"},
+		"listen without port":            {"-listen", "localhost"},
+		"relative data dir":              {"-data-dir", "data"},
+		"bad log format":                 {"-log-format", "xml"},
+		"agent listen no port":           {"-agent-listen", "0.0.0.0"},
+		"agent listen equals management": {"-listen", "127.0.0.1:9800", "-agent-listen", "127.0.0.1:9800"},
 	}
 	for name, args := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -47,6 +49,17 @@ func TestValidation(t *testing.T) {
 				t.Fatal("expected validation error")
 			}
 		})
+	}
+}
+
+func TestAgentListenFromEnvAndFlag(t *testing.T) {
+	cfg, err := Load(nil, env(map[string]string{"HAZELMINX_AGENT_LISTEN": "10.0.0.5:7001"}))
+	if err != nil || cfg.AgentListenAddr != "10.0.0.5:7001" {
+		t.Fatalf("env: %+v %v", cfg, err)
+	}
+	cfg, err = Load([]string{"-agent-listen", "127.0.0.1:7002"}, env(map[string]string{"HAZELMINX_AGENT_LISTEN": "10.0.0.5:7001"}))
+	if err != nil || cfg.AgentListenAddr != "127.0.0.1:7002" {
+		t.Fatalf("flag: %+v %v", cfg, err)
 	}
 }
 

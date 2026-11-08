@@ -27,6 +27,7 @@ type fakeHandler struct {
 
 	mu         sync.Mutex
 	executed   []int
+	executedBy map[string][]int
 	rolledBack []int
 }
 
@@ -43,6 +44,10 @@ func (f *fakeHandler) Recheck(_ context.Context, _ *Job, s *Step) error {
 func (f *fakeHandler) Execute(ctx context.Context, j *Job, s *Step, rep Reporter) error {
 	f.mu.Lock()
 	f.executed = append(f.executed, s.Index)
+	if f.executedBy == nil {
+		f.executedBy = map[string][]int{}
+	}
+	f.executedBy[j.ID] = append(f.executedBy[j.ID], s.Index)
 	f.mu.Unlock()
 	if f.execute != nil {
 		return f.execute(ctx, j, s, rep)
@@ -75,6 +80,14 @@ func (f *fakeHandler) executedSteps() []int {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return append([]int(nil), f.executed...)
+}
+
+// executedStepsOf returns the steps executed for one job only, for tests
+// where another job on the same handler may run meanwhile.
+func (f *fakeHandler) executedStepsOf(jobID string) []int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return append([]int(nil), f.executedBy[jobID]...)
 }
 
 // waitOn blocks until ch is closed or ctx ends, so a failing test never
@@ -659,6 +672,60 @@ func TestKnownFailureWithoutRollbackMethodStaysFailed(t *testing.T) {
 	}
 }
 
+// A step the executor refused without running (NothingChanged) is not an
+// executed step: the job fails as "nothing was changed", not as "changes
+// remain and cannot be rolled back".
+func TestRefusedStepIsNotCountedAsExecuted(t *testing.T) {
+	h := &fakeHandler{kind: "k", steps: []StepSpec{{Name: "write"}},
+		execute: func(ctx context.Context, j *Job, s *Step, rep Reporter) error {
+			return &StepError{Code: "JOURNAL_UNAVAILABLE", Summary: "agent refused", Retryable: true, NothingChanged: true}
+		}}
+	env := newEnv(t, Options{}, h)
+	done := env.waitFinished(env.submit(SubmitRequest{RequestID: "refused", Kind: "k"}).ID)
+	if done.State != StateFailed || !done.Reversible || len(done.Diagnostics.Residue) != 0 || !strings.Contains(done.StateReason, "nothing was changed") {
+		t.Fatalf("state %s reversible %v residue %v reason %q", done.State, done.Reversible, done.Diagnostics.Residue, done.StateReason)
+	}
+	// Without the flag the same failure is treated as a step that ran.
+	h2 := &fakeHandler{kind: "k2", steps: []StepSpec{{Name: "write"}},
+		execute: func(ctx context.Context, j *Job, s *Step, rep Reporter) error {
+			return &StepError{Code: "DISK_FULL", Summary: "no space"}
+		}}
+	env2 := newEnv(t, Options{}, h2)
+	done2 := env2.waitFinished(env2.submit(SubmitRequest{RequestID: "ran", Kind: "k2"}).ID)
+	if len(done2.Diagnostics.Residue) == 0 {
+		t.Fatalf("a step that ran and failed without rollback must leave residue: %+v", done2.Diagnostics)
+	}
+}
+
+// A retryable step whose first attempt was interrupted may have changed
+// something. If the retry after reconciliation is refused without running,
+// the step still counts as executed and is rolled back.
+func TestRefusedRetryAfterInterruptedAttemptStillRollsBack(t *testing.T) {
+	var calls int
+	var mu sync.Mutex
+	h := &fakeHandler{kind: "k", steps: []StepSpec{{Name: "write", RollbackMethod: "undo", Retryable: true}},
+		execute: func(ctx context.Context, j *Job, s *Step, rep Reporter) error {
+			mu.Lock()
+			calls++
+			n := calls
+			mu.Unlock()
+			if n == 1 {
+				return ErrDisconnected // first attempt: outcome lost
+			}
+			return &StepError{Code: "NODE_OFFLINE", Summary: "nothing was sent", Retryable: true, NothingChanged: true}
+		}}
+	env := newEnv(t, Options{}, h)
+	j := env.submit(SubmitRequest{RequestID: "retry-refused", Kind: "k"})
+	env.waitState(j.ID, StateUnknown)
+	if _, err := env.engine.Reconcile(env.ctx, j.ID, []StepReport{{Index: 0, Started: true}}); err != nil {
+		t.Fatal(err)
+	}
+	done := env.waitFinished(j.ID)
+	if done.State != StateRolledBack || len(h.rolledBack) != 1 || done.Steps[0].Attempts != 2 {
+		t.Fatalf("state %s (%s) rolledBack %v attempts %d", done.State, done.StateReason, h.rolledBack, done.Steps[0].Attempts)
+	}
+}
+
 func TestRollbackFailureNeedsAttention(t *testing.T) {
 	h := &fakeHandler{kind: "restore", steps: []StepSpec{{Name: "stop-db", RollbackMethod: "start-db"}, {Name: "restore-files", RollbackMethod: "restore-previous"}},
 		execute: func(ctx context.Context, j *Job, s *Step, rep Reporter) error {
@@ -735,7 +802,9 @@ func TestRecoverAfterRestartDoesNotResetOrRerun(t *testing.T) {
 	if env2.waitFinished(j.ID).State != StateSucceeded {
 		t.Fatal("reconciled job must finish")
 	}
-	if len(h2.executedSteps()) != 0 {
+	// The queued job may start once j releases the lock, so only j's own
+	// steps are checked.
+	if len(h2.executedStepsOf(j.ID)) != 0 {
 		t.Fatal("reconciled step must not be executed again")
 	}
 }

@@ -57,6 +57,7 @@ pub struct HealthReport {
     pub version: String,
     pub active_actions: usize,
     pub max_actions: usize,
+    pub ledger_ready: bool,
 }
 
 impl Client {
@@ -74,11 +75,13 @@ impl Client {
                 version,
                 active_actions,
                 max_actions,
+                ledger_ready,
             } => Ok(HealthReport {
                 protocol_version,
                 version,
                 active_actions,
                 max_actions,
+                ledger_ready,
             }),
             Response::Error { error, .. } => Err(ClientError::Rejected(error)),
             other => Err(ClientError::Protocol(format!("unexpected frame {other:?}"))),
@@ -105,11 +108,26 @@ impl Client {
         request_id: &str,
         grant: &Grant,
         action: &Action,
+        on_output: impl FnMut(StreamKind, Vec<u8>),
+    ) -> Result<serde_json::Value, ClientError> {
+        self.execute_for_job(request_id, None, grant, action, on_output)
+            .await
+    }
+
+    /// [`Self::execute`] on behalf of a job; `job_id` is recorded in the
+    /// host ledger for every change the action makes.
+    pub async fn execute_for_job(
+        &self,
+        request_id: &str,
+        job_id: Option<&str>,
+        grant: &Grant,
+        action: &Action,
         mut on_output: impl FnMut(StreamKind, Vec<u8>),
     ) -> Result<serde_json::Value, ClientError> {
         let mut reader = self
             .open(&Request::Action {
                 request_id: request_id.to_string(),
+                job_id: job_id.map(str::to_string),
                 grant: grant.clone(),
                 action: serde_json::to_value(action).expect("Action serializes"),
             })
