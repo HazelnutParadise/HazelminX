@@ -28,6 +28,7 @@ test.describe("preferences", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/settings");
     await page.getByRole("button", { name: "帳號" }).click();
+    await page.getByRole("menuitem", { name: "語言 · 繁體中文" }).click();
     await page.getByRole("menuitemradio", { name: "English" }).click();
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Platform settings");
@@ -42,7 +43,7 @@ test.describe("preferences", () => {
   test("unknown counts and observation time are not shown as zero", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/");
-    await expect(page.getByText("尚未觀測")).toBeVisible();
+    await expect(page.locator(".hx-obs")).toHaveText("觀測 —");
     await expect(page.locator(".hx-badge, .hx-count")).toHaveCount(0);
     await expect(page.locator("body")).not.toContainText(/\b0 (個工作|件)/);
   });
@@ -117,8 +118,36 @@ test.describe("navigation", () => {
     await page.goto("/no-such-page");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("找不到這個頁面");
     await expect(page.getByText("/no-such-page")).toBeVisible();
-    await page.getByRole("link", { name: "回到總覽" }).click();
+    await expect(page.getByRole("main").getByRole("button", { name: "搜尋", exact: true })).toBeVisible();
+    await page.getByRole("link", { name: "回總覽" }).click();
     await expect(page).toHaveURL(/\/$/);
+  });
+});
+
+test.describe("top bar layout", () => {
+  test("desktop: 48px high, no jobs button, terminal visible", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/");
+    const top = page.locator("header.hx-top");
+    expect((await top.boundingBox())!.height).toBe(48);
+    await expect(top.getByRole("link", { name: "終端機" })).toBeVisible();
+    await expect(top.getByRole("link", { name: /進行中的工作/ })).toHaveCount(0);
+  });
+
+  test("phone: logo, bell, theme and account on row one, search on row two, terminal in the menu", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 800 });
+    await page.goto("/");
+    const top = page.locator("header.hx-top");
+    const row = async (name: RegExp | string) =>
+      (await top.getByRole("button", { name }).or(top.getByRole("link", { name })).first().boundingBox())!.y;
+    const logoY = (await top.getByRole("link", { name: "HazelminX 總覽" }).boundingBox())!.y;
+    for (const name of [/事件與告警/, "切換成淺色", "帳號"])
+      expect(Math.abs((await row(name)) - logoY)).toBeLessThan(8);
+    expect((await top.getByRole("button", { name: "搜尋或下指令" }).boundingBox())!.y).toBeGreaterThan(logoY + 30);
+    await expect(top.getByRole("link", { name: "終端機" })).toBeHidden();
+    await top.getByRole("button", { name: "帳號" }).click();
+    await page.getByRole("menuitem", { name: "終端機" }).click();
+    await expect(page).toHaveURL(/\/terminal$/);
   });
 });
 

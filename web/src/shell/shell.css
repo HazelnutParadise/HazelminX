@@ -30,7 +30,7 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  min-height: 56px;
+  min-height: 48px;
   padding: 0 16px 0 0;
   border-bottom: 1px solid var(--color-kumo-line);
   background: var(--color-kumo-base);
@@ -52,6 +52,14 @@
   font-weight: 600;
   font-size: 14px;
   text-decoration: none;
+}
+.hx-brand--mini {
+  width: 56px;
+  padding: 0;
+  justify-content: center;
+}
+.hx-brand--mini .hx-brand-name {
+  display: none;
 }
 .hx-logo {
   width: 22px;
@@ -103,6 +111,9 @@
   margin-left: auto;
 }
 .hx-obs {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
   color: var(--text-color-kumo-subtle);
   margin-right: 8px;
@@ -170,15 +181,19 @@
   --sidebar-bg: var(--color-kumo-base);
   --sidebar-active-bg: var(--color-kumo-elevated);
   position: sticky;
-  top: 56px;
-  height: calc(100vh - 56px);
+  top: 48px;
+  height: calc(100vh - 48px);
   border-right: 1px solid var(--color-kumo-line);
 }
 .hx-side [data-sidebar="menu-button"] {
   font-size: 13px;
   font-weight: 400;
 }
+/* DESIGN.md: 16px line icons in the muted color; Kumo draws them at 40% opacity and 1rem. */
 .hx-side [data-sidebar="menu-button"] svg {
+  width: 16px;
+  height: 16px;
+  opacity: 1;
   color: var(--text-color-kumo-subtle);
 }
 .hx-side [data-sidebar="menu-button"][data-active="true"] svg {
@@ -195,6 +210,33 @@
   font-size: 12px;
   font-weight: 500;
   color: var(--hx-faint);
+}
+/* Collapsed (board ShellStates): group titles become a hairline, counts a badge on the icon's corner. */
+.hx-side[data-state="collapsed"] [data-sidebar="group-label"] {
+  height: 1px;
+  width: 24px;
+  margin: 6px auto;
+  padding: 0;
+  overflow: hidden;
+  font-size: 0;
+  background: var(--color-kumo-line);
+}
+.hx-side[data-state="collapsed"] .hx-count {
+  position: absolute;
+  top: 0;
+  right: 2px;
+  min-width: 16px;
+  padding: 0 4px;
+  font-size: 10px;
+  line-height: 15px;
+  color: var(--hx-hazel-ink);
+  justify-content: center;
+}
+.hx-side[data-state="collapsed"] .hx-count--jobs {
+  background: var(--color-kumo-brand);
+}
+.hx-side[data-state="collapsed"] .hx-count--attention {
+  background: var(--color-kumo-danger);
 }
 .hx-nav-label {
   flex: 1;
@@ -255,11 +297,55 @@
   border: 1px solid var(--color-kumo-line);
   border-radius: 8px;
 }
-/* Kumo Empty is its own bordered box; give it the panel surface (DESIGN.md panel). */
-.hx-empty {
-  background: var(--color-kumo-base);
-  border-color: var(--color-kumo-line);
+/* Empty, not-found and failed pages (board ShellStates). */
+.hx-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 24px;
+  border: 1px dashed var(--color-kumo-line);
   border-radius: 8px;
+  background: var(--color-kumo-base);
+}
+.hx-state-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.hx-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.hx-note {
+  font-size: 12px;
+  color: var(--text-color-kumo-subtle);
+}
+.hx-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.hx-skeleton span {
+  display: block;
+  border-radius: 6px;
+  background: var(--color-kumo-line);
+  opacity: 0.6;
+}
+.hx-menu-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px 10px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--color-kumo-line);
+  font-size: 13px;
+}
+.hx-menu-head span {
+  font-size: 12px;
+  color: var(--text-color-kumo-subtle);
 }
 .hx-panel--pad {
   padding: 14px 16px;
@@ -307,13 +393,8 @@
   margin-left: 4px;
 }
 
-@media (max-width: 1023px) {
-  .hx-obs {
-    display: none;
-  }
-}
-
-@media (max-width: 767px) {
+/* ≤ 900: the top bar wraps, search takes a full row, observation time hides (DESIGN.md 斷點). */
+@media (max-width: 900px) {
   .hx-top {
     flex-wrap: wrap;
     gap: 8px;
@@ -325,7 +406,29 @@
     width: auto;
     border: 0;
     padding: 0;
+    min-height: 36px;
+  }
+  .hx-search {
+    order: 3;
+    flex: 1 1 100%;
+    max-width: none;
+  }
+  .hx-obs {
+    display: none;
+  }
+  .hx-side {
+    top: 0;
+    height: 100vh;
+  }
+}
+
+@media (max-width: 767px) {
+  .hx-brand {
     min-height: 44px;
+  }
+  /* Phones: terminal lives in the account menu (DESIGN.md 手機頂列). */
+  .hx-terminal {
+    display: none;
   }
   /* The logo and aria-label stay; the name would push the icon buttons onto a second row at 360px. */
   .hx-brand-name {
@@ -336,9 +439,6 @@
     justify-content: center;
   }
   .hx-search {
-    order: 3;
-    flex: 1 1 100%;
-    max-width: none;
     min-height: 44px;
   }
   .hx-ib {

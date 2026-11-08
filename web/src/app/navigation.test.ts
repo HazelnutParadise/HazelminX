@@ -30,9 +30,9 @@ describe("NAV_ORDER", () => {
     expect(new Set(NAV_ORDER).size).toBe(NAV_ORDER.length);
   });
 
-  it("contains every page except terminal", () => {
+  it("contains every page except the top-bar ones (terminal, account security)", () => {
     const expected = Object.keys(PAGES)
-      .filter((key) => key !== "terminal")
+      .filter((key) => key !== "terminal" && key !== "accountSecurity")
       .sort();
     expect([...NAV_ORDER].sort()).toEqual(expected);
   });

@@ -66,8 +66,22 @@ html[data-theme="hazelminx"] {
   --hx-q5: light-dark(#8f5b23, #d9a066);
 
   /* Typography */
-  --font-sans: "Geist Sans", "Geist", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
-  --font-mono: "Geist Mono", ui-monospace, Menlo, monospace;
+  --font-sans:
+    "HX CJK Punctuation", "Geist Sans", "Geist", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --font-mono: "HX CJK Punctuation", "Geist Mono", ui-monospace, Menlo, monospace;
+}
+
+/*
+ * Geist ships full-width CJK punctuation (，：？「」) as narrow Latin-width glyphs, so「要離開嗎？」reads like
+ * ASCII. This face covers only the CJK punctuation ranges and points at the system Chinese fonts; Latin text
+ * still uses Geist. Without any of these local fonts the browser falls through to Geist as before.
+ */
+@font-face {
+  font-family: "HX CJK Punctuation";
+  src:
+    local("PingFangTC-Regular"), local("PingFang TC Regular"), local("PingFang TC"), local("NotoSansTC-Regular"),
+    local("Noto Sans TC Regular"), local("Noto Sans TC"), local("MicrosoftJhengHeiRegular"), local("Microsoft JhengHei");
+  unicode-range: U+3000-303F, U+FF01-FF0F, U+FF1A-FF20, U+FF3B-FF40, U+FF5B-FF65;
 }
 
 /*

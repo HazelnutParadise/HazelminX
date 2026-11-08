@@ -5,6 +5,7 @@ import { HostBar } from "../components/HostBar";
 import { ApiErrorMessage, RawMessage } from "../components/RawMessage";
 import { SaveBar } from "../components/SaveBar";
 import { PageHead } from "../shell/PageShell";
+import { PageSkeleton } from "../shell/PageStates";
 
 /**
  * Development-only page (not in production builds): renders every shared component with sample
@@ -81,6 +82,43 @@ export function ComponentGallery() {
           }
         />
       </section>
+      <ComponentDownBanner
+        name="Zentinel"
+        kind="systemd"
+        host="hazel-tw-01"
+        stoppedAt="2026-11-08T03:41:00Z"
+        now={new Date("2026-11-08T03:42:06Z")}
+        affected={[t("nav.websites")]}
+        canRestart
+        restarting
+        onRestart={noop}
+        onViewLogs={noop}
+      />
+      <PageSkeleton delayMs={0} />
+      {/* Extra bars sit in their own boxes so the sticky bars do not stack; only the last one guards navigation. */}
+      <div>
+        <SaveBar
+          changes={1}
+          subject=".env"
+          effect="儲存中"
+          saveLabel="儲存"
+          saving
+          guardNavigation={false}
+          onSave={noop}
+          onDiscard={noop}
+        />
+      </div>
+      <div>
+        <SaveBar
+          changes={1}
+          subject=".env"
+          saveLabel="儲存"
+          error="磁碟唯讀（PLATFORM_DEGRADED）"
+          guardNavigation={false}
+          onSave={noop}
+          onDiscard={noop}
+        />
+      </div>
       <SaveBar
         changes={3}
         effect="存檔後要重建 shop-api 才會生效"

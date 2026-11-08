@@ -14,8 +14,21 @@
   padding: 1px 8px;
   border-radius: 999px;
   word-break: keep-all;
-  white-space: nowrap;
   max-width: 100%;
+}
+
+.hx-status-pill--ok {
+  color: var(--text-color-kumo-success);
+  background: light-dark(var(--color-kumo-elevated), color-mix(in srgb, var(--color-kumo-success) 13%, transparent));
+  /* Light mode: raised fill plus a 35% status ring, because a 13% tint misses 4.5:1 (DESIGN.md status pill). */
+  box-shadow: inset 0 0 0 1px light-dark(color-mix(in srgb, var(--color-kumo-success) 35%, transparent), transparent);
+}
+
+.hx-status-pill--warn {
+  color: var(--text-color-kumo-warning);
+  background: light-dark(var(--color-kumo-elevated), color-mix(in srgb, var(--color-kumo-warning) 13%, transparent));
+  /* Light mode: raised fill plus a 35% status ring, because a 13% tint misses 4.5:1 (DESIGN.md status pill). */
+  box-shadow: inset 0 0 0 1px light-dark(color-mix(in srgb, var(--color-kumo-warning) 35%, transparent), transparent);
 }
 
 .hx-status-pill--danger {
@@ -23,6 +36,13 @@
   background: light-dark(var(--color-kumo-elevated), color-mix(in srgb, var(--color-kumo-danger) 13%, transparent));
   /* Light mode: raised fill plus a 35% status ring, because a 13% tint misses 4.5:1 (DESIGN.md status pill). */
   box-shadow: inset 0 0 0 1px light-dark(color-mix(in srgb, var(--color-kumo-danger) 35%, transparent), transparent);
+}
+
+.hx-status-pill--info {
+  color: var(--text-color-kumo-info);
+  background: light-dark(var(--color-kumo-elevated), color-mix(in srgb, var(--color-kumo-info) 13%, transparent));
+  /* Light mode: raised fill plus a 35% status ring, because a 13% tint misses 4.5:1 (DESIGN.md status pill). */
+  box-shadow: inset 0 0 0 1px light-dark(color-mix(in srgb, var(--color-kumo-info) 35%, transparent), transparent);
 }
 
 .hx-status-shape {
@@ -64,9 +84,34 @@
   font-size: 13px;
 }
 
-.hx-hostbar-all {
+.hx-hostbar-handle {
   margin-left: auto;
   min-height: 28px;
+}
+
+.hx-hostbar-all {
+  min-height: 28px;
+}
+
+/* Leave-page dialog (board ShellStates). */
+.hx-leave {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.hx-leave-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.hx-leave-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 @media (max-width: 767px) {
@@ -74,7 +119,9 @@
     min-height: 44px;
     padding: 0 4px;
   }
+  .hx-hostbar-handle,
   .hx-hostbar-all {
+    min-width: 44px;
     min-height: 44px;
     display: inline-flex;
     align-items: center;
@@ -118,6 +165,10 @@
   border-radius: 50%;
   background: var(--color-kumo-brand);
   flex: none;
+}
+
+.hx-savebar-error {
+  color: var(--text-color-kumo-danger);
 }
 
 .hx-savebar-effect {

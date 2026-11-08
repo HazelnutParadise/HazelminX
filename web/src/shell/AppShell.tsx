@@ -1,6 +1,6 @@
 import { Sidebar } from "@cloudflare/kumo/components/sidebar";
 import { useState } from "react";
-import { Outlet } from "react-router";
+import { Outlet, useNavigation } from "react-router";
 import { useTranslation } from "react-i18next";
 import { PAGES } from "../app/navigation";
 import { useShellStatus } from "../app/shellStatus";
@@ -8,6 +8,7 @@ import { HostBar } from "../components/HostBar";
 import { PREF_KEYS, readPref, writePref } from "../prefs/storage";
 import { useMediaQuery } from "./useMediaQuery";
 import { MobileNav } from "./MobileNav";
+import { PageSkeleton } from "./PageStates";
 import { SideNav } from "./SideNav";
 import { TopBar } from "./TopBar";
 import "./shell.css";
@@ -18,6 +19,7 @@ export const MOBILE_QUERY = "(max-width: 767px)";
 export function AppShell() {
   const { t } = useTranslation();
   const status = useShellStatus();
+  const navigation = useNavigation();
   const mobile = useMediaQuery(MOBILE_QUERY);
   const [sidebarOpen, setSidebarOpen] = useState(() => readPref(PREF_KEYS.sidebar) !== "collapsed");
   const onSidebarChange = (open: boolean) => {
@@ -30,7 +32,7 @@ export function AppShell() {
       <a className="hx-skip" href="#main">
         {t("shell.skipToContent")}
       </a>
-      <TopBar />
+      <TopBar collapsed={!mobile && !sidebarOpen} />
       {status.unreachableHosts && status.unreachableHosts.length > 0 && (
         <HostBar
           hosts={status.unreachableHosts}
@@ -44,11 +46,15 @@ export function AppShell() {
         className={mobile ? "hx-body hx-body--mobile" : "hx-body"}
         open={sidebarOpen}
         collapsible="icon"
+        // Collapsed, Kumo pins the rail with position: fixed at the top of the viewport, under our top bar;
+        // contained keeps it inside the sticky aside instead.
+        contained
         mobileBreakpoint={0}
         onOpenChange={onSidebarChange}
       >
         {mobile ? <MobileNav /> : <SideNav />}
         <main id="main" className="hx-main" tabIndex={-1}>
+          {navigation.state === "loading" && <PageSkeleton />}
           <Outlet />
         </main>
       </Sidebar.Provider>

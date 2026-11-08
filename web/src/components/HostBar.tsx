@@ -1,6 +1,8 @@
 import { LinkButton } from "@cloudflare/kumo/components/button";
+import { ArrowRightIcon } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
+import { StatusPill } from "./StatusPill";
 import "./system.css";
 
 /**
@@ -27,12 +29,7 @@ export function HostBar({ hosts, allHref, hostHref }: HostBarProps) {
 
   return (
     <div className="hx-hostbar" role="status" aria-label={t("hostBar.label")}>
-      <span className="hx-status-pill hx-status-pill--danger">
-        <span className="hx-status-shape" aria-hidden="true">
-          ■
-        </span>
-        <span>{t("hostBar.unreachable", { count: hosts.length })}</span>
-      </span>
+      <StatusPill tone="danger">{t("hostBar.unreachable", { count: hosts.length })}</StatusPill>
 
       {visibleHosts.map((host) => (
         <Link key={host.id} to={hostHref(host.id)} className="hx-hostbar-host">
@@ -44,8 +41,12 @@ export function HostBar({ hosts, allHref, hostHref }: HostBarProps) {
         <span className="hx-hostbar-others">{t("hostBar.others", { count: remainingCount })}</span>
       )}
 
-      <LinkButton href={allHref} size="sm" variant="secondary" className="hx-hostbar-all">
+      <LinkButton href={hostHref(hosts[0]!.id)} size="sm" variant="secondary" className="hx-hostbar-handle">
+        {t("hostBar.handle")}
+      </LinkButton>
+      <LinkButton href={allHref} size="sm" variant="ghost" className="hx-hostbar-all">
         {t("hostBar.viewAll")}
+        <ArrowRightIcon size={14} aria-hidden="true" />
       </LinkButton>
     </div>
   );

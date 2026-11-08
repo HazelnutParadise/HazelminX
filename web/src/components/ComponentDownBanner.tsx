@@ -5,6 +5,7 @@ import { ArrowClockwiseIcon, LockIcon, ScrollIcon } from "@phosphor-icons/react"
 import { useTranslation } from "react-i18next";
 import { activeLocale } from "../i18n";
 import { formatElapsed } from "../lib/time";
+import { StatusPill } from "./StatusPill";
 import "./system.css";
 
 /**
@@ -81,12 +82,7 @@ export function ComponentDownBanner({
             <span className="hx-cdown-kind">{t(`componentDown.kind.${kind}`)}</span>
 
             {exitCode !== undefined && (
-              <span className="hx-status-pill hx-status-pill--danger">
-                <span className="hx-status-shape" aria-hidden="true">
-                  ■
-                </span>
-                <span>{t("componentDown.exit", { code: exitCode })}</span>
-              </span>
+              <StatusPill tone="danger">{t("componentDown.exit", { code: exitCode })}</StatusPill>
             )}
 
             {reason && <span className="hx-cdown-reason">{reason}</span>}
@@ -113,7 +109,7 @@ export function ComponentDownBanner({
             <Button
               variant="primary"
               icon={<ArrowClockwiseIcon aria-hidden="true" />}
-              loading={restarting}
+              disabled={restarting}
               onClick={onRestart}
             >
               {restartLabel}

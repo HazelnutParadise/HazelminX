@@ -1,6 +1,6 @@
-import { Empty } from "@cloudflare/kumo/components/empty";
 import { useTranslation } from "react-i18next";
-import { PAGES, type PageKey } from "../app/navigation";
+import type { PageKey } from "../app/navigation";
+import { StateBlock } from "./PageStates";
 import { useDocumentTitle } from "./useDocumentTitle";
 
 /** Page heading row: h1 on the left, page actions on the right (DESIGN.md Layout「頁面標題列」). */
@@ -18,11 +18,10 @@ export function PageShell({ page }: { page: PageKey }) {
   const { t } = useTranslation();
   const name = t(`nav.${page}`);
   useDocumentTitle(name);
-  const Icon = PAGES[page].icon;
   return (
     <>
       <PageHead title={name} />
-      <Empty className="hx-empty" icon={<Icon size={40} aria-hidden="true" />} title={t("page.emptyTitle", { name })} />
+      <StateBlock title={t("page.emptyTitle", { name })} />
     </>
   );
 }

@@ -17,7 +17,9 @@ export interface ShellStatus {
   /** Hosts that stopped responding (maintenance excluded), newest first. */
   unreachableHosts?: { id: string; name: string }[];
   /** Signed-in user. */
-  user?: { name: string; role: string };
+  user?: { name: string; role: string; email?: string };
+  /** True when nobody is signed in: the top bar shows only the brand, theme and language. */
+  signedOut?: boolean;
 }
 
 export const ShellStatusContext = createContext<ShellStatus>({});

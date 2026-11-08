@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { PAGES, type PageKey } from "../app/navigation";
+import { OPEN_SEARCH_EVENT } from "./searchEvents";
 
 interface PageItem {
   key: PageKey;
@@ -30,8 +31,13 @@ export function CommandSearch() {
         setOpen(true);
       }
     };
+    const onOpen = () => setOpen(true);
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener(OPEN_SEARCH_EVENT, onOpen);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener(OPEN_SEARCH_EVENT, onOpen);
+    };
   }, []);
 
   const items = useMemo<PageItem[]>(() => {

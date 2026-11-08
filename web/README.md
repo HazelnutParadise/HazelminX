@@ -29,20 +29,20 @@ vp build              # 產出 dist/
 
 ## 目錄
 
-| 路徑                             | 內容                                                                                                                                       |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `src/app/navigation.ts`          | 所有頁面的路徑、圖示、側欄分組（唯一來源）                                                                                                 |
-| `src/app/routes.tsx`             | 路由；各頁目前是空殼，由各自的票填入                                                                                                       |
-| `src/app/shellStatus.ts`         | 外殼顯示的狀態（觀測時間、告警數、工作數、沒有回應的主機、使用者）；沒有值就不顯示，不補 0                                                 |
-| `src/shell/`                     | 頂列、側欄、手機 chip 導覽、頁首、404、錯誤邊界                                                                                            |
-| `src/components/`                | 全系統共用元件：儲存列 `SaveBar`、主機狀態列 `HostBar`、元件停止橫條 `ComponentDownBanner`、原文＋白話摘要 `RawMessage`／`ApiErrorMessage` |
-| `src/styles/theme-hazelminx.css` | 用 DESIGN.md 色票覆蓋 Kumo 語意 token（對映表在 `docs/design/component-mapping.md`）                                                       |
-| `src/i18n/`                      | i18next；`locales/zh-TW.json` 是預設與鍵的基準                                                                                             |
-| `src/lib/time.ts`                | RFC 3339 解析、UTC 序列化、依使用者時區顯示                                                                                                |
-| `src/api/`                       | `client.ts`（Cookie 工作階段＋CSRF、錯誤轉 `ApiError`）、`typed.ts`（openapi-fetch 型別化 client）                                         |
-| `tools/openapi/`                 | API 型別產生器（獨立小套件，見下）                                                                                                         |
-| `public/boot.js`                 | 首次繪製前套用已存的深淺色與語言，避免閃爍                                                                                                 |
-| `e2e/`                           | Playwright 測試                                                                                                                            |
+| 路徑                             | 內容                                                                                                                                                               |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/app/navigation.ts`          | 所有頁面的路徑、圖示、側欄分組（唯一來源）                                                                                                                         |
+| `src/app/routes.tsx`             | 路由；各頁目前是空殼，由各自的票填入                                                                                                                               |
+| `src/app/shellStatus.ts`         | 外殼顯示的狀態（觀測時間、告警數、工作數、沒有回應的主機、使用者）；沒有值就不顯示，不補 0                                                                         |
+| `src/shell/`                     | 頂列、側欄、手機 chip 導覽、頁首、空頁、404、載入失敗頁、首次載入骨架（畫板 `ShellStates`）                                                                        |
+| `src/components/`                | 全系統共用元件：儲存列 `SaveBar`、主機狀態列 `HostBar`、元件停止橫條 `ComponentDownBanner`、原文＋白話摘要 `RawMessage`／`ApiErrorMessage`、狀態 pill `StatusPill` |
+| `src/styles/theme-hazelminx.css` | 用 DESIGN.md 色票覆蓋 Kumo 語意 token（對映表在 `docs/design/component-mapping.md`）                                                                               |
+| `src/i18n/`                      | i18next；`locales/zh-TW.json` 是預設與鍵的基準                                                                                                                     |
+| `src/lib/time.ts`                | RFC 3339 解析、UTC 序列化、依使用者時區顯示                                                                                                                        |
+| `src/api/`                       | `client.ts`（Cookie 工作階段＋CSRF、錯誤轉 `ApiError`）、`typed.ts`（openapi-fetch 型別化 client）                                                                 |
+| `tools/openapi/`                 | API 型別產生器（獨立小套件，見下）                                                                                                                                 |
+| `public/boot.js`                 | 首次繪製前套用已存的深淺色與語言，避免閃爍                                                                                                                         |
+| `e2e/`                           | Playwright 測試                                                                                                                                                    |
 
 ## 深淺色與語言
 
@@ -74,28 +74,29 @@ const { data, error } = await api.GET("/management/v1/auth/session");
 
 圖示來自 `@phosphor-icons/react`（Kumo 的同一套），一律 16px、`regular` 粗細、`aria-hidden`，文字標籤才是可及名稱。
 
-| 頁面           | 路徑          | Phosphor 圖示    |
-| -------------- | ------------- | ---------------- |
-| 總覽           | `/`           | `SquaresFour`    |
-| 工作中心       | `/jobs`       | `ListChecks`     |
-| 事件與告警     | `/events`     | `Bell`           |
-| 專案與服務     | `/projects`   | `Stack`          |
-| 應用商店       | `/app-store`  | `Storefront`     |
-| 網站與入口     | `/websites`   | `Globe`          |
-| 資料庫         | `/databases`  | `Database`       |
-| AI             | `/ai`         | `Brain`          |
-| API 代理       | `/api-proxy`  | `PlugsConnected` |
-| 主機與節點     | `/nodes`      | `HardDrives`     |
-| 容器           | `/containers` | `Cube`           |
-| Kubernetes     | `/kubernetes` | `SteeringWheel`  |
-| 儲存與備份     | `/storage`    | `Archive`        |
-| 計畫任務       | `/cron`       | `Clock`          |
-| 安全防護       | `/security`   | `ShieldCheck`    |
-| 流量分析       | `/analytics`  | `ChartLine`      |
-| 日誌           | `/logs`       | `Scroll`         |
-| 身分與存取     | `/iam`        | `UsersThree`     |
-| 平台設定       | `/settings`   | `GearSix`        |
-| 終端機（頂列） | `/terminal`   | `TerminalWindow` |
-| 收合側欄       | —             | `SidebarSimple`  |
+| 頁面                           | 路徑                | Phosphor 圖示    |
+| ------------------------------ | ------------------- | ---------------- |
+| 總覽                           | `/`                 | `SquaresFour`    |
+| 工作中心                       | `/jobs`             | `ListChecks`     |
+| 事件與告警                     | `/events`           | `Bell`           |
+| 專案與服務                     | `/projects`         | `Stack`          |
+| 應用商店                       | `/app-store`        | `Storefront`     |
+| 網站與入口                     | `/websites`         | `Globe`          |
+| 資料庫                         | `/databases`        | `Database`       |
+| AI                             | `/ai`               | `Brain`          |
+| API 代理                       | `/api-proxy`        | `PlugsConnected` |
+| 主機與節點                     | `/nodes`            | `HardDrives`     |
+| 容器                           | `/containers`       | `Cube`           |
+| Kubernetes                     | `/kubernetes`       | `SteeringWheel`  |
+| 儲存與備份                     | `/storage`          | `Archive`        |
+| 計畫任務                       | `/cron`             | `Clock`          |
+| 安全防護                       | `/security`         | `ShieldCheck`    |
+| 流量分析                       | `/analytics`        | `ChartLine`      |
+| 日誌                           | `/logs`             | `Scroll`         |
+| 身分與存取                     | `/iam`              | `UsersThree`     |
+| 平台設定                       | `/settings`         | `GearSix`        |
+| 終端機（頂列；手機在帳號選單） | `/terminal`         | `TerminalWindow` |
+| 帳號安全（帳號選單）           | `/account/security` | `LockKey`        |
+| 收合側欄                       | —                   | `SidebarSimple`  |
 
-頂列其他圖示：搜尋 `MagnifyingGlass`、事件與告警 `Bell`、進行中的工作 `ListChecks`、切換深淺色 `Sun`／`Moon`、帳號 `UserCircle`。
+頂列其他圖示：搜尋 `MagnifyingGlass`、需要處理 `Bell`、切換深淺色 `Sun`／`Moon`、帳號 `UserCircle`、未登入時的語言 `Globe`。進行中的工作只在側欄「工作中心」計數，頂列不重複放。帳號選單另有登出 `SignOut`。

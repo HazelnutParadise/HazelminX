@@ -23,7 +23,8 @@
     "logs": "Logs",
     "iam": "Identity & access",
     "settings": "Platform settings",
-    "terminal": "Terminal"
+    "terminal": "Terminal",
+    "accountSecurity": "Account security"
   },
   "navGroup": {
     "apps": "Apps",
@@ -36,7 +37,6 @@
     "mainNav": "Main navigation",
     "search": "Search or run a command",
     "observed": "Observed",
-    "observedUnknown": "Not observed yet",
     "refreshEvery": "every {{seconds}} s",
     "attention": "Events & alerts",
     "jobs": "Running jobs",
@@ -50,22 +50,39 @@
     "collapse": "Collapse",
     "attentionCount_one": "{{count}} needs attention",
     "attentionCount_other": "{{count}} need attention",
+    "searchEmpty": "No matching page",
+    "stale": "No update for {{seconds}} s",
+    "accountSecurity": "Account security",
+    "signOut": "Sign out",
+    "languageCurrent": "Language · {{language}}",
     "jobsCount_one": "{{count}} job running",
-    "jobsCount_other": "{{count}} jobs running",
-    "searchEmpty": "No matching page"
+    "jobsCount_other": "{{count}} jobs running"
   },
   "hostBar": {
     "label": "Host status",
     "unreachable_one": "{{count}} host not responding",
     "unreachable_other": "{{count}} hosts not responding",
     "others": "{{count}} more",
-    "viewAll": "All hosts"
+    "viewAll": "All hosts",
+    "handle": "Handle"
   },
   "saveBar": {
     "region": "Unsaved changes",
     "changes_one": "{{count}} unsaved change",
     "changes_other": "{{count}} unsaved changes",
-    "discard": "Discard"
+    "discard": "Discard",
+    "saving": "Saving…",
+    "failed": "Not saved · {{error}}",
+    "retry": "Try again",
+    "stay": "Stay on this page",
+    "leave": "Leave without saving",
+    "saveAndLeave": "Save and leave",
+    "changesOf_one": "{{subject}}: {{count}} unsaved change",
+    "changesOf_other": "{{subject}}: {{count}} unsaved changes",
+    "leaveTitle_one": "{{count}} change is not saved. Leave anyway?",
+    "leaveTitle_other": "{{count}} changes are not saved. Leave anyway?",
+    "leaveTitleOf_one": "{{subject}} has {{count}} unsaved change. Leave anyway?",
+    "leaveTitleOf_other": "{{subject}} has {{count}} unsaved changes. Leave anyway?"
   },
   "componentDown": {
     "title": "{{name}} stopped · {{host}} · {{duration}}",
@@ -76,29 +93,33 @@
     "exit": "Exit code {{code}}",
     "affected": "Affected",
     "restart": "Restart {{name}}",
-    "restarting": "Restarting",
+    "restarting": "Restarting…",
     "viewLogs": "View logs",
-    "failures_one": "Failed {{count}} time",
-    "failures_other": "Failed {{count}} times in a row",
     "noPermission": "Requires operate permission on {{name}}; ask {{who}}",
-    "logTail": "Log before it stopped"
+    "logTail": "Log before it stopped",
+    "failures_one": "Restart failed {{count}} time · the platform will not retry on its own",
+    "failures_other": "Restart failed {{count}} times · the platform will not retry on its own"
   },
   "page": {
     "emptyTitle": "{{name}} is not available yet"
   },
   "notFound": {
     "title": "Page not found",
-    "body": "Nothing lives at {{path}}.",
-    "back": "Back to overview"
+    "back": "Back to overview",
+    "search": "Search"
   },
   "crash": {
-    "title": "This page hit an error",
-    "body": "Other pages still work. Reload, or switch to another page.",
-    "reload": "Reload"
+    "title": "This page did not load",
+    "reload": "Reload",
+    "coreStatus": "Core answered {{status}}",
+    "trace": "trace {{trace}}",
+    "copyTrace": "Copy trace ID",
+    "copied": "Copied",
+    "frontend": "The interface hit an error"
   },
   "raw": {
-    "original": "Original message",
-    "source": "Source: {{source}}"
+    "original": "Show original",
+    "source": "Show original ({{source}})"
   },
   "loading": "Loading",
   "unknown": "Unknown",

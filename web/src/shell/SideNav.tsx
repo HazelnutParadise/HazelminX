@@ -13,7 +13,7 @@ function Item({ page, current }: { page: PageKey; current?: PageKey }) {
     <Sidebar.MenuItem>
       <Sidebar.MenuButton
         href={def.path}
-        icon={<def.icon size={16} aria-hidden="true" />}
+        icon={def.icon}
         active={page === current}
         aria-current={page === current ? "page" : undefined}
         tooltip={label}
@@ -30,12 +30,7 @@ function CollapseButton() {
   const { open, toggleSidebar } = useSidebar();
   const label = open ? t("shell.collapseNav") : t("shell.expandNav");
   return (
-    <Sidebar.MenuButton
-      icon={<SidebarSimpleIcon size={16} aria-hidden="true" />}
-      onClick={toggleSidebar}
-      aria-label={label}
-      tooltip={label}
-    >
+    <Sidebar.MenuButton icon={SidebarSimpleIcon} onClick={toggleSidebar} aria-label={label} tooltip={label}>
       {t("shell.collapse")}
     </Sidebar.MenuButton>
   );

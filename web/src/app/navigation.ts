@@ -9,6 +9,7 @@ import {
   DatabaseIcon,
   GearSixIcon,
   GlobeIcon,
+  LockKeyIcon,
   HardDrivesIcon,
   ListChecksIcon,
   PlugsConnectedIcon,
@@ -55,7 +56,8 @@ export type PageKey =
   | "logs"
   | "iam"
   | "settings"
-  | "terminal";
+  | "terminal"
+  | "accountSecurity";
 
 export const PAGES: Record<PageKey, PageDef> = {
   overview: { key: "overview", path: "/", icon: SquaresFourIcon },
@@ -78,6 +80,7 @@ export const PAGES: Record<PageKey, PageDef> = {
   iam: { key: "iam", path: "/iam", icon: UsersThreeIcon },
   settings: { key: "settings", path: "/settings", icon: GearSixIcon },
   terminal: { key: "terminal", path: "/terminal", icon: TerminalWindowIcon },
+  accountSecurity: { key: "accountSecurity", path: "/account/security", icon: LockKeyIcon },
 };
 
 /** Sidebar order: three ungrouped items first, then the four groups (`navGroup.*` i18n keys). */
@@ -90,7 +93,7 @@ export const NAV_GROUPS: { key: "apps" | "infra" | "securityLogs" | "admin"; pag
   { key: "admin", pages: ["iam", "settings"] },
 ];
 
-/** All pages reachable from the sidebar, in display order (terminal lives in the top bar). */
+/** All pages reachable from the sidebar, in display order (terminal and account security live in the top bar and account menu). */
 export const NAV_ORDER: PageKey[] = [...NAV_TOP, ...NAV_GROUPS.flatMap((g) => g.pages)];
 
 /** The sidebar entry that owns a pathname: exact match for "/", otherwise the longest path prefix. */
