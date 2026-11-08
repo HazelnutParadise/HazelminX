@@ -36,8 +36,8 @@ pub struct Config {
     /// proven in the handshake only.
     #[serde(default = "default_core_transport")]
     pub core_transport: CoreTransport,
-    /// In `proxy` mode, a PEM bundle to trust instead of the built-in public
-    /// roots.
+    /// In `proxy` mode, a PEM bundle to trust instead of the system trust
+    /// store.
     #[serde(default)]
     pub proxy_ca_file: Option<PathBuf>,
 }

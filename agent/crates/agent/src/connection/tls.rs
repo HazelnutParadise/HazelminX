@@ -56,7 +56,8 @@ impl TrustMaterial {
         })
     }
 
-    /// TLS client configuration (TLS 1.3 only, ring provider).
+    /// TLS client configuration (TLS 1.3 only, ring provider). In proxy mode
+    /// without `proxy_ca_file` the system trust store is used.
     pub fn client_config(
         &self,
         transport: CoreTransport,
@@ -94,7 +95,18 @@ impl TrustMaterial {
                         }
                         anyhow::ensure!(!roots.is_empty(), "{} has no certificate", p.display());
                     }
-                    None => roots.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned()),
+                    None => {
+                        // The operating system's trust store, as for any
+                        // other TLS client on the host.
+                        let native = rustls_native_certs::load_native_certs();
+                        for c in native.certs {
+                            let _ = roots.add(c); // skip certificates rustls cannot use
+                        }
+                        anyhow::ensure!(
+                            !roots.is_empty(),
+                            "no usable system root certificates for the proxy; set proxy_ca_file"
+                        );
+                    }
                 }
                 // The proxy terminates TLS, so a client certificate would only
                 // reach the proxy; identity is proven in the handshake.

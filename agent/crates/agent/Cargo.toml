@@ -33,7 +33,7 @@ rustls-webpki.workspace = true
 tokio-rustls.workspace = true
 tokio-tungstenite.workspace = true
 futures-util.workspace = true
-webpki-roots.workspace = true
+rustls-native-certs.workspace = true
 url.workspace = true
 
 [features]
