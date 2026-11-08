@@ -83,7 +83,7 @@ scripts/   CI 與發布腳本（簽署清單、依賴檢查）
 | Compose 執行 | Agent 呼叫固定版本的 `docker compose` CLI（Compose v2），以 `--env-file` 傳乾淨環境；Core 以 `compose-go/v2` 解析與合併多檔以產生預覽與差異，不自行實作替換語法 | 15.2、CMP-008。1Panel 走 CLI；Portainer 的 libstack 在行程內使用 `docker/compose/v2` Go 函式庫。CLI 讓 Rust Agent 不必綁 Go 函式庫，且行為與使用者手動操作一致；若需要進度事件再評估 in-process。 |
 | GitHub | GitHub App（manifest 自架）為網頁授權預設，PAT 與 Deploy Key 同等；受控抓取服務在 Core 側（或指定節點的隔離工作）取得固定 commit 後交付內容；連線（Source）與部署綁定分離，多專案以連線 ID 參照 | 15.6、31.6。Portainer 的 Source／Artifact 分離與以 Source 為單位的排程、`singleflight` 去重是可借鏡的結構；其 CE 預設明文存憑證與「ForcePullImage 設定無效」是要避開的坑。 |
 | 時間與容量 | UTC RFC 3339；位元組；排程保存 IANA 時區名稱 | 34.3。 |
-| 第二驗證 | TOTP 自寫（RFC 6238，HMAC-SHA1、6 位、30 秒、容許前後一步，最後接受的時間步存資料庫防重放），種子放機密庫；Passkey 用 `go-webauthn/webauthn` v0.18.2（BSD-3-Clause），憑證記錄建立時的 `rp_id`；復原碼 10 組 `XXXX-XXXX`，以存在機密庫的金鑰做 HMAC-SHA256 後保存，用掉以條件式 UPDATE 標記；擁有者、平台管理員、主機維運者沒有第二驗證時只能走綁定路由；新增或移除憑證要 10 分鐘內再次驗證 | IAM-002、IAM-011、IAM-012。go-webauthn 是 Go 唯一持續維護的完整 WebAuthn 伺服器實作（2026-09 仍有發版），涵蓋 L3 與 attestation 格式。平台資料庫只有一條連線，交易開著時不能呼叫機密庫，所以驗證在交易外做、交易內只做條件式更新。 |
+| 第二驗證 | TOTP 自寫（RFC 6238，HMAC-SHA1、6 位、30 秒、容許前後一步，最後接受的時間步存資料庫防重放），種子放機密庫；Passkey 用 `go-webauthn/webauthn` v0.18.2（BSD-3-Clause），憑證記錄建立時的 `rp_id`；復原碼 10 組 `XXXX-XXXX`，以存在機密庫的金鑰做 HMAC-SHA256 後保存，用掉以條件式 UPDATE 標記；擁有者、平台管理員、主機維運者沒有第二驗證時只能走綁定路由；新增或移除憑證要 10 分鐘內再次驗證 | IAM-002、IAM-011、IAM-012。go-webauthn 是 Go 生態完整實作 WebAuthn 伺服器流程的函式庫（前身 duo-labs/webauthn），2026-09 仍有發版，涵蓋 L3 與 attestation 格式。平台資料庫只有一條連線，交易開著時不能呼叫機密庫，所以驗證在交易外做、交易內只做條件式更新。 |
 
 ## Data flow
 
