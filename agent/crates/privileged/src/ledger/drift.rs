@@ -142,7 +142,11 @@ mod tests {
         let conf = "/etc/ssh/sshd_config.d/50-hazelminx.conf";
         let other = "/etc/ssh/sshd_config.d/60-hazelminx.conf";
         let gone = "/etc/ssh/sshd_config.d/70-hazelminx.conf";
-        for (p, body) in [(conf, "PasswordAuthentication no\n"), (other, "X 1\n"), (gone, "Y\n")] {
+        for (p, body) in [
+            (conf, "PasswordAuthentication no\n"),
+            (other, "X 1\n"),
+            (gone, "Y\n"),
+        ] {
             let decl = [Declared {
                 target: path(p),
                 change: ChangeKind::Create,

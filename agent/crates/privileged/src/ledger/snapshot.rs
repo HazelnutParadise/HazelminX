@@ -5,8 +5,8 @@
 //! A section that cannot be read is stored as `unavailable` with the reason,
 //! and a comparison involving it says "not comparable" rather than "same".
 
-use super::probe::{DPKG_QUERY, RPM, detect_package_db, read_accounts, under};
 use super::entry::{PackageDb, PathKind};
+use super::probe::{DPKG_QUERY, RPM, detect_package_db, read_accounts, under};
 use crate::command::{CommandRunner, CommandSpec, OutputSink};
 use crate::handlers::system_info::{self, SystemInfo};
 use crate::handlers::systemd::SYSTEMCTL;
@@ -363,7 +363,8 @@ async fn firewall(runner: Arc<dyn CommandRunner>, sysroot: &Path) -> Result<Fire
         });
     }
     if has(IPTABLES_SAVE) {
-        let mut rule_count = count_iptables_rules(&run_ok(&runner, CommandSpec::new(IPTABLES_SAVE)).await?);
+        let mut rule_count =
+            count_iptables_rules(&run_ok(&runner, CommandSpec::new(IPTABLES_SAVE)).await?);
         if has(IP6TABLES_SAVE) {
             rule_count +=
                 count_iptables_rules(&run_ok(&runner, CommandSpec::new(IP6TABLES_SAVE)).await?);
@@ -481,7 +482,9 @@ fn diff_section<T>(
     key: impl Fn(&T) -> BTreeMap<String, String>,
 ) -> SectionDiff {
     match (before, after) {
-        (Section::Captured { data: b }, Section::Captured { data: a }) => diff_maps(&key(b), &key(a)),
+        (Section::Captured { data: b }, Section::Captured { data: a }) => {
+            diff_maps(&key(b), &key(a))
+        }
         (Section::Unavailable { reason }, _) => SectionDiff::NotComparable {
             reason: format!("not captured before install: {reason}"),
         },
@@ -513,7 +516,12 @@ pub fn compare(before: &Snapshot, after: &Snapshot) -> Comparison {
         "listening".to_string(),
         diff_section(&before.listening, &after.listening, |l| {
             l.iter()
-                .map(|x| (format!("{} {} {}", x.proto, x.address, x.port), String::new()))
+                .map(|x| {
+                    (
+                        format!("{} {} {}", x.proto, x.address, x.port),
+                        String::new(),
+                    )
+                })
                 .collect()
         }),
     );
@@ -561,7 +569,10 @@ pub fn compare(before: &Snapshot, after: &Snapshot) -> Comparison {
     };
     sections.insert(
         "platform_paths".to_string(),
-        diff_maps(&present(&before.platform_paths), &present(&after.platform_paths)),
+        diff_maps(
+            &present(&before.platform_paths),
+            &present(&after.platform_paths),
+        ),
     );
     let identical = sections.values().all(|d| *d == SectionDiff::Same);
     Comparison {
@@ -587,7 +598,10 @@ mod tests {
             std::fs::write(p, body).unwrap();
         };
         w("etc/hostname", "db-01\n");
-        w("etc/passwd", "root:x:0:0::/root:/bin/sh\nalice:x:1000:1000::/home/alice:/bin/sh\n");
+        w(
+            "etc/passwd",
+            "root:x:0:0::/root:/bin/sh\nalice:x:1000:1000::/home/alice:/bin/sh\n",
+        );
         w("etc/group", "root:x:0:\nalice:x:1000:\nsudo:x:27:alice\n");
         w("proc/net/tcp", PROC_TCP);
         w("proc/net/tcp6", PROC_TCP6);
@@ -599,8 +613,14 @@ mod tests {
 
     fn replies() -> Vec<crate::command::CommandOutput> {
         vec![
-            output(0, "curl\t8.5.0-1\tii \nold\t1.0\trc \nopenssh-server\t1:9.2p1-2\tii \n"),
-            output(0, "ssh.service enabled enabled\ncron.service enabled enabled\n"),
+            output(
+                0,
+                "curl\t8.5.0-1\tii \nold\t1.0\trc \nopenssh-server\t1:9.2p1-2\tii \n",
+            ),
+            output(
+                0,
+                "ssh.service enabled enabled\ncron.service enabled enabled\n",
+            ),
             output(
                 0,
                 r#"{"nftables":[{"metainfo":{"json_schema_version":1}},{"table":{"family":"inet","name":"filter"}},{"chain":{"name":"input"}},{"rule":{"chain":"input"}},{"rule":{"chain":"input"}}]}"#,
@@ -652,7 +672,10 @@ mod tests {
         };
         assert_eq!(p.db, PackageDb::Dpkg);
         assert_eq!(
-            p.installed.iter().map(|x| x.name.as_str()).collect::<Vec<_>>(),
+            p.installed
+                .iter()
+                .map(|x| x.name.as_str())
+                .collect::<Vec<_>>(),
             ["curl", "openssh-server"]
         );
         assert_eq!(
@@ -698,8 +721,13 @@ mod tests {
         assert_eq!(calls[0].program, Path::new(DPKG_QUERY));
         assert_eq!(
             calls[1].args,
-            ["list-unit-files", "--state=enabled", "--no-legend", "--no-pager"]
-                .map(OsString::from)
+            [
+                "list-unit-files",
+                "--state=enabled",
+                "--no-legend",
+                "--no-pager"
+            ]
+            .map(OsString::from)
         );
         assert_eq!(calls[2].args, ["-j", "list", "ruleset"].map(OsString::from));
 
@@ -744,9 +772,17 @@ mod tests {
         std::fs::create_dir_all(root.path().join("etc/hazelminx")).unwrap();
         let mut r = replies();
         r[0] = output(0, "curl\t8.6.0-1\tii \nopenssh-server\t1:9.2p1-2\tii \n");
-        r[1] = output(0, "ssh.service enabled enabled\ncron.service enabled enabled\nhazelminx-agent.service enabled enabled\n");
+        r[1] = output(
+            0,
+            "ssh.service enabled enabled\ncron.service enabled enabled\nhazelminx-agent.service enabled enabled\n",
+        );
         r[2] = output(1, "");
-        let after = capture(Arc::new(RecordingRunner::with_replies(r)), root.path(), &paths()).await;
+        let after = capture(
+            Arc::new(RecordingRunner::with_replies(r)),
+            root.path(),
+            &paths(),
+        )
+        .await;
         let c = compare(&before, &after);
         assert!(!c.identical);
         let added = |name: &str| match &c.sections[name] {

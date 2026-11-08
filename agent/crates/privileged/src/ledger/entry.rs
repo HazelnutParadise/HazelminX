@@ -17,11 +17,21 @@ use time::OffsetDateTime;
 pub enum Target {
     /// A file, directory or symlink. The link itself is the target; links
     /// are never followed.
-    Path { path: HostPath },
-    SystemdUnit { unit: UnitName },
-    Package { name: PackageName },
-    User { name: UserName },
-    Group { name: UserName },
+    Path {
+        path: HostPath,
+    },
+    SystemdUnit {
+        unit: UnitName,
+    },
+    Package {
+        name: PackageName,
+    },
+    User {
+        name: UserName,
+    },
+    Group {
+        name: UserName,
+    },
 }
 
 impl Target {
@@ -56,7 +66,10 @@ impl ChangeKind {
     /// Changes that act on running state only and leave files, packages and
     /// enablement as they were.
     pub fn is_runtime_only(self) -> bool {
-        matches!(self, ChangeKind::Start | ChangeKind::Stop | ChangeKind::Restart)
+        matches!(
+            self,
+            ChangeKind::Start | ChangeKind::Stop | ChangeKind::Restart
+        )
     }
 }
 

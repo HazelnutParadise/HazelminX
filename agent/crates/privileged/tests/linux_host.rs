@@ -15,15 +15,14 @@ use hazelminx_privileged::action::{Action, PERM_HOST_LEDGER_READ, PERM_HOST_SERV
 use hazelminx_privileged::client::Client;
 use hazelminx_privileged::command::HostRunner;
 use hazelminx_privileged::grant::Grant;
-use hazelminx_privileged::ledger::entry::{
-    ChangeKind, Ownership, Phase, Target, TargetState,
-};
+use hazelminx_privileged::ledger::entry::{ChangeKind, Ownership, Phase, Target, TargetState};
 use hazelminx_privileged::ledger::probe::{Capture, HostProbe, Probe};
 use hazelminx_privileged::ledger::recorder::{ChangeContext, Declared, Recorder};
 use hazelminx_privileged::ledger::store::{Ledger, Security};
 use hazelminx_privileged::ledger::sync::LedgerBatch;
 use hazelminx_privileged::params::{HostPath, PackageName, UnitName, UserName};
 use hazelminx_privileged::protocol::ErrorCode;
+use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::Arc;
@@ -61,6 +60,9 @@ fn fresh_root_dir(name: &str) -> PathBuf {
     let base = PathBuf::from("/var/lib").join(name);
     let _ = std::fs::remove_dir_all(&base);
     std::fs::create_dir(&base).unwrap();
+    // Explicit mode: the ledger refuses ancestors writable by others, and
+    // `docker exec` shells run with umask 0.
+    std::fs::set_permissions(&base, std::fs::Permissions::from_mode(0o755)).unwrap();
     base
 }
 
@@ -144,7 +146,8 @@ fn unit_state(s: &TargetState) -> (&str, &str) {
 async fn executor_records_refuses_and_snapshots_on_a_real_host() {
     require_disposable_root_host();
     let base = fresh_root_dir("hazelminx-e2e");
-    let ledger_dir = base.join("ledger");
+    // Parent does not exist yet, as on a fresh host.
+    let ledger_dir = base.join("state").join("ledger");
     // A pre-existing, stopped unit for the platform to restart.
     std::fs::write(
         format!("/etc/systemd/system/{UNIT}"),
@@ -157,15 +160,41 @@ async fn executor_records_refuses_and_snapshots_on_a_real_host() {
     let out = Command::new(BIN)
         .arg("--ledger-dir")
         .arg(&ledger_dir)
-        .args(["snapshot", "capture", "--path", "/etc/hzx-e2e"])
+        .args(["snapshot", "capture", "--path", "/etc/hzx-e2e", "--path"])
+        .arg(base.join("state"))
         .output()
         .unwrap();
-    assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
     let snap = ledger_dir.join("preinstall-snapshot.json");
     let text = std::fs::read_to_string(&snap).unwrap();
-    for section in ["packages", "enabled_units", "listening", "users", "groups", "firewall"] {
+    // The ledger's own directory is recorded as it was before capture.
+    let v: serde_json::Value = serde_json::from_str(&text).unwrap();
+    let state = base.join("state").display().to_string();
+    let entry = v["platform_paths"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|p| p["path"] == state.as_str())
+        .unwrap();
+    assert_eq!(entry["exists"], false);
+    for section in [
+        "packages",
+        "enabled_units",
+        "listening",
+        "users",
+        "groups",
+        "firewall",
+    ] {
         let v: serde_json::Value = serde_json::from_str(&text).unwrap();
-        assert_eq!(v[section]["status"], "captured", "{section}: {}", v[section]);
+        assert_eq!(
+            v[section]["status"], "captured",
+            "{section}: {}",
+            v[section]
+        );
     }
     let again = Command::new(BIN)
         .arg("--ledger-dir")
@@ -179,7 +208,11 @@ async fn executor_records_refuses_and_snapshots_on_a_real_host() {
     let key = SigningKey::generate(&mut rand::rngs::OsRng);
     let ex = Executor::start(&base, &ledger_dir, &key, "a");
     assert!(ex.client.health().await.unwrap().ledger_ready);
-    let g = grant(&key, "g-e2e", &[PERM_HOST_SERVICES_MANAGE, PERM_HOST_LEDGER_READ]);
+    let g = grant(
+        &key,
+        "g-e2e",
+        &[PERM_HOST_SERVICES_MANAGE, PERM_HOST_LEDGER_READ],
+    );
     let unit = UnitName::try_from(UNIT.to_string()).unwrap();
     let r = ex
         .client
@@ -221,7 +254,10 @@ async fn executor_records_refuses_and_snapshots_on_a_real_host() {
     assert!(log.contains("action_executed"), "{log}");
 
     // Root-only: another account can neither read nor append.
-    for (p, m) in [(&ledger_dir, 0o700), (&ledger_dir.join("ledger.jsonl"), 0o600)] {
+    for (p, m) in [
+        (&ledger_dir, 0o700),
+        (&ledger_dir.join("ledger.jsonl"), 0o600),
+    ] {
         use std::os::unix::fs::MetadataExt;
         let md = std::fs::metadata(p).unwrap();
         assert_eq!((md.uid(), md.mode() & 0o777), (0, m), "{}", p.display());
@@ -232,7 +268,13 @@ async fn executor_records_refuses_and_snapshots_on_a_real_host() {
         format!("echo x >> {}", ledger_file.display()),
     ] {
         let out = Command::new("setpriv")
-            .args(["--reuid=65534", "--regid=65534", "--clear-groups", "/bin/sh", "-c"])
+            .args([
+                "--reuid=65534",
+                "--regid=65534",
+                "--clear-groups",
+                "/bin/sh",
+                "-c",
+            ])
             .arg(&cmd)
             .output()
             .unwrap();
@@ -242,7 +284,11 @@ async fn executor_records_refuses_and_snapshots_on_a_real_host() {
     // T-250: a ledger that fails its check makes every host change refused,
     // and the refusal is in the security log.
     let original = std::fs::read_to_string(&ledger_file).unwrap();
-    std::fs::write(&ledger_file, original.replacen("\"inactive\"", "\"active\"", 1)).unwrap();
+    std::fs::write(
+        &ledger_file,
+        original.replacen("\"inactive\"", "\"active\"", 1),
+    )
+    .unwrap();
     let verify = Command::new(BIN)
         .arg("--ledger-dir")
         .arg(&ledger_dir)
@@ -270,7 +316,11 @@ async fn executor_records_refuses_and_snapshots_on_a_real_host() {
     let log = ex.stop();
     assert!(log.contains("ledger_refused"), "{log}");
     let state = sh("systemctl is-active hzx-e2e.service || true");
-    assert_eq!(String::from_utf8_lossy(&state.stdout).trim(), "inactive", "nothing ran");
+    assert_eq!(
+        String::from_utf8_lossy(&state.stdout).trim(),
+        "inactive",
+        "nothing ran"
+    );
     std::fs::write(&ledger_file, &original).unwrap();
 
     // UNX-002: compare after changes, then after undoing them.
@@ -284,7 +334,10 @@ async fn executor_records_refuses_and_snapshots_on_a_real_host() {
     assert_eq!(cmp.status.code(), Some(3));
     let v: serde_json::Value = serde_json::from_slice(&cmp.stdout).unwrap();
     assert_eq!(v["identical"], false);
-    assert_eq!(v["sections"]["users"]["added"], serde_json::json!(["hzx-e2e-user"]));
+    assert_eq!(
+        v["sections"]["users"]["added"],
+        serde_json::json!(["hzx-e2e-user"])
+    );
     assert_eq!(
         v["sections"]["platform_paths"]["added"],
         serde_json::json!(["/etc/hzx-e2e"])
@@ -395,7 +448,10 @@ async fn real_probes_and_user_edit_detection() {
         panic!()
     };
     let kept = ledger.backup_dir().join(before.sha256.as_ref().unwrap());
-    assert_eq!(std::fs::read(&kept).unwrap(), b"PasswordAuthentication yes\n");
+    assert_eq!(
+        std::fs::read(&kept).unwrap(),
+        b"PasswordAuthentication yes\n"
+    );
     std::fs::write(&file, "PasswordAuthentication no\n").unwrap();
     let results = rec.finish(pending, &Ok(())).await.unwrap();
     assert_eq!(results[0].ownership, Ownership::PlatformModified);
@@ -409,14 +465,21 @@ async fn real_probes_and_user_edit_detection() {
             .args(["ledger", "drift"])
             .output()
             .unwrap();
-        assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
+        assert!(
+            out.status.success(),
+            "{}",
+            String::from_utf8_lossy(&out.stderr)
+        );
         serde_json::from_slice::<serde_json::Value>(&out.stdout).unwrap()
     };
     assert_eq!(drift()["modified"], serde_json::json!([]));
     sh(&format!("echo 'PermitRootLogin yes' >> {}", file.display()));
     let v = drift();
     assert_eq!(v["modified"].as_array().unwrap().len(), 1, "{v}");
-    assert_eq!(v["modified"][0]["differences"], serde_json::json!(["content"]));
+    assert_eq!(
+        v["modified"][0]["differences"],
+        serde_json::json!(["content"])
+    );
     assert_eq!(v["modified"][0]["job_id"], "job-e2e-drift");
 
     std::fs::remove_dir_all(dir).unwrap();

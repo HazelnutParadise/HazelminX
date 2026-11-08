@@ -11,11 +11,11 @@ use hazelminx_privileged::audit::TracingLog;
 use hazelminx_privileged::command::HostRunner;
 use hazelminx_privileged::config::{Config, DEFAULT_CONFIG_PATH, Overrides};
 use hazelminx_privileged::executor::HostExecutor;
+use hazelminx_privileged::ledger::drift;
 use hazelminx_privileged::ledger::probe::HostProbe;
 use hazelminx_privileged::ledger::recorder::Recorder;
 use hazelminx_privileged::ledger::snapshot::{self, DEFAULT_PLATFORM_PATHS, SNAPSHOT_FILE};
 use hazelminx_privileged::ledger::store::{self, Ledger, Security};
-use hazelminx_privileged::ledger::drift;
 use hazelminx_privileged::server::{DEFAULT_REQUEST_READ_TIMEOUT, Server, ServerConfig};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -158,6 +158,16 @@ async fn snapshot_command(cfg: &Config, cmd: SnapshotCommand) -> Result<()> {
             if print {
                 print_json(&snap);
                 return Ok(());
+            }
+            // Directories are created only after the host was read, so the
+            // snapshot shows them as absent on a fresh host.
+            if let Some(parent) = cfg.ledger_dir.parent() {
+                use std::os::unix::fs::DirBuilderExt;
+                std::fs::DirBuilder::new()
+                    .recursive(true)
+                    .mode(0o755)
+                    .create(parent)
+                    .with_context(|| format!("create {}", parent.display()))?;
             }
             store::ensure_dir(&cfg.ledger_dir, &Security::root())?;
             let path = snapshot::store(&cfg.ledger_dir, &snap).map_err(anyhow::Error::msg)?;

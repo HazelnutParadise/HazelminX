@@ -202,7 +202,9 @@ impl TryFrom<String> for PackageName {
             return Err(ParamError::new("package name is longer than 128 bytes"));
         }
         if !value.as_bytes()[0].is_ascii_alphanumeric() {
-            return Err(ParamError::new("package name must start with a letter or digit"));
+            return Err(ParamError::new(
+                "package name must start with a letter or digit",
+            ));
         }
         if !value
             .bytes()
@@ -371,10 +373,26 @@ mod tests {
 
     #[test]
     fn package_name_rules() {
-        for ok in ["docker-ce", "libstdc++6", "python3.12", "nvidia_container_toolkit", "0ad"] {
+        for ok in [
+            "docker-ce",
+            "libstdc++6",
+            "python3.12",
+            "nvidia_container_toolkit",
+            "0ad",
+        ] {
             assert!(PackageName::try_from(ok.to_string()).is_ok(), "{ok}");
         }
-        for bad in ["", "-x", ".x", "a b", "a;id", "a\nb", "a/b", "$(id)", &"a".repeat(PACKAGE_NAME_MAX + 1)] {
+        for bad in [
+            "",
+            "-x",
+            ".x",
+            "a b",
+            "a;id",
+            "a\nb",
+            "a/b",
+            "$(id)",
+            &"a".repeat(PACKAGE_NAME_MAX + 1),
+        ] {
             assert!(PackageName::try_from(bad.to_string()).is_err(), "{bad:?}");
         }
     }

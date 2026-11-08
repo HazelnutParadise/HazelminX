@@ -56,7 +56,10 @@ impl std::fmt::Display for RecordError {
         match self {
             RecordError::Unavailable(m) => write!(f, "host ledger unavailable: {m}"),
             RecordError::Probe { target, reason } => {
-                write!(f, "cannot read the state of {target} before the change: {reason}")
+                write!(
+                    f,
+                    "cannot read the state of {target} before the change: {reason}"
+                )
             }
             RecordError::Write(m) => write!(f, "host ledger write failed: {m}"),
         }
@@ -295,8 +298,11 @@ mod tests {
         let (ledger, _) = Ledger::open(&root.path().join("l"), &sec_for(root.path())).unwrap();
         let ledger = Arc::new(ledger);
         let probe = Arc::new(Scripted(Mutex::new(
-            [Ok(unit_state("active")), Err("System has not been booted with systemd".into())]
-                .into(),
+            [
+                Ok(unit_state("active")),
+                Err("System has not been booted with systemd".into()),
+            ]
+            .into(),
         )));
         let rec = Recorder::new(Ok(ledger.clone()), probe);
         let e = rec

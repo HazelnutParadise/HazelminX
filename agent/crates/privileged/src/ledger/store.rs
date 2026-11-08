@@ -51,7 +51,10 @@ pub enum LedgerError {
     /// read or rewrite the ledger.
     Insecure(String),
     /// Hash chain, sequence or format check failed at `line` (1-based).
-    Integrity { line: usize, reason: String },
+    Integrity {
+        line: usize,
+        reason: String,
+    },
     /// Another process holds the ledger.
     Locked,
     Io(String),
@@ -173,10 +176,7 @@ pub fn parse_chain(meta: Meta, bytes: &[u8]) -> Result<Chain, LedgerError> {
         let entry: Entry = serde_json::from_str(raw.entry.get())
             .map_err(|e| bad(format!("entry does not parse: {e}")))?;
         if entry.seq != head.seq + 1 {
-            return Err(bad(format!(
-                "sequence {} follows {}",
-                entry.seq, head.seq
-            )));
+            return Err(bad(format!("sequence {} follows {}", entry.seq, head.seq)));
         }
         if entry.prev_hash != head.hash {
             return Err(bad("prev_hash does not match the previous line".into()));
@@ -782,7 +782,8 @@ pub(crate) mod tests {
         drop(l);
         let path = dir.join(LEDGER_FILE);
         let mut f = OpenOptions::new().append(true).open(&path).unwrap();
-        f.write_all(b"{\"hash\":\"abc\",\"entry\":{\"seq\":2").unwrap();
+        f.write_all(b"{\"hash\":\"abc\",\"entry\":{\"seq\":2")
+            .unwrap();
         drop(f);
         let chain = verify(&dir, &sec).unwrap();
         assert!(chain.torn_tail > 0);

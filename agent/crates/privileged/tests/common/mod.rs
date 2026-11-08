@@ -78,11 +78,7 @@ pub struct FakeProbe {
 }
 
 impl Probe for FakeProbe {
-    fn probe(
-        &self,
-        _: &Target,
-        _: Capture,
-    ) -> BoxFuture<'static, Result<TargetState, String>> {
+    fn probe(&self, _: &Target, _: Capture) -> BoxFuture<'static, Result<TargetState, String>> {
         self.calls.fetch_add(1, Ordering::SeqCst);
         let fail = self.fail;
         Box::pin(async move {

@@ -16,6 +16,9 @@ use hazelminx_privileged::ledger::entry::{ChangeKind, Outcome, Ownership, Phase,
 use hazelminx_privileged::ledger::sync::LedgerBatch;
 use hazelminx_privileged::params::UnitName;
 use hazelminx_privileged::protocol::ErrorCode;
+use hazelminx_privileged::server::{
+    REFUSE_BEFORE_STATE, REFUSE_NO_DESCRIPTION, REFUSE_UNAVAILABLE,
+};
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
@@ -26,7 +29,8 @@ fn restart(unit: &str) -> Action {
 }
 
 fn code(e: ClientError) -> ErrorCode {
-    e.code().unwrap_or_else(|| panic!("expected rejection, got {e}"))
+    e.code()
+        .unwrap_or_else(|| panic!("expected rejection, got {e}"))
 }
 
 #[tokio::test]
@@ -35,7 +39,13 @@ async fn a_host_change_is_recorded_before_and_after_with_its_job() {
     assert!(h.client.health().await.unwrap().ledger_ready);
     let g = h.grant("g-ops", &[PERM_HOST_SERVICES_MANAGE]);
     h.client
-        .execute_for_job("req-1", Some("job-42"), &g, &restart("nginx.service"), |_, _| {})
+        .execute_for_job(
+            "req-1",
+            Some("job-42"),
+            &g,
+            &restart("nginx.service"),
+            |_, _| {},
+        )
         .await
         .unwrap();
     assert_eq!(h.executor.started.load(Ordering::SeqCst), 1);
@@ -90,7 +100,14 @@ async fn a_failed_change_is_recorded_as_failed() {
         .await
         .unwrap_err();
     assert_eq!(code(e), ErrorCode::ActionFailed);
-    let entries = h.ledger.as_ref().unwrap().export(0, 10).unwrap().entries().unwrap();
+    let entries = h
+        .ledger
+        .as_ref()
+        .unwrap()
+        .export(0, 10)
+        .unwrap()
+        .entries()
+        .unwrap();
     assert_eq!(
         entries[1].outcome,
         Some(Outcome::Failed {
@@ -137,7 +154,7 @@ async fn t250_change_without_a_ledger_description_is_refused_and_audited() {
     assert!(
         events.iter().any(|e| matches!(e,
             SecurityEvent::LedgerRefused { grant_id, action, reason }
-                if grant_id == "g-ops" && action == "restart_service" && reason.contains("no host-ledger description"))),
+                if grant_id == "g-ops" && action == "restart_service" && reason == REFUSE_NO_DESCRIPTION)),
         "{events:?}"
     );
 }
@@ -165,7 +182,7 @@ async fn t250_change_while_the_ledger_is_unavailable_is_refused_and_audited() {
     assert_eq!(code(e), ErrorCode::LedgerRefused);
     assert_eq!(h.executor.started.load(Ordering::SeqCst), 0);
     assert!(h.log.events().iter().any(|e| matches!(e,
-        SecurityEvent::LedgerRefused { reason, .. } if reason.contains("unavailable"))));
+        SecurityEvent::LedgerRefused { reason, .. } if reason == REFUSE_UNAVAILABLE)));
     // Reading the host still works, so the operator can diagnose.
     h.client
         .execute("r2", &g, &Action::SystemInfo {}, |_, _| {})
@@ -196,8 +213,14 @@ async fn t250_change_with_an_unreadable_before_state_is_refused_and_audited() {
     assert_eq!(code(e), ErrorCode::LedgerRefused);
     assert_eq!(h.executor.started.load(Ordering::SeqCst), 0);
     assert_eq!(h.ledger.as_ref().unwrap().head().seq, 0);
+    // The probe error names the unit; the security event must not.
+    assert!(
+        !format!("{:?}", h.log.events()).contains("nginx.service"),
+        "{:?}",
+        h.log.events()
+    );
     assert!(h.log.events().iter().any(|e| matches!(e,
-        SecurityEvent::LedgerRefused { reason, .. } if reason.contains("before the change"))));
+        SecurityEvent::LedgerRefused { reason, .. } if reason == REFUSE_BEFORE_STATE)));
     // The slot was released.
     assert_eq!(h.client.health().await.unwrap().active_actions, 0);
 }
@@ -208,7 +231,13 @@ async fn job_id_must_be_a_token() {
     let g = h.grant("g-ops", &[PERM_HOST_SERVICES_MANAGE]);
     let e = h
         .client
-        .execute_for_job("r1", Some("job 1; id"), &g, &restart("a.service"), |_, _| {})
+        .execute_for_job(
+            "r1",
+            Some("job 1; id"),
+            &g,
+            &restart("a.service"),
+            |_, _| {},
+        )
         .await
         .unwrap_err();
     assert_eq!(code(e), ErrorCode::InvalidParam);
@@ -226,7 +255,11 @@ async fn ledger_export_pages_raw_lines_for_core() {
             .unwrap();
     }
     let ledger = h.ledger.clone().unwrap();
-    let exec = HostExecutor::new(Arc::new(RecordingRunner::default()), "/", Some(ledger.clone()));
+    let exec = HostExecutor::new(
+        Arc::new(RecordingRunner::default()),
+        "/",
+        Some(ledger.clone()),
+    );
     let page = |after_seq, limit| {
         exec.execute(
             Action::LedgerExport {

@@ -17,7 +17,7 @@ use crate::audit::{SecurityEvent, SecurityLog, redact, truncate};
 use crate::command::OutputSink;
 use crate::executor::Executor;
 use crate::grant::{Grant, GrantRejection, Revocations, is_token};
-use crate::ledger::recorder::{ChangeContext, LedgerDecl, Recorder};
+use crate::ledger::recorder::{ChangeContext, LedgerDecl, RecordError, Recorder};
 use crate::protocol::{ErrorCode, MAX_REQUEST_BYTES, PROTOCOL_VERSION, Request, Response};
 use ed25519_dalek::VerifyingKey;
 use std::io;
@@ -31,6 +31,11 @@ use tokio::net::{UnixListener, UnixStream};
 use tokio::sync::Semaphore;
 
 pub const DEFAULT_MAX_CONCURRENT_ACTIONS: usize = 8;
+/// `reason` values of [`SecurityEvent::LedgerRefused`].
+pub const REFUSE_NO_DESCRIPTION: &str = "no host-ledger description";
+pub const REFUSE_UNAVAILABLE: &str = "host ledger unavailable";
+pub const REFUSE_BEFORE_STATE: &str = "before state unreadable";
+pub const REFUSE_WRITE: &str = "ledger write failed";
 /// How long an action request waits for a free slot before `busy`.
 pub const SLOT_WAIT: Duration = Duration::from_secs(30);
 pub const SOCKET_MODE: u32 = 0o660;
@@ -370,30 +375,37 @@ impl Server {
 
         // Ledger declaration: what this action changes on the host.
         let action_kind = action.kind().to_string();
-        let ledger_refusal = |reason: String| Refusal {
+        // The caller gets the detail; the security event gets the rule name
+        // only, since probe errors can quote parameter values (SEC-010).
+        let ledger_refusal = |rule: &'static str, message: String| Refusal {
             code: ErrorCode::LedgerRefused,
-            message: reason.clone(),
+            message,
             event: Some(SecurityEvent::LedgerRefused {
                 grant_id: grant.id.clone(),
                 action: action_kind.clone(),
-                reason: truncate(&reason),
+                reason: rule.to_string(),
             }),
         };
         let declared = match self.executor.declare(&action) {
             None => {
                 return Err(ledger_refusal(
+                    REFUSE_NO_DESCRIPTION,
                     "action has no host-ledger description".into(),
                 ));
             }
             Some(LedgerDecl::ReadOnly) => None,
             Some(LedgerDecl::Changes(d)) if d.is_empty() => {
                 return Err(ledger_refusal(
+                    REFUSE_NO_DESCRIPTION,
                     "action declares a change but names no target".into(),
                 ));
             }
             Some(LedgerDecl::Changes(d)) => {
                 if let Err(reason) = self.recorder.ready() {
-                    return Err(ledger_refusal(format!("host ledger unavailable: {reason}")));
+                    return Err(ledger_refusal(
+                        REFUSE_UNAVAILABLE,
+                        format!("host ledger unavailable: {reason}"),
+                    ));
                 }
                 Some(d)
             }
@@ -428,7 +440,12 @@ impl Server {
                     Err(e) => {
                         self.active.fetch_sub(1, Ordering::SeqCst);
                         drop(permit);
-                        return Err(ledger_refusal(e.to_string()));
+                        let rule = match e {
+                            RecordError::Unavailable(_) => REFUSE_UNAVAILABLE,
+                            RecordError::Probe { .. } => REFUSE_BEFORE_STATE,
+                            RecordError::Write(_) => REFUSE_WRITE,
+                        };
+                        return Err(ledger_refusal(rule, e.to_string()));
                     }
                 }
             }
@@ -460,7 +477,12 @@ impl Server {
                 self.log.record(SecurityEvent::LedgerResultUnrecorded {
                     grant_id: grant.id.clone(),
                     action: kind.clone(),
-                    reason: truncate(&e.to_string()),
+                    reason: match e {
+                        RecordError::Unavailable(_) => REFUSE_UNAVAILABLE,
+                        RecordError::Probe { .. } => "after state unreadable",
+                        RecordError::Write(_) => REFUSE_WRITE,
+                    }
+                    .to_string(),
                 });
             }
         }

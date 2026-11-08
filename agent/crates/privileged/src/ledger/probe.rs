@@ -32,8 +32,11 @@ pub enum Capture {
 }
 
 pub trait Probe: Send + Sync {
-    fn probe(&self, target: &Target, capture: Capture)
-    -> BoxFuture<'static, Result<TargetState, String>>;
+    fn probe(
+        &self,
+        target: &Target,
+        capture: Capture,
+    ) -> BoxFuture<'static, Result<TargetState, String>>;
 }
 
 /// The real probe. `sysroot` is `/` in production.
@@ -402,7 +405,11 @@ pub fn parse_accounts(passwd: &str, group: &str) -> Accounts {
         .filter(|l| !l.trim().is_empty() && !l.starts_with('#'))
         .filter_map(|l| {
             let f = fields(l);
-            Some((f.first()?.clone(), f.get(2)?.parse().ok()?, f.get(3)?.parse().ok()?))
+            Some((
+                f.first()?.clone(),
+                f.get(2)?.parse().ok()?,
+                f.get(3)?.parse().ok()?,
+            ))
         })
         .collect();
     let groups = group
@@ -433,7 +440,11 @@ mod tests {
     use std::ffi::OsString;
     use std::os::unix::fs::PermissionsExt;
 
-    fn probe_with(root: &Path, runner: Arc<RecordingRunner>, backups: Option<PathBuf>) -> HostProbe {
+    fn probe_with(
+        root: &Path,
+        runner: Arc<RecordingRunner>,
+        backups: Option<PathBuf>,
+    ) -> HostProbe {
         HostProbe::new(runner, root, backups)
     }
 
@@ -456,7 +467,10 @@ mod tests {
         std::os::unix::fs::symlink("/etc/shadow", etc.join("link")).unwrap();
         let p = probe_with(root.path(), Arc::default(), Some(backups.clone()));
 
-        let TargetState::Path(s) = p.probe(&path("/etc/app.conf"), Capture::Before).await.unwrap()
+        let TargetState::Path(s) = p
+            .probe(&path("/etc/app.conf"), Capture::Before)
+            .await
+            .unwrap()
         else {
             panic!()
         };
@@ -474,7 +488,10 @@ mod tests {
         assert_eq!(std::fs::read_dir(&backups).unwrap().count(), 1);
 
         // After-capture does not back up.
-        let TargetState::Path(a) = p.probe(&path("/etc/app.conf"), Capture::After).await.unwrap()
+        let TargetState::Path(a) = p
+            .probe(&path("/etc/app.conf"), Capture::After)
+            .await
+            .unwrap()
         else {
             panic!()
         };
@@ -493,7 +510,10 @@ mod tests {
             panic!()
         };
         assert_eq!(d.kind, Some(PathKind::Directory));
-        let TargetState::Path(m) = p.probe(&path("/etc/missing"), Capture::Before).await.unwrap()
+        let TargetState::Path(m) = p
+            .probe(&path("/etc/missing"), Capture::Before)
+            .await
+            .unwrap()
         else {
             panic!()
         };
@@ -508,22 +528,28 @@ mod tests {
                 0,
                 "LoadState=loaded\nUnitFileState=enabled\nActiveState=active\nSubState=running\n",
             ),
-            output(0, "LoadState=not-found\nUnitFileState=\nActiveState=inactive\nSubState=dead\n"),
+            output(
+                0,
+                "LoadState=not-found\nUnitFileState=\nActiveState=inactive\nSubState=dead\n",
+            ),
             output(1, ""),
         ]));
         let p = probe_with(root.path(), runner.clone(), None);
         let unit = |u: &str| Target::SystemdUnit {
             unit: UnitName::try_from(u.to_string()).unwrap(),
         };
-        let TargetState::SystemdUnit(s) =
-            p.probe(&unit("nginx.service"), Capture::Before).await.unwrap()
+        let TargetState::SystemdUnit(s) = p
+            .probe(&unit("nginx.service"), Capture::Before)
+            .await
+            .unwrap()
         else {
             panic!()
         };
         assert!(s.exists);
         assert_eq!(s.unit_file_state.as_deref(), Some("enabled"));
         assert_eq!(s.active_state.as_deref(), Some("active"));
-        let TargetState::SystemdUnit(s) = p.probe(&unit("x.service"), Capture::Before).await.unwrap()
+        let TargetState::SystemdUnit(s) =
+            p.probe(&unit("x.service"), Capture::Before).await.unwrap()
         else {
             panic!()
         };
@@ -571,7 +597,13 @@ mod tests {
         assert!(p.probe(&pkg("x"), Capture::Before).await.is_err());
         assert_eq!(
             runner.calls()[0].args,
-            ["-W", "-f=${db:Status-Abbrev}\t${Version}\n", "--", "docker-ce"].map(OsString::from)
+            [
+                "-W",
+                "-f=${db:Status-Abbrev}\t${Version}\n",
+                "--",
+                "docker-ce"
+            ]
+            .map(OsString::from)
         );
 
         let rpm_root = tempfile::tempdir().unwrap();
@@ -613,7 +645,10 @@ mod tests {
         let group = |n: &str| Target::Group {
             name: UserName::try_from(n.to_string()).unwrap(),
         };
-        let TargetState::User(u) = p.probe(&user("hazelminx-agent"), Capture::Before).await.unwrap()
+        let TargetState::User(u) = p
+            .probe(&user("hazelminx-agent"), Capture::Before)
+            .await
+            .unwrap()
         else {
             panic!()
         };
@@ -623,7 +658,8 @@ mod tests {
             panic!()
         };
         assert!(!u.exists);
-        let TargetState::Group(g) = p.probe(&group("docker"), Capture::Before).await.unwrap() else {
+        let TargetState::Group(g) = p.probe(&group("docker"), Capture::Before).await.unwrap()
+        else {
             panic!()
         };
         assert_eq!(g.members, vec!["alice", "hazelminx-agent"]);
