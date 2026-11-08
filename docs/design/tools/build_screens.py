@@ -1747,7 +1747,7 @@ def account_security() -> str:
       <div class="note" style="padding:8px 14px 12px">撤銷立即生效，那台裝置下一個請求就會被要求重新登入</div>
     </section>"""
     idle = _fp("閒置與重新驗證", _grid(
-        _fld("閒置多久自動登出", _dd("30 分鐘"), "管理員設定的上限是 2 小時"),
+        _fld("閒置多久自動登出", _dd("12 小時（預設）"), "可以設 15 分鐘到 24 小時"),
         _fld("危險操作前重新驗證", _seg(["每次", "5 分鐘內免重驗"], 1, "重新驗證"))))
     dom = _fp("如果變更管理入口網域", f"""
       <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">
@@ -1797,6 +1797,98 @@ def mfa_dialogs() -> str:
       '<div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">取消</button><button type="button" class="btn dng">移除</button></div>')
     grid = f'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr));gap:16px;align-items:start">{totp}{passkey}{step2}{reauth}{forced}{rmlast}</div>'
     return U.shell("iam", U.page_head("第二驗證的對話框", OBS, "") + grid)
+
+
+# ---------- 列表邊界、背景查詢與錯誤呈現（票 010 設計缺口） ----------
+def _pager(left, right=""):
+    return (f'<div class="pager" style="flex-wrap:wrap"><span>{left}</span>{right}<span class="pg"><button type="button" class="ib" aria-label="上一頁" aria-disabled="true">{U.icon("chev")}</button>'
+            f'<span>每頁 50</span><button type="button" class="ib" aria-label="下一頁">{U.icon("chev")}</button></span></div>')
+
+
+def list_and_errors() -> str:
+    head = U.page_head("列表、背景查詢與錯誤", OBS, "")
+    def demo(title, footer):
+        return (f'<section class="panel"><div class="ph"><h2>{title}</h2></div>'
+                '<div class="row hd"><span>時間</span><span>誰</span><span>動作</span></div>'
+                '<div class="row"><span class="mono">03:38:50</span><span>tim</span><span>套件更新 openssl</span></div>'
+                '<div class="row"><span class="mono">03:30:07</span><span>tim · CLI</span><span>hx jobs list</span></div>' + footer + '</section>')
+    bg = '<button type="button" class="btn sm">改成背景查詢</button>'
+    lists = (demo("一般：總數已知", _pager("顯示 1–50 / 1,284"))
+             + demo("超過查詢上限", _pager(f'可瀏覽前 10,000 筆 · 總數 41,220 <span tabindex="0" data-tip="超過的部分要用背景查詢，或縮小篩選範圍">{U.icon("info", 14)}</span>', bg))
+             + demo("查詢逾時", _pager(f'顯示 1–50 · 總數未知 <span tabindex="0" data-tip="這次查詢超過 15 秒，只先列出已找到的；背景查詢會跑完整個範圍">{U.icon("info", 14)}</span>', bg)))
+    lists = f'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(400px,100%),1fr));gap:16px">{lists}</div>'
+    def q(name, st, rows, exp, acts):
+        return (f'<div class="row srow"><span class="name"><span class="n">{name}</span><span class="d">{exp}</span></span><span>{st}</span>'
+                f'<span class="c3 mono">{rows}</span><span class="c4"></span><span class="c4"></span><span class="c5"></span><span>{acts}</span></div>')
+    queries = f"""
+    <section class="panel" aria-labelledby="h-bq">
+      <div class="ph"><h2 id="h-bq">我的背景查詢 · 10 / 10</h2></div>
+      <div class="row hd srow"><span>查詢 · 保存到</span><span>狀態</span><span class="c3">結果</span><span class="c4"></span><span class="c4"></span><span class="c5"></span><span></span></div>
+      {q("操作稽核 · 全部節點 · 10/01–11/08", U.status("ok", "完成"), "41,220 筆", "保存到 11/15", '<a class="btn sm" href="#r">看結果</a>' + U.actions(["download", "trash"]))}
+      {q("容器日誌 · shop-api · 關鍵字 timeout", U.status("info", "執行中 62%"), "—", "開始於 03:40", U.actions(["stop"]))}
+      {q("網站存取 · shop.example.tw · 5xx", U.status("ok", "完成"), "1,982 筆", "保存到 11/09", '<a class="btn sm" href="#r">看結果</a>' + U.actions(["download", "trash"]))}
+      <div style="padding:10px 14px 12px;display:flex;flex-direction:column;gap:8px">
+        {_chk("warn", "已經保存 10 筆查詢", "刪掉一筆舊的才能再新增（LIST_QUERY_LIMIT_REACHED）", "")}
+        {_chk("dng", "這筆結果已經刪除", "背景查詢的結果保存 7 天，11/01 的「登入紀錄」已過期（LIST_QUERY_EXPIRED）", "重新查詢")}
+      </div>
+    </section>"""
+    form = _fp("錯誤呈現 · 新增使用者", f"""
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:12px">
+        <div class="cdown" role="alert" style="border-color:var(--danger)"><span class="t"><strong>沒有建立使用者</strong>
+          <span>有 2 個欄位要修正 · 另外還有 1 個原因會擋下這個動作</span>
+          <span class="wrap">{U.status("warn", "平台資料庫目前唯讀（PLATFORM_DEGRADED）")}</span></span>
+          <span class="acts2"><button type="button" class="btn sm">{U.icon("copy", 14)}複製追蹤碼 tr_7f3a91</button></span></div>
+        {_grid(_fld("帳號", _in("Ava", mono=True) + '<span class="st dng" style="align-self:flex-start"><i></i>只能用小寫英文、數字與 -</span>'),
+               _fld("Email", _in("ava@", mono=True) + '<span class="st dng" style="align-self:flex-start"><i></i>Email 格式不正確</span>'),
+               _fld("角色", _dd("只能看")))}
+        <div class="wrap" style="justify-content:flex-end"><a class="btn" href="Events.dc.html">看平台狀態</a><button type="button" class="btn pri" disabled>建立</button></div>
+      </div>""")
+    main = head + lists + queries + form
+    return U.shell("iam", main)
+
+
+# ---------- 變更安全：版本衝突、影響預覽、確認倒數（票 010 設計缺口） ----------
+def change_safety() -> str:
+    head = U.page_head("變更前後的檢查", OBS, "")
+    def fc(name, mine, theirs):
+        return f'<div class="row"><span>{name}</span><span class="mono">{mine}</span><span class="mono">{theirs}</span></div>'
+    ver = _fp("編輯使用者 ava · 有人先改過了", f"""
+      <div style="padding:12px 16px 4px">{_chk("warn", "你編輯時，tim 在 03:41 存了新版本", "直接存會蓋掉他的修改，所以沒有存（VERSION_MISMATCH）", "")}</div>
+      <div class="row hd"><span>欄位</span><span>你的版本</span><span>目前的版本</span></div>
+      {fc("顯示名稱", "Ava Chen", "Ava C.")}
+      {fc("角色", "可以部署", "可以部署")}
+      <div class="wrap" style="padding:10px 16px 12px;justify-content:flex-end"><button type="button" class="btn">放棄我的修改</button><button type="button" class="btn">載入目前版本再改</button><button type="button" class="btn pri">用我的版本覆蓋</button></div>""")
+    def imp(name, how, depth):
+        return f'<div class="row"><span class="mono">{name}</span><span>{how}</span><span>{U.status("info" if depth == "直接" else "none", depth)}</span></div>'
+    preview = _fp("影響預覽 · 停止 zentinel.service（hazel-tw-01）", f"""
+      <div style="padding:12px 16px 4px;display:flex;flex-direction:column;gap:8px">
+        {_chk("dng", "會擋下這個動作", "shop.example.tw 的憑證續期工作 #533 正在用 Zentinel", "等它完成")}
+        {_chk("warn", "會排在工作後面", "工作 #533 預計 1 分鐘內完成，之後才會執行", "")}
+      </div>
+      <div class="row hd"><span>受影響</span><span>會怎樣</span><span>關係</span></div>
+      {imp("shop.example.tw", "無法連線", "直接")}
+      {imp("staging.shop", "無法連線", "直接")}
+      {imp("API 代理 /ollama", "專屬網址 ollama.api.example.tw 無法連線", "直接")}
+      {imp("shop-api ×2", "收不到外部請求，容器照常執行", "間接")}
+      {imp("wiki.example.tw", "不受影響，由 jp-02 的 Zentinel 提供", "不受影響")}
+      <div class="wrap" style="padding:10px 16px 12px;justify-content:flex-end"><button type="button" class="btn">取消</button><button type="button" class="btn dng" disabled>停止</button></div>""")
+    cd = f"""
+    <section class="panel"><div class="ph"><h2>套用後要確認 · 新增防火牆規則（hazel-tw-01）</h2></div>
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
+        <div class="cdown" role="alert" style="border-color:var(--warn)"><span class="t"><strong>47 秒內沒確認就會自動復原</strong>
+          <span>開新分頁打開 <span class="mono">https://panel.example.tw</span> → 在新分頁按「確認保留」</span></span>
+          <span class="acts2"><button type="button" class="btn pri">確認保留</button><button type="button" class="btn">現在復原</button></span></div>
+        {_chk("dng", "這個確認沒有生效", "確認要從套用之後才建立的連線送出；這個分頁是套用前開的（CONFIRMATION_<wbr>NEW_<wbr>CONNECTION_<wbr>REQUIRED）", "開新分頁")}
+        {_chk("dng", "已經過了確認時間", "03:43:12 自動復原成套用前的規則（CONFIRMATION_EXPIRED）", "看工作 #541")}
+      </div>
+    </section>"""
+    waiting = _fp("別人的變更在等確認", f"""
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
+        {_chk("warn", "hazel-tw-01 的防火牆正在等 tim 確認", "確認或復原之前，這台主機的防火牆不能修改（CONFIRMATION_REQUIRED）", "最晚 03:44:12")}
+        <div class="wrap"><a class="btn sm" href="WorkCenter.dc.html">看工作 #541</a><button type="button" class="btn sm">確認後通知我</button></div>
+      </div>""")
+    main = head + f'<div class="cg">{ver}{waiting}</div>' + preview + cd
+    return U.shell("security", main)
 
 
 # ---------- 資料庫 ----------
@@ -3858,6 +3950,8 @@ SCREENS = {
     "NodeLedgerBroken": ("主機 › 變更帳本無法使用", node_ledger_broken, 1440, 900),
     "AccountSecurity": ("帳號安全", account_security, 1440, 1500),
     "MfaDialogs": ("第二驗證的對話框", mfa_dialogs, 1440, 1500),
+    "ListAndErrors": ("列表、背景查詢與錯誤", list_and_errors, 1440, 1600),
+    "ChangeSafety": ("變更前後的檢查", change_safety, 1440, 1500),
     "Settings": ("平台設定", settings, 1440, 2600),
     "Logs": ("日誌", logs, 1440, 2200),
     "AppSettings": ("nextcloud · 網路與掛載", app_settings, 1440, 1300),
@@ -3950,7 +4044,7 @@ def table_affordances(html: str) -> str:
             sec = re.sub(r'<(a|div) class="row ([^"]*)"([^>]*)>', lambda r: f'<{r.group(1)} class="row {r.group(2)} batch"{r.group(3)}><span class="ck"><input type="checkbox" aria-label="{"全選" if "hd" in r.group(2).split() else "選取"}"{" checked" if "sel" in r.group(2).split() else ""}></span>', sec)
         if pages:
             footer = (f'<div class="pager"><span>顯示 {pages.group(1)}</span><span class="pg"><button type="button" class="ib" aria-label="上一頁" aria-disabled="true">{U.icon("chev")}</button>'
-                      f'<span>每頁 25</span><button type="button" class="ib" aria-label="下一頁">{U.icon("chev")}</button></span></div>')
+                      f'<span>每頁 50</span><button type="button" class="ib" aria-label="下一頁">{U.icon("chev")}</button></span></div>')
             sec = sec[: sec.rfind("</section>")] + footer + "</section>"
         return sec
     return re.sub(r'<section class="panel"([^>]*)>.*?</section>', fix, html, flags=re.S)
