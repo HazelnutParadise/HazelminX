@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/HazelnutParadise/hazelminx/core/internal/paging"
 	"regexp"
 	"strings"
 	"sync"
@@ -450,7 +451,7 @@ func (s *Service) insertUser(ctx context.Context, ex execer, username, password,
 		return nil, err
 	}
 	now := s.now()
-	u := &User{ID: uuid.NewString(), Username: username, DisplayName: displayName, Status: StatusActive, CreatedAt: now, UpdatedAt: now}
+	u := &User{ID: uuid.NewString(), Username: username, DisplayName: displayName, Status: StatusActive, Version: 1, CreatedAt: now, UpdatedAt: now}
 	_, err = ex.ExecContext(ctx, `INSERT INTO users(id,username,display_name,password_hash,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?)`,
 		u.ID, u.Username, u.DisplayName, hash, u.Status, ts(now), ts(now))
 	if err != nil {
@@ -465,38 +466,50 @@ func (s *Service) insertUser(ctx context.Context, ex execer, username, password,
 // AssignRole grants role on scope to a user. Only principals with
 // roles:assign (owner) may do it; owner may only be granted globally.
 func (s *Service) AssignRole(ctx context.Context, actor *Principal, userID string, role Role, scope Scope, src Source) (*Assignment, error) {
+	as, _, err := s.AssignRoleIf(ctx, actor, userID, role, scope, 0, src)
+	return as, err
+}
+
+// AssignRoleIf is AssignRole conditional on the account version (0 = any).
+// The assignment is part of the account's representation, so it advances
+// the version; the new version is returned.
+func (s *Service) AssignRoleIf(ctx context.Context, actor *Principal, userID string, role Role, scope Scope, ifVersion int64, src Source) (*Assignment, int64, error) {
 	if !Authorize(actor, ActionRolesAssign, Global) {
 		s.RecordDenied(ctx, actor, ActionRolesAssign, Global, src)
-		return nil, ErrForbidden
+		return nil, 0, ErrForbidden
 	}
 	if !ValidRole(role) {
-		return nil, fmt.Errorf("%w: unknown role %q", ErrValidation, role)
+		return nil, 0, fmt.Errorf("%w: unknown role %q", ErrValidation, role)
 	}
 	if err := validScope(scope); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if role == RoleOwner && scope.Kind != ScopeGlobal {
-		return nil, fmt.Errorf("%w: owner can only be assigned globally", ErrValidation)
+		return nil, 0, fmt.Errorf("%w: owner can only be assigned globally", ErrValidation)
 	}
 	target, err := s.GetUser(ctx, actor, userID)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer tx.Rollback()
+	ver, err := s.bumpVersion(ctx, tx, userID, ifVersion)
+	if err != nil {
+		return nil, 0, err
+	}
 	as, err := s.insertAssignment(ctx, tx, userID, role, scope, actor.User.ID)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if err := s.record(ctx, tx, AuditEvent{ActorID: actor.User.ID, ActorName: actor.User.Username, Action: "role.assign", Scope: scope,
 		ResourceKind: "user", ResourceID: userID, Result: ResultOK,
 		After: map[string]any{"username": target.Username, "role": role, "scope": scope}, TraceID: src.TraceID, SourceIP: src.IP}); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return as, tx.Commit()
+	return as, ver, tx.Commit()
 }
 
 func (s *Service) insertAssignment(ctx context.Context, tx *sql.Tx, userID string, role Role, scope Scope, by string) (*Assignment, error) {
@@ -515,35 +528,56 @@ func (s *Service) insertAssignment(ctx context.Context, tx *sql.Tx, userID strin
 
 // RevokeRole removes one assignment.
 func (s *Service) RevokeRole(ctx context.Context, actor *Principal, assignmentID string, src Source) error {
+	_, err := s.RevokeRoleIf(ctx, actor, assignmentID, "", 0, src)
+	return err
+}
+
+// RevokeRoleIf is RevokeRole for the assignment of userID (any user when
+// empty), conditional on that account's version (0 = any). It advances the
+// version and returns the new one.
+func (s *Service) RevokeRoleIf(ctx context.Context, actor *Principal, assignmentID, userID string, ifVersion int64, src Source) (int64, error) {
 	if !Authorize(actor, ActionRolesAssign, Global) {
 		s.RecordDenied(ctx, actor, ActionRolesAssign, Global, src)
-		return ErrForbidden
+		return 0, ErrForbidden
 	}
 	var as Assignment
 	var kind string
 	err := s.db.QueryRowContext(ctx, `SELECT id,user_id,role,scope_kind,scope_id FROM role_assignments WHERE id=?`, assignmentID).
 		Scan(&as.ID, &as.UserID, &as.Role, &kind, &as.Scope.ID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return ErrNotFound
+		return 0, ErrNotFound
 	}
 	if err != nil {
-		return err
+		return 0, err
 	}
 	as.Scope.Kind = ScopeKind(kind)
+	if userID != "" && as.UserID != userID {
+		return 0, ErrNotFound
+	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer tx.Rollback()
-	if _, err := tx.ExecContext(ctx, `DELETE FROM role_assignments WHERE id=?`, assignmentID); err != nil {
-		return err
+	ver, err := s.bumpVersion(ctx, tx, as.UserID, ifVersion)
+	if err != nil {
+		return 0, err
+	}
+	// A concurrent revoke may have deleted it after the read above; then
+	// nothing changed here, and no version or audit entry is written.
+	res, err := tx.ExecContext(ctx, `DELETE FROM role_assignments WHERE id=?`, assignmentID)
+	if err != nil {
+		return 0, err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return 0, ErrNotFound
 	}
 	if err := s.record(ctx, tx, AuditEvent{ActorID: actor.User.ID, ActorName: actor.User.Username, Action: "role.revoke", Scope: as.Scope,
 		ResourceKind: "user", ResourceID: as.UserID, Result: ResultOK,
 		Before: map[string]any{"role": as.Role, "scope": as.Scope}, TraceID: src.TraceID, SourceIP: src.IP}); err != nil {
-		return err
+		return 0, err
 	}
-	return tx.Commit()
+	return ver, tx.Commit()
 }
 
 // UserDetail is a user with their assignments.
@@ -554,10 +588,56 @@ type UserDetail struct {
 
 // ListUsers returns every account with assignments; requires users:read.
 func (s *Service) ListUsers(ctx context.Context, actor *Principal) ([]UserDetail, error) {
+	return s.ListUsersPage(ctx, actor, paging.Query{Sort: []paging.SortKey{{Field: "username"}, {Field: "id"}}, Limit: -1})
+}
+
+// UserSortColumns maps list sort fields to user columns.
+var UserSortColumns = map[string]paging.Column{
+	"username":  {Expr: "username COLLATE NOCASE"},
+	"createdAt": {Expr: "created_at"},
+	"id":        {Expr: "id"},
+}
+
+// SortValue returns the value of a sort field of u, as UserSortColumns
+// compares it.
+func (u User) SortValue(field string) string {
+	switch field {
+	case "username":
+		return u.Username
+	case "createdAt":
+		return ts(u.CreatedAt)
+	default:
+		return u.ID
+	}
+}
+
+// CountUsers counts accounts; requires users:read.
+func (s *Service) CountUsers(ctx context.Context, actor *Principal) (int, error) {
+	if !Authorize(actor, ActionUsersRead, Global) {
+		return 0, ErrForbidden
+	}
+	var n int
+	err := s.db.QueryRowContext(ctx, `SELECT count(*) FROM users`).Scan(&n)
+	return n, err
+}
+
+// ListUsersPage returns one keyset page of accounts with assignments;
+// requires users:read. A negative q.Limit means no limit.
+func (s *Service) ListUsersPage(ctx context.Context, actor *Principal, q paging.Query) ([]UserDetail, error) {
 	if !Authorize(actor, ActionUsersRead, Global) {
 		return nil, ErrForbidden
 	}
-	rows, err := s.db.QueryContext(ctx, `SELECT id,username,display_name,status,created_at,updated_at FROM users ORDER BY username`)
+	order, where, args, err := q.SQL(UserSortColumns)
+	if err != nil {
+		return nil, err
+	}
+	query := `SELECT id,username,display_name,status,version,created_at,updated_at FROM users`
+	if where != "" {
+		query += " WHERE " + where
+	}
+	query += " ORDER BY " + order + " LIMIT ?"
+	args = append(args, q.Limit)
+	rows, err := s.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -565,12 +645,16 @@ func (s *Service) ListUsers(ctx context.Context, actor *Principal) ([]UserDetail
 	for rows.Next() {
 		var u User
 		var c, m string
-		if err := rows.Scan(&u.ID, &u.Username, &u.DisplayName, &u.Status, &c, &m); err != nil {
+		if err := rows.Scan(&u.ID, &u.Username, &u.DisplayName, &u.Status, &u.Version, &c, &m); err != nil {
 			rows.Close()
 			return nil, err
 		}
 		u.CreatedAt, u.UpdatedAt = pt(c), pt(m)
 		out = append(out, UserDetail{User: u})
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return nil, err
 	}
 	rows.Close()
 	for i := range out {
@@ -586,7 +670,73 @@ func (s *Service) ListUsers(ctx context.Context, actor *Principal) ([]UserDetail
 	return out, nil
 }
 
-// GetUser returns one account; ErrNotFound both when missing and when the
+// UpdateUserInput is a partial update; nil fields are left as they are.
+type UpdateUserInput struct {
+	DisplayName *string `json:"displayName,omitempty"`
+}
+
+// UpdateUser changes account fields when ifVersion is the current version
+// (a *VersionMismatchError otherwise); requires users:write.
+func (s *Service) UpdateUser(ctx context.Context, actor *Principal, id string, ifVersion int64, in UpdateUserInput, src Source) (*UserDetail, error) {
+	if !Authorize(actor, ActionUsersWrite, Global) {
+		s.RecordDenied(ctx, actor, ActionUsersWrite, Global, src)
+		return nil, ErrForbidden
+	}
+	before, err := s.GetUser(ctx, actor, id)
+	if err != nil {
+		return nil, err
+	}
+	if in.DisplayName == nil {
+		return nil, fmt.Errorf("%w: nothing to change; send displayName", ErrValidation)
+	}
+	name := strings.TrimSpace(*in.DisplayName)
+	if len([]rune(name)) > 128 {
+		return nil, fmt.Errorf("%w: displayName must be at most 128 characters", ErrValidation)
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	if _, err := s.bumpVersion(ctx, tx, id, ifVersion); err != nil {
+		return nil, err
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE users SET display_name=? WHERE id=?`, name, id); err != nil {
+		return nil, err
+	}
+	if err := s.record(ctx, tx, AuditEvent{ActorID: actor.User.ID, ActorName: actor.User.Username, Action: "user.update", Scope: Global,
+		ResourceKind: "user", ResourceID: id, Result: ResultOK,
+		Before: map[string]any{"displayName": before.DisplayName}, After: map[string]any{"displayName": name},
+		TraceID: src.TraceID, SourceIP: src.IP}); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return s.GetUser(ctx, actor, id)
+}
+
+// bumpVersion advances the account version inside tx and returns the new
+// version. ifVersion 0 means unconditional; otherwise it must be the
+// current version.
+func (s *Service) bumpVersion(ctx context.Context, tx *sql.Tx, userID string, ifVersion int64) (int64, error) {
+	res, err := tx.ExecContext(ctx, `UPDATE users SET version=version+1, updated_at=? WHERE id=? AND (?=0 OR version=?)`,
+		ts(s.now()), userID, ifVersion, ifVersion)
+	if err != nil {
+		return 0, err
+	}
+	var cur int64
+	if err := tx.QueryRowContext(ctx, `SELECT version FROM users WHERE id=?`, userID).Scan(&cur); errors.Is(err, sql.ErrNoRows) {
+		return 0, ErrNotFound
+	} else if err != nil {
+		return 0, err
+	}
+	if n, _ := res.RowsAffected(); n == 1 {
+		return cur, nil
+	}
+	return 0, &VersionMismatchError{Current: cur}
+}
+
 // actor may not read users.
 func (s *Service) GetUser(ctx context.Context, actor *Principal, id string) (*UserDetail, error) {
 	if !Authorize(actor, ActionUsersRead, Global) {
@@ -602,8 +752,8 @@ func (s *Service) GetUser(ctx context.Context, actor *Principal, id string) (*Us
 func (s *Service) userByUsername(ctx context.Context, username string) (*User, string, error) {
 	var u User
 	var hash, c, m string
-	err := s.db.QueryRowContext(ctx, `SELECT id,username,display_name,password_hash,status,created_at,updated_at FROM users WHERE username=? COLLATE NOCASE`, username).
-		Scan(&u.ID, &u.Username, &u.DisplayName, &hash, &u.Status, &c, &m)
+	err := s.db.QueryRowContext(ctx, `SELECT id,username,display_name,password_hash,status,version,created_at,updated_at FROM users WHERE username=? COLLATE NOCASE`, username).
+		Scan(&u.ID, &u.Username, &u.DisplayName, &hash, &u.Status, &u.Version, &c, &m)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, "", ErrNotFound
 	}
@@ -614,11 +764,25 @@ func (s *Service) userByUsername(ctx context.Context, username string) (*User, s
 	return &u, hash, nil
 }
 
+// PrincipalByID loads the current principal of an account, for work that
+// runs after the request (background list queries re-check permissions at
+// run time). A disabled account has no assignments.
+func (s *Service) PrincipalByID(ctx context.Context, userID string) (*Principal, error) {
+	p, err := s.principal(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if p.User.Status != StatusActive {
+		p.Assignments = nil
+	}
+	return p, nil
+}
+
 func (s *Service) principal(ctx context.Context, userID string) (*Principal, error) {
 	var u User
 	var c, m string
-	err := s.db.QueryRowContext(ctx, `SELECT id,username,display_name,status,created_at,updated_at FROM users WHERE id=?`, userID).
-		Scan(&u.ID, &u.Username, &u.DisplayName, &u.Status, &c, &m)
+	err := s.db.QueryRowContext(ctx, `SELECT id,username,display_name,status,version,created_at,updated_at FROM users WHERE id=?`, userID).
+		Scan(&u.ID, &u.Username, &u.DisplayName, &u.Status, &u.Version, &c, &m)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -725,12 +889,50 @@ func (s *Service) record(ctx context.Context, ex execer, ev AuditEvent) error {
 // audit:read. A filter on a scope outside that set yields an empty page, the
 // same answer as for a scope that does not exist.
 func (s *Service) ListAudit(ctx context.Context, actor *Principal, f AuditFilter) ([]AuditEvent, error) {
+	where, args, err := auditWhere(actor, f)
+	if err != nil {
+		return nil, err
+	}
+	order := "seq"
+	if len(f.Page.Sort) > 0 {
+		o, w, a, err := f.Page.SQL(AuditSortColumns)
+		if err != nil {
+			return nil, err
+		}
+		order, f.Limit = o, f.Page.Limit
+		if w != "" {
+			where = append(where, w)
+			args = append(args, a...)
+		}
+	}
+	if len(f.Page.Sort) == 0 && (f.Limit <= 0 || f.Limit > MaxAuditPage) {
+		f.Limit = MaxAuditPage
+	}
+	args = append(args, f.Limit)
+	rows, err := s.db.QueryContext(ctx, `SELECT seq,id,at,coalesce(actor_id,''),actor_name,action,scope_kind,scope_id,resource_kind,resource_id,job_id,node_id,result,message,before_json,after_json,trace_id,source_ip
+		FROM audit_events WHERE `+strings.Join(where, " AND ")+` ORDER BY `+order+` LIMIT ?`, args...)
+	if err != nil {
+		return nil, err
+	}
+	return scanAudit(rows)
+}
+
+// CountAudit counts the events ListAudit could return for f (paging
+// ignored).
+func (s *Service) CountAudit(ctx context.Context, actor *Principal, f AuditFilter) (int, error) {
+	where, args, err := auditWhere(actor, f)
+	if err != nil {
+		return 0, err
+	}
+	var n int
+	err = s.db.QueryRowContext(ctx, `SELECT count(*) FROM audit_events WHERE `+strings.Join(where, " AND "), args...).Scan(&n)
+	return n, err
+}
+
+func auditWhere(actor *Principal, f AuditFilter) ([]string, []any, error) {
 	global, scopes := ScopesFor(actor, ActionAuditRead)
 	if !global && len(scopes) == 0 {
-		return nil, ErrForbidden
-	}
-	if f.Limit <= 0 || f.Limit > MaxAuditPage {
-		f.Limit = MaxAuditPage
+		return nil, nil, ErrForbidden
 	}
 	where := []string{"seq > ?"}
 	args := []any{f.AfterSeq}
@@ -758,12 +960,10 @@ func (s *Service) ListAudit(ctx context.Context, actor *Principal, f AuditFilter
 		where = append(where, "resource_id=?")
 		args = append(args, f.ResourceID)
 	}
-	args = append(args, f.Limit)
-	rows, err := s.db.QueryContext(ctx, `SELECT seq,id,at,coalesce(actor_id,''),actor_name,action,scope_kind,scope_id,resource_kind,resource_id,job_id,node_id,result,message,before_json,after_json,trace_id,source_ip
-		FROM audit_events WHERE `+strings.Join(where, " AND ")+` ORDER BY seq LIMIT ?`, args...)
-	if err != nil {
-		return nil, err
-	}
+	return where, args, nil
+}
+
+func scanAudit(rows *sql.Rows) ([]AuditEvent, error) {
 	defer rows.Close()
 	out := []AuditEvent{}
 	for rows.Next() {

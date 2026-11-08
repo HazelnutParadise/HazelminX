@@ -14,52 +14,136 @@ import (
 )
 
 // Second factors, reauthentication, the user's own sessions and the
-// passkey domain-impact check (ticket 014). Errors use the current apiError
-// format; ticket 010's shared error and pagination middleware replaces it
-// when it lands.
+// passkey domain-impact check (ticket 014), registered on the shared
+// management contract (Server.handle, the error code table).
 
-func (s *Server) mountSecondFactors(p *gin.RouterGroup) {
-	p.POST("/auth/reauthenticate", s.reauthenticate)
-	p.POST("/auth/reauthenticate/passkey-options", s.reauthPasskeyOptions)
-	p.GET("/auth/passkeys/domain-impact", s.passkeyDomainImpact)
+// Request and response bodies of these operations (documented in OpenAPI).
+type secondFactorRequest struct {
+	ChallengeToken string          `json:"challengeToken"`
+	Method         string          `json:"method"`               // totp | recovery-code | passkey
+	Code           string          `json:"code,omitempty"`       // totp or recovery code
+	Credential     json.RawMessage `json:"credential,omitempty"` // passkey assertion from navigator.credentials.get()
+}
 
-	p.GET("/me/second-factors", s.listFactors)
-	p.POST("/me/second-factors/totp", s.beginTOTP)
-	p.POST("/me/second-factors/totp/confirm", s.confirmTOTP)
-	p.DELETE("/me/second-factors/totp", s.removeTOTP)
-	p.POST("/me/second-factors/passkeys/options", s.passkeyRegistrationOptions)
-	p.POST("/me/second-factors/passkeys", s.registerPasskey)
-	p.DELETE("/me/second-factors/passkeys/:id", s.removePasskey)
-	p.POST("/me/recovery-codes", s.regenerateRecoveryCodes)
+type challengeRequest struct {
+	ChallengeToken string `json:"challengeToken"`
+}
 
-	p.GET("/me/sessions", s.listSessions)
-	p.DELETE("/me/sessions/:id", s.revokeSession)
-	p.POST("/me/sessions/revoke-others", s.revokeOtherSessions)
-	p.GET("/me/session-settings", s.getSessionSettings)
-	p.PUT("/me/session-settings", s.putSessionSettings)
+type reauthRequest struct {
+	Password   string          `json:"password"`
+	Method     string          `json:"method,omitempty"` // required when the account has a second factor
+	Code       string          `json:"code,omitempty"`
+	Credential json.RawMessage `json:"credential,omitempty"`
+}
 
-	for _, op := range [][3]string{
-		{"POST", "/management/v1/auth/login/second-factor", "finish a login with totp, recovery-code or passkey; sets the session cookie"},
-		{"POST", "/management/v1/auth/login/passkey-options", "WebAuthn assertion options for the second login step"},
-		{"POST", "/management/v1/auth/reauthenticate", "prove password and second factor again; counts as recent for 10 minutes"},
-		{"POST", "/management/v1/auth/reauthenticate/passkey-options", "WebAuthn assertion options for reauthentication"},
-		{"GET", "/management/v1/auth/passkeys/domain-impact", "passkeys and users affected if the management domain becomes ?domain= (platform:write)"},
-		{"GET", "/management/v1/me/second-factors", "own authenticator app, passkeys and remaining recovery codes"},
-		{"POST", "/management/v1/me/second-factors/totp", "start authenticator-app enrolment; returns the seed once (recent reauthentication)"},
-		{"POST", "/management/v1/me/second-factors/totp/confirm", "confirm the authenticator app with a first code; may return recovery codes once"},
-		{"DELETE", "/management/v1/me/second-factors/totp", "remove the authenticator app (recent reauthentication)"},
-		{"POST", "/management/v1/me/second-factors/passkeys/options", "WebAuthn creation options for a new passkey (recent reauthentication)"},
-		{"POST", "/management/v1/me/second-factors/passkeys", "register a passkey; may return recovery codes once"},
-		{"DELETE", "/management/v1/me/second-factors/passkeys/{id}", "remove a passkey (recent reauthentication)"},
-		{"POST", "/management/v1/me/recovery-codes", "replace the recovery codes; returns the new set once (recent reauthentication)"},
-		{"GET", "/management/v1/me/sessions", "own signed-in sessions"},
-		{"DELETE", "/management/v1/me/sessions/{id}", "sign out one of your sessions now"},
-		{"POST", "/management/v1/me/sessions/revoke-others", "sign out every other session now"},
-		{"GET", "/management/v1/me/session-settings", "own idle timeout and its bounds"},
-		{"PUT", "/management/v1/me/session-settings", "set own idle timeout (0 = platform default)"},
-	} {
-		s.addOperation(op[0], op[1], op[2])
+type totpConfirmRequest struct {
+	Code string `json:"code"`
+}
+
+type passkeyRegisterRequest struct {
+	Name       string          `json:"name,omitempty"`
+	Credential json.RawMessage `json:"credential"` // attestation from navigator.credentials.create()
+}
+
+type sessionSettingsRequest struct {
+	IdleTimeoutSeconds *int `json:"idleTimeoutSeconds"` // 0 = platform default
+}
+
+type recoveryCodesResponse struct {
+	RecoveryCodes []string `json:"recoveryCodes"`
+}
+
+type sessionsResponse struct {
+	Sessions []iam.SessionInfo `json:"sessions"`
+}
+
+type revokedResponse struct {
+	Revoked int `json:"revoked"`
+}
+
+// webauthnOptions is the JSON handed to navigator.credentials.create() or
+// .get() as is ({"publicKey": {...}}).
+type webauthnOptions = json.RawMessage
+
+// mountSecondFactorLogin registers the public second login step.
+func (s *Server) mountSecondFactorLogin(pub *gin.RouterGroup, base string) {
+	s.handle(pub, base, Operation{Method: "POST", Path: base + "/auth/login/second-factor", ID: "completeSecondFactor", Tag: "auth",
+		Summary: "finish a login with totp, recovery-code or passkey; sets the session and CSRF cookies", Request: secondFactorRequest{},
+		Responses: []Response{{Status: 200, Body: loginResponse{}, Headers: []string{"Set-Cookie"}}},
+		Errors:    []string{CodeLoginChallengeInvalid, CodeSecondFactorInvalid, CodeTooManyAttempts}}, s.loginSecondFactor)
+	s.handle(pub, base, Operation{Method: "POST", Path: base + "/auth/login/passkey-options", ID: "loginPasskeyOptions", Tag: "auth",
+		Summary: "WebAuthn assertion options for the second login step", Request: challengeRequest{},
+		Responses: []Response{{Status: 200, Body: webauthnOptions{}}},
+		Errors:    []string{CodeLoginChallengeInvalid, CodeNotAvailable}}, s.loginPasskeyOptions)
+}
+
+// mountSecondFactors registers the signed-in operations of ticket 014.
+func (s *Server) mountSecondFactors(p *gin.RouterGroup, base string) {
+	op := func(o Operation) Operation {
+		o.Auth = true
+		if o.Tag == "" {
+			o.Tag = "auth"
+		}
+		return o
 	}
+	recent := []string{CodeReauthRequired}
+	s.handle(p, base, op(Operation{Method: "POST", Path: base + "/auth/reauthenticate", ID: "reauthenticate",
+		Summary: "prove password and, when enrolled, a second factor again; counts as recent for 10 minutes", Request: reauthRequest{},
+		Responses: []Response{{Status: 204, Description: "reauthenticated"}},
+		Errors:    []string{CodeInvalidCredentials, CodeSecondFactorInvalid, CodeTooManyAttempts}}), s.reauthenticate)
+	s.handle(p, base, op(Operation{Method: "POST", Path: base + "/auth/reauthenticate/passkey-options", ID: "reauthPasskeyOptions",
+		Summary:   "WebAuthn assertion options for reauthentication",
+		Responses: []Response{{Status: 200, Body: webauthnOptions{}}}, Errors: []string{CodeNotAvailable}}), s.reauthPasskeyOptions)
+	s.handle(p, base, op(Operation{Method: "GET", Path: base + "/auth/passkeys/domain-impact", ID: "passkeyDomainImpact",
+		Summary:    "passkeys and accounts affected if the management domain became ?domain=; changes nothing",
+		Permission: "platform:write on the global scope",
+		Params: []Param{{Name: "domain", In: "query", Required: true, Description: "host name such as panel.example.com",
+			Schema: jsonSchema{"type": "string"}}},
+		Responses: []Response{{Status: 200, Body: iam.DomainImpact{}}}}), s.passkeyDomainImpact)
+
+	s.handle(p, base, op(Operation{Method: "GET", Path: base + "/me/second-factors", ID: "listSecondFactors",
+		Summary:   "own authenticator app, passkeys and remaining recovery codes",
+		Responses: []Response{{Status: 200, Body: iam.FactorSummary{}}}}), s.listFactors)
+	s.handle(p, base, op(Operation{Method: "POST", Path: base + "/me/second-factors/totp", ID: "beginTOTP",
+		Summary:   "start authenticator-app enrolment; returns the seed once (needs recent authentication)",
+		Responses: []Response{{Status: 201, Body: iam.TOTPEnrollment{}}},
+		Errors:    append([]string{CodeAlreadyExists, CodeNotAvailable}, recent...)}), s.beginTOTP)
+	s.handle(p, base, op(Operation{Method: "POST", Path: base + "/me/second-factors/totp/confirm", ID: "confirmTOTP",
+		Summary: "confirm the authenticator app with a first code; returns recovery codes once when it is the first factor",
+		Request: totpConfirmRequest{}, Responses: []Response{{Status: 200, Body: iam.EnrollmentResult{}}},
+		Errors: []string{CodeAlreadyExists, CodeSecondFactorInvalid, CodeTooManyAttempts}}), s.confirmTOTP)
+	s.handle(p, base, op(Operation{Method: "DELETE", Path: base + "/me/second-factors/totp", ID: "removeTOTP",
+		Summary:   "remove the authenticator app, or cancel an unconfirmed enrolment (needs recent authentication)",
+		Responses: []Response{{Status: 204, Description: "removed"}},
+		Errors:    append([]string{CodeLastSecondFactor}, recent...)}), s.removeTOTP)
+	s.handle(p, base, op(Operation{Method: "POST", Path: base + "/me/second-factors/passkeys/options", ID: "passkeyRegistrationOptions",
+		Summary:   "WebAuthn creation options for a new passkey (needs recent authentication)",
+		Responses: []Response{{Status: 200, Body: webauthnOptions{}}},
+		Errors:    append([]string{CodeNotAvailable}, recent...)}), s.passkeyRegistrationOptions)
+	s.handle(p, base, op(Operation{Method: "POST", Path: base + "/me/second-factors/passkeys", ID: "registerPasskey",
+		Summary: "register a passkey; returns recovery codes once when it is the first factor",
+		Request: passkeyRegisterRequest{}, Responses: []Response{{Status: 201, Body: iam.EnrollmentResult{}}},
+		Errors: append([]string{CodeAlreadyExists, CodeSecondFactorInvalid, CodeNotAvailable}, recent...)}), s.registerPasskey)
+	s.handle(p, base, op(Operation{Method: "DELETE", Path: base + "/me/second-factors/passkeys/{id}", ID: "removePasskey",
+		Summary:   "remove one of your passkeys (needs recent authentication)",
+		Responses: []Response{{Status: 204, Description: "removed"}},
+		Errors:    append([]string{CodeLastSecondFactor}, recent...)}), s.removePasskey)
+	s.handle(p, base, op(Operation{Method: "POST", Path: base + "/me/recovery-codes", ID: "regenerateRecoveryCodes",
+		Summary:   "replace your recovery codes; the old set stops working; the new set is shown once (needs recent authentication)",
+		Responses: []Response{{Status: 201, Body: recoveryCodesResponse{}}},
+		Errors:    append([]string{CodeAlreadyExists}, recent...)}), s.regenerateRecoveryCodes)
+
+	s.handle(p, base, op(Operation{Method: "GET", Path: base + "/me/sessions", ID: "listOwnSessions", Tag: "sessions",
+		Summary: "your signed-in sessions", Responses: []Response{{Status: 200, Body: sessionsResponse{}}}}), s.listSessions)
+	s.handle(p, base, op(Operation{Method: "DELETE", Path: base + "/me/sessions/{id}", ID: "revokeOwnSession", Tag: "sessions",
+		Summary: "sign out one of your sessions now", Responses: []Response{{Status: 204, Description: "revoked"}}}), s.revokeSession)
+	s.handle(p, base, op(Operation{Method: "POST", Path: base + "/me/sessions/revoke-others", ID: "revokeOtherSessions", Tag: "sessions",
+		Summary: "sign out every other session now", Responses: []Response{{Status: 200, Body: revokedResponse{}}}}), s.revokeOtherSessions)
+	s.handle(p, base, op(Operation{Method: "GET", Path: base + "/me/session-settings", ID: "getSessionSettings", Tag: "sessions",
+		Summary: "your idle timeout and its bounds", Responses: []Response{{Status: 200, Body: iam.SessionSettings{}}}}), s.getSessionSettings)
+	s.handle(p, base, op(Operation{Method: "PUT", Path: base + "/me/session-settings", ID: "putSessionSettings", Tag: "sessions",
+		Summary: "set your idle timeout (0 = platform default); applies to the current session at once",
+		Request: sessionSettingsRequest{}, Responses: []Response{{Status: 200, Body: iam.SessionSettings{}}}}), s.putSessionSettings)
 }
 
 // enrollmentAllowed are the routes a session that still has to add a
@@ -118,29 +202,13 @@ func (s *Server) relyingParty(c *gin.Context) iam.RelyingParty {
 	return iam.RelyingParty{ID: strings.ToLower(host), Origin: origin}
 }
 
-// proofRequest is the second-factor part of a login or reauthentication.
-type proofRequest struct {
-	Method     string          `json:"method"`
-	Code       string          `json:"code"`
-	Credential json.RawMessage `json:"credential"`
-}
-
-func (r proofRequest) proof() iam.Proof {
-	return iam.Proof{Method: r.Method, Code: r.Code, Credential: r.Credential}
-}
-
-type secondFactorRequest struct {
-	ChallengeToken string `json:"challengeToken"`
-	proofRequest
-}
-
 func (s *Server) loginSecondFactor(c *gin.Context) {
 	var in secondFactorRequest
-	if err := c.ShouldBindJSON(&in); err != nil {
-		fail(c, http.StatusBadRequest, "VALIDATION_FAILED", "body must be JSON with challengeToken, method and code or credential")
+	if !bindJSON(c, &in, "body must be JSON with challengeToken, method and code or credential") {
 		return
 	}
-	res, err := s.iam.CompleteSecondFactor(c.Request.Context(), in.ChallengeToken, in.proof(), s.relyingParty(c), source(c))
+	proof := iam.Proof{Method: in.Method, Code: in.Code, Credential: in.Credential}
+	res, err := s.iam.CompleteSecondFactor(c.Request.Context(), in.ChallengeToken, proof, s.relyingParty(c), source(c))
 	if errors.Is(err, iam.ErrThrottled) {
 		throttled(c, res.RetryAfter)
 		return
@@ -153,11 +221,8 @@ func (s *Server) loginSecondFactor(c *gin.Context) {
 }
 
 func (s *Server) loginPasskeyOptions(c *gin.Context) {
-	var in struct {
-		ChallengeToken string `json:"challengeToken"`
-	}
-	if err := c.ShouldBindJSON(&in); err != nil {
-		fail(c, http.StatusBadRequest, "VALIDATION_FAILED", "body must be JSON with challengeToken")
+	var in challengeRequest
+	if !bindJSON(c, &in, "body must be JSON with challengeToken") {
 		return
 	}
 	opts, err := s.iam.BeginPasskeyLogin(c.Request.Context(), in.ChallengeToken, s.relyingParty(c))
@@ -169,15 +234,12 @@ func (s *Server) loginPasskeyOptions(c *gin.Context) {
 }
 
 func (s *Server) reauthenticate(c *gin.Context) {
-	var in struct {
-		Password string `json:"password"`
-		proofRequest
-	}
-	if err := c.ShouldBindJSON(&in); err != nil {
-		fail(c, http.StatusBadRequest, "VALIDATION_FAILED", "body must be JSON with password and, when enrolled, method and code or credential")
+	var in reauthRequest
+	if !bindJSON(c, &in, "body must be JSON with password and, when enrolled, method and code or credential") {
 		return
 	}
-	if err := s.iam.Reauthenticate(c.Request.Context(), Principal(c), in.Password, in.proof(), s.relyingParty(c), source(c)); err != nil {
+	proof := iam.Proof{Method: in.Method, Code: in.Code, Credential: in.Credential}
+	if err := s.iam.Reauthenticate(c.Request.Context(), Principal(c), in.Password, proof, s.relyingParty(c), source(c)); err != nil {
 		failErr(c, err)
 		return
 	}
@@ -222,11 +284,8 @@ func (s *Server) beginTOTP(c *gin.Context) {
 }
 
 func (s *Server) confirmTOTP(c *gin.Context) {
-	var in struct {
-		Code string `json:"code"`
-	}
-	if err := c.ShouldBindJSON(&in); err != nil {
-		fail(c, http.StatusBadRequest, "VALIDATION_FAILED", "body must be JSON with code")
+	var in totpConfirmRequest
+	if !bindJSON(c, &in, "body must be JSON with code") {
 		return
 	}
 	out, err := s.iam.ConfirmTOTP(c.Request.Context(), Principal(c), in.Code, source(c))
@@ -256,12 +315,14 @@ func (s *Server) passkeyRegistrationOptions(c *gin.Context) {
 }
 
 func (s *Server) registerPasskey(c *gin.Context) {
-	var in struct {
-		Name       string          `json:"name"`
-		Credential json.RawMessage `json:"credential"`
+	var in passkeyRegisterRequest
+	if !bindJSON(c, &in, "body must be JSON with name and credential") {
+		return
 	}
-	if err := c.ShouldBindJSON(&in); err != nil || len(in.Credential) == 0 {
-		fail(c, http.StatusBadRequest, "VALIDATION_FAILED", "body must be JSON with name and credential")
+	if len(in.Credential) == 0 {
+		e := newError(CodeValidationFailed, "credential is required")
+		e.Fields = []FieldError{{Field: "credential", Message: "required"}}
+		respond(c, e)
 		return
 	}
 	out, err := s.iam.FinishPasskeyRegistration(c.Request.Context(), Principal(c), s.relyingParty(c), in.Name, in.Credential, source(c))
@@ -288,7 +349,7 @@ func (s *Server) regenerateRecoveryCodes(c *gin.Context) {
 		return
 	}
 	c.Header("Cache-Control", "no-store")
-	c.JSON(http.StatusCreated, gin.H{"recoveryCodes": codes})
+	c.JSON(http.StatusCreated, recoveryCodesResponse{RecoveryCodes: codes})
 }
 
 func (s *Server) listSessions(c *gin.Context) {
@@ -297,7 +358,7 @@ func (s *Server) listSessions(c *gin.Context) {
 		failErr(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"sessions": out})
+	c.JSON(http.StatusOK, sessionsResponse{Sessions: out})
 }
 
 func (s *Server) revokeSession(c *gin.Context) {
@@ -319,7 +380,7 @@ func (s *Server) revokeOtherSessions(c *gin.Context) {
 		failErr(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"revoked": n})
+	c.JSON(http.StatusOK, revokedResponse{Revoked: n})
 }
 
 func (s *Server) getSessionSettings(c *gin.Context) {
@@ -332,11 +393,14 @@ func (s *Server) getSessionSettings(c *gin.Context) {
 }
 
 func (s *Server) putSessionSettings(c *gin.Context) {
-	var in struct {
-		IdleTimeoutSeconds *int `json:"idleTimeoutSeconds"`
+	var in sessionSettingsRequest
+	if !bindJSON(c, &in, "body must be JSON with idleTimeoutSeconds (0 = platform default)") {
+		return
 	}
-	if err := c.ShouldBindJSON(&in); err != nil || in.IdleTimeoutSeconds == nil {
-		fail(c, http.StatusBadRequest, "VALIDATION_FAILED", "body must be JSON with idleTimeoutSeconds (0 = platform default)")
+	if in.IdleTimeoutSeconds == nil {
+		e := newError(CodeValidationFailed, "idleTimeoutSeconds is required (0 = platform default)")
+		e.Fields = []FieldError{{Field: "idleTimeoutSeconds", Message: "required"}}
+		respond(c, e)
 		return
 	}
 	out, err := s.iam.SetSessionIdle(c.Request.Context(), Principal(c), time.Duration(*in.IdleTimeoutSeconds)*time.Second, source(c))

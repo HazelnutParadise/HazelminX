@@ -229,12 +229,75 @@ func (e *Engine) Submit(ctx context.Context, req SubmitRequest) (job *Job, dedup
 	return j, false, nil
 }
 
+// Preview is what Submit would do with a request, computed without
+// recording, reserving or starting anything (dryRun, ROB-003).
+type Preview struct {
+	// Replay is the existing job the requestId would return (ENG-002).
+	Replay *Job `json:"replay,omitempty"`
+	// QueuedBehind lists the jobs holding locks on the requested resources;
+	// a new job would wait in queued until they release them.
+	QueuedBehind []string `json:"queuedBehind"`
+	// Budget is the concurrency and space budget of the kind.
+	Budget Budget `json:"budget"`
+	// SpaceShort is set when the declared RequiredBytes do not fit above the
+	// reserve right now; the job would fail its precheck.
+	SpaceShort string `json:"spaceShort,omitempty"`
+}
+
+// Preview validates req exactly as Submit does and reports what would
+// happen. It returns the same errors as Submit for invalid requests, an
+// unknown kind and a requestId reused with different content.
+func (e *Engine) Preview(ctx context.Context, req SubmitRequest) (*Preview, error) {
+	if strings.TrimSpace(req.RequestID) == "" {
+		return nil, fmt.Errorf("%w: requestId is required", ErrInvalidRequest)
+	}
+	if req.Kind == "" {
+		return nil, fmt.Errorf("%w: kind is required", ErrInvalidRequest)
+	}
+	e.mu.Lock()
+	_, known := e.handlers[req.Kind]
+	e.mu.Unlock()
+	if !known {
+		return nil, fmt.Errorf("%w: %q", ErrUnknownKind, req.Kind)
+	}
+	hash, err := requestHash(req)
+	if err != nil {
+		return nil, err
+	}
+	p := &Preview{Budget: e.budgetFor(req.Kind), QueuedBehind: []string{}}
+	existing, err := e.store.GetJobByRequestID(ctx, req.RequestID)
+	switch {
+	case err == nil:
+		if existing.RequestHash != hash {
+			return nil, fmt.Errorf("%w: request %q", ErrConflict, req.RequestID)
+		}
+		p.Replay = existing
+		return p, nil
+	case !errors.Is(err, ErrNotFound):
+		return nil, err
+	}
+	if h := e.locks.holders(req.Resources); h != nil {
+		p.QueuedBehind = h
+	}
+	if req.RequiredBytes > 0 && e.opts.FreeBytes != nil {
+		if free, err := e.opts.FreeBytes(); err == nil && free-p.Budget.ReserveBytes < req.RequiredBytes {
+			p.SpaceShort = fmt.Sprintf("job needs %d bytes but only %d are free above the %d-byte reserve kept for hazelminx-core", req.RequiredBytes, free-p.Budget.ReserveBytes, p.Budget.ReserveBytes)
+		}
+	}
+	return p, nil
+}
+
 // Get returns the job record.
 func (e *Engine) Get(ctx context.Context, id string) (*Job, error) { return e.store.GetJob(ctx, id) }
 
 // List returns jobs, newest first.
 func (e *Engine) List(ctx context.Context, opts ListOptions) ([]*Job, error) {
 	return e.store.ListJobs(ctx, opts)
+}
+
+// Count returns how many jobs match the filters of opts.
+func (e *Engine) Count(ctx context.Context, opts ListOptions) (int, error) {
+	return e.store.CountJobs(ctx, opts)
 }
 
 // Events returns the events after seq, so a reconnecting client resumes.

@@ -189,7 +189,7 @@ func TestEnrollmentGateHoldsPrivilegedAccounts(t *testing.T) {
 
 	for _, role := range []iam.Role{iam.RolePlatformAdmin, iam.RoleHostOperator} {
 		name := strings.ReplaceAll(string(role), "_", "")
-		u := hs.createUser(c, name, role, iam.Global, "10.0.1.1")
+		u := hs.createUserWithoutFactor(c, name, role, iam.Global, "10.0.1.1")
 		if r := u.do(http.MethodGet, "/management/v1/users", nil, nil); r.Code != http.StatusForbidden || r.Body["code"] != "SECOND_FACTOR_ENROLLMENT_REQUIRED" {
 			t.Fatalf("%s before enrolment: %+v", role, r)
 		}

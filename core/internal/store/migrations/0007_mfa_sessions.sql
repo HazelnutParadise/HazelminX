@@ -1,4 +1,4 @@
--- 0006: second factors, recovery codes and session controls (ticket 014;
+-- 0007: second factors, recovery codes and session controls (ticket 014;
 -- IAM-002, IAM-003, IAM-011, SET-004). Times are UTC RFC 3339 text.
 -- Credential rows belong to their user: users are never hard-deleted by the
 -- application (they are disabled), so ON DELETE CASCADE only fires on a
