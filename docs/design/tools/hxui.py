@@ -27,7 +27,7 @@ def _vars(t: dict) -> str:
 
 BASE_CSS = f"""
 body{{margin:0}}
-.hb{{{_vars(DARK)};font-family:"Geist","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;font-synthesis:none;line-break:strict;color:var(--ink);background:var(--bg);font-size:14px;line-height:1.5;color-scheme:dark}}
+@font-face{{font-family:"HZX CJK Punct";src:local("PingFang TC"),local("Noto Sans TC"),local("Noto Sans CJK TC"),local("Microsoft JhengHei");unicode-range:U+3000-303F,U+FF00-FFEF}}.hb{{{_vars(DARK)};font-family:"HZX CJK Punct","Geist","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;font-synthesis:none;line-break:strict;color:var(--ink);background:var(--bg);font-size:14px;line-height:1.5;color-scheme:dark}}
 .hb.theme-light{{{_vars(LIGHT)};color-scheme:light}}
 .hb *{{box-sizing:border-box}}
 .hb .mono{{font-family:"Geist Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}}
