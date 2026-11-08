@@ -1,0 +1,16 @@
+{
+  "canonical": "hazelminx-grant-v1\ngrant-ledger-01\nsystem:ledger-sync\n2026-11-08T09:30:00Z\n2026-11-08T09:35:00Z\nhost.ledger.read\n",
+  "grant": {
+    "expires_at": "2026-11-08T09:35:00Z",
+    "id": "grant-ledger-01",
+    "not_before": "2026-11-08T09:30:00Z",
+    "permissions": [
+      "host.ledger.read"
+    ],
+    "signature": "2fa524355de6c74329d890e58181869704ca982e5d7de5d3c27afbc358f987ebe00de1fc1ef661a50a9c45fc986f33a4219ae466e7057bf99ead7b950d53ac01",
+    "subject": "system:ledger-sync"
+  },
+  "issuerPublicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEA6kpsY+KcUgq+9VB7Ey7F+ZVHdq6+vnuSQh7qaRRG0iw=\n-----END PUBLIC KEY-----\n",
+  "issuerSeedHex": "0707070707070707070707070707070707070707070707070707070707070707",
+  "note": "Test-only key (seed is public). Ed25519 is deterministic, so Core must produce the same signature."
+}

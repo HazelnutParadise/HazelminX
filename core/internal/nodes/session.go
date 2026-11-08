@@ -51,7 +51,7 @@ type pending struct {
 	// event and progress are set for step_execute waiters only.
 	progress func(*protocol.StepProgress)
 	event    func(*protocol.Event) // non-terminal events (started)
-	result   chan any              // *protocol.Event (completed/failed), *protocol.StepRejected, *protocol.ReconcileReport
+	result   chan any              // *protocol.Event (completed/failed), *protocol.StepRejected, *protocol.ReconcileReport, *protocol.LedgerPage, *protocol.LedgerUnavailable
 }
 
 // NodeID is the node fingerprint.
@@ -247,10 +247,18 @@ func (s *Session) handle(msg any) {
 		if p := s.lookup(m.RequestID); p != nil {
 			s.deliver(m.RequestID, p, m)
 		}
+	case *protocol.LedgerPage:
+		if p := s.lookup(m.RequestID); p != nil {
+			s.deliver(m.RequestID, p, m)
+		}
+	case *protocol.LedgerUnavailable:
+		if p := s.lookup(m.RequestID); p != nil {
+			s.deliver(m.RequestID, p, m)
+		}
 	case *protocol.ProtocolError:
 		s.hub.opts.Logger.Warn("agent could not read a core message", "node", s.id.Fingerprint, "code", m.Code, "detail", m.Message)
 	default:
-		// step_execute, step_reconcile and ack only flow core→agent.
+		// step_execute, step_reconcile, ack and ledger_pull only flow core→agent.
 		s.protocolError(protocol.ErrorUnknownMessage, "message is not valid in the agent→core direction")
 	}
 }

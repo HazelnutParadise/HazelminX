@@ -41,6 +41,7 @@ node_name = "db-01"                        # 顯示名稱；身分以金鑰指�
 log_format = "json"                        # json 或 text
 core_transport = "pinned"                  # pinned（預設）或 proxy
 proxy_ca_file = "/etc/hazelminx/proxy-ca.pem"  # 只在 proxy 模式使用；不設則用作業系統的信任清單
+privileged_socket = "/run/hazelminx/privileged.sock"  # 高權限執行器的 socket
 ```
 
 `core_url` 只接受 `https://` 或 `wss://`。`pinned` 模式以 `state_dir/identity/core-ca.crt` 驗 Core 的 TLS 憑證，名稱固定是 `core.hazelminx.internal`，所以 Core 換 IP 或主機名不影響信任。`proxy` 模式給會終止 TLS 的代理用：TLS 驗代理本身的憑證，Core 身分改由握手時的 Core 憑證與簽章證明。
@@ -55,6 +56,7 @@ proxy_ca_file = "/etc/hazelminx/proxy-ca.pem"  # 只在 proxy 模式使用；不
 - 每個步驟開始前與結束後都先寫進 `state_dir/jobs/journal.jsonl` 並 fsync，再送給 Core。Core 確認過的序號記在 `state_dir/jobs/acked`；重連後重送未確認的事件。
 - 同一工作步驟已有完成或失敗紀錄時不重跑，直接重送那筆紀錄。寫不了紀錄時拒絕步驟（`JOURNAL_UNAVAILABLE`），步驟跑完卻寫不進結果時主動斷線，讓 Core 重連後對帳。結果超過 256 KiB 記為失敗 `RESULT_TOO_LARGE`。Agent 重開機時正在跑的步驟記為中斷，不會被當成完成；只有 Core 對帳後送來、而且標記可重試的步驟才會再跑一次，否則回 `OUTCOME_UNKNOWN`。
 - 別的節點、已過期、控制世代倒退、未宣告的動作、參數有多餘欄位的步驟一律拒絕，不執行。
+- Core 送來 `ledger_pull` 時，Agent 把裡面的授權憑證交給高權限執行器的 `ledger_export`，再把拿到的帳本原始行原樣回成 `ledger_page`。執行器連不上或拒絕時回 `ledger_unavailable`。Agent 自己讀不到帳本，只負責轉交（`src/ledger.rs`，能力 `host.ledger` v1）。
 - 目前的動作：`agent.info`（唯讀）。`--features test-actions` 另外編入只供互通測試用的 `test.sleep`，正式建置沒有它。
 
 `deploy/hazelminx-agent.service` 是 systemd 單元（低權限帳號、`ProtectSystem=strict`、失敗重啟有上限）；`deploy/sysusers.d/hazelminx.conf` 宣告服務帳號。
@@ -98,7 +100,7 @@ ledger_dir = "/var/lib/hazelminx/ledger"                    # 主機變更帳本
 | `system_info` | 無 | `host.info.read` | 讀 `/etc/hostname`、`/etc/os-release`、`/proc/sys/kernel/osrelease`、`/proc/uptime` |
 | `list_package_updates` | 無 | `host.packages.read` | `apt-get -q -s upgrade` 或 `dnf -q check-update`，解析成清單 |
 | `restart_service` | `unit`（systemd 單元名） | `host.services.manage` | `systemctl restart -- <unit>` 再 `systemctl is-active -- <unit>` |
-| `ledger_export` | `after_seq`、`limit`（選填，上限 500） | `host.ledger.read` | 回傳 `after_seq` 之後的帳本原始行，給 Core 保存副本 |
+| `ledger_export` | `after_seq`、`limit`（選填，上限 500）、`max_bytes`（選填） | `host.ledger.read` | 回傳 `after_seq` 之後的帳本原始行，給 Core 保存副本；有 `max_bytes` 時，行加起來超過就提早停（至少一行） |
 
 沒有 shell、腳本或任意命令動作；將來若加終端機動作，必須另要 `host.shell` 權限。新增動作的步驟：在 `src/action.rs` 加變體（參數用 `src/params.rs` 的驗證型別）、權限名稱，以及 `Action::ledger_decl` 的一個分支（只讀，或會改哪些對象、改法是什麼），在 `src/handlers/` 加處理器，在 `src/executor.rs` 的 `HostExecutor` 加一個分支。動作改到的對象若是 `src/ledger/entry.rs` 的 `Target` 還沒有的種類（例如防火牆、容器、sysctl），同一張票要加 `Target` 變體與 `src/ledger/probe.rs` 的讀取方式。
 
@@ -122,7 +124,7 @@ ledger_dir = "/var/lib/hazelminx/ledger"                    # 主機變更帳本
 
 安裝前快照由安裝器（票 013）在寫入任何東西之前執行 `snapshot capture`，記錄已安裝套件、已啟用的 systemd 單元、監聽中的 Port、使用者與群組、防火牆規則數，以及平台會寫入的路徑是否存在（內建清單在 `src/ledger/snapshot.rs`，`--path` 可再加）。讀不到的項目記為 `unavailable` 並附原因，比對時列為無法比較，不算相同。
 
-Core 的副本：Agent 以 `ledger_export` 分頁取原始行，Core 用 `LedgerBatch::verify` 的同一套規則檢查後保存。訊息型別在 `src/ledger/sync.rs`，範例在 `docs/contracts/fixtures/host-ledger-batch.json`；Core↔Agent 通道接上之前（票 007），這段同步還沒有實際跑起來。
+Core 的副本：Core 經 Core↔Agent 通道送 `ledger_pull`，Agent 用裡面的授權憑證（權限 `host.ledger.read`）呼叫 `ledger_export`，執行器回傳原始行，Core 驗證雜湊鏈後保存（`core/internal/hostledger`）。`ledger_export` 的 `max_bytes` 讓一頁不超過通道的訊息上限。訊息與驗證規則寫在 `docs/contracts/README.md` 的「主機變更帳本」一節。
 
 安全事件以 tracing target `hazelminx.security` 輸出，欄位只有識別碼、規則名稱與大小，不含簽章、金鑰或參數值。
 

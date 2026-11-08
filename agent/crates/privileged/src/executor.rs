@@ -85,15 +85,20 @@ impl Executor for HostExecutor {
                 Action::RestartService { unit } => {
                     handlers::systemd::restart(runner, sink, unit).await
                 }
-                Action::LedgerExport { after_seq, limit } => {
+                Action::LedgerExport {
+                    after_seq,
+                    limit,
+                    max_bytes,
+                } => {
                     let ledger =
                         ledger.ok_or_else(|| ActionError::new("host ledger is unavailable"))?;
                     let limit = limit.map_or(MAX_EXPORT_LINES, |l| l as usize);
-                    let batch =
-                        tokio::task::spawn_blocking(move || ledger.export(after_seq, limit))
-                            .await
-                            .map_err(|e| ActionError::new(format!("ledger task: {e}")))?
-                            .map_err(|e| ActionError::new(e.to_string()))?;
+                    let batch = tokio::task::spawn_blocking(move || {
+                        ledger.export(after_seq, limit, max_bytes.map(|b| b as usize))
+                    })
+                    .await
+                    .map_err(|e| ActionError::new(format!("ledger task: {e}")))?
+                    .map_err(|e| ActionError::new(e.to_string()))?;
                     Ok(serde_json::to_value(batch).expect("LedgerBatch serializes"))
                 }
             }

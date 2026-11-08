@@ -1,0 +1,16 @@
+{
+  "type": "ledger_pull",
+  "requestId": "lgp_01HXYZ",
+  "afterSeq": 0,
+  "limit": 200,
+  "grant": {
+    "id": "grant-ledger-01",
+    "subject": "system:ledger-sync",
+    "permissions": [
+      "host.ledger.read"
+    ],
+    "not_before": "2026-11-08T09:30:00Z",
+    "expires_at": "2026-11-08T09:35:00Z",
+    "signature": "2fa524355de6c74329d890e58181869704ca982e5d7de5d3c27afbc358f987ebe00de1fc1ef661a50a9c45fc986f33a4219ae466e7057bf99ead7b950d53ac01"
+  }
+}

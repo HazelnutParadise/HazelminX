@@ -45,6 +45,22 @@ const (
 const (
 	CapJobs      = "jobs"
 	CapAgentInfo = "agent.info"
+	// CapHostLedger: ledger_pull / ledger_page / ledger_unavailable, the
+	// Core's copy of the host change ledger (spec 55.1).
+	CapHostLedger = "host.ledger"
+)
+
+// ledger_unavailable codes.
+const (
+	// LedgerExecutorUnreachable: the agent cannot reach the privileged
+	// executor's socket.
+	LedgerExecutorUnreachable = "EXECUTOR_UNREACHABLE"
+	// LedgerExecutorRefused: the executor refused the export (grant,
+	// permission, parameters).
+	LedgerExecutorRefused = "EXECUTOR_REFUSED"
+	// LedgerExportFailed: the executor could not export (ledger not open,
+	// or afterSeq is past the host ledger's head).
+	LedgerExportFailed = "EXPORT_FAILED"
 )
 
 // reject codes.
@@ -76,20 +92,23 @@ const (
 
 // Message type strings.
 const (
-	TypeHello           = "hello"
-	TypeWelcome         = "welcome"
-	TypeReject          = "reject"
-	TypeAuth            = "auth"
-	TypeReady           = "ready"
-	TypeHeartbeat       = "heartbeat"
-	TypeStepExecute     = "step_execute"
-	TypeStepRejected    = "step_rejected"
-	TypeStepReconcile   = "step_reconcile"
-	TypeReconcileReport = "reconcile_report"
-	TypeEvent           = "event"
-	TypeStepProgress    = "step_progress"
-	TypeAck             = "ack"
-	TypeProtocolError   = "protocol_error"
+	TypeHello             = "hello"
+	TypeWelcome           = "welcome"
+	TypeReject            = "reject"
+	TypeAuth              = "auth"
+	TypeReady             = "ready"
+	TypeHeartbeat         = "heartbeat"
+	TypeStepExecute       = "step_execute"
+	TypeStepRejected      = "step_rejected"
+	TypeStepReconcile     = "step_reconcile"
+	TypeReconcileReport   = "reconcile_report"
+	TypeEvent             = "event"
+	TypeStepProgress      = "step_progress"
+	TypeAck               = "ack"
+	TypeProtocolError     = "protocol_error"
+	TypeLedgerPull        = "ledger_pull"
+	TypeLedgerPage        = "ledger_page"
+	TypeLedgerUnavailable = "ledger_unavailable"
 )
 
 // Durable event kinds.
@@ -250,6 +269,53 @@ type ProtocolError struct {
 	Message string `json:"message"`
 }
 
+// ExecutorGrant is a grant for the privileged executor, carried through the
+// agent unchanged. Field names are the executor's own (snake_case). Times
+// are RFC 3339 UTC with whole seconds, the form the executor's canonical
+// bytes use.
+type ExecutorGrant struct {
+	ID          string   `json:"id"`
+	Subject     string   `json:"subject"`
+	Permissions []string `json:"permissions"`
+	NotBefore   string   `json:"not_before"`
+	ExpiresAt   string   `json:"expires_at"`
+	Signature   string   `json:"signature"`
+}
+
+// LedgerHead is the last line of a host ledger.
+type LedgerHead struct {
+	Seq  uint64 `json:"seq"`
+	Hash string `json:"hash"`
+}
+
+// LedgerPull asks for the host ledger lines after AfterSeq.
+type LedgerPull struct {
+	Type      string        `json:"type"`
+	RequestID string        `json:"requestId"`
+	AfterSeq  uint64        `json:"afterSeq"`
+	Limit     int           `json:"limit"`
+	Grant     ExecutorGrant `json:"grant"`
+}
+
+// LedgerPage is one page of raw ledger lines, exactly as stored on the host.
+type LedgerPage struct {
+	Type      string     `json:"type"`
+	RequestID string     `json:"requestId"`
+	LedgerID  string     `json:"ledgerId"`
+	AfterSeq  uint64     `json:"afterSeq"`
+	Lines     []string   `json:"lines"`
+	Head      LedgerHead `json:"head"`
+	More      bool       `json:"more"`
+}
+
+// LedgerUnavailable says why the agent could not produce a page.
+type LedgerUnavailable struct {
+	Type      string `json:"type"`
+	RequestID string `json:"requestId"`
+	Code      string `json:"code"`
+	Message   string `json:"message"`
+}
+
 // Decode errors. Use errors.Is; the wrapped message carries the detail.
 var (
 	// ErrMalformed: not JSON, not an object, or no string "type".
@@ -313,15 +379,18 @@ var handshakeTypes = map[string]func() any{
 }
 
 var sessionTypes = map[string]func() any{
-	TypeHeartbeat:       func() any { return &Heartbeat{} },
-	TypeStepExecute:     func() any { return &StepExecute{} },
-	TypeStepRejected:    func() any { return &StepRejected{} },
-	TypeStepReconcile:   func() any { return &StepReconcile{} },
-	TypeReconcileReport: func() any { return &ReconcileReport{} },
-	TypeEvent:           func() any { return &Event{} },
-	TypeStepProgress:    func() any { return &StepProgress{} },
-	TypeAck:             func() any { return &Ack{} },
-	TypeProtocolError:   func() any { return &ProtocolError{} },
+	TypeHeartbeat:         func() any { return &Heartbeat{} },
+	TypeStepExecute:       func() any { return &StepExecute{} },
+	TypeStepRejected:      func() any { return &StepRejected{} },
+	TypeStepReconcile:     func() any { return &StepReconcile{} },
+	TypeReconcileReport:   func() any { return &ReconcileReport{} },
+	TypeEvent:             func() any { return &Event{} },
+	TypeStepProgress:      func() any { return &StepProgress{} },
+	TypeAck:               func() any { return &Ack{} },
+	TypeProtocolError:     func() any { return &ProtocolError{} },
+	TypeLedgerPull:        func() any { return &LedgerPull{} },
+	TypeLedgerPage:        func() any { return &LedgerPage{} },
+	TypeLedgerUnavailable: func() any { return &LedgerUnavailable{} },
 }
 
 func decode(data []byte, types map[string]func() any, strict bool) (any, error) {

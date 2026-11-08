@@ -66,6 +66,21 @@ Agent 主動連到 `-agent-listen` 的 `/agent/v1/connect`（TLS 1.3 上的 WebS
 - 協定版本沒有交集時拒絕連線並記錄雙方範圍；同一節點已有連線時拒絕第二條（複製的虛擬機）；`Authorizer` 回 `ErrNodeRevoked` 時拒絕（撤銷清單在票 019）。
 - 工作步驟經 `nodes.StepRunner` 送到節點：Agent 沒宣告的能力不送；節點不在線是已知失敗（沒送出任何東西）；送出後斷線是 `unknown`。Agent 重連後，`nodes.Reconciler` 在會話存活期間每 15 秒掃一次該節點「狀態不明」的工作，先向 Agent 查持久紀錄再交給引擎對帳，已完成的步驟不重跑。
 
+## 高權限執行器的授權憑證與主機變更帳本副本（票 012、113）
+
+- 主機上的高權限執行器每個請求都要一張 Core 簽的授權憑證。簽發金鑰（Ed25519）第一次啟動時建在機密服務（`privileged-grants/issuer`），簽發由 `internal/grants` 處理。公鑰每次啟動都寫到資料目錄的 `privileged-issuer.pub`，安裝器與節點註冊（票 013、019）把它放到主機的 `/etc/hazelminx/privileged/issuer.pub`。
+- Core 為每台主機保存一份主機變更帳本（規格增補 07 第 55.1 節）。節點連上時馬上同步一次，連線期間每 5 分鐘再同步一次（`internal/hostledger`）。每一頁都簽一張只有 `host.ledger.read`、有效 5 分鐘的憑證，經通道送 `ledger_pull`，收到的行驗證雜湊鏈後才存進 `host_ledger_lines`（migration 0008）。這張表只能新增，資料庫觸發器擋下修改與刪除。
+- `host_ledgers` 記錄每台主機副本跟的是哪一本帳本（`ledger_id`）、副本到哪一行、上次成功同步的時間，以及最近一次失敗的原因。失敗代碼：
+  - Agent 回的 `EXECUTOR_UNREACHABLE`、`EXECUTOR_REFUSED`、`EXPORT_FAILED`。主機帳本比 Core 副本短時，執行器會回 `EXPORT_FAILED`。
+  - `CHAIN_BROKEN`：這一頁接不上副本，或有一行被改過。
+  - `LEDGER_REPLACED`：主機的帳本被重建。這時不保存新帳本的任何一行，等人處理。
+  - `AGENT_UNSUPPORTED`：Agent 太舊，不支援 `host.ledger`。
+  - `NO_ANSWER`：等不到回應。
+  - `STORE_FAILED`：寫入資料庫失敗。
+
+  節點離線是正常狀態，不記成失敗。
+- 目前還沒有讀取副本的管理 API，也還沒有畫面。完全移除（票 037）用 `hostledger.Store.Lines` 讀副本。
+
 ## 登入、第二驗證與權限（票 009、014）
 
 - 沒有任何帳號時，啟動會把一次性設定碼印到 **stdout**（不進日誌），一小時內用 `POST /management/v1/setup` 建立擁有者；之後這個端點回 `409 SETUP_DONE`。建立成功後擁有者直接登入，回應與登入成功相同。
@@ -94,7 +109,9 @@ Agent 主動連到 `-agent-listen` 的 `/agent/v1/connect`（TLS 1.3 上的 WebS
 | `internal/confirm` | ROB-010 確認紀錄：建立、查詢、確認（新連線與入口判定）、標記已回復、查同一資源是否有待確認變更 |
 | `internal/jobs` | 工作引擎：狀態機、冪等鍵、資源鎖、預算、事件序號、診斷、SQLite 儲存 |
 | `internal/protocol` | Core↔Agent 訊息型別、嚴格與寬鬆解碼、版本協商、握手簽章內容；`fixturegen/` 重產 `docs/contracts/fixtures` 的確定性樣本 |
-| `internal/nodes` | 節點 PKI、Agent 連線 hub（握手、會話、心跳）、步驟執行器、重連對帳、`node.inspect` 工作種類 |
+| `internal/nodes` | 節點 PKI、Agent 連線 hub（握手、會話、心跳）、步驟執行器、重連對帳、`node.inspect` 工作種類、向 Agent 要帳本頁（`Hub.PullLedger`） |
+| `internal/grants` | 高權限執行器授權憑證的簽發金鑰與簽發（與 Rust 端用同一份樣本對照） |
+| `internal/hostledger` | 主機變更帳本的 Core 副本：驗證雜湊鏈、保存、依節點同步 |
 | `internal/iam` | 帳號、角色與資源範圍、密碼雜湊、工作階段與閒置逾時、TOTP、Passkey、復原碼、再次驗證、預設拒絕的授權判定、稽核紀錄、登入嘗試限制 |
 | `internal/secrets` | 機密參照（加密值、版本、使用範圍、到期、變更紀錄）、主金鑰檔與輪替、Token 雜湊查驗 |
 | `web` | 嵌入式前端（`embedweb` build tag） |
@@ -105,6 +122,7 @@ Agent 主動連到 `-agent-listen` 的 `/agent/v1/connect`（TLS 1.3 上的 WebS
 |---|---|---|
 | `core.db`（含 `-wal`、`-shm`） | 平台資料庫 | 0600 |
 | `master.key` | 主金鑰檔：各世代金鑰、目前作用中的世代、復原材料已取得的確認。不在資料庫內。 | 0600 |
+| `privileged-issuer.pub` | 授權憑證簽發金鑰的公鑰（SPKI PEM），每次啟動重寫。公開資訊，主機的執行器信任它。 | 0644 |
 
 啟動時依序檢查，任一不過就以非零結束並說明原因，不會建立空白資料庫冒充全新安裝（DAT-002、REL-006、T-009、T-012）：
 

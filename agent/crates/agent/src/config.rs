@@ -12,6 +12,8 @@ use std::path::{Path, PathBuf};
 pub const DEFAULT_CONFIG_PATH: &str = "/etc/hazelminx/agent.toml";
 /// Default state directory (spec chapter 37: `/var/lib/hazelminx/`).
 pub const DEFAULT_STATE_DIR: &str = "/var/lib/hazelminx/agent";
+/// The privileged executor's socket (`hazelminx-privileged`, ticket 012).
+pub const DEFAULT_PRIVILEGED_SOCKET: &str = "/run/hazelminx/privileged.sock";
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -40,6 +42,10 @@ pub struct Config {
     /// store.
     #[serde(default)]
     pub proxy_ca_file: Option<PathBuf>,
+    /// Unix socket of the privileged executor; host changes and the host
+    /// change ledger go through it.
+    #[serde(default = "default_privileged_socket")]
+    pub privileged_socket: PathBuf,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq)]
@@ -57,6 +63,10 @@ fn default_state_dir() -> PathBuf {
     PathBuf::from(DEFAULT_STATE_DIR)
 }
 
+fn default_privileged_socket() -> PathBuf {
+    PathBuf::from(DEFAULT_PRIVILEGED_SOCKET)
+}
+
 fn default_log_format() -> String {
     "json".to_string()
 }
@@ -70,6 +80,7 @@ impl Default for Config {
             log_format: default_log_format(),
             core_transport: default_core_transport(),
             proxy_ca_file: None,
+            privileged_socket: default_privileged_socket(),
         }
     }
 }
@@ -110,6 +121,11 @@ impl Config {
     }
 
     fn validate(&self) -> Result<()> {
+        anyhow::ensure!(
+            self.privileged_socket.is_absolute(),
+            "privileged_socket {} must be an absolute path",
+            self.privileged_socket.display()
+        );
         anyhow::ensure!(
             self.state_dir.is_absolute(),
             "state_dir {} must be an absolute path",

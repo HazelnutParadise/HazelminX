@@ -13,12 +13,15 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
 	"github.com/HazelnutParadise/hazelminx/core/internal/api"
 	"github.com/HazelnutParadise/hazelminx/core/internal/config"
 	"github.com/HazelnutParadise/hazelminx/core/internal/confirm"
+	"github.com/HazelnutParadise/hazelminx/core/internal/grants"
+	"github.com/HazelnutParadise/hazelminx/core/internal/hostledger"
 	"github.com/HazelnutParadise/hazelminx/core/internal/iam"
 	"github.com/HazelnutParadise/hazelminx/core/internal/jobs"
 	"github.com/HazelnutParadise/hazelminx/core/internal/nodes"
@@ -26,6 +29,14 @@ import (
 	"github.com/HazelnutParadise/hazelminx/core/internal/store"
 	"github.com/HazelnutParadise/hazelminx/core/web"
 )
+
+// IssuerPublicKeyFile is written to the data directory at every start: the
+// public key the privileged executor on each host must trust.
+const IssuerPublicKeyFile = "privileged-issuer.pub"
+
+// LedgerSyncInterval is how often connected nodes' ledgers are copied
+// again during a session (they are also copied when a session starts).
+const LedgerSyncInterval = 5 * time.Minute
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
@@ -60,10 +71,36 @@ func run(args []string) error {
 	if err != nil {
 		return fmt.Errorf("refusing to start, node PKI: %w", err)
 	}
+	// Grants for the privileged executor (ticket 012). The installer and
+	// node enrollment (tickets 013, 019) copy the public key to each host
+	// as /etc/hazelminx/privileged/issuer.pub.
+	issuer, err := grants.LoadOrCreate(ctx, sec, nil)
+	if err != nil {
+		return fmt.Errorf("refusing to start, grant issuer: %w", err)
+	}
+	issuerPub := filepath.Join(cfg.DataDir, IssuerPublicKeyFile)
+	if err := os.WriteFile(issuerPub, issuer.PublicKeyPEM(), 0o644); err != nil {
+		return fmt.Errorf("write %s: %w", issuerPub, err)
+	}
 	engine := jobs.New(jobs.NewSQLStore(st.DB), jobs.Options{FreeBytes: jobs.FreeBytesOf(cfg.DataDir)})
 	var reconciler *nodes.Reconciler
+	var ledgers *hostledger.Syncer
 	hub := nodes.NewHub(nodes.HubOptions{PKI: pki, CoreVersion: api.Version,
-		OnReady: func(s *nodes.Session, inFlight []string) { reconciler.OnReady(s, inFlight) }})
+		OnReady: func(s *nodes.Session, inFlight []string) {
+			// Core's copy of the host change ledger (spec 55.1) catches up
+			// as soon as a node connects.
+			go func() { _, _ = ledgers.SyncNode(ctx, s.NodeID()) }()
+			reconciler.OnReady(s, inFlight)
+		}})
+	ledgers = &hostledger.Syncer{Store: hostledger.NewStore(st.DB, nil), Grants: issuer, Pull: hub}
+	go ledgers.Run(ctx, func() []string {
+		conns, _ := hub.Connections()
+		ids := make([]string, len(conns))
+		for i, c := range conns {
+			ids[i] = c.NodeID
+		}
+		return ids
+	}, LedgerSyncInterval)
 	runner := nodes.NewStepRunner(hub)
 	reconciler = &nodes.Reconciler{Engine: engine, Runner: runner}
 	if err := engine.Register(&nodes.InspectHandler{Runner: runner}); err != nil {

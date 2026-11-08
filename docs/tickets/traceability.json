@@ -2682,7 +2682,7 @@
       "acceptance_tests": [
         "T-250"
       ],
-      "status": "in_progress",
+      "status": "done",
       "issue": 120
     }
   ]

@@ -574,8 +574,14 @@ impl Ledger {
     }
 
     /// Raw lines after `after_seq`, at most `limit` (capped at
-    /// [`MAX_EXPORT_LINES`]), for Core's copy.
-    pub fn export(&self, after_seq: u64, limit: usize) -> Result<LedgerBatch, LedgerError> {
+    /// [`MAX_EXPORT_LINES`]) and, when `max_bytes` is set, no more line bytes
+    /// than that (at least one line), for Core's copy.
+    pub fn export(
+        &self,
+        after_seq: u64,
+        limit: usize,
+        max_bytes: Option<usize>,
+    ) -> Result<LedgerBatch, LedgerError> {
         let inner = self.inner.lock().unwrap();
         if after_seq > inner.head.seq {
             return Err(LedgerError::Request(format!(
@@ -585,7 +591,17 @@ impl Ledger {
         }
         let limit = limit.clamp(1, MAX_EXPORT_LINES);
         let from = after_seq as usize;
-        let to = (from + limit).min(inner.spans.len());
+        let mut to = (from + limit).min(inner.spans.len());
+        if let Some(max) = max_bytes {
+            let mut total = 0usize;
+            for (i, &(_, len)) in inner.spans[from..to].iter().enumerate() {
+                total += len as usize;
+                if total > max && i > 0 {
+                    to = from + i;
+                    break;
+                }
+            }
+        }
         let mut lines = Vec::with_capacity(to - from);
         for &(offset, len) in &inner.spans[from..to] {
             let mut buf = vec![0u8; len as usize];
@@ -833,16 +849,24 @@ pub(crate) mod tests {
             l.append(vec![sample(Phase::Intent, &format!("u{i}.service"))])
                 .unwrap();
         }
-        let b = l.export(0, 2).unwrap();
+        let b = l.export(0, 2, None).unwrap();
         assert_eq!(b.lines.len(), 2);
         assert!(b.more);
         let head = b.verify(None).unwrap();
         assert_eq!(head.seq, 2);
-        let b2 = l.export(2, 10).unwrap();
+        let b2 = l.export(2, 10, None).unwrap();
         assert_eq!(b2.lines.len(), 3);
         assert!(!b2.more);
         assert_eq!(b2.verify(Some(&head)).unwrap(), l.head());
-        assert!(l.export(6, 1).is_err());
-        assert_eq!(l.export(5, 1).unwrap().lines.len(), 0);
+        assert!(l.export(6, 1, None).is_err());
+        assert_eq!(l.export(5, 1, None).unwrap().lines.len(), 0);
+        // A byte cap stops the page early but never returns nothing.
+        let one = l.export(0, 10, Some(10)).unwrap();
+        assert_eq!(one.lines.len(), 1);
+        assert!(one.more);
+        let line = one.lines[0].len();
+        let two = l.export(0, 10, Some(line * 2 + 1)).unwrap();
+        assert_eq!(two.lines.len(), 2);
+        assert_eq!(two.verify(None).unwrap().seq, 2);
     }
 }
