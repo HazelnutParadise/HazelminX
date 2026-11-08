@@ -53,6 +53,7 @@ type Syncer struct {
 	MaxPages int
 	Logger   *slog.Logger
 
+	once sync.Once // applies defaults; SyncNode runs from several goroutines
 	mu   sync.Mutex
 	busy map[string]*sync.Mutex
 }
@@ -99,7 +100,7 @@ func (s *Syncer) lock(nodeID string) *sync.Mutex {
 //   - otherwise every page is stored until the host reports no more, the
 //     error columns are cleared, and the new head is returned.
 func (s *Syncer) SyncNode(ctx context.Context, nodeID string) (protocol.LedgerHead, error) {
-	s.defaults()
+	s.once.Do(s.defaults)
 	m := s.lock(nodeID)
 	m.Lock()
 	defer m.Unlock()
