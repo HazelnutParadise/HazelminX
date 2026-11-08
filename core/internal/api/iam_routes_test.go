@@ -33,7 +33,9 @@ func newHarness(t *testing.T) *harness {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { st.Close() })
-	hs := &harness{t: t, clock: time.Date(2026, 11, 7, 0, 0, 0, 0, time.UTC)}
+	// Cookie lifetimes are computed against the wall clock, so the IAM
+	// clock starts at the real current time rather than a fixed date.
+	hs := &harness{t: t, clock: time.Now().UTC().Truncate(time.Second)}
 	svc, err := iam.New(st.DB, iam.Config{PasswordParams: iam.TestPasswordParams, Now: func() time.Time { return hs.clock }})
 	if err != nil {
 		t.Fatal(err)
@@ -239,7 +241,7 @@ func TestT013ReadOnlyAccountCannotChange(t *testing.T) {
 	if r.Code != http.StatusForbidden || r.Body["code"] != "FORBIDDEN" {
 		t.Fatalf("auditor must be refused by the backend: %+v", r)
 	}
-	users := owner.do(http.MethodGet, "/management/v1/users", nil, nil).Body["users"].([]any)
+	users := owner.do(http.MethodGet, "/management/v1/users", nil, nil).Body["items"].([]any)
 	for _, u := range users {
 		if u.(map[string]any)["username"] == "mallory" {
 			t.Fatal("refused call must not have created the user")
@@ -250,7 +252,7 @@ func TestT013ReadOnlyAccountCannotChange(t *testing.T) {
 		t.Fatalf("auditor must not assign roles: %+v", r)
 	}
 	// The refusal is on the ledger.
-	evs := owner.do(http.MethodGet, "/management/v1/audit-events", nil, nil).Body["events"].([]any)
+	evs := owner.do(http.MethodGet, "/management/v1/audit-events", nil, nil).Body["items"].([]any)
 	var denied int
 	for _, e := range evs {
 		if e.(map[string]any)["action"] == "authz.deny" {
@@ -320,7 +322,7 @@ func TestT014GuessedResourceIDsDoNotLeak(t *testing.T) {
 	forGhost := viewer.do(http.MethodGet, "/management/v1/audit-events?scopeKind=project&scopeId=proj-zzz", nil, nil)
 	byJob := viewer.do(http.MethodGet, "/management/v1/audit-events?jobId=job-b", nil, nil)
 	for name, r := range map[string]resp{"scope B": forB, "ghost scope": forGhost, "job of B": byJob} {
-		if r.Code != http.StatusOK || len(r.Body["events"].([]any)) != 0 {
+		if r.Code != http.StatusOK || len(r.Body["items"].([]any)) != 0 {
 			t.Fatalf("%s must be an empty page: %+v", name, r)
 		}
 	}
@@ -328,7 +330,7 @@ func TestT014GuessedResourceIDsDoNotLeak(t *testing.T) {
 		t.Fatalf("search answers differ:\n%s\n%s", forB.Raw, forGhost.Raw)
 	}
 	forA := viewer.do(http.MethodGet, "/management/v1/audit-events?scopeKind=project&scopeId=proj-a", nil, nil)
-	if len(forA.Body["events"].([]any)) == 0 {
+	if len(forA.Body["items"].([]any)) == 0 {
 		t.Fatal("A's auditor must see A's events")
 	}
 	if r := alice.do(http.MethodGet, "/management/v1/audit-events", nil, nil); r.Code != http.StatusForbidden {
@@ -389,7 +391,7 @@ func TestAuditLedgerLinksChangeAndMasksSecrets(t *testing.T) {
 	owner := hs.bootstrap()
 	r := owner.do(http.MethodPost, "/management/v1/users", map[string]string{"username": "dave", "password": "dave-password-123"}, map[string]string{TraceIDHdr: "trace-dave"})
 	daveID := r.Body["user"].(map[string]any)["id"].(string)
-	evs := owner.do(http.MethodGet, "/management/v1/audit-events?resourceId="+daveID, nil, nil).Body["events"].([]any)
+	evs := owner.do(http.MethodGet, "/management/v1/audit-events?resourceId="+daveID, nil, nil).Body["items"].([]any)
 	if len(evs) != 1 {
 		t.Fatalf("expected one event for dave, got %d", len(evs))
 	}
@@ -398,13 +400,20 @@ func TestAuditLedgerLinksChangeAndMasksSecrets(t *testing.T) {
 	if ev["action"] != "user.create" || ev["actorName"] != "owner" || ev["traceId"] != "trace-dave" || ev["requestId"] != nil || ev["sourceIp"] != "10.0.0.1" || after["password"] != "***" {
 		t.Fatalf("event: %+v", ev)
 	}
-	// Pagination cursor and page cap.
+	// Pagination: newest first by default, a cursor continues, and a limit
+	// above the list's maximum is refused rather than silently lowered.
 	page := owner.do(http.MethodGet, "/management/v1/audit-events?limit=1", nil, nil)
-	if len(page.Body["events"].([]any)) != 1 || page.Body["nextAfterSeq"].(float64) < 1 {
+	meta := page.Body["page"].(map[string]any)
+	if len(page.Body["items"].([]any)) != 1 || meta["nextCursor"] == nil || meta["limit"].(float64) != 1 || meta["queryCap"].(float64) != DefaultQueryCap {
 		t.Fatalf("page: %+v", page)
 	}
-	if r := owner.do(http.MethodGet, "/management/v1/audit-events?limit=99999", nil, nil); r.Body["limit"].(float64) != iam.MaxAuditPage {
-		t.Fatalf("limit must be capped: %+v", r.Body["limit"])
+	first := page.Body["items"].([]any)[0].(map[string]any)["seq"].(float64)
+	next := owner.do(http.MethodGet, "/management/v1/audit-events?limit=1&cursor="+meta["nextCursor"].(string), nil, nil)
+	if second := next.Body["items"].([]any)[0].(map[string]any)["seq"].(float64); second >= first {
+		t.Fatalf("second page must be older: %v then %v", first, second)
+	}
+	if r := owner.do(http.MethodGet, "/management/v1/audit-events?limit=99999", nil, nil); r.Code != http.StatusBadRequest || r.Body["code"] != "VALIDATION_FAILED" {
+		t.Fatalf("limit above the maximum must be refused: %+v", r)
 	}
 }
 

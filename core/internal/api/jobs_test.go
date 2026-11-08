@@ -71,7 +71,9 @@ func newJobsHarness(t *testing.T) (http.Handler, *jobs.Engine, *blockingHandler,
 	}
 	e.Start(ctx)
 	t.Cleanup(func() { cancel(); e.Stop(); st.Close() })
-	hs := &harness{t: t, clock: time.Date(2026, 11, 7, 0, 0, 0, 0, time.UTC)}
+	// Cookie lifetimes are computed against the wall clock, so the IAM
+	// clock starts at the real current time rather than a fixed date.
+	hs := &harness{t: t, clock: time.Now().UTC().Truncate(time.Second)}
 	svc, err := iam.New(st.DB, iam.Config{PasswordParams: iam.TestPasswordParams, Now: func() time.Time { return hs.clock }})
 	if err != nil {
 		t.Fatal(err)
@@ -152,7 +154,7 @@ func TestJobsAPISubmitGetCancelFlow(t *testing.T) {
 		t.Fatalf("get: %d %v", rec.Code, job)
 	}
 	rec, body = do(t, h, http.MethodGet, "/management/v1/jobs?state=running,queued", "")
-	if rec.Code != http.StatusOK || len(body["jobs"].([]any)) != 1 {
+	if rec.Code != http.StatusOK || len(body["items"].([]any)) != 1 {
 		t.Fatalf("list: %d %v", rec.Code, body)
 	}
 	rec, body = do(t, h, http.MethodGet, "/management/v1/jobs/"+id+"/events?after=0", "")
@@ -182,26 +184,26 @@ func TestJobsAPISubmitGetCancelFlow(t *testing.T) {
 func TestJobsAPIErrors(t *testing.T) {
 	h, _, _ := newJobsServer(t)
 	rec, body := do(t, h, http.MethodGet, "/management/v1/jobs/job_nope", "")
-	if rec.Code != http.StatusNotFound || body["code"] != "JOB_NOT_FOUND" {
+	if rec.Code != http.StatusNotFound || body["code"] != "NOT_FOUND" {
 		t.Fatalf("404: %d %v", rec.Code, body)
 	}
 	if _, ok := body["requestId"]; ok || body["traceId"] == nil {
 		t.Fatalf("a read error has no operation requestId but does have a traceId: %v", body)
 	}
 	rec, body = do(t, h, http.MethodPost, "/management/v1/jobs", `{"requestId":"x","kind":"not.registered"}`)
-	if rec.Code != http.StatusBadRequest || body["code"] != "JOB_KIND_UNKNOWN" {
+	if rec.Code != http.StatusBadRequest || body["code"] != "VALIDATION_FAILED" || body["fields"].([]any)[0].(map[string]any)["field"] != "kind" {
 		t.Fatalf("unknown kind: %d %v", rec.Code, body)
 	}
 	rec, body = do(t, h, http.MethodPost, "/management/v1/jobs", `{"kind":"demo.install"}`)
-	if rec.Code != http.StatusBadRequest || body["code"] != "INVALID_REQUEST" {
+	if rec.Code != http.StatusBadRequest || body["code"] != "VALIDATION_FAILED" {
 		t.Fatalf("missing requestId: %d %v", rec.Code, body)
 	}
 	rec, body = do(t, h, http.MethodPost, "/management/v1/jobs", `{"requestId":"x","kind":"demo.install","typo":1}`)
-	if rec.Code != http.StatusBadRequest || body["code"] != "INVALID_REQUEST" {
+	if rec.Code != http.StatusBadRequest || body["code"] != "VALIDATION_FAILED" {
 		t.Fatalf("unknown field must be rejected, not dropped: %d %v", rec.Code, body)
 	}
 	rec, body = do(t, h, http.MethodPost, "/management/v1/jobs", `not json`)
-	if rec.Code != http.StatusBadRequest || body["code"] != "INVALID_REQUEST" {
+	if rec.Code != http.StatusBadRequest || body["code"] != "VALIDATION_FAILED" {
 		t.Fatalf("bad json: %d %v", rec.Code, body)
 	}
 	rec, body = do(t, h, http.MethodGet, "/management/v1/jobs?state=bogus", "")

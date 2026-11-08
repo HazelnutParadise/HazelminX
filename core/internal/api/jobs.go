@@ -1,11 +1,10 @@
 package api
 
 import (
-	"encoding/json"
+	"context"
 	"errors"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -18,113 +17,222 @@ import (
 // 202 and the job record; the record outlives the request (ENG-001).
 //
 // The routes sit on the authenticated group from MountIAM (ticket 009), so
-// MountIAM must run first. Until job kinds declare their own action and
-// scope (ticket 010), reading needs platform:read and submitting or
-// cancelling needs platform:write, both on the global scope.
+// MountIAM must run first. Reading needs platform:read and submitting or
+// cancelling needs platform:write, both on the global scope; job kinds that
+// need narrower permissions get their own routes.
 func (s *Server) RegisterJobs(e *jobs.Engine) {
 	if s.protected == nil {
 		panic("api: RegisterJobs called before MountIAM; job routes must not be unauthenticated")
 	}
-	h := &jobsHandler{engine: e}
-	g := s.protected.Group("/jobs")
+	s.jobs = e
+	h := &jobsHandler{engine: e, srv: s}
+	const base = "/management/v1"
 	read, write := s.RequireGlobal(iam.ActionPlatformRead), s.RequireGlobal(iam.ActionPlatformWrite)
-	g.GET("", read, h.list)
-	g.POST("", write, h.submit)
-	g.GET("/:id", read, h.get)
-	g.GET("/:id/events", read, h.events)
-	g.POST("/:id/cancel", write, h.cancel)
-	s.addOperation("GET", "/management/v1/jobs", "list jobs; ?state=a,b&kind=&limit=")
-	s.addOperation("POST", "/management/v1/jobs", "submit a job {requestId, kind, params, resources, node, requiredBytes}; 202 + job, same requestId replays the same job, changed content is 409")
-	s.addOperation("GET", "/management/v1/jobs/{id}", "job record: state, steps, progress, diagnostics, completion checks, cancellable")
-	s.addOperation("GET", "/management/v1/jobs/{id}/events", "events after ?after=<seq> (&limit=); resume from the last seq seen")
-	s.addOperation("POST", "/management/v1/jobs/{id}/cancel", "request cancellation; 202 with the job: cancel_requested means not yet stopped")
-	s.extras = append(s.extras, func() gin.H { return gin.H{"jobKinds": e.Kinds()} })
+	g := s.protected
+	s.handle(g, base, Operation{Method: "GET", Path: base + "/jobs", ID: "listJobs", Tag: "jobs", Auth: true,
+		Summary: "list jobs", Permission: "platform:read on the global scope", List: &jobsList,
+		Responses: []Response{{Status: 200, Body: ListResponse[*jobs.Job]{}}}}, read, h.list)
+	s.handle(g, base, Operation{Method: "POST", Path: base + "/jobs", ID: "submitJob", Tag: "jobs", Auth: true,
+		Summary:    "submit a job; the same requestId replays the same job, changed content is REQUEST_ID_CONFLICT",
+		Permission: "platform:write on the global scope", Request: jobs.SubmitRequest{}, LongRunning: true, DryRun: true,
+		Responses: []Response{{Status: 202, Body: JobAccepted{}, Headers: []string{"Location"}}, {Status: 200, Body: DryRunResult{}, Description: "dryRun=true preview; preview is a jobs.Preview"}},
+		Errors:    []string{CodeRequestIDConflict, CodePayloadTooLarge, CodePlatformDegraded, CodeConfirmRequired}}, write, h.submit)
+	s.handle(g, base, Operation{Method: "GET", Path: base + "/jobs/{id}", ID: "getJob", Tag: "jobs", Auth: true,
+		Summary: "job record: state, steps, progress, diagnostics, completion checks, cancellable", Permission: "platform:read on the global scope",
+		Responses: []Response{{Status: 200, Body: jobResponse{}}}}, read, h.get)
+	s.handle(g, base, Operation{Method: "GET", Path: base + "/jobs/{id}/events", ID: "listJobEvents", Tag: "jobs", Auth: true,
+		Summary:    "events after a sequence number; resume from the last seq seen (event stream, not a list)",
+		Permission: "platform:read on the global scope",
+		Params: []Param{
+			{Name: "after", In: "query", Description: "return events with seq greater than this", Schema: jsonSchema{"type": "integer", "minimum": 0}},
+			{Name: "limit", In: "query", Description: "at most this many events (1..1000, default 1000)", Schema: jsonSchema{"type": "integer", "minimum": 1, "maximum": 1000}},
+		},
+		Responses: []Response{{Status: 200, Body: jobEventsResponse{}}}}, read, h.events)
+	s.handle(g, base, Operation{Method: "POST", Path: base + "/jobs/{id}/cancel", ID: "cancelJob", Tag: "jobs", Auth: true,
+		Summary: "request cancellation; stopped=false means requested, not yet stopped", Permission: "platform:write on the global scope",
+		Responses: []Response{{Status: 202, Body: JobAccepted{}}}, Errors: []string{CodeJobNotCancellable}}, write, h.cancel)
+	s.extras = append(s.extras, func(o *overviewResponse) { o.JobKinds = e.Kinds() })
+}
+
+var jobsList = ListSpec{Name: "jobs", Sorts: []string{"createdAt", "updatedAt", "kind", "state"},
+	DefaultSort: []SortKey{{Field: "createdAt", Desc: true}}, TieBreaker: "id",
+	Filters: []FilterSpec{
+		{Name: "state", Summary: "only jobs in these states", Multi: true, Enum: jobStates()},
+		{Name: "kind", Summary: "only jobs of this kind"},
+		{Name: "node", Summary: "only jobs on this node"},
+	}}
+
+func jobStates() []string {
+	var out []string
+	for _, st := range jobs.States {
+		out = append(out, string(st))
+	}
+	return out
 }
 
 type jobsHandler struct {
 	engine *jobs.Engine
+	srv    *Server
 }
 
-// maxSubmitBody bounds a submit request; params belong to the job, bulk
-// data goes through uploads (spec 36.2).
-const maxSubmitBody = 1 << 20
+type jobResponse struct {
+	Job *jobs.Job `json:"job"`
+}
 
-func (h *jobsHandler) fail(c *gin.Context, err error, requestID string) {
-	e := apiError{RequestID: requestID, Message: err.Error()}
-	status := http.StatusInternalServerError
+type jobEventsResponse struct {
+	Events  []jobs.Event `json:"events"`
+	LastSeq int64        `json:"lastSeq"`
+	Limit   int          `json:"limit"`
+}
+
+// jobError maps engine errors to the code table.
+func jobError(err error, requestID string) apiError {
+	var e apiError
 	switch {
 	case errors.Is(err, jobs.ErrNotFound):
-		status, e.Code = http.StatusNotFound, "JOB_NOT_FOUND"
+		e = newError(CodeNotFound, "no such resource")
 	case errors.Is(err, jobs.ErrConflict):
-		status, e.Code = http.StatusConflict, "REQUEST_ID_CONFLICT"
+		e = newError(CodeRequestIDConflict, err.Error())
 		e.SuggestedActions = []string{"use-a-new-request-id"}
 	case errors.Is(err, jobs.ErrUnknownKind):
-		status, e.Code = http.StatusBadRequest, "JOB_KIND_UNKNOWN"
+		e = newError(CodeValidationFailed, err.Error())
+		e.Fields = []FieldError{{Field: "kind", Message: "no such job kind; the overview lists jobKinds"}}
 	case errors.Is(err, jobs.ErrInvalidRequest):
-		status, e.Code = http.StatusBadRequest, "INVALID_REQUEST"
+		e = newError(CodeValidationFailed, err.Error())
 	case errors.Is(err, jobs.ErrNotCancellable):
-		status, e.Code = http.StatusConflict, "JOB_NOT_CANCELLABLE"
+		e = newError(CodeJobNotCancellable, err.Error())
 	default:
-		e.Code, e.Retryable = "INTERNAL", true
+		e = newError(CodeInternal, "internal error")
 	}
-	writeError(c, status, e)
+	e.RequestID = requestID
+	return e
+}
+
+// jobsSource lists jobs.
+type jobsSource struct {
+	engine *jobs.Engine
+	opts   jobs.ListOptions
+}
+
+func (j jobsSource) Count(ctx context.Context, _ ListQuery) (int, error) {
+	return j.engine.Count(ctx, j.opts)
+}
+func (j jobsSource) Fetch(ctx context.Context, q ListQuery, n int) ([]*jobs.Job, error) {
+	o := j.opts
+	o.Page = q.paging(n)
+	return j.engine.List(ctx, o)
+}
+func (j jobsSource) Key(row *jobs.Job, sort []SortKey) []string {
+	return sortValues(sort, row.SortValue)
+}
+
+func jobListOptions(q ListQuery) jobs.ListOptions {
+	var o jobs.ListOptions
+	for _, st := range q.Filters["state"] {
+		o.States = append(o.States, jobs.State(st))
+	}
+	if v := q.Filters["kind"]; len(v) > 0 {
+		o.Kind = v[0]
+	}
+	if v := q.Filters["node"]; len(v) > 0 {
+		o.Node = v[0]
+	}
+	return o
 }
 
 func (h *jobsHandler) list(c *gin.Context) {
-	opts := jobs.ListOptions{Kind: c.Query("kind")}
-	if v := c.Query("state"); v != "" {
-		for _, s := range strings.Split(v, ",") {
-			st := jobs.State(strings.TrimSpace(s))
-			if !st.Valid() {
-				writeError(c, http.StatusBadRequest, apiError{Code: "INVALID_REQUEST", Message: "unknown state " + string(st)})
-				return
-			}
-			opts.States = append(opts.States, st)
-		}
-	}
-	if v := c.Query("limit"); v != "" {
-		n, err := strconv.Atoi(v)
-		if err != nil || n <= 0 {
-			writeError(c, http.StatusBadRequest, apiError{Code: "INVALID_REQUEST", Message: "limit must be a positive integer"})
-			return
-		}
-		opts.Limit = n
-	}
-	list, err := h.engine.List(c.Request.Context(), opts)
-	if err != nil {
-		h.fail(c, err, "")
+	q, perr := parseListQuery(c, jobsList)
+	if perr != nil {
+		respond(c, *perr)
 		return
 	}
-	if list == nil {
-		list = []*jobs.Job{}
-	}
-	c.JSON(http.StatusOK, gin.H{"jobs": list})
+	runList[*jobs.Job](c, jobsList, jobsSource{engine: h.engine, opts: jobListOptions(q)})
 }
 
 func (h *jobsHandler) submit(c *gin.Context) {
 	var req jobs.SubmitRequest
-	dec := json.NewDecoder(http.MaxBytesReader(c.Writer, c.Request.Body, maxSubmitBody))
-	dec.DisallowUnknownFields() // an unknown field is never dropped silently (spec 34.3)
-	if err := dec.Decode(&req); err != nil {
-		writeError(c, http.StatusBadRequest, apiError{Code: "INVALID_REQUEST", Message: "body must be a JSON submit request: " + err.Error()})
+	if !bindJSON(c, &req, "body must be a JSON submit request") {
 		return
 	}
-	job, dedup, err := h.engine.Submit(c.Request.Context(), req)
+	ctx := c.Request.Context()
+	// The requester is always the signed-in account; a body cannot file a
+	// job under someone else's name.
+	if p := Principal(c); p != nil {
+		req.Requester = p.User.ID
+	}
+	// Input and replay come first (51.6): an accepted requestId answers with
+	// its job even while the platform is degraded.
+	pv, err := h.engine.Preview(ctx, req)
 	if err != nil {
-		h.fail(c, err, req.RequestID)
+		respond(c, jobError(err, req.RequestID))
 		return
 	}
-	c.Header("Location", "/management/v1/jobs/"+job.ID)
-	c.JSON(http.StatusAccepted, gin.H{"job": job, "jobId": job.ID, "deduplicated": dedup})
+	if pv.Replay != nil && pv.Replay.Requester != req.Requester {
+		respond(c, requestIDTaken(req.RequestID))
+		return
+	}
+	var blockers []apiError
+	if pv.Replay == nil {
+		blockers, err = h.srv.writeBlockers(ctx, req.Kind, ResourceState{}, req.Resources)
+		if err != nil {
+			respond(c, jobError(err, req.RequestID))
+			return
+		}
+	}
+	if isDryRun(c) {
+		var impact Impact
+		for _, r := range req.Resources {
+			impact.Direct = append(impact.Direct, ImpactItem{Kind: r.Kind, ID: resourceName(r), Scope: r.Node, Relation: "locked"})
+		}
+		for _, id := range pv.QueuedBehind {
+			impact.Direct = append(impact.Direct, ImpactItem{Kind: "job", ID: id, Relation: "queued-behind"})
+		}
+		respondDryRun(c, blockers, impact, pv)
+		return
+	}
+	if top := pickBlocking(blockers); top != nil {
+		top.RequestID = req.RequestID
+		respond(c, *top)
+		return
+	}
+	job, dedup, err := h.engine.Submit(ctx, req)
+	if err != nil {
+		respond(c, jobError(err, req.RequestID))
+		return
+	}
+	if dedup && job.Requester != req.Requester { // taken between preview and submit
+		respond(c, requestIDTaken(req.RequestID))
+		return
+	}
+	acceptJob(c, job, dedup)
+}
+
+// requestIDTaken refuses a requestId another account already used. The
+// other job is not described: the request ids of an account are its own.
+func requestIDTaken(requestID string) apiError {
+	e := newError(CodeRequestIDConflict, "this requestId has already been used; send the request again with a new requestId")
+	e.RequestID = requestID
+	e.SuggestedActions = []string{"use-a-new-request-id"}
+	return e
+}
+
+// resourceName is the identity of a job resource as one string.
+func resourceName(r jobs.ResourceRef) string {
+	for _, v := range []string{r.ID, r.ResolvedPath, r.Path, r.Mount, r.Device} {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 func (h *jobsHandler) get(c *gin.Context) {
 	job, err := h.engine.Get(c.Request.Context(), c.Param("id"))
 	if err != nil {
-		h.fail(c, err, "")
+		respond(c, jobError(err, ""))
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"job": job})
+	c.JSON(http.StatusOK, jobResponse{Job: job})
 }
 
 func (h *jobsHandler) events(c *gin.Context) {
@@ -132,23 +240,27 @@ func (h *jobsHandler) events(c *gin.Context) {
 	if v := c.Query("after"); v != "" {
 		n, err := strconv.ParseInt(v, 10, 64)
 		if err != nil || n < 0 {
-			writeError(c, http.StatusBadRequest, apiError{Code: "INVALID_REQUEST", Message: "after must be a non-negative integer"})
+			e := newError(CodeValidationFailed, "after must be a non-negative integer")
+			e.Fields = []FieldError{{Field: "after", Message: "non-negative integer"}}
+			respond(c, e)
 			return
 		}
 		after = n
 	}
-	limit := 0
+	limit := 1000
 	if v := c.Query("limit"); v != "" {
 		n, err := strconv.Atoi(v)
-		if err != nil || n <= 0 {
-			writeError(c, http.StatusBadRequest, apiError{Code: "INVALID_REQUEST", Message: "limit must be a positive integer"})
+		if err != nil || n <= 0 || n > 1000 {
+			e := newError(CodeValidationFailed, "limit must be an integer from 1 to 1000")
+			e.Fields = []FieldError{{Field: "limit", Message: "1..1000"}}
+			respond(c, e)
 			return
 		}
 		limit = n
 	}
 	evs, err := h.engine.Events(c.Request.Context(), c.Param("id"), after, limit)
 	if err != nil {
-		h.fail(c, err, "")
+		respond(c, jobError(err, ""))
 		return
 	}
 	if evs == nil {
@@ -158,14 +270,15 @@ func (h *jobsHandler) events(c *gin.Context) {
 	if len(evs) > 0 {
 		last = evs[len(evs)-1].Seq
 	}
-	c.JSON(http.StatusOK, gin.H{"events": evs, "lastSeq": last})
+	c.JSON(http.StatusOK, jobEventsResponse{Events: evs, LastSeq: last, Limit: limit})
 }
 
 func (h *jobsHandler) cancel(c *gin.Context) {
 	job, err := h.engine.Cancel(c.Request.Context(), c.Param("id"))
 	if err != nil {
-		h.fail(c, err, "")
+		respond(c, jobError(err, ""))
 		return
 	}
-	c.JSON(http.StatusAccepted, gin.H{"job": job, "stopped": job.State == jobs.StateCancelled})
+	stopped := job.State == jobs.StateCancelled
+	acceptJobWith(c, job, false, &stopped)
 }
