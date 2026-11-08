@@ -9,7 +9,7 @@ go build ./cmd/hazelminx-core
 go test ./...
 ```
 
-嵌入前端：CI 先建置 `web/dist`，複製到 `core/web/dist`，再以 `-tags embedweb` 建置。沒有這個 tag 時，介面路徑回 `503 UI_NOT_EMBEDDED`，管理 API 照常可用。
+嵌入前端：`scripts/embed-web.sh` 建置 `web/dist`、複製到 `core/web/dist`，再以 `-tags embedweb` 建置。沒有這個 tag 時，介面路徑回 `503 UI_NOT_EMBEDDED`，管理 API 照常可用。嵌入後 `/assets/*` 回一年的 immutable 快取、找不到時回 404；其他路徑回 `index.html`（`no-store`）交給前端路由。
 
 ## 執行
 

@@ -1,0 +1,338 @@
+/*
+ * Shared system component styles (DESIGN.md, hxui.py).
+ * Uses theme tokens only (--color-kumo-*, --text-color-kumo-*, --hx-*).
+ */
+
+/* Status Pill (DESIGN.md: status pill: 11px/500, rounded-full, shape + text) */
+.hx-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 500;
+  padding: 1px 8px;
+  border-radius: 999px;
+  word-break: keep-all;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.hx-status-pill--danger {
+  color: var(--text-color-kumo-danger);
+  background: light-dark(var(--color-kumo-elevated), color-mix(in srgb, var(--color-kumo-danger) 13%, transparent));
+  /* Light mode: raised fill plus a 35% status ring, because a 13% tint misses 4.5:1 (DESIGN.md status pill). */
+  box-shadow: inset 0 0 0 1px light-dark(color-mix(in srgb, var(--color-kumo-danger) 35%, transparent), transparent);
+}
+
+.hx-status-shape {
+  font-size: 8px;
+  line-height: 1;
+  display: inline-block;
+  flex: none;
+}
+
+/* ── 1. HostBar ───────────────────────────────────────────── */
+.hx-hostbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 6px 16px;
+  min-height: 40px;
+  background: color-mix(in srgb, var(--color-kumo-danger) 10%, var(--color-kumo-base));
+  border-bottom: 1px solid var(--color-kumo-line);
+  font-size: 13px;
+  color: var(--text-color-kumo-default);
+}
+
+.hx-hostbar-host {
+  font-family: var(--font-mono);
+  color: var(--text-color-kumo-default);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+.hx-hostbar-host:hover {
+  color: var(--text-color-kumo-brand);
+}
+
+.hx-hostbar-others {
+  color: var(--text-color-kumo-subtle);
+  font-size: 13px;
+}
+
+.hx-hostbar-all {
+  margin-left: auto;
+  min-height: 28px;
+}
+
+@media (max-width: 767px) {
+  .hx-hostbar-host {
+    min-height: 44px;
+    padding: 0 4px;
+  }
+  .hx-hostbar-all {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+/* ── 2. SaveBar ───────────────────────────────────────────── */
+.hx-savebar {
+  position: sticky;
+  bottom: 12px;
+  z-index: 12;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-kumo-brand);
+  border-radius: 8px;
+  background: var(--color-kumo-elevated);
+  box-shadow: 0 6px 24px var(--hx-scrim);
+  color: var(--text-color-kumo-default);
+  font-size: 14px;
+}
+
+.hx-savebar-info {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
+  flex: 1 1 240px;
+}
+
+.hx-savebar-info strong {
+  white-space: nowrap;
+}
+
+.hx-savebar-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-kumo-brand);
+  flex: none;
+}
+
+.hx-savebar-effect {
+  color: var(--text-color-kumo-subtle);
+}
+
+.hx-savebar-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.hx-savebar-kbd {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1;
+  padding: 2px 5px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  margin-left: 6px;
+  opacity: 0.85;
+}
+
+@media (max-width: 767px) {
+  .hx-savebar-actions {
+    flex-wrap: wrap;
+    margin-left: 0;
+    width: 100%;
+  }
+  .hx-savebar-kbd {
+    display: none;
+  }
+  .hx-savebar button {
+    min-height: 44px;
+  }
+}
+
+/* ── 3. ComponentDownBanner ───────────────────────────────── */
+.hx-cdown {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-kumo-danger);
+  border-left-width: 4px;
+  border-radius: 8px;
+  background: var(--color-kumo-base);
+  color: var(--text-color-kumo-default);
+}
+
+.hx-cdown-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+
+.hx-cdown-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 320px;
+}
+
+.hx-cdown-title {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-color-kumo-default);
+}
+
+.hx-cdown-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-color-kumo-subtle);
+}
+
+.hx-cdown-kind {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.hx-cdown-reason {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.hx-cdown-affected {
+  font-size: 13px;
+  color: var(--text-color-kumo-subtle);
+}
+
+.hx-cdown-failures {
+  font-size: 13px;
+  color: var(--text-color-kumo-subtle);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.hx-cdown-lasterror {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.hx-cdown-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.hx-cdown-lock-wrapper {
+  display: inline-flex;
+  cursor: not-allowed;
+}
+
+.hx-cdown-lock-wrapper:focus-visible {
+  outline: 2px solid var(--color-kumo-focus);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.hx-cdown-lock-wrapper button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: saturate(0.4);
+  pointer-events: none;
+}
+
+.hx-cdown-logtail:focus-visible {
+  outline: 2px solid var(--color-kumo-focus);
+  outline-offset: 2px;
+}
+
+.hx-cdown-logtail {
+  margin: 4px 0 0;
+  padding: 8px 12px;
+  background: var(--color-kumo-elevated);
+  border: 1px solid var(--color-kumo-line);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre;
+  overflow-x: auto;
+  color: var(--text-color-kumo-default);
+}
+
+@media (max-width: 767px) {
+  .hx-cdown-actions button,
+  .hx-cdown-actions .hx-cdown-lock-wrapper {
+    min-height: 44px;
+  }
+}
+
+/* ── 4. RawMessage ────────────────────────────────────────── */
+.hx-raw {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hx-raw-summary {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-color-kumo-default);
+}
+
+.hx-raw-details {
+  margin-top: 4px;
+}
+
+.hx-raw-details-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-color-kumo-subtle);
+  min-height: 24px;
+  user-select: none;
+}
+
+.hx-raw-details-summary:hover {
+  color: var(--text-color-kumo-default);
+}
+
+.hx-raw-pre {
+  margin: 6px 0 0;
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--color-kumo-elevated);
+  border: 1px solid var(--color-kumo-line);
+  border-radius: 6px;
+  color: var(--text-color-kumo-default);
+}
+
+@media (max-width: 767px) {
+  .hx-raw-details-summary {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}

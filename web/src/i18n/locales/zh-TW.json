@@ -1,0 +1,121 @@
+{
+  "app": {
+    "name": "HazelminX",
+    "home": "HazelminX 總覽"
+  },
+  "nav": {
+    "overview": "總覽",
+    "jobs": "工作中心",
+    "events": "事件與告警",
+    "projects": "專案與服務",
+    "appStore": "應用商店",
+    "websites": "網站與入口",
+    "databases": "資料庫",
+    "ai": "AI",
+    "apiProxy": "API 代理",
+    "nodes": "主機與節點",
+    "containers": "容器",
+    "kubernetes": "Kubernetes",
+    "storage": "儲存與備份",
+    "cron": "計畫任務",
+    "security": "安全防護",
+    "analytics": "流量分析",
+    "logs": "日誌",
+    "iam": "身分與存取",
+    "settings": "平台設定",
+    "terminal": "終端機"
+  },
+  "navGroup": {
+    "apps": "應用",
+    "infra": "基礎設施",
+    "securityLogs": "安全與紀錄",
+    "admin": "管理"
+  },
+  "shell": {
+    "skipToContent": "跳到主要內容",
+    "mainNav": "主導覽",
+    "search": "搜尋或下指令",
+    "observed": "觀測",
+    "observedUnknown": "尚未觀測",
+    "refreshEvery": "每 {{seconds}} 秒",
+    "attention": "事件與告警",
+    "attentionCount": "需要處理 {{count}} 件",
+    "jobs": "進行中的工作",
+    "jobsCount": "{{count}} 個工作進行中",
+    "terminal": "終端機",
+    "toLight": "切換成淺色",
+    "toDark": "切換成深色",
+    "account": "帳號",
+    "language": "語言",
+    "collapseNav": "收合側欄",
+    "expandNav": "展開側欄",
+    "collapse": "收合",
+    "searchEmpty": "沒有符合的頁面"
+  },
+  "hostBar": {
+    "label": "主機狀態",
+    "unreachable": "{{count}} 台主機沒有回應",
+    "others": "另外 {{count}} 台",
+    "viewAll": "全部主機"
+  },
+  "saveBar": {
+    "region": "未儲存的變更",
+    "changes": "{{count}} 處未儲存",
+    "discard": "捨棄"
+  },
+  "componentDown": {
+    "title": "{{name}} 已停止 · {{host}} · {{duration}}",
+    "kind": {
+      "systemd": "systemd 服務",
+      "container": "容器"
+    },
+    "exit": "結束碼 {{code}}",
+    "affected": "受影響",
+    "restart": "重啟 {{name}}",
+    "restarting": "重啟中",
+    "viewLogs": "看日誌",
+    "failures": "已連續失敗 {{count}} 次",
+    "noPermission": "需要 {{name}} 的操作權限，請找 {{who}}",
+    "logTail": "停止前的日誌"
+  },
+  "page": {
+    "emptyTitle": "{{name}}的功能尚未開放"
+  },
+  "notFound": {
+    "title": "找不到這個頁面",
+    "body": "網址 {{path}} 沒有對應的頁面。",
+    "back": "回到總覽"
+  },
+  "crash": {
+    "title": "這一頁發生錯誤",
+    "body": "其他頁面不受影響，可以重新載入或切到別頁。",
+    "reload": "重新載入"
+  },
+  "raw": {
+    "original": "原文",
+    "source": "來源：{{source}}"
+  },
+  "loading": "載入中",
+  "unknown": "未知",
+  "errors": {
+    "UNAUTHENTICATED": "需要先登入。",
+    "FORBIDDEN": "你的角色沒有這個操作的權限。",
+    "CSRF_TOKEN_MISMATCH": "頁面的安全憑證已失效，重新整理後再試一次。",
+    "ORIGIN_MISMATCH": "請求不是從這個網站送出的，已被拒絕。",
+    "NOT_FOUND": "找不到要求的資源。",
+    "NETWORK_ERROR": "連不上 HazelminX Core。",
+    "UI_NOT_EMBEDDED": "這個 Core 執行檔沒有內建網頁介面。",
+    "INVALID_RESPONSE": "Core 回傳的內容不是預期的格式。",
+    "unknown": "Core 回傳錯誤（HTTP {{status}}）。"
+  },
+  "kumo": {
+    "label": {
+      "optional": "選填",
+      "tooltip": "說明"
+    },
+    "layerDialog": {
+      "close": "關閉",
+      "cancel": "取消"
+    }
+  }
+}
