@@ -38,7 +38,7 @@
    ],
    "requirements": [],
    "acceptance_tests": [],
-   "status": "in_progress",
+   "status": "done",
    "issue": 3
   },
   {
@@ -87,7 +87,7 @@
    ],
    "requirements": [],
    "acceptance_tests": [],
-   "status": "blocked",
+   "status": "in_progress",
    "issue": 6
   },
   {
@@ -257,7 +257,7 @@
     "DEP-T01",
     "DEP-T02"
    ],
-   "status": "blocked",
+   "status": "ready",
    "issue": 13
   },
   {
