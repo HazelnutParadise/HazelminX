@@ -1891,6 +1891,74 @@ def change_safety() -> str:
     return U.shell("security", main)
 
 
+# ---------- 外殼的各種狀態（票 005 設計缺口） ----------
+def shell_states() -> str:
+    head = U.page_head("外殼的各種狀態", OBS, "")
+    card = "background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0"
+    def box(title, body):
+        return f'<section style="{card}"><h2 style="font-size:14px">{title}</h2>{body}</section>'
+    menu = box("帳號選單", f"""
+      <div style="border:1px solid var(--line);border-radius:8px;background:var(--raised);display:flex;flex-direction:column">
+        <div style="padding:10px 12px;border-bottom:1px solid var(--line)"><strong>tim</strong><div class="note">擁有者 · tim@hazelnut.tw</div></div>
+        <a class="nv" href="AccountSecurity.dc.html" style="padding:8px 12px">{U.icon("user", 14)} 帳號安全</a>
+        <a class="nv" href="Terminal.dc.html" style="padding:8px 12px">{U.icon("terminal", 14)} 終端機</a>
+        <button type="button" class="nv" style="padding:8px 12px;text-align:left">{U.icon("globe", 14)} 語言 · 繁體中文</button>
+        <button type="button" class="nv" style="padding:8px 12px;text-align:left;border-top:1px solid var(--line)">登出</button>
+      </div>""")
+    signed_out = box("未登入時的頂列", f"""
+      <div class="top" style="border:1px solid var(--line);border-radius:8px"><span class="brand"><span class="logo" aria-hidden="true"></span><span>HazelminX</span></span>
+        <div class="tright"><button type="button" class="ib" aria-label="切換淺色或深色">{U.icon("sun")}</button><button type="button" class="ib" aria-label="語言">{U.icon("globe")}</button></div></div>
+      <div class="wrap">{U.status("info", "只有品牌、主題與語言；其他圖示都不顯示")}</div>""")
+    obs = box("觀測時間還沒有資料", f"""
+      <div class="wrap"><span class="obs" style="display:inline">觀測 <span class="mono">—</span></span>{U.status("info", "第一次資料到了才顯示時間")}</div>
+      <div class="wrap"><span class="obs" style="display:inline">觀測 <span class="mono">03:42:06</span> · 每 10 秒</span>{U.status("warn", "超過 40 秒沒更新")}</div>""")
+    def page(title, body, acts):
+        return box(title, f'<div style="border:1px dashed var(--line);border-radius:8px;padding:24px;display:flex;flex-direction:column;gap:10px;align-items:flex-start">{body}<div class="wrap">{acts}</div></div>')
+    empty = page("還沒有內容的頁面", '<strong>還沒有部署任何專案</strong>',
+                 '<a class="btn pri" href="GitHubSource.dc.html">從 GitHub 匯入</a><a class="btn" href="AppStore.dc.html">應用商店</a>')
+    nf = page("404 · 找不到頁面", '<strong>找不到這個頁面</strong><span class="mono note">/projects/shop-old</span>',
+              '<a class="btn pri" href="Overview.dc.html">回總覽</a><a class="btn" href="CommandPalette.dc.html">搜尋</a>')
+    err = page("頁面載入失敗", f'<strong>這一頁沒有載入成功</strong>{U.status("dng", "Core 回應 502 · 追蹤碼 tr_91c0aa")}',
+               '<button type="button" class="btn pri">重新載入</button><button type="button" class="btn">複製追蹤碼</button>')
+    loading = box("第一次載入", '<div style="display:flex;flex-direction:column;gap:8px">'
+                  + "".join(f'<span style="height:{h}px;border-radius:6px;background:var(--line);opacity:.6;width:{w}%"></span>' for h, w in ((20, 40), (12, 90), (12, 75), (12, 82)))
+                  + '</div><div class="wrap">' + U.status("info", "超過 2 秒才顯示骨架，避免閃一下") + '</div>')
+    raw = box("原文加白話摘要", f"""
+      <div class="wrap">{U.status("dng", "設定檢查沒通過：shop.example.tw 的上游找不到")}</div>
+      <details><summary class="note">看原文（zentinel --validate）</summary><div class="term" style="white-space:pre-wrap;overflow-wrap:anywhere">ERROR route shop.example.tw: upstream "shop-api:8080" not resolvable
+config check failed, refusing to start</div></details>""")
+    cdown_states = box("元件停止橫條的其他狀態", f"""
+      {U.component_down("Zentinel", "hazel-tw-01", "重啟中 · 第 1 次", "啟動中", "等健康檢查", kind="systemd 服務 · zentinel.service", busy=True)}
+      {U.component_down("Ollama", "hazel-tw-01", "6 分鐘前", "退出碼 137 · 記憶體不足（OOM）", "AI 推論無法使用", tries="重啟 2 次都失敗 · 平台不會自動再試")}
+      {U.component_down("Zentinel", "hazel-tw-01", "4 分鐘前", "退出碼 1", "網站無法連線", can_restart=False, kind="systemd 服務")}""")
+    def sb(text, effect, state):
+        return (f'<div class="savebar" style="position:static"><span class="dot" aria-hidden="true"></span><span><strong>{text}</strong><span class="note"> · {effect}</span></span>'
+                f'<span class="wrap sbtns">{state}</span></div>')
+    savebars = box("儲存列的其他狀態", f"""
+      {sb(".env：1 處未儲存", "儲存中", '<button type="button" class="btn" disabled>捨棄</button><button type="button" class="btn pri" disabled>' + U.icon("restart", 14) + '儲存中…</button>')}
+      {sb(".env：1 處未儲存", "沒有存成功 · 磁碟唯讀（PLATFORM_DEGRADED）", '<button type="button" class="btn">捨棄</button><button type="button" class="btn pri">再試一次</button>')}
+      <div style="border:1px solid var(--line);border-radius:8px;background:var(--raised);padding:14px;display:flex;flex-direction:column;gap:10px" role="dialog" aria-label="離開前">
+        <strong>.env 有 1 處沒存，要離開嗎？</strong>
+        <div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">留在這頁</button><button type="button" class="btn">不存，離開</button><button type="button" class="btn pri">儲存後離開</button></div></div>""")
+    collapsed = box("側欄收合", f"""
+      <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
+        <nav style="width:56px;border:1px solid var(--line);border-radius:8px;padding:6px;display:flex;flex-direction:column;gap:4px;align-items:center" aria-label="收合的側欄">
+          <span tabindex="0" data-tip="總覽" class="ib">{U.icon("overview")}</span>
+          <span tabindex="0" data-tip="工作中心 · 3 個進行中" class="ib" style="position:relative">{U.icon("jobs")}<b class="badge" style="background:var(--hazel)">3</b></span>
+          <span tabindex="0" data-tip="事件與告警 · 5" class="ib" style="position:relative">{U.icon("events")}<b class="badge dng">5</b></span>
+          <span style="width:24px;height:1px;background:var(--line);margin:4px 0" aria-hidden="true"></span>
+          <span tabindex="0" data-tip="專案與服務" class="ib">{U.icon("projects")}</span>
+          <span tabindex="0" data-tip="容器" class="ib">{U.icon("docker")}</span>
+        </nav>
+        <div style="display:flex;flex-direction:column;gap:6px;min-width:0;flex:1">
+          <div class="wrap">{U.status("info", "群組標題換成分隔線")}</div><div class="wrap">{U.status("info", "計數變成圖示右上角的小徽章")}</div><div class="wrap">{U.status("info", "名稱在滑過或 Tab 移到時顯示")}</div>
+        </div></div>""")
+    grid = (f'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr));gap:16px;align-items:start">'
+            f'{menu}{signed_out}{obs}{collapsed}{empty}{nf}{err}{loading}{raw}</div>')
+    main = head + grid + f'<div class="cg">{cdown_states}{savebars}</div>'
+    return U.shell("overview", main)
+
+
 # ---------- 資料庫 ----------
 def database() -> str:
     head = U.page_head("資料庫", OBS, '<button type="button" class="btn pri">安裝資料庫</button><button type="button" class="btn">連接既有</button><button type="button" class="btn">SQL 主控台</button>')
@@ -3952,6 +4020,7 @@ SCREENS = {
     "MfaDialogs": ("第二驗證的對話框", mfa_dialogs, 1440, 1500),
     "ListAndErrors": ("列表、背景查詢與錯誤", list_and_errors, 1440, 1600),
     "ChangeSafety": ("變更前後的檢查", change_safety, 1440, 1500),
+    "ShellStates": ("外殼的各種狀態", shell_states, 1440, 1800),
     "Settings": ("平台設定", settings, 1440, 2600),
     "Logs": ("日誌", logs, 1440, 2200),
     "AppSettings": ("nextcloud · 網路與掛載", app_settings, 1440, 1300),

@@ -16,7 +16,7 @@
 | `ux-evaluation.md` | UX 評估方法清單（專家審查、量測、真人測試）、門檻與改前改後數字、畫面文字來源規則 |
 | `ux-walkthrough.md` | 認知走查（六個任務）與啟發式掃描，以及市面面板版面慣例對照 |
 | `gap-analysis.md` | 規格 vs 畫面、參考專案 vs 我們的缺口盤點，與「圖形為主」第二輪的改動清單 |
-| `screens/` | 方向 B 定稿的 72 個畫板（Claude Design 畫布格式 `.dc.html`），由 `tools/build_screens.py` 產生 |
+| `screens/` | 方向 B 定稿的 73 個畫板（Claude Design 畫布格式 `.dc.html`），由 `tools/build_screens.py` 產生 |
 | `tools/hxui.py` | 共用 token CSS、導覽、圖表元件（純 SVG，CSS hover，不用 JavaScript） |
 | `tools/build_screens.py` | 示例資料與各畫面內容；執行後重建 `screens/` |
 | `screenshots/` | Playwright 渲染結果：桌面 1440 深淺色、手機 360 |
@@ -44,6 +44,7 @@
 | NodeLedger／NodeLedgerBroken | 主機變更帳本：每個變更的之前與之後、擁有權、工作；使用者後來改過的檔案；被拒絕的動作；安裝前快照；帳本無法使用時的處理（票 113） | 帳本表、比對表、元件停止式橫條 |
 | AccountSecurity／MfaDialogs | 帳號的第二驗證、復原碼、登入中的裝置、閒置設定、網域變更影響；綁定 TOTP 與 Passkey、登入第二步錯誤、重新驗證、強制綁定（票 014） | 表格、對話框 |
 | ListAndErrors／ChangeSafety | 列表底部（總數已知、超過查詢上限、逾時總數未知）、背景查詢與兩種被拒狀態、錯誤物件的呈現；版本過期、影響預覽、套用確認倒數、別人的變更在等確認（票 010） | 分頁列、表格、錯誤橫條 |
+| ShellStates | 外殼的各種狀態：帳號選單、未登入頂列、觀測時間沒資料、側欄收合、空頁、404、載入失敗、第一次載入、原文加白話摘要、元件停止橫條與儲存列的其他狀態（票 005） | 骨架、橫條、對話框 |
 | Uninstall | 解除安裝：三種方式、逐項預覽（平台安裝／平台修改／既有）、使用者資料逐項選、維護缺口、移除後與安裝前比對的報告 | 預覽表、資料表、比對報告 |
 | ComponentDown | 平台依賴的元件（例如 Zentinel）停止時頁面長怎樣 | 元件停止橫條、停止前日誌、淡化的上次觀測值 |
 | SiteStatic／FolderPicker | 靜態網站選資料夾；不能選的照樣列出並標原因 | 目錄樹、資料夾清單 |

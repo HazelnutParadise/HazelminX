@@ -454,7 +454,7 @@ body{{margin:0}}
 .hb .subtabs{{display:flex;flex-wrap:wrap;gap:4px}}
 .hb .st2{{min-height:30px;padding:0 12px;border-radius:999px;border:1px solid transparent;background:transparent;color:var(--muted);font-size:13px;cursor:pointer}}
 .hb .st2:hover{{color:var(--ink);background:var(--raised)}}.hb .st2.on{{color:var(--ink);background:var(--raised);border-color:var(--line)}}
-@media (max-width:767px){{.hb .subtabs{{flex-wrap:nowrap;overflow-x:auto}}.hb .st2{{flex:none;min-height:44px}}}}
+@media (max-width:767px){{.hb .top a.ib[href="Terminal.dc.html"]{{display:none}}}}@media (max-width:767px){{.hb .subtabs{{flex-wrap:nowrap;overflow-x:auto}}.hb .st2{{flex:none;min-height:44px}}}}
 .hb .rstrip{{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 14px;border-top:1px solid var(--hairline)}}
 .hb .tier{{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:600;border:1px solid currentColor;cursor:help}}
 .hb .tier.dng{{color:var(--danger)}}.hb .tier.info{{color:var(--blue)}}.hb .tier.off{{color:var(--muted)}}
@@ -646,9 +646,10 @@ def savebar(changes: str, effect: str, primary: str, secondary: str = "") -> str
             f'<button type="button" class="btn pri" aria-keyshortcuts="Meta+S">{icon("save", 14)}{primary}<span class="kbd">⌘S</span></button></span></div>')
 
 
-def component_down(name: str, host: str, since: str, exit_info: str, impact: str, can_restart: bool = True, tries: str = "", kind: str = "") -> str:
+def component_down(name: str, host: str, since: str, exit_info: str, impact: str, can_restart: bool = True, tries: str = "", kind: str = "", busy: bool = False) -> str:
     """平台依賴的元件停止時，依賴它的頁面頂端都放這條（ROB-013）。頁面其餘內容照常，以上次觀測值呈現。"""
-    btn = (f'<button type="button" class="btn pri">{icon("restart", 14)}重啟 {name}</button>' if can_restart
+    btn = (f'<button type="button" class="btn pri" disabled>{icon("restart", 14)}重啟中…</button>' if busy
+           else f'<button type="button" class="btn pri">{icon("restart", 14)}重啟 {name}</button>' if can_restart
            else f'<span tabindex="0" data-tip="需要 {name} 的操作權限，請找主機管理員"><button type="button" class="btn pri" disabled>{icon("restart", 14)}重啟 {name}</button></span>')
     t = f'<span class="note">{tries}</span>' if tries else ""
     return (f'<div class="cdown" role="alert"><span class="t"><strong>{name} 已停止 · {host} · {since}</strong>' + (f'<span class="note mono">{kind}</span>' if kind else '') + f''
