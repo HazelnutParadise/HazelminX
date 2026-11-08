@@ -1,7 +1,7 @@
 # Delivery Status
 
 ## Current Phase
-M0 基礎與設計：Core 與 Agent 後端骨架（票 003、004、008、009、011、012）與 CI（票 006，前端部分待 005）與管理 API 共用契約（票 010）已合併進 `main`；Core↔Agent 通道（票 007）驗收完成，在草稿 PR #125 等合併；設計系統與 UI/UX 原型（票 002）進行中。
+M0 基礎與設計：Core 與 Agent 後端骨架（票 003、004、008、009、011、012）、CI（票 006，前端 job 待補）、管理 API 共用契約（票 010）、Core↔Agent 通道（票 007）、第二驗證（票 014）、主機變更帳本（票 113）、設計系統與畫板（票 002，PR #102）、前端骨架（票 005，PR #126）都已合併進 `main`。票 002 仍是 in_progress：實作回報的設計缺口會繼續補畫，之後以新 PR 合併。
 
 ## Stage Objective
 完成 `DESIGN.md` 與主要畫面原型並通過設計審查，讓票 003、004、005、007 可以在一致的視覺與互動基準上開工；M0 結束時 Core、Agent、Web 骨架可建置並在 CI 通過。
@@ -12,7 +12,7 @@ M0 基礎與設計：Core 與 Agent 後端骨架（票 003、004、008、009、0
 - CI（票 006，已在 `main`，in_progress）→ `.github/workflows/ci.yml`：Go 與 Rust 在 x86_64、ARM64 原生機器上檢查、測試、建置、冒煙測試並產生依賴報告。剩前端 job 與嵌入前端的 Core 建置，等票 005。
 - Core↔Agent 通道（票 007，已在 `main`）→ `docs/contracts/`、`agent/crates/protocol`、Agent 連線與持久步驟紀錄、`core/internal/protocol`、`core/internal/nodes`。SEC-011 的升級路徑移到票 036。票 008 的 ENG-003 Agent 端已由 007 接上。
 - 主機變更帳本（票 113，done）→ `agent/crates/privileged/src/ledger/`（主機那份）與 `core/internal/hostledger`（Core 那份，經 007 的通道同步）。交給其他票的項目列在 Handoff Notes。
-- 前端骨架（票 005，分支 `ticket/005-web-skeleton`，草稿 PR #126）→ `web/`：Kumo＋HazelminX 主題、外殼、i18n、深淺色、共用元件（儲存列、主機狀態列、元件停止橫條、原文＋白話摘要）、Playwright 版面與無障礙掃描；Core 嵌入版已實測。PR base 暫設 `ticket/002-design-system`，PR #102 合併後改 main。
+- 前端骨架（票 005，已在 `main`，PR #126 經 #102 合併）→ `web/`：Kumo＋HazelminX 主題、外殼、i18n、深淺色、共用元件（儲存列、主機狀態列、元件停止橫條、原文＋白話摘要）、Playwright 版面與無障礙掃描；Core 嵌入版已實測。CI 還沒有前端 job（票 006）。
 - 參考專案研究收尾 → `docs/research/`（1Panel 後端／前端、Komodo Periphery、Portainer Git Stack、Beszel 報告待補）。
 
 ## Milestones
@@ -78,8 +78,8 @@ None。
 - 架構決策：`ENG.md`
 - 規格：`docs/spec/HazelminX_Spec_v1.1_zh-TW.md`
 - 票務：`docs/tickets/README.md`、GitHub issues #1–#98（milestone M0–M5）
-- 草稿 PR：#99（092 基線盤點）、#102（002 設計方向）、#126（005 前端骨架）
-- 已合併 PR：#100（003）、#101（004）、#103（011）、#104（009）、#105（008）、#106（012）、#121（010）、#122（113）、#124（004）、#123（014）、#125（007）、#127（006）
+- 草稿 PR：#99（092 基線盤點）
+- 已合併 PR：#100（003）、#101（004）、#103（011）、#104（009）、#105（008）、#106（012）、#121（010）、#122（113）、#124（004）、#123（014）、#125（007）、#127（006）、#126（005，併入 #102）、#102（002）
 - 設計畫布：<https://claude.ai/artifact/NBXgFGYEiZVnKLraoa7Nt8>（第一頁三個方向、第二頁方向 B 定稿 12 畫板，私人）
 - 研究：`docs/research/`
 - 工作規則：`AGENTS.md`
