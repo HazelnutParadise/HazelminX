@@ -57,3 +57,6 @@
 - PR #123（票 014）新增的 `0006_mfa_sessions.sql` 與 `main` 上的 `0006_management_contract.sql` 重號，合併前改成 `0007` 並更新票 014 的引用。
 - 票 010 的「設計缺口」一節列出 API 已有、畫面還沒畫的狀態（列表邊界、背景查詢、錯誤呈現、版本過期、影響預覽、確認倒數），由設計端補進 `docs/design/`。
 - 寫入閘門的 `RESOURCE_READ_ONLY`、`CONTROLLER_CONFLICT`、`SCOPE_DEGRADED`、`RESOURCE_REFERENCED` 目前只有單元測試；第一個有受管資源端點的票接上 `ResourceState` 時，補一條經 API 拒絕的測試。
+- Issue #20 比票檔 `020-host-overview-monitoring.md` 多出幾條驗收：GPU 欄位對齊 1Panel、GPU 程序對回所屬容器、硬體依類別分組成卡片、ROB-009，以及驗收案例 T-165、T-172、T-183。票檔是驗收條件的唯一來源，要決定把這些補進票檔，或從 issue 拿掉。
+- `agent/UPSTREAM.md` 把幾件事交給其他票決定，但那些票的驗收還沒寫：票 027 要決定終端機用哪個 Linux 帳號執行、`host.shell` 權限在 Agent 還是 `hazelminx-privileged` 檢查，以及收到 SIGTERM 時結束終端機；票 040 要決定低權限 Agent 怎麼存取 Docker socket；命令層（Komodo `lib/command`）由票 020、040、044 中最先需要的那張移植。
+- 票 007 選定 `rustls` 的加密後端（`aws-lc-rs` 或 `ring`）時，讀該 crate 實際的 LICENSE 檔，確認能與 GPL-3.0 一起散布，結果記進 `agent/UPSTREAM.md`。
