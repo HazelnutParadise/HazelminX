@@ -135,7 +135,7 @@ def overview() -> str:
           <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span class="mono" style="font-weight: 500">hazel-tw-01 /mnt/data</span>{U.status("ok", "已綁定 UUID")}</div>
           {U.tall_bar([(290, "容器資料", "var(--q5)"), (84, "資料庫", "var(--q4)"), (38, "備份暫存", "var(--q3)")], 931)}
           <span class="note">412 / 931 GiB · 30 天 +38 GiB · 預估 410 天後滿</span>
-          <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span class="mono" style="font-weight: 500">hazel-jp-02 /mnt/data</span>{U.status("dng", "沒用 UUID 掛載 · 換碟可能掛錯")}</div>
+          <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span class="mono" style="font-weight: 500">hazel-jp-02 /mnt/data</span>{U.status("dng", "沒用 UUID 掛載 · 用裝置名稱 sdb1 掛載")}</div>
           {U.tall_bar([(610, "容器資料", "var(--q5)"), (190, "媒體", "var(--q4)"), (70, "備份暫存", "var(--q3)")], 931)}
           <span class="note" style="color: var(--danger)">870 / 931 GiB · 30 天 +121 GiB · 預估 15 天後滿</span>
           <div class="scale"><i style="background:var(--q5)"></i>容器資料 <i style="background:var(--q4)"></i>資料庫／媒體 <i style="background:var(--q3)"></i>備份暫存 <i style="background:var(--q1)"></i>可用</div>
@@ -685,8 +685,8 @@ def github_source() -> str:
     head = U.page_head("從 GitHub 匯入專案", OBS, '<a class="btn" href="Projects.dc.html">取消</a>')
     stepper = U.steps([("連接 GitHub", "done", "GitHub App · hazelnut 組織"), ("選擇倉庫與分支", "cur", ""), ("偵測與設定", "todo", "compose、環境變數"), ("部署檢查", "todo", "預檢後才建立")])
 
-    def repo(name, desc, branch, updated, attrs, cur=False, compose=True):
-        det = (U.attr("check", "找到 deploy/compose.yaml", "compose", "ok") if compose is True
+    def repo(name, desc, branch, updated, attrs, cur=False, compose=True, det=None):
+        det = det or (U.attr("check", "找到 deploy/compose.yaml", "compose", "ok") if compose is True
                else U.attr("check", "找到 Dockerfile · 沒有 compose", "Dockerfile", "ok") if compose == "dockerfile"
                else U.attr("x", "沒有 compose 也沒有 Dockerfile", "無法部署", "dng"))
         return (f'<div class="row rrow{" sel" if cur else ""}"><span><input type="radio" name="repo" aria-label="選擇 {name}" {"checked" if cur else ""} style="width:18px;height:18px;accent-color: var(--hazel)"></span>'
@@ -698,8 +698,8 @@ def github_source() -> str:
       <div style="padding: 10px 14px"><label class="inp"><span class="note">搜尋</span><input placeholder="倉庫名稱" style="background:transparent;border:0;flex:1;min-width:0" aria-label="搜尋倉庫"></label></div>
       <div class="row hd rrow"><span></span><span>倉庫</span><span>屬性</span><span>偵測</span><span class="c4">分支</span><span>更新</span></div>
       {repo("hazelnut/report", "報表服務", "main", "12 分鐘前", U.attr("lock", "私有倉庫") + U.attr("box", "Dockerfile · 1 個服務", "1"), cur=True, compose="dockerfile")}
-      {repo("hazelnut/shop", "電商主站 · 已用於專案 shop", "main", "2 小時前", U.attr("lock", "私有倉庫") + U.attr("box", "4 個 compose 服務", "4"))}
-      {repo("hazelnut/shop-mobile-api", "行動 API", "main", "3 天前", U.attr("lock", "私有倉庫") + U.attr("box", "2 個 compose 服務", "2"))}
+      {repo("hazelnut/shop", "電商主站 · 已用於專案 shop", "main", "2 小時前", U.attr("lock", "私有倉庫") + U.attr("box", "4 個 compose 服務", "4"), det=U.attr("check", "找到 compose.yaml、docker-compose.yml、compose.override.yaml；下一步指定主檔", "3 份", "ok"))}
+      {repo("hazelnut/shop-mobile-api", "行動 API", "main", "3 天前", U.attr("lock", "私有倉庫") + U.attr("box", "2 個 compose 服務", "2"), det=U.attr("folder", "根目錄沒有；apps/api/compose.yaml 與 apps/worker/docker-compose.yml，下一步指定一份或建立成兩個單元", "子目錄 2 份", "warn"))}
       {repo("hazelnut/shop-legacy", "舊版 PHP", "master", "1 年前", U.attr("lock", "私有倉庫") + U.attr("archive", "已封存，唯讀", "", "warn"), compose=False)}
       
     </section>"""
@@ -709,7 +709,7 @@ def github_source() -> str:
       <div style="padding: 12px 14px; display: flex; flex-direction: column; gap: 14px">
         <div class="field"><label for="br">分支或標籤</label><div class="inp"><span class="mono">main</span><span class="note" style="margin-left:auto">最新 4d81a2c · 12 分鐘前</span></div><span class="help">之後每次推送到這個分支都會建立變更計畫；高風險變更先暫停等批准。</span></div>
         <div class="field"><label for="path">建置方式</label><div class="inp"><span>Dockerfile（倉庫根目錄）</span>{U.status("ok", "已找到")}</div><span class="help">沒有 compose 檔，當成單一服務部署</span></div>
-        <div class="field"><label for="wd">工作目錄與 compose 檔</label><div class="inp"><span class="mono">./</span><span class="note" style="margin-left:auto">monorepo 時改成子目錄，例如 ./deploy</span></div><span class="help">有多份 compose 時，下一步可以選要用哪幾份與順序</span></div></div>
+        <div class="field"><label for="wd">工作目錄與 compose 檔</label><div class="inp"><span class="mono">./</span><span class="note" style="margin-left:auto">monorepo 時改成子目錄，例如 ./deploy</span></div><span class="help">下一步一定要指定主檔；repo 裡新舊檔名的 compose 檔都會列出</span></div></div>
         <div class="field"><label>觸發方式</label><div class="wrap"><label class="btn" style="gap:8px"><input type="radio" name="trig" aria-label="觸發方式" checked style="accent-color: var(--hazel)">Webhook（推送即部署）</label><label class="btn" style="gap:8px"><input type="radio" name="trig" aria-label="觸發方式" style="accent-color: var(--hazel)">定期檢查（每 5 分鐘）</label><label class="btn" style="gap:8px"><input type="radio" name="trig" aria-label="觸發方式" style="accent-color: var(--hazel)">只手動</label></div><span class="help">Webhook 會在 GitHub 上建立；沒有公開入口時自動改用定期檢查。</span></div>
         <div class="field"><label for="env">目標環境與節點</label><div class="wrap"><div class="inp" style="width:auto;min-width:160px"><span>production</span></div><div class="wrap" role="radiogroup" aria-label="目標節點"><button type="button" class="btn on" role="radio" aria-checked="true"><span class="mono">hazel-tw-01</span>{U.attr("storage", "/mnt/data 可用 412 GiB", "412G")}</button><button type="button" class="btn" role="radio" aria-checked="false" aria-disabled="true" style="opacity:.55"><span class="mono">hazel-jp-02</span>{U.attr("attention", "不可選：沒有回應、資料碟 93%", "", "warn")}</button></div></div></div>
       </div>
@@ -943,7 +943,7 @@ def storage() -> str:
     head = U.page_head("儲存與備份", OBS, '<a class="btn pri" href="BackupCreate.dc.html">新增備份任務</a><span tabindex="0" data-tip="改用 UUID 掛載，插錯磁碟時不會把資料寫到別顆；不用重開機，下次掛載生效"><button type="button" class="btn">用 UUID 固定 jp-02 /mnt/data…</button></span><a class="btn" href="ContainerResources.dc.html">預覽可回收空間</a>')
     tiles = '<div class="tiles">' + "".join([
         U.stat_tile("資料碟合計", "1.32", "/ 1.98 TiB", "<a href=\"ContainerResources.dc.html\">jp-02 15 天後滿 · 處理 →</a>", False, spark=walk(12, 1200, 20, 1100, 1330)),
-        U.stat_tile("沒用 UUID 掛載", "1", "磁碟", "hazel-jp-02 /mnt/data · 換碟可能掛錯", False),
+        U.stat_tile("沒用 UUID 掛載", "1", "磁碟", "hazel-jp-02 /mnt/data · 用裝置名稱 sdb1 掛載", False),
         U.stat_tile("近 7 天備份", "20", "/21 成功", "<a href=\"#h-bk\">1 失敗：wiki-db 11/04 · S3 逾時</a>", None, spark=[3, 3, 3, 2, 3, 3, 3]),
         U.stat_tile("還原測試", "9", "天前", "wiki-db · 通過", None),
     ]) + "</div>"
@@ -959,7 +959,7 @@ def storage() -> str:
       <div class="ph"><h2 id="h-disks">資料碟</h2><span class="sub">段條＝誰吃掉了空間；未綁定裝置身分的磁碟，重開機掛錯時不會被擋下</span><div class="scale" style="margin-left:auto"><i style="background:var(--q5)"></i>容器資料 <i style="background:var(--q4)"></i>資料庫／媒體 <i style="background:var(--q3)"></i>備份暫存 <i style="background:var(--q2)"></i>可回收 <i style="background:var(--q1)"></i>可用</div></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:1px;background:var(--line)">
         {disk("hazel-tw-01", "/mnt/data", "sdb1 → by-uuid/5a7c…e2 · xfs", U.status("ok", "已綁定 UUID"), [(290, "容器資料", "var(--q5)"), (84, "資料庫", "var(--q4)"), (38, "備份暫存", "var(--q3)"), (12, "可回收映像", "var(--q2)")], 931, walk(12, 390, 8, 370, 412), "412 / 931 GiB · +38 GiB · 預估 410 天後滿")}
-        {disk("hazel-jp-02", "/mnt/data", "sdb1（未綁定）· ext4", U.status("dng", "沒用 UUID 掛載 · 換碟可能掛錯"), [(610, "容器資料", "var(--q5)"), (190, "媒體", "var(--q4)"), (70, "備份暫存", "var(--q3)"), (31, "可回收映像", "var(--q2)")], 931, walk(12, 760, 15, 740, 870), "870 / 931 GiB · +121 GiB · 預估 15 天後滿", warn=True)}
+        {disk("hazel-jp-02", "/mnt/data", "sdb1（未綁定）· ext4", U.status("dng", "沒用 UUID 掛載 · 用裝置名稱 sdb1 掛載"), [(610, "容器資料", "var(--q5)"), (190, "媒體", "var(--q4)"), (70, "備份暫存", "var(--q3)"), (31, "可回收映像", "var(--q2)")], 931, walk(12, 760, 15, 740, 870), "870 / 931 GiB · +121 GiB · 預估 15 天後滿", warn=True)}
         {disk("lab-mini", "/mnt/data", "nvme0n1p3 → by-uuid/91b0…77 · ext4", U.status("ok", "已綁定 UUID"), [(28, "容器資料", "var(--q5)"), (6, "資料庫", "var(--q4)"), (4, "可回收映像", "var(--q2)")], 118, walk(12, 36, 2, 30, 38), "38 / 118 GiB · +2 GiB")}
       </div>
     </section>"""
@@ -3652,7 +3652,7 @@ def node_offline() -> str:
 
 # ---------- GitHub 匯入：偵測與設定 ----------
 def import_configure() -> str:
-    head = _form_head([("專案與服務", "Projects.dc.html"), ("從 GitHub 匯入", "GitHubSource.dc.html")], "設定 hazelnut/report", '<a class="btn" href="GitHubSource.dc.html">上一步</a><a class="btn pri" href="ComposeCompat.dc.html">下一步：部署檢查</a>')
+    head = _form_head([("專案與服務", "Projects.dc.html"), ("從 GitHub 匯入", "GitHubSource.dc.html")], "設定 hazelnut/report", '<a class="btn" href="GitHubSource.dc.html">上一步</a><a class="btn pri" href="ComposeCompat.dc.html">繼續：部署檢查</a>')
     stepper = f'<div class="panel" style="padding:12px 14px">{U.steps([("連接 GitHub", "done", "hazelnut"), ("選擇倉庫", "done", "hazelnut/report · main"), ("偵測與設定", "cur", "建置、變數、網址"), ("部署檢查", "todo", "預檢後才部署")])}</div>'
     detect = _fp("偵測結果", _grid(
         _fld("建置方式", U.status("ok", "Dockerfile（沒有 compose，當成單一服務）")),
@@ -3667,7 +3667,7 @@ def import_configure() -> str:
     domain = _fp("網址與 HTTPS", _grid(
         _fld("網址", _in("report.example.tw", mono=True)), _fld("HTTPS", _seg(["自動申請（推薦）", "先不要"], 0, "HTTPS")),
         _fld("DNS 設定", f'<div class="banner" style="display:flex;flex-direction:column;gap:6px;align-items:flex-start">{U.status("warn", "還沒指向這台主機")}<span>到你的 DNS 服務新增一筆紀錄：</span><span class="mono">A　report　203.0.113.22</span><button type="button" class="btn sm">{U.icon("copy", 14)}複製</button></div>', "設定好後這裡會自動變綠，再申請憑證")))
-    summary = _fp("部署會做的事", f'<div style="padding:12px 16px">{U.pipeline([("拉取", "todo", "main · 4d81a2c", ""), ("建置", "todo", "Dockerfile", "隔離建置"), ("啟動", "todo", "tw-01", "健康檢查"), ("網址", "todo", "report.example.tw", "Zentinel"), ("憑證", "todo", "DNS 指向後", "自動")])}<div class="note" style="margin-top:8px">之後 push 到 main 會自動部署（Webhook）· <a href="ProjectTriggers.dc.html">改觸發方式</a></div></div>' + _submit("下一步：部署檢查", "只建立，先不部署"))
+    summary = _fp("部署會做的事", f'<div style="padding:12px 16px">{U.pipeline([("拉取", "todo", "main · 4d81a2c", ""), ("建置", "todo", "Dockerfile", "隔離建置"), ("啟動", "todo", "tw-01", "健康檢查"), ("網址", "todo", "report.example.tw", "Zentinel"), ("憑證", "todo", "DNS 指向後", "自動")])}<div class="note" style="margin-top:8px">之後 push 到 main 會自動部署（Webhook）· <a href="ProjectTriggers.dc.html">改觸發方式</a></div></div>' + _submit("繼續：部署檢查", "只建立，先不部署"))
     main = head + stepper + f'<div class="cg">{detect}{envs}</div>' + domain + summary
     return U.shell("projects", main)
 
@@ -3822,19 +3822,26 @@ def connection_panel() -> str:
 # ---------- 單元設定 ----------
 def unit_config() -> str:
     head = _form_head([("專案與服務", "Projects.dc.html"), ("shop", "ProjectDetail.dc.html"), ("production", "ProjectDetail.dc.html")], "單元 web · 設定", '<a class="btn" href="ProjectDetail.dc.html">取消</a><button type="button" class="btn pri">儲存</button>')
-    def f(path, on, order, note):
-        return (f'<div class="row"><span class="wrap" style="flex-wrap:nowrap"><input type="checkbox"{" checked" if on else ""} aria-label="使用 {path}"><span class="mono">{path}</span></span>'
-                f'<span class="mono">{order}</span><span class="c3">{note}</span><span>{U.actions(["more"])}</span></div>')
+    def f(path, on, order, src, note, ok=True):
+        box = (f'<input type="checkbox"{" checked" if on else ""} aria-label="使用 {path}">' if ok
+               else f'<input type="checkbox" disabled aria-label="{path} 不能選">')
+        return (f'<div class="row"><span class="wrap" style="flex-wrap:nowrap">{box}<span class="mono">{path}</span></span>'
+                f'<span class="mono">{order}</span><span>{src}</span><span class="c3">{note}</span><span>{U.actions(["more"])}</span></div>')
+    hint = U.status("info", "Compose 預設會用")
+    scan_root = U.attr("folder", "掃描到 · 根目錄", "根目錄")
+    scan_dep = U.attr("folder", "掃描到 · deploy/", "deploy/")
+    manual = U.attr("user", "手動加入 · 檔名不在 Compose 預設的 8 個裡，掃描不會找到", "手動")
     files = _fp("Compose 檔", f"""
-      <div style="padding:12px 14px;display:flex;flex-direction:column;gap:10px">
-        <div class="wrap">{_seg(["自動（同 compose 預設）", "指定檔案（像 Portainer）"], 1, "模式")}<span class="note">指定檔案時不會自動合併 compose.override.yaml，要用就勾進清單</span></div>
-      </div>
-      <div class="row hd"><span>repo 裡找到的 compose 檔</span><span>順序</span><span class="c3">說明</span><span></span></div>
-      {f("deploy/compose.yaml", True, "1 主檔", "4 個服務")}
-      {f("deploy/monitoring.yml", True, "2", "加上 node-exporter")}
-      {f("compose.override.yaml", False, "—", U.status("warn", "把 ./src 掛進 shop-api · 疑似開發用"))}
-      {f("compose.yaml", False, "—", "根目錄 · 舊版")}
-      <div style="padding:10px 14px 12px"><button type="button" class="btn sm">預覽合併結果</button> <span class="note">平台的覆寫層永遠排在最後</span></div>""")
+      <div class="row hd"><span>檔案</span><span>順序</span><span>來源</span><span class="c3">說明</span><span></span></div>
+      {f("compose.yaml", False, "—", scan_root, hint + " 根目錄的舊版")}
+      {f("compose.override.yaml", False, "—", scan_root, U.status("warn", "override · 疑似開發用") + " " + U.status("warn", "勾選時 ./src → deploy/src"))}
+      {f("Compose.yml", False, "—", scan_root, U.status("off", "檔名大小寫不符，Compose 不會讀"), ok=False)}
+      {f("deploy/compose.yaml", True, "1 主檔", scan_dep, hint + " 4 個服務")}
+      {f("└ db/compose.yaml", True, "—", U.attr("diff", "由 deploy/compose.yaml 的 include 帶入，不能另外勾選", "include"), "shop-db · 以 db/ 解析相對路徑", ok=False)}
+      {f("deploy/docker-compose.yml", False, "—", scan_dep, "舊檔名")}
+      {f("deploy/monitoring.yml", True, "2", manual, "加上 node-exporter")}
+      <div style="padding:10px 14px 12px" class="wrap"><button type="button" class="btn sm">手動加入其他檔案…</button><button type="button" class="btn sm">預覽合併結果</button><span class="note">平台的覆寫層永遠排在最後</span></div>""",
+      sub="掃描整個 repo 的 compose.yaml、compose.yml、docker-compose.yml、docker-compose.yaml 與對應的 override 檔；一定要指定主檔")
     prof = _fp("Profile", f"""
       <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px">
         <div class="wrap">{_cb("預設（沒有 profile 的服務）", True)}{_cb("debug", False)}{_cb("metrics", True)}</div>
@@ -4140,7 +4147,7 @@ def compose_compat() -> str:
     rows = f"""
       <div class="row hd"><span>結果</span><span>位置</span><span>項目</span><span class="c3">會怎樣</span><span>處理</span></div>
       {it(blk, "compose.yml:79", "mysql 的資料目錄 /mnt/ssd1/n8n-stack/mysql 不存在", "Docker 會建空目錄，mysql 初始化成新的空資料庫", '<span class="wrap"><button type="button" class="btn sm">選既有路徑</button><button type="button" class="btn sm">從別台搬資料</button><button type="button" class="btn sm">從空的開始</button></span>')}
-      {it(blk, "compose.yml:5", "container_name: n8n 與 production 衝突", "tw-01 上已有 n8n-stack production 的 n8n", '<button type="button" class="btn sm">改成 n8n-staging</button>')}
+      {it(blk, "compose.yml:5、8", "production 的 n8n 單元也用這份 compose.yml", "同一台 tw-01：container_name n8n、Port 5678 會衝突", '<span class="wrap"><button type="button" class="btn sm">改成 n8n-staging</button><a class="btn sm" href="UnitConfig.dc.html">改部署到其他主機</a></span>')}
       {it(wrn, "compose.yml:31", "外部網路 infra-net 不存在", "compose 會直接失敗", '<span class="wrap">' + _seg(["建立", "對應到既有", "改用依賴連線"], 0, "infra-net") + '</span>')}
       {it(wrn, "compose.yml:24、45、71", "4 個寫死的機密 · MYSQL_ROOT_PASSWORD 等", "能讀 repo 的人都看得到", '<button type="button" class="btn sm">移到平台變數</button>')}
       {it(wrn, "compose.yml:8、96", "Port 5678、5679 開到所有位址", "繞過 Zentinel 與防火牆", '<button type="button" class="btn sm">改綁 127.0.0.1</button>')}

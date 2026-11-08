@@ -231,7 +231,7 @@
 
 | 實際行為 | 畫面與預檢要做到 |
 |---|---|
-| 沒指定 `-f` 時，Compose 依序找 `compose.yaml`、`compose.yml`、`docker-compose.yaml`、`docker-compose.yml`，再合併同名的 override 檔（例如 `compose.override.yaml`）。同時有多種檔名時，用 `compose.yaml` 並發出警告。一旦用 `-f` 指定檔案，就只用指定的檔案依序合併，不再自動加 override | 單元有兩種模式。<br>**自動**：與不加 `-f` 相同，「合併 override」是一個可以關掉的開關。<br>**指定檔案**：與 Portainer 的 Compose 路徑加其他路徑相同。主檔可以是 repo 裡任一份 compose，再勾選要合併的其他檔並排序。這個模式不自動加 override。<br>畫面列出 repo 裡找到的所有 compose 檔供勾選，並預覽合併後的結果。override 常放開發用設定，預檢會列出 override 改了哪些設定，並提示疑似開發用的項目：把 repo 目錄掛進容器、在主機上發布 Port、把 `command` 改成 `npm run dev` 這類開發指令。只提示，不擋下 |
+| 沒指定 `-f` 時，Compose 在專案目錄依序找 `compose.yaml`、`compose.yml`、`docker-compose.yml`、`docker-compose.yaml`，只用找到的第一個，同時有多個時只發警告；這一層找不到就往上層找。找到主檔後，在同一層再依序找 `compose.override.yml`、`compose.override.yaml`、`docker-compose.override.yml`、`docker-compose.override.yaml`，只合併第一個。一旦用 `-f` 指定檔案，就只用指定的檔案依序合併，不再自動加 override | 平台一律用 `-f` 執行，沒有自動選檔的模式：單元一定要指定主檔，像 Portainer 的 Compose 路徑加其他路徑。主檔可以是 repo 裡任一份 compose，再勾選要合併的其他檔並排序。override 檔不會自動合併，要用就勾進清單。<br>畫面依 52.5.1 列出 repo 裡找到的所有 compose 檔供勾選，並預覽合併後的結果。override 常放開發用設定，預檢會列出 override 改了哪些設定，並提示疑似開發用的項目：把 repo 目錄掛進容器、在主機上發布 Port、把 `command` 改成 `npm run dev` 這類開發指令。只提示，不擋下 |
 | `.env` 裡的 `COMPOSE_PROJECT_NAME`、`COMPOSE_FILE`、`COMPOSE_PROFILES`，與 Compose 檔頂層的 `name:`，都會改變專案名稱、要讀的檔案與啟用的 profile | 平台一律用 `-p`、`-f`、`--profile` 明確指定，以平台的設定為準。<br>這幾個值出現在 `.env` 或 `name:` 時，預檢提示「平台設定優先，以下值不採用」並列出。不會靜默套用，也不會靜默忽略 |
 | 有 `profiles:` 的服務，沒啟用該 profile 時不會啟動 | 單元可以選要啟用的 profile。不會啟動的服務標「profile 未啟用」，不算失敗 |
 | `${VAR:?訊息}` 缺值時，Compose 直接失敗；`${VAR:-預設}` 會用預設值 | 預檢列出所有替換變數，分成缺值、用預設值、已提供三種。缺必填值時擋下 |
@@ -241,6 +241,27 @@
 | `configs:`、`secrets:` 與掛進容器的單一檔案（例如 `./nginx.conf`）是檔案，不是變數 | 單元有「設定檔」區。每個檔案有名稱（就是相對於專案目錄的路徑）、內容與版本；與變數組一樣可以上傳、改名、比較版本。`secrets:` 的內容存在機密庫 |
 | Compose 的專案名稱決定網路與儲存卷的名稱（`<專案名稱>_<卷>`） | 一律用 52.1 的固定專案名稱，畫面顯示實際的專案名稱與儲存卷名稱 |
 | Helm 以 chart 內附的 `values.yaml` 為最底層，再依序疊加 `-f` 的 values 檔，最後套用 `--set`。map 深度合併，list 整個取代，值設成 `null` 會刪掉那個 key | 平台不把 chart 內附的 `values.yaml` 列成組。Kubernetes 單元的 values 是有名稱、有順序的檔案，例如 `values-production.yaml`，存在平台並有版本。合併預覽要標出 list 被整個取代、key 被 `null` 刪除的地方。values 裡標成機密的 key 存在機密庫，以另一份只在部署時產生的 values 檔提供。平台不使用 `--set` |
+
+### 52.5.1 掃描 repo 裡的 Compose 檔
+
+平台不替使用者決定用哪份 Compose 檔，只負責把候選檔全部找出來。檔名與順序依據 compose-go `cli/options.go` 的 `DefaultFileNames`、`DefaultOverrideFileNames`（2026-11-08 讀取，commit `6ac9323e`）。Docker 官方文件以 `compose.yaml` 為首選，舊的 `docker-compose.*` 為了相容仍然支援，所以新舊檔名都要掃到。
+
+- **掃描的檔名**：主檔是 `compose.yaml`、`compose.yml`、`docker-compose.yml`、`docker-compose.yaml`；override 是 `compose.override.yml`、`compose.override.yaml`、`docker-compose.override.yml`、`docker-compose.override.yaml`。範圍是整個 repo 的每一層目錄，不只根目錄。檔名不在這八個裡的 YAML，例如 `deploy/prod.yml`，可以手動加進清單。
+- **排列**：依目錄分組，根目錄在最前面。同一個目錄裡照上面的順序排，舊檔名是 `.yml` 排在 `.yaml` 前面，跟新檔名相反。
+- **一定要選**：不預先選任何檔案，只有一份候選檔時也一樣。沒指定主檔時不能儲存單元，也不能部署。同一個目錄裡，Compose 不加 `-f` 時會用的那份標「Compose 預設會用」，只是提示。
+- **子目錄有多份**：可以選一份，或一次建立成多個單元，每個單元各自指定。
+- **大小寫**：檔名要完全一致。`Compose.yaml`、`docker-compose.YML` 在 Linux 上不會被 Compose 讀到，平台列出這類檔案，標「檔名大小寫不符，Compose 不會讀」，不能選。
+- **符號連結**：指向 repo 外面的 Compose 檔列出來但不能選，畫面寫出原因。
+- **repo 的 `.env` 設了 `COMPOSE_FILE`**：照上表，平台不採用並在預檢列出。旁邊提供「照 COMPOSE_FILE 帶入」，按下後依序帶入它列的檔案，使用者確認後才儲存。
+- **指定的檔案在新 commit 不見了**：例如 `docker-compose.yml` 被改名成 `compose.yaml`，預檢擋下並寫「指定的 docker-compose.yml 在 commit 9b3e7f1 不存在」，推送觸發的部署不執行。畫面列出新 commit 裡的候選檔，讓使用者重新指定。
+- **新 commit 多了 Compose 檔**：預檢提示「repo 新增了 compose.yaml，沒有使用」，不擋下，照原本指定的檔案部署。
+- **都找不到**：只有 Dockerfile 時照 CMP-008 處理；兩者都沒有時寫出缺什麼，不自動產生 Compose 檔。
+
+合併多份檔案時，另外照下面三條處理。依據是 Docker 文件〈Merge Compose files〉與〈Include〉（2026-11-08 讀取）：
+
+- **跨目錄合併**：Compose 以主檔所在的目錄解析所有合併檔案裡的相對路徑，不是以各檔案自己的位置。勾選的檔案不在主檔的目錄時，預檢逐條列出它裡面的相對路徑和實際會解析成的路徑，例如「compose.override.yaml 第 8 行 ./src → deploy/src」。只提示，不擋下，因為有些 repo 是刻意這樣寫的。
+- **`include:`**：主檔或合併的檔案用頂層 `include:` 帶入的檔案，掛在帶入它的那份檔案底下，標「由 include 帶入」，不能另外勾選。被帶入的檔案各自以自己的目錄解析相對路徑；它定義的資源跟其他檔案同名時，Compose 直接報錯，預檢在部署前列出衝突的名稱。被帶入的檔案在新 commit 不見時，跟指定的檔案一樣擋下部署；內容改變時算這個單元的變更，會觸發這個單元的部署。
+- **同一份主檔被多個單元使用**：同一個 repo 的同一份主檔已經被其他單元使用時（不分專案環境），預檢列出那些單元。部署到同一個引擎環境時，會衝突的主機 Port 與 `container_name` 擋下並寫出是哪一行；部署到不同引擎環境時只提示。
 
 ## 52.6 部署：每次建置，建置完才無縫替換
 
@@ -297,7 +318,7 @@
 | PRJ-008 | 使用者可以在 52.4 列出的每個位置上傳、拖放或貼上 env 檔；上傳時要填組名，預設是上傳的檔名。 | 檔名不限。解析依 52.4，區分空字串、未設定與刪除。預覽分出新增、變更、相同，不自動刪除現有變數。機密依規則判定並遮罩。同一層已有同名的組時，可以選合併或改名。超過 1 MiB 或 2,000 個變數時報錯，不會只匯入一部分。 |
 | PRJ-009 | 使用者可以隨時替變數組或設定檔改名。 | 改名前列出所有引用。覆寫層的引用一起更新。Git 裡的引用保留舊名稱當別名並標示，下一次部署不會因找不到檔案而失敗。別名期間，同名不能被新的組使用；Git 已經沒有引用時，別名自動移除。 |
 | PRJ-010 | 使用者可以看到每個服務實際收到的環境變數。 | 依 52.4「同名時誰優先」算出最終值。每個值標出來源（哪一層、哪一組的第幾行、repo、上傳檔或介面、Compose 的哪一行、映像），並列出被蓋掉的值；機密遮罩。Kubernetes 單元依 `env` 與 `envFrom` 的順序計算。 |
-| PRJ-011 | 部署單元可以依 52.5 設定 Compose 檔、profile、替換變數、建置變數、設定檔與 Helm values。 | 52.5 表中的每一列都有對應的畫面與預檢，預設值與工具的預設行為相同。`COMPOSE_*` 與 `name:` 不採用時會提示。執行環境是乾淨的。 |
+| PRJ-011 | 部署單元可以依 52.5 設定 Compose 檔、profile、替換變數、建置變數、設定檔與 Helm values。 | 52.5 表中的每一列都有對應的畫面與預檢，預設值與工具的預設行為相同。單元一定要指定 Compose 主檔，候選清單依 52.5.1 掃描新舊檔名；指定的檔案在新 commit 不存在時擋下部署。跨目錄合併、`include:` 與同一份主檔被多個單元使用，依 52.5.1 預檢。`COMPOSE_*` 與 `name:` 不採用時會提示。執行環境是乾淨的。 |
 | PRJ-012 | 單元改名不會改變它的 Compose 專案名稱、儲存卷名稱與內部位址。 | 改名後再部署，掛的還是原本的儲存卷；畫面顯示實際的 Compose 專案名稱與儲存卷名稱。 |
 | PRJ-013 | 使用者可以把變數組匯出成同名的 env 檔。 | 機密預設不含值，勾選含值會記入稽核。 |
 | PRJ-014 | 每次部署都重新建置或重新拉取，建置完成後才替換；沒變的服務不替換。這是 HazelminX 規則。 | 有 `build:` 的服務每次都建置，可以選擇不用快取，也可以關掉，改成「沒變時沿用上次的映像」。`image:` 每次重新拉取並記錄 digest。Compose 檔寫了 `pull_policy` 的服務照它的設定。digest 與有效設定都沒變的服務不替換。建置、拉取或預檢失敗時，舊容器沒有被重建或停止。 |
@@ -328,7 +349,7 @@
 | T-199 | 在 web 單元上傳 `app.env`，而 web 單元已經有 `app.env` 組。 | 讓使用者選合併或改名。選合併時，預覽新增、變更、相同，現有但檔案沒有的變數保留。 |
 | T-200 | 把 `app.env` 改名為 `web.env`，web 的 compose 在 Git 裡仍寫 `env_file: app.env`。 | 改名前列出這個引用；改名後 `app.env` 保留為別名並標「Git 仍使用舊名稱」；下一次部署照常成功；別名期間不能新建名為 `app.env` 的組。 |
 | T-201 | web 的 compose 有 `environment: LOG_LEVEL=warn`，`app.env` 有 `LOG_LEVEL=debug`，映像的 ENV 是 `LOG_LEVEL=info`。 | 「實際收到的值」顯示 `warn`，來源是 compose 的 `environment`，並列出被蓋過的兩個值。 |
-| T-202 | repo 根目錄有 `compose.yaml` 與 `compose.override.yaml`，override 把 `./src` 掛進 shop-api；另有一個服務帶 `profiles: [debug]`。單元用「自動」模式。 | 兩個檔案依序合併；預檢提示「override 把 repo 目錄 ./src 掛進 shop-api，疑似開發用設定」，但不擋下；debug 服務標「profile 未啟用」，不啟動也不算失敗；啟用 debug 後才啟動。 |
+| T-202 | repo 根目錄有 `compose.yaml` 與 `compose.override.yaml`，override 把 `./src` 掛進 shop-api；另有一個服務帶 `profiles: [debug]`。單元指定主檔 `compose.yaml`，再勾選 `compose.override.yaml`。 | 兩個檔案依序合併；預檢提示「override 把 repo 目錄 ./src 掛進 shop-api，疑似開發用設定」，但不擋下；debug 服務標「profile 未啟用」，不啟動也不算失敗；啟用 debug 後才啟動。 |
 | T-203 | compose 有 `image: shop:${TAG:?必須指定 TAG}`，替換用組沒有 `TAG`。 | 預檢擋下並顯示「必須指定 TAG」；補上後通過。 |
 | T-204 | Next.js 單元的 `NEXT_PUBLIC_API_URL` 放在標「建置時」的組，同一組還有一個機密 `SENTRY_AUTH_TOKEN`。 | `NEXT_PUBLIC_API_URL` 以 build arg 提供，產出的檔案含正確網址；`SENTRY_AUTH_TOKEN` 以 `build.secrets` 提供，`docker history` 看不到它；執行時用的組沒有被當成 build args。 |
 | T-205 | 把 web 單元改名為 storefront，再部署。 | 掛的仍是原本的 `shop-production-web_uploads` 儲存卷；畫面顯示 Compose 專案名稱仍是 `shop-production-web`。 |
@@ -347,6 +368,14 @@
 | T-218 | 推送到 search chart 所在的 repo（web 與 worker 用的是另一個 repo）。 | 只有 search 被觸發部署，web 與 worker 不動。 |
 | T-219 | search 的 values 依序是 `values-production.yaml`，chart 內附的 `values.yaml` 有 `tolerations: [a, b]`，`values-production.yaml` 有 `tolerations: [c]` 與 `replicas: null`。 | 合併預覽標出 `tolerations` 被整個取代成 `[c]`、`replicas` 被 `null` 刪除，並顯示產生的 manifest 差異。 |
 | T-220 | web 的 `.env` 組有 `COMPOSE_PROJECT_NAME=other`，compose 檔頂層有 `name: legacy`。 | 預檢提示「平台設定優先，以下值不採用」並列出兩者；實際使用的專案名稱仍是 `shop-production-web`。 |
+| T-276 | repo 根目錄同時有 `docker-compose.yml` 與 `compose.yaml`，正在建立單元。 | 兩份都列出，都沒有預先選；`compose.yaml` 標「Compose 預設會用」；沒選主檔時「儲存」與「部署」停用。 |
+| T-277 | repo 根目錄有 `docker-compose.yaml`、`docker-compose.yml` 與 `compose.override.yml`，`apps/api/` 另有 `compose.yml`。 | 四份都列出：根目錄一組排在前面，主檔依序是 `docker-compose.yml`、`docker-compose.yaml`，`docker-compose.yml` 標「Compose 預設會用」；`compose.override.yml` 列在 override，沒有預先勾選；`apps/api/compose.yml` 另成一組。 |
+| T-278 | web 單元指定 `docker-compose.yml`。新 commit 9b3e7f1 把它改名成 `compose.yaml`，推到 production 監聽的 `main`。 | 預檢擋下並寫「指定的 docker-compose.yml 在 commit 9b3e7f1 不存在」，推送觸發的部署不執行；畫面列出新 commit 的候選檔，改指定 `compose.yaml` 後才能部署。 |
+| T-279 | repo 根目錄沒有 Compose 檔，`apps/web/compose.yaml` 與 `apps/api/docker-compose.yml` 各有一份。 | 匯入頁兩份都列出，依目錄分組，不預先選；可以選一份，或建立成兩個單元。只剩 `apps/web/compose.yaml` 一份時仍然要使用者選，不自動帶入。 |
+| T-280 | repo 的 `.env` 有 `COMPOSE_FILE=compose.yaml:compose.prod.yaml`，單元指定的是 `compose.yaml`。 | 部署只用單元指定的檔案；預檢列出「COMPOSE_FILE 不採用」；按「照 COMPOSE_FILE 帶入」後，`compose.yaml`、`compose.prod.yaml` 依序帶入，確認後才儲存。 |
+| T-281 | web 單元的主檔是 `deploy/compose.yaml`，再勾選根目錄的 `compose.override.yaml`；override 第 8 行把 `./src` 掛進 shop-api。 | 預檢提示「compose.override.yaml 第 8 行 ./src → deploy/src」，不擋下；合併預覽顯示的掛載來源是 `deploy/src`。 |
+| T-282 | `deploy/compose.yaml` 有 `include: [../db/compose.yaml]`，`db/compose.yaml` 定義 `shop-db`；之後新 commit 把 `db/compose.yaml` 刪掉。 | 候選清單裡 `db/compose.yaml` 掛在 `deploy/compose.yaml` 底下，標「由 include 帶入」，不能勾選；刪掉後預檢擋下部署並寫出是哪份 include 不見了。 |
+| T-283 | n8n-stack 的 production 單元已經用 `compose.yml` 部署在 tw-01；從同一個 repo 建立 staging 單元，也指定 `compose.yml`、也部署到 tw-01。 | 預檢列出「production 的 n8n 單元也用這份主檔」，`container_name: n8n` 與 Port 5678 標擋下並寫出行號；staging 改部署到 lab-mini 時只剩提示。 |
 
 ## 52.9 不納入的部分
 
