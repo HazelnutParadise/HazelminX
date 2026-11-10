@@ -4127,16 +4127,17 @@ def project_triggers() -> str:
       {pf("web", "web/**", "docs/**、*.md")}
       {pf("api", "api/**、migrations/**", "docs/**、*.md")}
       {pf("search", "（全部）", "docs/**、*.md")}""", sub="一個 repo 多個單元時，只部署有改到的")
-    def ev(t, who, commit, msg, res):
+    def ev(t, who, commit, msg, kind, state, why):
+        res = f'<span tabindex="0" data-tip="{why}">{U.status(kind, state)}</span>'
         return f'<div class="row"><span class="mono">{t}</span><span>{who}</span><span class="mono">{commit}</span><span class="c3">{msg}</span><span>{res}</span></div>'
     log = _fp("最近的觸發", f"""
       <div class="row hd"><span>時間</span><span>來源</span><span>commit</span><span class="c3">訊息</span><span>結果</span></div>
-      {ev("03:41", "tim → main", "9b3e7f1", "fix checkout total", U.status("warn", "等批准 · 新增 /:/host:ro"))}
-      {ev("03:22", "tim → main", "c71a0e2", "update deps", U.status("none", "已被 9b3e7f1 取代"))}
-      {ev("02:58", "ann → main", "4d81a2c", "docs: readme", U.status("none", "略過 · 只改了 README.md"))}
-      {ev("02:10", "ann → release/1.9", "e02b55f", "release 1.9.0", U.status("ok", "已部署 staging"))}
-      {ev("11/07 22:04", "tim → main", "a1b2c3d", "wip [skip deploy]", U.status("none", "略過 · [skip deploy]"))}
-      {ev("11/07 18:30", "tim → main", "77f0c1a", "hotfix", U.status("info", "收到 · 自動部署已暫停"))}""", extra='<a class="more" href="WorkCenter.dc.html">工作中心 →</a>')
+      {ev("03:41", "tim → main", "9b3e7f1", "fix checkout total", "warn", "等批准", "高風險變更：新增 /:/host:ro 掛載 · 變更計畫 #418")}
+      {ev("03:22", "tim → main", "c71a0e2", "update deps", "none", "略過", "已被 9b3e7f1 取代")}
+      {ev("02:58", "ann → main", "4d81a2c", "docs: readme", "none", "略過", "只改了 README.md")}
+      {ev("02:10", "ann → release/1.9", "e02b55f", "release 1.9.0", "ok", "已部署", "部署到 staging")}
+      {ev("11/07 22:04", "tim → main", "a1b2c3d", "wip [skip deploy]", "none", "略過", "commit 訊息有 [skip deploy]")}
+      {ev("11/07 18:30", "tim → main", "77f0c1a", "hotfix", "none", "略過", "production 的自動部署已暫停 · 可以手動部署這個 commit")}""", sub="結果只有已部署、部署中、等批准、失敗、略過五種；滑過看原因", extra='<a class="more" href="WorkCenter.dc.html">工作中心 →</a>')
     main = head + envs + f'<div class="cg">{edit}{paths}</div>' + log
     return U.shell("projects", main)
 
