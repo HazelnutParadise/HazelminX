@@ -3238,9 +3238,18 @@ def _seg(opts, on=0, label="選項"):
     return f'<div class="range" role="group" aria-label="{label}" style="flex-wrap:wrap">{btns}</div>'
 
 
-def _cb(label, on=True, note="", locked=""):
-    """locked：一定包含、不能取消的項目，顯示為已勾選加停用，滑過去說明原因。"""
-    n = f' <span class="note">{note}</span>' if note else ""
+def _cb(label, on=True, note="", locked="", off=""):
+    """locked：一定包含、不能取消的項目，顯示為已勾選加停用，滑過去說明原因。
+    off：目前不能用的選項，顯示為未勾選的停用框，原因寫在下一行。
+    note 一律放在選項文字下一行，不跟選項文字並排成兩欄。"""
+    if off:
+        return (f'<div style="display:flex;flex-direction:column;gap:4px"><label style="display:flex;gap:8px;align-items:center;min-height:32px;color:var(--muted)">'
+                f'<input type="checkbox" disabled aria-label="{label}（{off}）">{label}</label>'
+                f'<div class="wrap" style="padding-left:24px">{note}</div></div>')
+    if note:
+        return (f'<div style="display:flex;flex-direction:column;gap:2px"><label style="display:flex;gap:8px;align-items:center;min-height:32px"><input type="checkbox"{" checked" if on else ""}>{label}</label>'
+                f'<span class="note" style="padding-left:24px">{note}</span></div>')
+    n = ""
     if locked:
         return (f'<label style="display:flex;gap:8px;align-items:center;min-height:32px"><span tabindex="0" data-tip="{locked}">'
                 f'<input type="checkbox" class="lockck" checked aria-disabled="true" tabindex="-1" aria-label="{label}（{locked}）"></span>{label}{n}</label>')
@@ -4118,7 +4127,7 @@ def project_triggers() -> str:
         _fld("方式", _seg(["Webhook（推薦）", "定期檢查"], 0, "方式"), "Webhook 需要 GitHub 能連到 hook.example.tw"),
         _fld("部署中又收到 push", _seg(["只保留最新的（推薦）", "依序全部部署"], 0, "連續推送")),
         _fld("略過標記", _in("[skip deploy]、[skip ci]", mono=True), "commit 訊息含這些字就不部署"),
-        _fld("回寫到 GitHub", _cb("在 commit 上寫部署狀態", False, "需要 Deployments 權限 · 目前沒有"), ""),
+        _fld("回寫到 GitHub", _cb("在 commit 上寫部署狀態", False, U.status("warn", "缺 Deployments 權限") + '<a class="btn sm" href="https://github.com/apps/hazelminx">到 GitHub 加權限 ↗</a>', off="缺 Deployments 權限"), ""),
         _fld("Webhook 狀態", f'<div class="wrap">{U.status("ok", "最後收到 03:41")}<span class="note">24 小時 18 次 · 失敗 0</span><button type="button" class="btn sm">重送最後一次</button></div>', "push 了卻沒部署時先看這裡")))
     def pf(unit, inc, exc):
         return f'<div class="row"><span class="mono">{unit}</span><span class="mono">{inc}</span><span class="mono">{exc}</span><span>{U.actions(["more"])}</span></div>'

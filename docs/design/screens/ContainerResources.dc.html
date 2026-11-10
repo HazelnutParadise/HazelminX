@@ -218,7 +218,7 @@ body{margin:0}
 .hb .fm{grid-template-columns:240px minmax(0,1fr) 280px}
 .hb .frow.sel{background:color-mix(in srgb,var(--hazel) 12%,transparent)}
 .hb .ck{display:inline-flex;align-items:center;justify-content:center;width:28px;min-height:28px}
-.hb .ck input{width:16px;height:16px;accent-color:var(--hazel);margin:0}
+.hb .ck input{width:16px;height:16px;accent-color:var(--hazel);margin:0}.hb input.lockck{accent-color:var(--hazel);pointer-events:none;cursor:not-allowed;opacity:.75}
 .hb .hd .sortable{display:inline-flex;align-items:center;gap:4px;cursor:pointer}
 .hb .hd .sortable svg{color:var(--faint);opacity:.5}
 .hb .hd .sortable.on svg{color:var(--hazel);opacity:1}
@@ -489,8 +489,8 @@ body{margin:0}
       <div class="row r0"><span>建置快取</span><span class="mono">6.4 GiB</span><span><span class="meter" role="meter" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="—"><span class="tr" aria-hidden="true"><span class="fl" style="width: 0%"></span></span><span class="num">—</span></span></span><span class="mono">6.4 GiB</span></div>
       <div class="row r0"><span>容器日誌</span><span class="mono">3.1 GiB</span><span><span class="meter" role="meter" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" aria-label="3.1 GiB"><span class="tr" aria-hidden="true"><span class="fl dng" style="width: 100%"></span></span><span class="num">3.1 GiB</span></span></span><span class="mono">依日誌保留設定自動清</span></div></div></section><section class="panel"><div class="ph"><h2>清理預覽</h2></div>
       <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
-        <div class="wrap"><label style="display:flex;gap:8px;align-items:center;min-height:32px"><input type="checkbox" checked>未使用的映像（7 · 4.1 GiB）</label><label style="display:flex;gap:8px;align-items:center;min-height:32px"><input type="checkbox" checked>建置快取（6.4 GiB）</label><label style="display:flex;gap:8px;align-items:center;min-height:32px"><input type="checkbox">已停止的容器（2）</label><label style="display:flex;gap:8px;align-items:center;min-height:32px"><input type="checkbox">沒被使用的儲存卷（2 · 2.0 GiB） <span class="note">資料會消失</span></label></div>
-        <div class="wrap"><label style="display:flex;gap:8px;align-items:center;min-height:32px"><input type="checkbox" checked>保留回滾要用的映像 <span class="note">shop-api:88b1d02 仍是上一個可回滾版本</span></label><label style="display:flex;gap:8px;align-items:center;min-height:32px"><input type="checkbox" checked>只清超過 7 天的</label></div>
+        <div class="wrap"><label style="display:flex;gap:8px;align-items:center;min-height:32px"><input type="checkbox" checked>未使用的映像（7 · 4.1 GiB）</label><label style="display:flex;gap:8px;align-items:center;min-height:32px"><input type="checkbox" checked>建置快取（6.4 GiB）</label><label style="display:flex;gap:8px;align-items:center;min-height:32px"><input type="checkbox">已停止的容器（2）</label><div style="display:flex;flex-direction:column;gap:2px"><label style="display:flex;gap:8px;align-items:center;min-height:32px"><input type="checkbox">沒被使用的儲存卷（2 · 2.0 GiB）</label><span class="note" style="padding-left:24px">資料會消失</span></div></div>
+        <div class="wrap"><div style="display:flex;flex-direction:column;gap:2px"><label style="display:flex;gap:8px;align-items:center;min-height:32px"><input type="checkbox" checked>保留回滾要用的映像</label><span class="note" style="padding-left:24px">shop-api:88b1d02 仍是上一個可回滾版本</span></div><label style="display:flex;gap:8px;align-items:center;min-height:32px"><input type="checkbox" checked>只清超過 7 天的</label></div>
         <div class="wrap" style="justify-content:space-between"><span class="st ok"><i aria-hidden="true"></i>預計回收 9.7 GiB</span><button type="button" class="btn pri">清理</button></div>
       </div></section></div>
     <section class="panel" aria-labelledby="h-imgs" data-sort="3:desc" data-batch data-pages="1–6 / 23">
