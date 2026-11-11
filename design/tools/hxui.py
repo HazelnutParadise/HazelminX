@@ -959,11 +959,16 @@ def tall_bar(parts: list, total: float, unit: str = "G") -> str:
     """高段條：parts [(value, label, color)]；每段印數值（塞得下才印），餘量算可用。"""
     used = sum(v for v, _, _ in parts)
     segs = []
+    # 每一段是不同的類別，不是深淺等級：用驗證過的序列色（series-1..4），一眼分得出來
+    CAT = {"var(--q5)": "var(--s1)", "var(--q4)": "var(--s2)", "var(--q3)": "var(--s3)", "var(--q2)": "var(--s4)"}
+    # 已經用狀態色（成功、警告、失敗）的橫條不換色，避免序列色的綠和「成功」的綠混在一起
+    if not any(k in col for _, _, col in parts for k in ("--ok", "--warn", "--danger")):
+        parts = [(v, lab, CAT.get(col, col)) for v, lab, col in parts]
     for v, lab, col in parts:
         w = v / total * 100
-        light_bg = any(k in col for k in ("q4", "q5", "ok", "warn", "danger", "blue"))
-        txt = f"{v:.0f}{unit}" if (w >= 9 and light_bg and "q4" not in col) else ""
-        fg = "var(--hazelink)" if light_bg else "var(--ink)"
+        solid = any(k in col for k in ("--s1", "--s2", "--s3", "--s4", "ok", "warn", "danger", "blue"))
+        txt = f"{v:.0f}{unit}" if (w >= 9 and (solid or "q4" in col or "q5" in col)) else ""
+        fg = "#fff" if solid else "var(--ink)"
         segs.append(f'<i style="width:{w:.1f}%;background:{col};color:{fg}" title="{lab} {v:.0f}{unit}">{txt}</i>')
     free = max(0.0, total - used)
     fw = free / total * 100
