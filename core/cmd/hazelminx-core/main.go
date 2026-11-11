@@ -24,6 +24,7 @@ import (
 	"github.com/HazelnutParadise/hazelminx/core/internal/hostledger"
 	"github.com/HazelnutParadise/hazelminx/core/internal/iam"
 	"github.com/HazelnutParadise/hazelminx/core/internal/jobs"
+	"github.com/HazelnutParadise/hazelminx/core/internal/nodereg"
 	"github.com/HazelnutParadise/hazelminx/core/internal/nodes"
 	"github.com/HazelnutParadise/hazelminx/core/internal/secrets"
 	"github.com/HazelnutParadise/hazelminx/core/internal/store"
@@ -73,7 +74,8 @@ func run(args []string) error {
 	}
 	// Grants for the privileged executor (ticket 012). The installer and
 	// node enrollment (tickets 013, 019) copy the public key to each host
-	// as /etc/hazelminx/privileged/issuer.pub.
+	// as /etc/hazelminx/privileged/issuer.pub (enrollment hands it to the
+	// agent, which saves it as identity/privileged-issuer.pub).
 	issuer, err := grants.LoadOrCreate(ctx, sec, nil)
 	if err != nil {
 		return fmt.Errorf("refusing to start, grant issuer: %w", err)
@@ -83,10 +85,18 @@ func run(args []string) error {
 		return fmt.Errorf("write %s: %w", issuerPub, err)
 	}
 	engine := jobs.New(jobs.NewSQLStore(st.DB), jobs.Options{FreeBytes: jobs.FreeBytesOf(cfg.DataDir)})
+	// Node registry (ticket 019): which nodes may connect, enrollment on the
+	// agent listener, certificate rotation, revocation and maintenance.
+	registry, err := nodereg.New(nodereg.Options{DB: st.DB, PKI: pki, IssuerKeyPEM: issuer.PublicKeyPEM(), Jobs: engine})
+	if err != nil {
+		return err
+	}
 	var reconciler *nodes.Reconciler
 	var ledgers *hostledger.Syncer
 	hub := nodes.NewHub(nodes.HubOptions{PKI: pki, CoreVersion: api.Version,
+		Authorizer: registry, OnClosed: registry.OnClosed, OnConflict: registry.OnConflict,
 		OnReady: func(s *nodes.Session, inFlight []string) {
+			go registry.OnReady(s)
 			// Core's copy of the host change ledger (spec 55.1) catches up
 			// as soon as a node connects.
 			go func() { _, _ = ledgers.SyncNode(ctx, s.NodeID()) }()
@@ -101,7 +111,9 @@ func run(args []string) error {
 		}
 		return ids
 	}, LedgerSyncInterval)
+	registry.AttachChannel(hub)
 	runner := nodes.NewStepRunner(hub)
+	runner.Gate = registry.GateJob
 	reconciler = &nodes.Reconciler{Engine: engine, Runner: runner}
 	if err := engine.Register(&nodes.InspectHandler{Runner: runner}); err != nil {
 		return err
@@ -130,6 +142,7 @@ func run(args []string) error {
 	// Jobs mount on the authenticated group, so MountIAM must run first.
 	router.RegisterJobs(engine)
 	router.RegisterAgentConnections(hub)
+	router.RegisterNodes(registry)
 	router.MountListQueries(listQueries)
 	go listQueries.RunPurger(ctx, time.Hour)
 	router.MountConfirmations(confirm.New(st.DB, nil))
@@ -150,7 +163,7 @@ func run(args []string) error {
 	slog.Info("management API listening", "addr", ln.Addr().String(), "version", api.Version)
 
 	agentSrv := &http.Server{
-		Handler:           hub,
+		Handler:           registry.AgentHandler(hub),
 		TLSConfig:         pki.ServerTLSConfig(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
@@ -158,7 +171,7 @@ func run(args []string) error {
 	if err != nil {
 		return fmt.Errorf("listen %s: %w", cfg.AgentListenAddr, err)
 	}
-	slog.Info("agent channel listening", "addr", agentLn.Addr().String(), "path", "/agent/v1/connect")
+	slog.Info("agent channel listening", "addr", agentLn.Addr().String(), "path", "/agent/v1/connect", "enroll", "/agent/v1/enroll")
 
 	errCh := make(chan error, 2)
 	go func() { errCh <- srv.Serve(ln) }()
