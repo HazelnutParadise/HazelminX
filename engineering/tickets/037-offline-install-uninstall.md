@@ -56,3 +56,7 @@
 ### 票 113 交過來的項目
 
 - Core 的帳本副本目前只有 `hostledger.Store` 可以讀，還沒有管理 API 與畫面，同步狀態（`host_ledgers.last_error_*`）也還看不到。
+
+### 票 019 交過來的項目
+
+- `POST /management/v1/nodes/{id}/remove` 已分開四種移除：`unmanage`（不再管理，已可用）、`remove-agent`、`remove-cluster-node`、`delete-workloads`。後三種目前回 `NOT_AVAILABLE`，實作在 `core/internal/nodereg/nodes.go` 的 `Remove`。本票交付「移除 Agent」時接到 `remove-agent`，完成後把它從 `NOT_AVAILABLE` 改成真正的工作。
