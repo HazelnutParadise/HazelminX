@@ -26,3 +26,6 @@ dist-ssr
 # Playwright
 test-results
 playwright-report
+
+# e2e Core (e2e/start-core.sh)
+.e2e

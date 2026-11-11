@@ -27,7 +27,7 @@ test.describe("preferences", () => {
   test("language switch translates the shell and persists", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/settings");
-    await page.getByRole("button", { name: "帳號" }).click();
+    await page.getByRole("button", { name: /· 擁有者$/ }).click();
     await page.getByRole("menuitem", { name: "語言 · 繁體中文" }).click();
     await page.getByRole("menuitemradio", { name: "English" }).click();
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
@@ -54,6 +54,8 @@ test.describe("navigation", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/");
     const nav = page.getByRole("navigation", { name: "主導覽" });
+    // The shell renders once Core has confirmed the session.
+    await nav.getByRole("link").first().waitFor();
     const names = await nav.getByRole("link").allInnerTexts();
     expect(names.map((n) => n.trim())).toEqual([
       "總覽",
@@ -91,6 +93,7 @@ test.describe("navigation", () => {
   test("sidebar collapses to icons with names and remembers it", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/");
+    await page.getByRole("heading", { level: 1 }).waitFor();
     const nav = page.getByRole("navigation", { name: "主導覽" });
     const before = (await nav.boundingBox())!.width;
     await page.getByRole("button", { name: "收合側欄" }).click();
@@ -128,6 +131,7 @@ test.describe("top bar layout", () => {
   test("desktop: 48px high, no jobs button, terminal visible", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/");
+    await page.getByRole("heading", { level: 1 }).waitFor();
     const top = page.locator("header.hx-top");
     expect((await top.boundingBox())!.height).toBe(48);
     await expect(top.getByRole("link", { name: "終端機" })).toBeVisible();
@@ -137,15 +141,16 @@ test.describe("top bar layout", () => {
   test("phone: logo, bell, theme and account on row one, search on row two, terminal in the menu", async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 800 });
     await page.goto("/");
+    await page.getByRole("heading", { level: 1 }).waitFor();
     const top = page.locator("header.hx-top");
     const row = async (name: RegExp | string) =>
       (await top.getByRole("button", { name }).or(top.getByRole("link", { name })).first().boundingBox())!.y;
     const logoY = (await top.getByRole("link", { name: "HazelminX 總覽" }).boundingBox())!.y;
-    for (const name of [/事件與告警/, "切換成淺色", "帳號"])
+    for (const name of [/事件與告警/, "切換成淺色", /· 擁有者$/])
       expect(Math.abs((await row(name)) - logoY)).toBeLessThan(8);
     expect((await top.getByRole("button", { name: "搜尋或下指令" }).boundingBox())!.y).toBeGreaterThan(logoY + 30);
     await expect(top.getByRole("link", { name: "終端機" })).toBeHidden();
-    await top.getByRole("button", { name: "帳號" }).click();
+    await top.getByRole("button", { name: /· 擁有者$/ }).click();
     await page.getByRole("menuitem", { name: "終端機" }).click();
     await expect(page).toHaveURL(/\/terminal$/);
   });
@@ -154,6 +159,7 @@ test.describe("top bar layout", () => {
 test.describe("keyboard", () => {
   test("first Tab reaches the skip link, which moves focus to main", async ({ page }) => {
     await page.goto("/");
+    await page.getByRole("heading", { level: 1 }).waitFor();
     await page.keyboard.press("Tab");
     const skip = page.getByRole("link", { name: "跳到主要內容" });
     await expect(skip).toBeFocused();
