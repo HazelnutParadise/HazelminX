@@ -5,8 +5,10 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 )
 
@@ -175,4 +177,30 @@ type EnrollResponse struct {
 	PrivilegedIssuerKey string `json:"privilegedIssuerKey,omitempty"`
 	Code                string `json:"code,omitempty"`
 	Message             string `json:"message,omitempty"`
+}
+
+// DecodeEnrollRequest reads a POST EnrollPath body: exact key names, no
+// unknown or repeated keys, every field but group present.
+func DecodeEnrollRequest(data []byte) (EnrollRequest, error) {
+	var req EnrollRequest
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil || fields == nil {
+		return req, fmt.Errorf("%w: enroll request is not a JSON object", ErrInvalidFields)
+	}
+	if err := noDuplicateKeys(data); err != nil {
+		return req, fmt.Errorf("%w: enroll request: %v", ErrInvalidFields, err)
+	}
+	clean, err := exactKeys(data, reflect.TypeOf(req), true)
+	if err != nil {
+		return req, fmt.Errorf("%w: enroll request: %v", ErrInvalidFields, err)
+	}
+	for _, k := range []string{"code", "nodePublicKey", "hostname", "machineId", "os", "arch", "agentVersion"} {
+		if _, ok := fields[k]; !ok {
+			return req, fmt.Errorf("%w: enroll request needs %q", ErrInvalidFields, k)
+		}
+	}
+	if err := json.Unmarshal(clean, &req); err != nil {
+		return req, fmt.Errorf("%w: enroll request: %v", ErrInvalidFields, err)
+	}
+	return req, nil
 }

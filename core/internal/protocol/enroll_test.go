@@ -99,3 +99,24 @@ func TestNewEnrollmentCodeIsWellFormedAndRandom(t *testing.T) {
 		seen[c.Normalized()] = true
 	}
 }
+
+func TestDecodeEnrollRequestIsStrict(t *testing.T) {
+	good := `{"code":"HZX-7Q4M-2KD9-PX81-C3VB","nodePublicKey":"x","hostname":"h","machineId":"m","os":"o","arch":"a","agentVersion":"v"}`
+	r, err := DecodeEnrollRequest([]byte(good))
+	if err != nil || r.Hostname != "h" || r.Group != "" {
+		t.Fatalf("good: %+v %v", r, err)
+	}
+	for name, body := range map[string]string{
+		"unknown field":   `{"code":"c","nodePublicKey":"x","hostname":"h","machineId":"m","os":"o","arch":"a","agentVersion":"v","extra":1}`,
+		"duplicate key":   `{"code":"c","code":"d","nodePublicKey":"x","hostname":"h","machineId":"m","os":"o","arch":"a","agentVersion":"v"}`,
+		"case variant":    `{"Code":"c","nodePublicKey":"x","hostname":"h","machineId":"m","os":"o","arch":"a","agentVersion":"v"}`,
+		"missing field":   `{"code":"c","nodePublicKey":"x","hostname":"h","os":"o","arch":"a","agentVersion":"v"}`,
+		"not an object":   `[1]`,
+		"wrong type":      `{"code":1,"nodePublicKey":"x","hostname":"h","machineId":"m","os":"o","arch":"a","agentVersion":"v"}`,
+		"trailing object": good + `{}`,
+	} {
+		if _, err := DecodeEnrollRequest([]byte(body)); err == nil {
+			t.Errorf("%s accepted", name)
+		}
+	}
+}
