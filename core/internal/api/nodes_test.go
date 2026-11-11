@@ -222,3 +222,22 @@ func TestNodeScopesOverTheAPI(t *testing.T) {
 		t.Fatalf("host operator listing codes: %d", r.Code)
 	}
 }
+
+func TestRecheckOverTheAPI(t *testing.T) {
+	hs, reg := nodesHarness(t)
+	owner := hs.bootstrap()
+	r := owner.do(http.MethodPost, "/management/v1/node-enrollments", map[string]any{}, nil)
+	enID, code := obj(r.Body["enrollment"])["id"].(string), r.Body["code"].(string)
+	claimAs(t, reg, code, "h", "")
+	r = owner.do(http.MethodPost, "/management/v1/node-enrollments/"+enID+"/approve", map[string]any{}, nil)
+	id := obj(r.Body["node"])["id"].(string)
+	r = owner.do(http.MethodPost, "/management/v1/nodes/"+id+"/recheck", nil, nil)
+	rc := obj(obj(obj(r.Body["node"])["maintenance"])["recheck"])
+	if r.Code != 200 || rc["state"] != nodereg.RecheckPending {
+		t.Fatalf("recheck: %d %s", r.Code, r.Raw)
+	}
+	owner.do(http.MethodPut, "/management/v1/nodes/"+id+"/maintenance", map[string]any{"enabled": true}, nil)
+	if r := owner.do(http.MethodPost, "/management/v1/nodes/"+id+"/recheck", nil, nil); r.Code != http.StatusConflict {
+		t.Fatalf("recheck during maintenance: %d", r.Code)
+	}
+}

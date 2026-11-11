@@ -148,6 +148,10 @@ func newEnv(t *testing.T) *env {
 
 type fakeJobs struct{}
 
+func (fakeJobs) Get(_ context.Context, id string) (*jobs.Job, error) {
+	return &jobs.Job{ID: id, State: jobs.StateRunning}, nil
+}
+
 func (fakeJobs) List(_ context.Context, o jobs.ListOptions) ([]*jobs.Job, error) {
 	return []*jobs.Job{{ID: "job_running", Kind: "host.package.install", Node: o.Node, State: jobs.StateRunning}}, nil
 }

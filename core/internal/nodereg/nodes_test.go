@@ -190,12 +190,14 @@ func TestMaintenance(t *testing.T) {
 	if se := e.reg.GateJob(ctx, &jobs.Job{Node: h.fp, CreatedAt: e.now()}); se != nil {
 		t.Fatalf("job after maintenance: %+v", se)
 	}
-	// The reconnect after maintenance is the re-check.
+	// The reconnect after maintenance declares the capabilities again; the
+	// identity and host check stays pending until its job reports
+	// (TestMaintenanceEndRunsARecheck).
 	e.advance(2 * time.Second)
 	e.reg.onSession(ctx, sessionFacts{fp: h.fp, serial: n.Certificate.Serial, at: e.now(), agentVersion: "0.1.1"})
 	got, _ = e.reg.GetNode(ctx, n.ID)
-	if got.Maintenance.CheckedAt == nil || slices.Contains(got.PendingSync, SyncRecheck) {
-		t.Fatalf("re-check not recorded: %+v %v", got.Maintenance, got.PendingSync)
+	if got.Maintenance.CheckedAt == nil || got.Maintenance.Recheck == nil || !slices.Contains(got.PendingSync, SyncRecheck) {
+		t.Fatalf("after reconnect: %+v %v", got.Maintenance, got.PendingSync)
 	}
 }
 

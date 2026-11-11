@@ -87,7 +87,14 @@ func run(args []string) error {
 	engine := jobs.New(jobs.NewSQLStore(st.DB), jobs.Options{FreeBytes: jobs.FreeBytesOf(cfg.DataDir)})
 	// Node registry (ticket 019): which nodes may connect, enrollment on the
 	// agent listener, certificate rotation, revocation and maintenance.
-	registry, err := nodereg.New(nodereg.Options{DB: st.DB, PKI: pki, IssuerKeyPEM: issuer.PublicKeyPEM(), Jobs: engine})
+	registry, err := nodereg.New(nodereg.Options{DB: st.DB, PKI: pki, IssuerKeyPEM: issuer.PublicKeyPEM(), Jobs: engine,
+		SubmitRecheck: func(ctx context.Context, fp, requestID string) (string, error) {
+			j, _, err := engine.Submit(ctx, jobs.SubmitRequest{RequestID: requestID, Kind: nodes.KindNodeRecheck, Node: fp, Requester: "system:nodes"})
+			if err != nil {
+				return "", err
+			}
+			return j.ID, nil
+		}})
 	if err != nil {
 		return err
 	}
@@ -116,6 +123,9 @@ func run(args []string) error {
 	runner.Gate = registry.GateJob
 	reconciler = &nodes.Reconciler{Engine: engine, Runner: runner}
 	if err := engine.Register(&nodes.InspectHandler{Runner: runner}); err != nil {
+		return err
+	}
+	if err := engine.Register(&nodes.RecheckHandler{Runner: runner, Record: registry.RecordRecheck}); err != nil {
 		return err
 	}
 

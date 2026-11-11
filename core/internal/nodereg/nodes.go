@@ -86,8 +86,10 @@ type Rotation struct {
 	Error       string     `json:"error,omitempty"`
 }
 
-// Maintenance mode: new jobs are refused; CheckedAt is the first session
-// after maintenance ended (capabilities and health re-read).
+// Maintenance mode: new jobs are refused. When it ends the agent
+// reconnects: CheckedAt is that first session (capabilities declared
+// again), and Recheck is the job that then checks the agent's identity and
+// reads the host's basic values.
 type Maintenance struct {
 	Enabled            bool       `json:"enabled"`
 	Reason             string     `json:"reason"`
@@ -95,6 +97,32 @@ type Maintenance struct {
 	EndedAt            *time.Time `json:"endedAt"`
 	RecheckRequestedAt *time.Time `json:"recheckRequestedAt"`
 	CheckedAt          *time.Time `json:"checkedAt"`
+	Recheck            *Recheck   `json:"recheck"`
+}
+
+// Re-check states. Pending: waiting for the node to connect; checking: the
+// job runs; then the job's outcome.
+const (
+	RecheckPending      = "pending"
+	RecheckChecking     = "checking"
+	RecheckPassed       = nodes.RecheckPassed
+	RecheckFailed       = nodes.RecheckFailed
+	RecheckInconclusive = nodes.RecheckInconclusive
+)
+
+// Recheck is the latest node.recheck.
+type Recheck struct {
+	State       string     `json:"state"`
+	RequestedAt time.Time  `json:"requestedAt"`
+	JobID       string     `json:"jobId,omitempty"`
+	FinishedAt  *time.Time `json:"finishedAt"`
+	// Health is the host values as the agent reported them; null values
+	// were not readable.
+	Health json.RawMessage `json:"health,omitempty"`
+	Detail string          `json:"detail,omitempty"`
+	// IdentityMatches: the agent that answered is this node's.
+	IdentityMatches bool `json:"identityMatches"`
+	attempt         int
 }
 
 // Revocation records when it was asked for and when it reached the agent.
@@ -160,6 +188,7 @@ const nodeColumns = `id, name, tags, node_group, fingerprint, public_key, hostna
 	agent_version, agent_protocol_min, agent_protocol_max, protocol_version, capabilities, state,
 	cert_serial, cert_not_after, next_cert_serial, next_cert_not_after, next_cert_pem, rotation_requested_at, rotation_delivered_at, rotation_error,
 	maintenance, maintenance_reason, maintenance_since, maintenance_ended_at, recheck_requested_at,
+	recheck_attempt, recheck_job_id, recheck_state, recheck_result, recheck_finished_at,
 	revoked_at, revoke_reason, revoked_by, revocation_closed_at, revocation_notified_at, conflict_at,
 	removed_at, removed_by, removal_mode, last_contact_at, last_connected_at, last_remote_addr, created_at, updated_at, version`
 
@@ -170,6 +199,9 @@ func scanNode(sc scanner) (Node, error) {
 	var tags, caps, notAfter, created, updated string
 	var nextSerial, nextNotAfter, nextPEM, rotReq, rotDel sql.NullString
 	var mSince, mEnded, recheck, revAt, revClosed, revNotified, conflict, remAt, lastContact, lastConn sql.NullString
+	var rcJob, rcResult, rcFinished sql.NullString
+	var rcState string
+	var rcAttempt int
 	var maint int
 	var revReason, revBy, remBy, remMode, rotErr, lastRemote string
 	var pub []byte
@@ -177,6 +209,7 @@ func scanNode(sc scanner) (Node, error) {
 		&n.agent.version, &n.agent.protocolMin, &n.agent.protoMx, &n.agent.protocolVersion, &caps, &n.State,
 		&n.Certificate.Serial, &notAfter, &nextSerial, &nextNotAfter, &nextPEM, &rotReq, &rotDel, &rotErr,
 		&maint, &n.Maintenance.Reason, &mSince, &mEnded, &recheck,
+		&rcAttempt, &rcJob, &rcState, &rcResult, &rcFinished,
 		&revAt, &revReason, &revBy, &revClosed, &revNotified, &conflict,
 		&remAt, &remBy, &remMode, &lastContact, &lastConn, &lastRemote, &created, &updated, &n.Version)
 	if err != nil {
@@ -196,6 +229,16 @@ func scanNode(sc scanner) (Node, error) {
 	}
 	n.Maintenance.Enabled = maint == 1
 	n.Maintenance.Since, n.Maintenance.EndedAt, n.Maintenance.RecheckRequestedAt = parseNull(mSince), parseNull(mEnded), parseNull(recheck)
+	if t := n.Maintenance.RecheckRequestedAt; t != nil {
+		rc := &Recheck{State: rcState, RequestedAt: *t, JobID: rcJob.String, FinishedAt: parseNull(rcFinished), attempt: rcAttempt}
+		if rcResult.Valid {
+			var res nodes.RecheckResult
+			if json.Unmarshal([]byte(rcResult.String), &res) == nil {
+				rc.Health, rc.Detail, rc.IdentityMatches = res.Health, res.Detail, res.IdentityMatches
+			}
+		}
+		n.Maintenance.Recheck = rc
+	}
 	n.revokedAt = parseNull(revAt)
 	if n.State == StateRevoked && n.revokedAt != nil {
 		n.Revocation = &Revocation{RequestedAt: *n.revokedAt, Reason: revReason, By: revBy, SessionClosedAt: parseNull(revClosed), AgentNotifiedAt: parseNull(revNotified)}
@@ -269,8 +312,14 @@ func (r *Registry) view(n Node, live map[string]nodes.ConnectionInfo) Node {
 	if rc := n.Maintenance.RecheckRequestedAt; rc != nil {
 		if n.Connection.ConnectedAt != nil && !n.Connection.ConnectedAt.Before(*rc) {
 			n.Maintenance.CheckedAt = n.Connection.ConnectedAt
-		} else if n.State == StateActive {
-			n.PendingSync = append(n.PendingSync, SyncRecheck)
+		}
+		if rec := n.Maintenance.Recheck; rec != nil {
+			if rec.State == "" {
+				rec.State = r.liveRecheckState(rec.JobID)
+			}
+			if n.State == StateActive && (rec.State == RecheckPending || rec.State == RecheckChecking) {
+				n.PendingSync = append(n.PendingSync, SyncRecheck)
+			}
 		}
 	}
 	if n.PendingSync == nil {
@@ -469,7 +518,8 @@ func (r *Registry) SetMaintenance(ctx context.Context, id string, on bool, reaso
 		_, err = r.db.ExecContext(ctx, `UPDATE nodes SET maintenance = 1, maintenance_reason = ?, maintenance_since = ?, maintenance_ended_at = NULL,
 			recheck_requested_at = NULL, updated_at = ?, version = version + 1 WHERE id = ?`, reason, now, now, id)
 	} else {
-		_, err = r.db.ExecContext(ctx, `UPDATE nodes SET maintenance = 0, maintenance_ended_at = ?, recheck_requested_at = ?, updated_at = ?, version = version + 1 WHERE id = ?`,
+		_, err = r.db.ExecContext(ctx, `UPDATE nodes SET maintenance = 0, maintenance_ended_at = ?, recheck_requested_at = ?, recheck_attempt = recheck_attempt + 1,
+			recheck_job_id = NULL, recheck_state = '', recheck_result = NULL, recheck_finished_at = NULL, updated_at = ?, version = version + 1 WHERE id = ?`,
 			now, now, now, id)
 	}
 	if err != nil {
@@ -598,4 +648,82 @@ func (r *Registry) deliver(ctx context.Context, fp string) {
 func (r *Registry) recordContact(ctx context.Context, fp string, at time.Time, remote string) {
 	_, _ = r.db.ExecContext(ctx, `UPDATE nodes SET last_contact_at = ?, last_remote_addr = CASE WHEN ? = '' THEN last_remote_addr ELSE ? END WHERE fingerprint = ?`,
 		stamp(at), remote, remote, fp)
+}
+
+// liveRecheckState is the state of a re-check whose result is not recorded
+// yet, read from its job. A job that ended without a result is reported
+// for what it is: failed when it failed, inconclusive when it was cancelled
+// or its outcome is unknown.
+func (r *Registry) liveRecheckState(jobID string) string {
+	if jobID == "" {
+		return RecheckPending
+	}
+	if r.opts.Jobs == nil {
+		return RecheckChecking
+	}
+	j, err := r.opts.Jobs.Get(context.Background(), jobID)
+	if err != nil {
+		return RecheckChecking
+	}
+	switch j.State {
+	case jobs.StateFailed, jobs.StateNeedsAttention, jobs.StateRolledBack:
+		return RecheckFailed
+	case jobs.StateCancelled, jobs.StateUnknown, jobs.StateSucceeded:
+		return RecheckInconclusive
+	}
+	return RecheckChecking
+}
+
+// RecordRecheck stores a node.recheck result; results of an older job are
+// ignored.
+func (r *Registry) RecordRecheck(ctx context.Context, jobID, fp string, res nodes.RecheckResult) {
+	b, _ := json.Marshal(res)
+	_, err := r.db.ExecContext(ctx, `UPDATE nodes SET recheck_state = ?, recheck_result = ?, recheck_finished_at = ? WHERE fingerprint = ? AND recheck_job_id = ?`,
+		res.State, string(b), stamp(r.now()), fp, jobID)
+	if err != nil {
+		r.opts.Logger.Warn("record node re-check", "job", jobID, "error", err)
+	}
+}
+
+// RunRecheck checks the node again now (or at its next connection when it
+// is offline): identity and host basics, as after maintenance.
+func (r *Registry) RunRecheck(ctx context.Context, id, actor string) (Node, error) {
+	n, err := r.loadNode(ctx, r.db, "id = ?", id)
+	if err != nil {
+		return n, err
+	}
+	if n.State != StateActive {
+		return n, statef("node is %s", n.State)
+	}
+	if n.Maintenance.Enabled {
+		return n, statef("node is in maintenance; the check runs when maintenance ends")
+	}
+	now := stamp(r.now())
+	if _, err := r.db.ExecContext(ctx, `UPDATE nodes SET recheck_requested_at = ?, recheck_attempt = recheck_attempt + 1, recheck_job_id = NULL,
+		recheck_state = '', recheck_result = NULL, recheck_finished_at = NULL, updated_at = ?, version = version + 1 WHERE id = ?`, now, now, id); err != nil {
+		return n, err
+	}
+	if _, online := r.liveMap()[n.Fingerprint]; online {
+		r.startRecheck(ctx, n.Fingerprint)
+	}
+	return r.GetNode(ctx, id)
+}
+
+// startRecheck submits the node.recheck job of the current request once.
+func (r *Registry) startRecheck(ctx context.Context, fp string) {
+	if r.opts.SubmitRecheck == nil {
+		return
+	}
+	n, err := r.loadNode(ctx, r.db, "fingerprint = ?", fp)
+	if err != nil || n.State != StateActive || n.Maintenance.Enabled || n.Maintenance.Recheck == nil || n.Maintenance.Recheck.JobID != "" {
+		return
+	}
+	rc := n.Maintenance.Recheck
+	reqID := fmt.Sprintf("recheck_%s_%d_%d", n.ID, rc.RequestedAt.UnixNano(), rc.attempt)
+	jobID, err := r.opts.SubmitRecheck(ctx, fp, reqID)
+	if err != nil {
+		r.opts.Logger.Warn("start node re-check", "node", n.ID, "error", err)
+		return
+	}
+	_, _ = r.db.ExecContext(ctx, `UPDATE nodes SET recheck_job_id = ? WHERE id = ? AND recheck_job_id IS NULL`, jobID, n.ID)
 }

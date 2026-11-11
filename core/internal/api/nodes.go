@@ -131,9 +131,13 @@ func (s *Server) RegisterNodes(reg *nodereg.Registry) {
 		Permission: "nodes:write on the node",
 		Responses:  []Response{{Status: 200, Body: nodeResponse{}}}, Errors: []string{CodePrecheckFailed}}), write, h.rotate)
 	s.handle(p, base, op(Operation{Method: "PUT", Path: base + "/nodes/{id}/maintenance", ID: "setNodeMaintenance",
-		Summary:    "turn maintenance on (jobs created from now on are refused; unfinished ones are listed and continue) or off (the agent reconnects to re-check capabilities and health)",
+		Summary:    "turn maintenance on (jobs created from now on are refused; unfinished ones are listed and continue) or off (the agent reconnects and declares its capabilities again, then a node.recheck job checks its identity and reads the host's basic values; see maintenance.recheck)",
 		Permission: "nodes:write on the node", Request: maintenanceRequest{},
 		Responses: []Response{{Status: 200, Body: maintenanceResponse{}}}, Errors: []string{CodePrecheckFailed}}), write, h.maintenance)
+	s.handle(p, base, op(Operation{Method: "POST", Path: base + "/nodes/{id}/recheck", ID: "recheckNode",
+		Summary:    "check the node again now (or at its next connection): the agent answering is this node's, and the host's uptime, load, memory and root filesystem are read; the same check runs by itself when maintenance ends; the result is maintenance.recheck",
+		Permission: "nodes:write on the node",
+		Responses:  []Response{{Status: 200, Body: nodeResponse{}}}, Errors: []string{CodePrecheckFailed}}), write, h.recheck)
 	s.handle(p, base, op(Operation{Method: "POST", Path: base + "/nodes/{id}/remove", ID: "removeNode",
 		Summary:    "remove a node in one of four separate ways; unmanage stops trusting it and leaves the host, the agent and every application untouched; remove-agent, remove-cluster-node and delete-workloads answer NOT_AVAILABLE until the platform can do them",
 		Permission: "nodes:write on the node", Request: removeNodeRequest{},
@@ -332,6 +336,16 @@ func (h *nodeRoutes) maintenance(c *gin.Context) {
 	}
 	h.audit(c, "nodes.maintenance", "node", n.ID, nodeScopeOf(n.ID), map[string]any{"enabled": in.Enabled, "reason": in.Reason, "affectedJobs": len(out.AffectedJobs)})
 	c.JSON(http.StatusOK, out)
+}
+
+func (h *nodeRoutes) recheck(c *gin.Context) {
+	n, err := h.reg.RunRecheck(c.Request.Context(), c.Param("id"), actor(c))
+	if err != nil {
+		h.fail(c, err)
+		return
+	}
+	h.audit(c, "nodes.recheck", "node", n.ID, nodeScopeOf(n.ID), nil)
+	c.JSON(http.StatusOK, nodeResponse{Node: n})
 }
 
 func (h *nodeRoutes) remove(c *gin.Context) {

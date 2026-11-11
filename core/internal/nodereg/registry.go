@@ -136,9 +136,11 @@ type Channel interface {
 	RenewCertificate(ctx context.Context, fingerprint string, certPEM []byte) error
 }
 
-// JobLister lists a node's jobs (maintenance shows the affected work).
-type JobLister interface {
+// Jobs lists a node's jobs (maintenance shows the affected work) and reads
+// the re-check job.
+type Jobs interface {
 	List(ctx context.Context, opts jobs.ListOptions) ([]*jobs.Job, error)
+	Get(ctx context.Context, id string) (*jobs.Job, error)
 }
 
 // Options configures a Registry. DB and PKI are required.
@@ -148,14 +150,17 @@ type Options struct {
 	// IssuerKeyPEM is the privileged executor's grant issuer public key,
 	// handed to each enrolled host.
 	IssuerKeyPEM []byte
-	Jobs         JobLister
-	Now          func() time.Time
-	Logger       *slog.Logger
-	CodeTTL      time.Duration
-	ApprovalTTL  time.Duration
-	CertValidity time.Duration
-	RenewBefore  time.Duration
-	StaleAfter   time.Duration
+	Jobs         Jobs
+	// SubmitRecheck starts a node.recheck job for the node and returns its
+	// id; requestID deduplicates. Nil: no re-check is run.
+	SubmitRecheck func(ctx context.Context, fingerprint, requestID string) (string, error)
+	Now           func() time.Time
+	Logger        *slog.Logger
+	CodeTTL       time.Duration
+	ApprovalTTL   time.Duration
+	CertValidity  time.Duration
+	RenewBefore   time.Duration
+	StaleAfter    time.Duration
 }
 
 // Registry is the node registry.

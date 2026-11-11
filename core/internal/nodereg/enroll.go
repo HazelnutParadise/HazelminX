@@ -660,26 +660,25 @@ func (l *failureLimiter) allow(src string, now time.Time) bool {
 	return f.n < l.max
 }
 
-// maxLimiterSources bounds the limiter's memory: when full, expired
-// entries go first, then the oldest.
+// maxLimiterSources bounds the limiter's memory. When it is full, expired
+// entries go and then arbitrary ones until a tenth is free, so the cost of
+// one scan is spread over the next thousand new sources.
 const maxLimiterSources = 10000
 
 func (l *failureLimiter) fail(src string, now time.Time) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	if _, ok := l.seen[src]; !ok && len(l.seen) >= maxLimiterSources {
-		var oldest string
 		for k, f := range l.seen {
 			if now.Sub(f.start) >= l.window {
 				delete(l.seen, k)
-				continue
-			}
-			if oldest == "" || f.start.Before(l.seen[oldest].start) {
-				oldest = k
 			}
 		}
-		if len(l.seen) >= maxLimiterSources && oldest != "" {
-			delete(l.seen, oldest)
+		for k := range l.seen {
+			if len(l.seen) < maxLimiterSources*9/10 {
+				break
+			}
+			delete(l.seen, k)
 		}
 	}
 	f, ok := l.seen[src]

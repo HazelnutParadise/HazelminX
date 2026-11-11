@@ -62,6 +62,9 @@ pub enum Decision {
 }
 
 /// Result of `reconcile`.
+// One value per reconcile request, returned and sent right away: boxing the
+// message would only add an allocation.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, PartialEq)]
 pub enum ReconcileAnswer {
     /// Send this message (`reconcile_report`, or `step_rejected` with

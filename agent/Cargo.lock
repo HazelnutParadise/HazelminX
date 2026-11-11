@@ -439,6 +439,7 @@ dependencies = [
  "hazelminx-privileged",
  "hazelminx-protocol",
  "hex",
+ "libc",
  "rand 0.8.8",
  "rustls",
  "rustls-native-certs",

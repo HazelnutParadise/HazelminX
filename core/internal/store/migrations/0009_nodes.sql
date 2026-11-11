@@ -38,6 +38,13 @@ CREATE TABLE IF NOT EXISTS nodes (
     maintenance_since      TEXT,
     maintenance_ended_at   TEXT,
     recheck_requested_at   TEXT,
+    -- The node.recheck job run after maintenance (or on request), and its
+    -- recorded outcome: passed, failed or inconclusive, with the host values.
+    recheck_attempt        INTEGER NOT NULL DEFAULT 0,
+    recheck_job_id         TEXT,
+    recheck_state          TEXT NOT NULL DEFAULT '',
+    recheck_result         TEXT,
+    recheck_finished_at    TEXT,
     revoked_at             TEXT,
     revoke_reason          TEXT NOT NULL DEFAULT '',
     revoked_by             TEXT NOT NULL DEFAULT '',
