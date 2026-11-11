@@ -209,7 +209,7 @@ def range_row(on="24 小時") -> str:
 def node_tabs(active: str, containers: int = 10, offline: bool = False) -> str:
     """主機工作區的分頁（學 Cockpit 的單機分頁）：單一主機才有意義的東西都在這裡，側欄不另放。
     分頁永遠留在同一台主機。主機沒有回應時，除了概況以外的分頁停用並說明原因，不跳到別台。"""
-    items = [("概況", "NodeDetail.dc.html"), ("系統", "System.dc.html"), (f"容器 {containers}", "Containers.dc.html"), ("檔案", "Files.dc.html"), ("日誌", "NodeLogs.dc.html"), ("終端機", "NodeTerminal.dc.html"), ("變更帳本", "NodeLedger.dc.html")]
+    items = [("概況", "NodeDetail.dc.html"), ("系統", "System.dc.html"), (f"容器 {containers}", "Containers.dc.html"), ("磁碟", "NodeDisks.dc.html"), ("檔案", "Files.dc.html"), ("日誌", "NodeLogs.dc.html"), ("終端機", "NodeTerminal.dc.html"), ("變更帳本", "NodeLedger.dc.html")]
     if offline:
         return ('<div class="panel"><div class="tabs" role="tablist">' + "".join(
             (f'<a class="tab on" role="tab" aria-selected="true" href="#">{l}</a>' if l.split(" ")[0] == active else
@@ -2596,7 +2596,7 @@ def system() -> str:
     </section>"""
     mounts = f"""
     <section class="panel" aria-labelledby="h-mnt">
-      <div class="ph"><h2 id="h-mnt">掛載與檔案系統</h2><span class="sub">fstab、網路儲存、裝置身分；未綁定的資料碟標紅</span><a class="more" href="Storage.dc.html">儲存與備份 →</a></div>
+      <div class="ph"><h2 id="h-mnt">掛載與檔案系統</h2><a class="more" href="NodeDisks.dc.html">磁碟管理 →</a></div>
       <div class="row hd drow"><span>掛載點</span><span>裝置</span><span class="c5">檔案系統</span><span>使用</span><span class="c4">開機掛載 · 身分</span></div>
       <div class="row drow"><span class="mono">/</span><span class="mono">nvme0n1p2</span><span class="c5">ext4</span>{U.meter(38, "36 / 94 GiB", warn=80, danger=90)}<span class="c4">{U.status("ok", "fstab UUID")}</span></div>
       <div class="row drow"><span class="mono">/mnt/data</span><span class="mono">sdb1</span><span class="c5">ext4</span>{U.meter(44, "412 / 931 GiB", warn=80, danger=90)}<span class="c4">{U.status("ok", "fstab UUID")}</span></div>
@@ -3662,6 +3662,102 @@ def node_terminal() -> str:
 
 
 
+# ---------- 主機 › 磁碟（STO-001～004、007、008；票 031、032） ----------
+def node_disks() -> str:
+    head = node_head("hazel-tw-01", U.status("ok", "連線中"), "最後聯絡 2 秒前", '<button type="button" class="btn">重新掃描磁碟</button><button type="button" class="btn pri">掛載網路儲存</button>') + node_tabs("磁碟")
+    tiles = '<div class="tiles">' + "".join([
+        U.stat_tile("磁碟", "4", "", "1 顆還沒使用", None),
+        U.stat_tile("掛載", "6", "", "4 個開機自動掛載 · 2 個設定衝突", False),
+        U.stat_tile("用裝置名稱掛載", "1", "", "/mnt/scratch · 換插槽會掛錯", False),
+        U.stat_tile("健康", "3", "/4 正常", "sdd 不支援 SMART", None),
+    ]) + "</div>"
+
+    def disk(dev, model, size, kind, health, temp, acts, sel=False):
+        return (f'<div class="row{" sel" if sel else ""}"><span class="name"><span class="n mono">{dev}</span><span class="d">{model}</span></span><span class="mono">{size}</span>'
+                f'<span>{kind}</span><span>{health}</span><span class="mono c3">{temp}</span><span class="acts">{acts}</span></div>')
+
+    def part(dev, fs, size, ident, where, acts):
+        return (f'<div class="row"><span class="name" style="padding-left:22px"><span class="n mono">{dev}</span><span class="d mono">{ident}</span></span><span class="mono">{size}</span>'
+                f'<span class="mono">{fs}</span><span>{where}</span><span class="c3"></span><span class="acts">{acts}</span></div>')
+
+    def b(t, pri=False):
+        return f'<button type="button" class="btn sm{" pri" if pri else ""}">{t}</button>'
+    more = U.actions(["more"])
+    disks = f"""
+    <section class="panel" aria-labelledby="h-dk">
+      <div class="ph"><h2 id="h-dk">磁碟與分割區</h2>{U.legend([("ok", "健康"), ("warn", "要注意"), ("info", "不支援 SMART")])}</div>
+      <div class="row hd"><span>裝置</span><span>大小</span><span>用途／檔案系統</span><span>健康／掛在哪</span><span class="c3">溫度</span><span></span></div>
+      {disk("nvme0n1", "Samsung 980 · NVMe", "100 GiB", U.status("info", "系統碟"), U.status("ok", "健康 · 用了 3%"), "41°C", more)}
+      {part("nvme0n1p1", "vfat", "512 MiB", "UUID 7C1A-0F22", '<span class="mono">/boot/efi</span>', "")}
+      {part("nvme0n1p2", "ext4", "94 GiB", "UUID 0b7e…41c9", '<span class="mono">/</span>', "")}
+      {disk("sdb", "WD Red Plus · SATA", "1 TiB", "資料碟", U.status("ok", "健康 · 通電 412 天"), "36°C", more)}
+      {part("sdb1", "ext4", "931 GiB", "UUID 5a7c…e2", '<span class="mono">/mnt/data</span>', b("卸載"))}
+      {disk("sdc", "Seagate IronWolf · SATA", "2 TiB", U.status("warn", "還沒使用"), U.status("ok", "健康 · 全新"), "33°C", b("格式化", True) + more)}
+      {disk("sdd", "USB 外接 · SanDisk", "256 GiB", "可卸除", U.status("info", "不支援 SMART"), "—", more, sel=True)}
+      {part("sdd1", "exfat", "256 GiB", "UUID 64F2-91AB · 標籤 SCRATCH", U.status("warn", "用裝置名稱掛載"), b("改用 UUID", True) + b("卸載"))}
+    </section>"""
+
+    def mnt(point, ident, fs, pct, used, boot, src, who, acts):
+        return (f'<div class="row"><span class="name"><span class="n mono">{point}</span><span class="d mono">{ident}</span></span><span class="mono c3">{fs}</span>'
+                f'<span>{U.meter(pct, used, warn=80, danger=90)}</span><span>{boot}</span><span class="c3">{src}</span><span class="c4">{who}</span><span class="acts">{acts}</span></div>')
+    edit = b("編輯")
+    mounts = f"""
+    <section class="panel" aria-labelledby="h-mt">
+      <div class="ph"><h2 id="h-mt">掛載 · 6</h2>{U.status("warn", "2 個設定衝突")}<button type="button" class="btn sm" style="margin-left:auto">新增掛載</button></div>
+      <div class="row hd"><span>掛載點</span><span class="c3">檔案系統</span><span>使用</span><span>開機時</span><span class="c3">設定寫在哪</span><span class="c4">誰在用</span><span></span></div>
+      {mnt("/", "UUID 0b7e…41c9", "ext4", 38, "36 / 94 GiB", U.status("ok", "自動掛載"), "fstab · 既有", "系統", "")}
+      {mnt("/mnt/data", "UUID 5a7c…e2", "ext4", 44, "412 / 931 GiB", U.status("ok", "自動掛載"), "fstab · 既有", "shop-db、wiki-app 等 9 個", edit)}
+      {mnt("/mnt/nfs/backup", "hazel-tw-01:/mnt/data/nfs", "nfs4", 10, "19 / 200 GiB", U.status("ok", "用到才掛載"), "systemd 單元 · 平台建立", "備份任務 2 個", edit + b("卸載"))}
+      {mnt("/mnt/scratch", "/dev/sdd1（裝置名稱）", "exfat", 12, "31 / 256 GiB", U.status("warn", "不會自動掛載"), "手動掛上 · 沒有設定", "沒有", edit + b("卸載"))}
+      {mnt("/mnt/media", "//nas.example.tw/media", "cifs", 0, "沒掛上", U.status("dng", "兩處設定衝突"), "fstab ＋ autofs · 既有", "沒有", edit)}
+      {mnt("swap", "/swapfile", "swap", 12, "0.5 / 4 GiB", U.status("ok", "自動啟用"), "fstab · 既有", "系統", "")}
+    </section>"""
+    form = _fp("編輯掛載 · /mnt/scratch", _grid(
+        _fld("掛載點", _in("/mnt/scratch", mono=True, tail='<a class="btn sm" href="FolderPicker.dc.html">選擇資料夾</a>')),
+        _fld("用什麼認這顆磁碟", _seg(["UUID", "標籤", "裝置名稱"], 0, "識別方式"), "裝置名稱會隨插槽與開機順序改變，UUID 不會"),
+        _fld("開機時", _seg(["自動掛載", "用到才掛載", "不掛載"], 0, "開機掛載"), "用到才掛載：第一次有人讀寫這個路徑時才掛上"),
+        _fld("磁碟不在時", _seg(["照常開機", "停下來等我處理"], 0, "磁碟缺席"), "外接或網路磁碟選照常開機；放資料庫的磁碟選停下來"),
+        _fld("掛載選項", '<div class="wrap">' + _cb("唯讀", False) + _cb("不更新存取時間（noatime）", True) + _cb("不允許執行檔（noexec）", False) + "</div>"),
+        _fld("誰可以讀寫", _dd("deploy（uid 1000）"))) + f"""
+      <div style="padding:0 16px 12px;display:flex;flex-direction:column;gap:8px">
+        <span class="note">會寫進 /etc/fstab 的內容</span>
+        <div class="term">UUID=64F2-91AB  /mnt/scratch  exfat  defaults,noatime,nofail,uid=1000,gid=1000  0  0</div>
+        <div class="wrap">{U.status("ok", "語法檢查通過")}{U.status("ok", "UUID 沒有重複")}{U.status("info", "目前沒有服務在用這個掛載點")}</div>
+      </div>""" + _submit("預覽變更計畫", "只存設定，下次開機生效"))
+    absent = f"""
+    <section class="panel" aria-labelledby="h-ab">
+      <div class="ph"><h2 id="h-ab">磁碟不在或掛錯時</h2></div>
+      <div class="row hd"><span>掛載點</span><span>綁定的磁碟</span><span>依賴它的服務</span><span>現在</span></div>
+      <div class="row"><span class="mono">/mnt/data</span><span class="mono">UUID 5a7c…e2</span><span>shop-db、wiki-app 等 9 個</span><span>{U.status("ok", "磁碟相符")}</span></div>
+      <div class="row"><span class="mono">/mnt/nfs/backup</span><span class="mono">hazel-tw-01:/mnt/data/nfs</span><span>備份任務 2 個</span><span>{U.status("ok", "連得到")}</span></div>
+      <div class="row"><span class="mono">/mnt/scratch</span><span class="mono">還沒綁定</span><span>沒有</span><span>{U.status("warn", "換插槽會掛錯")}</span></div>
+      <div class="foot"><span>磁碟不相符時，依賴它的服務不會啟動</span><a href="Storage.dc.html">儲存與備份 →</a></div>
+    </section>"""
+    def cf(kind, what, where, fix):
+        return f'<div class="row"><span class="name"><span class="n">{kind}</span><span class="d">{what}</span></span><span class="mono">{where}</span><span class="acts">{fix}</span></div>'
+    conflicts = f"""
+    <section class="panel" aria-labelledby="h-cf">
+      <div class="ph"><h2 id="h-cf">設定衝突 · 2</h2><span class="note mono">掃描 03:41:50</span></div>
+      <div class="row hd"><span>問題</span><span>寫在哪</span><span></span></div>
+      {cf("同一個掛載點寫了兩次", "/mnt/media 在 fstab 和 autofs 各有一筆，選項不同", "fstab:9 · media.autofs:1", b("選一個保留", True) + b("看兩邊內容"))}
+      {cf("fstab 指向不存在的磁碟", "開機時會等 90 秒才略過", "fstab:11 · UUID 9d2c…07", b("停用這一行", True) + b("看內容"))}
+      <div class="foot"><span>會讀 /etc/fstab、systemd 的 .mount 與 .automount 單元、autofs 設定</span></div>
+    </section>"""
+    unmount = f"""
+    <section class="panel" aria-labelledby="h-um" role="dialog" aria-modal="true" style="max-width:600px;width:100%;margin:8px auto;box-shadow:0 18px 48px rgb(0 0 0/.22)">
+      <div class="ph"><h2 id="h-um">卸載 <span class="mono">/mnt/nfs/backup</span>？</h2></div>
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
+        <div class="wrap">{U.status("warn", "2 個備份任務在用")}<span>下一次執行 03:00 · 卸載後會失敗</span></div>
+        <div class="wrap">{U.status("ok", "現在沒有檔案開著")}</div>
+        {_cb("也停用開機掛載", False, "不勾的話，下次開機或有人讀寫這個路徑時會再掛上")}
+        <div class="field"><label>輸入掛載點以確認</label>{_in("", mono=True, ph=True)}</div>
+        <div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">取消</button><button type="button" class="btn dng" disabled aria-disabled="true">卸載</button></div>
+      </div>
+    </section>"""
+    main = head + tiles + disks + mounts + conflicts + form + absent + unmount
+    return U.shell("nodes", main)
+
+
 # ---------- 主機沒有回應（事故頁） ----------
 def node_offline() -> str:
     head = node_head("hazel-jp-02", U.status("dng", "沒有回應 · 48 秒"), "最後心跳 03:41:18 · 以下是上次觀測", '<span tabindex="0" data-tip="TCP 22 逾時，從控制中心也連不到 SSH"><button type="button" class="btn" disabled>SSH 連線</button></span><button type="button" class="btn">標記為維護中</button>') + node_tabs("概況", 3, offline=True)
@@ -4387,6 +4483,7 @@ SCREENS = {
     "CommandPalette": ("⌘K 搜尋", command_palette, 1440, 900),
     "BatchResult": ("批次操作結果", batch_result, 1440, 900),
     "ComposeEditor": ("Compose 編輯器（側欄收合）", compose_editor, 1440, 1100),
+    "NodeDisks": ("主機 hazel-tw-01 › 磁碟", node_disks, 1440, 1900),
     "NodeLogs": ("主機 hazel-tw-01 › 日誌", node_logs, 1440, 1000),
     "NodeTerminal": ("主機 hazel-tw-01 › 終端機", node_terminal, 1440, 1000),
     "GitHubSource": ("從 GitHub 匯入", github_source, 1440, 1100),
