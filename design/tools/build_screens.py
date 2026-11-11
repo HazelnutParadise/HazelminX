@@ -451,10 +451,10 @@ def containers() -> str:
                 + f'<span class="mono c6">{net}</span><span class="mono c5 note">{ports}</span>{U.actions(["log", "term", "restart", "more"])}</a>')
     table = f"""
     <section class="panel" aria-labelledby="h-ct" data-sort="3:desc" data-batch data-pages="1–9 / 16">
-      <div class="ph"><h2 id="h-ct">容器 · 16</h2>{U.attr("k8s", "另有 1 個節點容器由 kind 叢集 dev 管理，不計入", "+1")}<span class="sub">依 CPU 排序</span></div>
+      <div class="ph"><h2 id="h-ct">容器 · 16</h2><span class="chip" tabindex="0" data-tip="kind 叢集 dev 的節點容器，由叢集管理，不計入這裡">另 1 個由 kind 管理</span><span class="sub">依 CPU 排序</span></div>
       <div class="scroll"><div style="min-width: 320px">
       <div class="row hd crow"><span>容器</span><span>狀態</span><span class="c3">環境</span><span class="c4">CPU</span><span class="c4">記憶體</span><span class="c5">GPU</span><span class="c6">網路 I/O（MB/s）</span><span class="c5">Port</span><span></span></div>
-      {crow("ollama", "ollama/ollama:0.5.7", "tw-01", U.status("ok", "執行中 · 3 天"), 44.0, 2890, 8192, "0.2 / 0.4", 0, "11434 對外", gpu=(41, 13.1))}
+      {crow("ollama", "ollama/ollama:0.5.7", "tw-01", U.status("ok", "執行中 · 3 天"), 44.0, 2890, 8192, "0.2 / 0.4", 0, U.status("dng", "11434 對外"), gpu=(41, 13.1))}
       {crow("shop-api", "ghcr.io/hazelnut/shop-api:a3f9c1e", "tw-01", U.status("ok", "執行中 · 46 分"), 21.4, 812, 2048, "3.1 / 11.8", 0, "8080")}
       {crow("shop-worker", "ghcr.io/hazelnut/shop-worker:a3f9c1e", "tw-01", U.status("ok", "執行中 · 46 分"), 8.9, 410, 1024, "0.4 / 0.2", 0, "—")}
       {crow("wiki-app", "ghcr.io/hazelnut/wiki:7d02b4a", "jp-02", U.status("warn", "過期 · 03:41"), 3.1, 356, 1024, "0.6 / 1.9*", 0, "3000")}
@@ -613,7 +613,7 @@ def login() -> str:
         <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px" role="group" aria-label="6 位數驗證碼">{"".join(f'<input class="inp mono" inputmode="numeric" maxlength="1" aria-label="第 {i + 1} 位" value="{d}" style="text-align:center;font-size:18px;min-height:46px;padding:0">' for i, d in enumerate("4829  "))}</div>
         <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><button type="button" class="btn">使用復原碼</button><button type="button" class="btn">回上一步</button></div>
       </section>"""
-    body = (f'<div style="flex:1;display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;justify-content:center;padding:56px 16px">{step1}{step2}</div>')
+    body = (f'<div style="flex:1;display:flex;flex-wrap:wrap;gap:24px;align-items:center;align-content:center;justify-content:center;padding:56px 16px;min-height:100vh">{step1}{step2}</div>')
     return f'<div class="hb theme-{{{{theme}}}}" style="min-height:100vh;display:flex;flex-direction:column"><main class="main" style="padding:0">{body}</main></div>'
 
 
@@ -1723,9 +1723,9 @@ def node_ledger_broken() -> str:
            '<span class="acts2"><button type="button" class="btn pri">從 控制中心副本修復</button><button type="button" class="btn">看檢查結果</button></span></div>')
     main = head + bar + _fp("修復方式", f"""
       <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">
-        {_chk("ok", "控制中心副本完整", "控制中心有到第 1,284 筆的完整副本，可以用來重建本機帳本", "可用")}
-        {_chk("warn", "控制中心副本落後時", "差的筆數會列出來，需要你確認那些變更是否真的發生過", "")}
-        {_chk("warn", "沒有可用副本時", "以目前主機狀態重新建立帳本；之前的變更標成「來源不明」，完全移除時不會自動處理", "")}
+        {_chk("ok", "控制中心副本完整", "控制中心有到第 1,284 筆的完整副本，可以用來重建本機帳本", "這次用這個")}
+        {_chk("info", "控制中心副本落後時", "差的筆數會列出來，需要你確認那些變更是否真的發生過", "這次不適用")}
+        {_chk("info", "沒有可用副本時", "以目前主機狀態重新建立帳本；之前的變更標成「來源不明」，完全移除時不會自動處理", "這次不適用")}
       </div>""")
     return U.shell("nodes", main)
 
@@ -2675,12 +2675,12 @@ def iam() -> str:
 
 # ---------- 平台設定 ----------
 def settings() -> str:
-    head = U.page_head("平台設定", OBS, f'<button type="button" class="btn">匯出設定</button><button type="button" class="btn">診斷包</button><button type="button" class="btn" aria-disabled="true" data-tip="需要第二位擁有者批准；送出後建立變更計畫" style="opacity:.6">{U.icon("lock", 14)}輪替主金鑰</button><button type="button" class="btn pri">檢查更新</button>')
+    head = U.page_head("平台設定", OBS, f'<button type="button" class="btn">匯出設定</button><button type="button" class="btn">診斷包</button><button type="button" class="btn pri">檢查更新</button>')
     tabs = '<div class="panel"><div class="tabs" role="tablist"><button type="button" class="tab on" role="tab" aria-selected="true">設定</button><a class="tab" role="tab" aria-selected="false" href="Secrets.dc.html">機密庫</a><a class="tab" role="tab" aria-selected="false" href="Uninstall.dc.html">解除安裝</a></div></div>' + _jump(["基本", "管理入口與安全", "通知", "更新", "快照與匯入匯出", "整合", "遙測", "關於"])
     def card(title, rows, note=""):
-        body = "".join(f'<div style="display:flex;justify-content:space-between;gap:10px;min-height:32px;align-items:center;border-top:1px solid var(--line);padding:4px 0"><span class="note">{k}</span><span style="text-align:right">{v}</span></div>' for k, v in rows)
+        body = "".join(f'<div style="display:flex;justify-content:space-between;gap:10px;min-height:32px;align-items:center;border-top:1px solid var(--line);padding:4px 0"><span class="note" style="flex:none">{k}</span><span style="text-align:right">{v}</span></div>' for k, v in rows)
         n = f'<span class="note" style="margin-top:6px">{note}</span>' if note else ""
-        return f'<div class="ncard"><span style="font-weight:500">{title}</span>{body}{n}</div>'
+        return f'<div class="ncard"><div style="display:flex;align-items:center;gap:8px"><span style="font-weight:500">{title}</span><button type="button" class="btn sm" style="margin-left:auto">修改</button></div>{body}{n}</div>'
     basic = f"""
     <section class="panel" aria-labelledby="h-bs">
       <div class="ph"><h2 id="h-bs">基本</h2><span class="sub">每個設定有作用範圍：平台／主機／使用者</span></div>
@@ -2751,7 +2751,7 @@ def logs() -> str:
                     HOURS, unit="", fmt_val=lambda v: f"{v / 1000:.1f}K" if v >= 1000 else f"{v:.0f}", markers=[(22, "jp-02 沒有回應")], foot="7 天、500 萬筆的查詢 p95 < 3 秒；太大的查詢先回「要不要改成工作查詢」· 保留：稽核 1 年、存取 30 天、系統 14 天")
     viewer = f"""
     <section class="panel" aria-labelledby="h-lv">
-      <div class="ph"><h2 id="h-lv">主機系統 · hazel-jp-02 · journald</h2><span class="sub">虛擬捲動、可取消、保留篩選；有資料量與截斷提示</span><div class="wrap" style="margin-left:auto">{_seg(["15 分", "1 小時", "24 小時", "自訂…"], 1, "時間範圍")}<span class="chip on">tail 500</span><span class="chip">時間戳</span><span class="chip">反向</span><span class="chip">只看 err+</span><span class="chip">即時 5 秒</span></div></div>
+      <div class="ph"><h2 id="h-lv">主機系統 · hazel-jp-02 · journald</h2><span class="sub">虛擬捲動、可取消、保留篩選；有資料量與截斷提示</span><div class="wrap" style="margin-left:auto">{_seg(["15 分", "1 小時", "24 小時", "自訂"], 1, "時間範圍")}<span class="chip on">tail 500</span><span class="chip">時間戳</span><span class="chip">反向</span><span class="chip">只看 err+</span><span class="chip">即時 5 秒</span></div></div>
       <div style="padding:10px 14px"><label class="inp" style="margin-bottom:8px"><span class="note">搜尋</span><input value="hazelminx-agent" aria-label="搜尋日誌" style="background:transparent;border:0;flex:1;min-width:0"></label>
       <div class="term">03:41:18 jp-02 hazelminx-agent[1180]: <span style="color:var(--ok)">INFO</span>  heartbeat ok seq=48812 rtt=41ms
 03:41:28 jp-02 hazelminx-agent[1180]: <span style="color:var(--warn)">WARN</span>  heartbeat send failed: dial tcp 203.0.113.22:8443: i/o timeout
@@ -2855,7 +2855,7 @@ root@hazel-tw-01:~# <span style="background:var(--ink);color:var(--panel)"> </sp
     </section>"""
     policy = f"""
     <section class="panel" aria-labelledby="h-tp">
-      <div class="ph"><h2 id="h-tp">稽核政策與設定</h2></div>
+      <div class="ph"><h2 id="h-tp">稽核政策與設定</h2><a class="btn sm" href="Settings.dc.html" style="margin-left:auto">修改</a></div>
       <div class="fleet" style="grid-template-columns:repeat(auto-fill,minmax(min(220px,100%),1fr))">
         {kv("root 終端機", "完整錄製（輸入＋輸出）· 保留 90 天", "ncard")}{kv("一般帳號", "指令紀錄 · 保留 30 天", "ncard")}{kv("容器終端機", "指令紀錄 · 只有容器唯讀權限的人不能開宿主機 root", "ncard")}
         {kv("外觀", "Geist Mono 13px · 行高 1.4 · 深色", "ncard")}{kv("預設連線", "hazel-tw-01 · root", "ncard")}{kv("AI 輔助", "關閉（可選 ops-assistant 解釋輸出）", "ncard")}
@@ -3212,7 +3212,7 @@ def kubernetes_empty() -> str:
       {_chk("ok", "80／443 不被搶", "Traefik、ServiceLB 停用；入口由 Zentinel 轉送", "通過")}
       {_chk("ok", "防火牆", "ufw 規則新增 6443、10250、8472/udp 僅限節點間；不關閉防火牆", "通過")}
       {_chk("warn", "lab-mini 已有 Podman rootless", "K3s containerd 與 Podman 分開；同名映像不共用", "警告")}
-      <div class="wrap" style="justify-content:flex-end;padding:10px 14px"><button type="button" class="btn">上一步</button><button type="button" class="btn pri">批准並建立叢集</button></div>
+      <div class="wrap" style="justify-content:flex-end;padding:10px 14px"><a class="btn" href="Kubernetes.dc.html">取消</a><button type="button" class="btn pri">批准並建立叢集</button></div>
     </section>"""
     main = head + choose + nodes + checks
     return U.shell("k8s", main)
@@ -3225,9 +3225,11 @@ def _jump(items):
     return ('<nav class="subtabs" aria-label="跳到">' + "".join(f'<a class="st2{" on" if i == 0 else ""}" href="#s{i}"{" aria-current=true" if i == 0 else ""}>{t}</a>' for i, t in enumerate(items)) + "</nav>")
 
 
-def _fld(label, control, help_=""):
+def _fld(label, control, help_="", wide=False):
+    """wide：值很長的欄位（映像名稱、指令、路徑）佔兩欄，不讓值折成兩行。"""
     h = f'<span class="help">{help_}</span>' if help_ else ""
-    return f'<div class="field"><label>{label}</label>{control}{h}</div>'
+    w = ' style="grid-column:span 2"' if wide else ""
+    return f'<div class="field"{w}>{label and f"<label>{label}</label>"}{control}{h}</div>'
 
 
 def _in(val, mono=False, ph=False, tail=""):
@@ -3306,7 +3308,7 @@ def container_create() -> str:
     head = _form_head([("容器", "Containers.dc.html")], "建立容器", '<a class="btn" href="Containers.dc.html">取消</a>')
     kind = f'<div class="panel" style="padding:10px 14px">{_seg(["單一容器", "Compose 專案（到專案與服務）"], 0, "建立方式")}</div>'
     image = _fp("映像與位置", _grid(
-        _fld("映像", _in("ghcr.io/<wbr>hazelnut/<wbr>report-worker:1.4.0", mono=True, tail=U.status("ok", "tw-01 已有")), "支援 tag 與 digest"),
+        _fld("映像", _in("ghcr.io/hazelnut/report-worker:1.4.0", mono=True, tail=U.status("ok", "tw-01 已有")), "支援 tag 與 digest", wide=True),
         _fld("容器名稱", _in("report-worker", mono=True, tail=U.status("ok", "未重複"))),
         _fld("環境", _dd("Docker（root）@ hazel-tw-01"), "引擎與主機一起選，不自動猜"),
         _fld("拉取政策", _seg(["缺少時拉取", "永遠拉取", "不拉取"], 0, "拉取政策"))), hid="img")
@@ -3325,7 +3327,7 @@ def container_create() -> str:
     run = _fp("資源與執行", _grid(
         _fld("CPU 上限", _in("1 核")), _fld("記憶體上限", _in("1 GiB"), "tw-01 可用 20 GiB"),
         _fld("重啟政策", _dd("unless-stopped")), _fld("日誌", _dd("輪替 · 5 個檔 × 10 MiB（預設）"), "可以改上限或關掉"), _fld("執行身分", _in("1000:1000", mono=True), "映像預設 root，這裡改成一般使用者"),
-        _fld("健康檢查", _in("curl -f http://localhost:8080/healthz", mono=True), "每 10 秒 · 逾時 3 秒 · 失敗 3 次算不健康"),
+        _fld("健康檢查", _in("curl -f http://localhost:8080/healthz", mono=True), "每 10 秒 · 逾時 3 秒 · 失敗 3 次算不健康", wide=True),
         _fld("網路", _dd("shop_default（與 shop-db 同網路）")), _fld("GPU", _dd("不使用")), _fld("標籤", _in("team=report", mono=True))))
     preview = _fp("建立前檢查", f"""
       <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
@@ -3396,7 +3398,7 @@ def firewall_rule() -> str:
         <div class="wrap"><span class="note">平台寫入（還沒選）</span>{_seg(["ufw", "firewalld"], -1, "主要防火牆")}<button type="button" class="btn sm">停用 ufw（變更計畫）</button></div>
       </div>""")
     rule = _fp("規則", _grid(
-        _fld("動作", _seg(["只允許這些來源，其他擋掉", "擋掉這些來源", "限速"], 0, "動作")), _fld("方向", _seg(["進站", "出站"], 0, "方向")),
+        _fld("動作", _seg(["只允許這些來源", "擋掉這些來源", "限速"], 0, "動作")), _fld("方向", _seg(["進站", "出站"], 0, "方向")),
         _fld("協定", _seg(["TCP", "UDP", "兩者"], 0, "協定")), _fld("Port", _in("5432", mono=True)),
         _fld("來源", _in("10.8.0.0/24", mono=True), "只允許 WireGuard 內網"), _fld("備註", _in("wiki-db 只給內網")),
         _fld("保護對象", _seg(["主機上的服務", "容器發布的 Port"], 1, "保護對象"), "容器 Port 寫進 DOCKER-USER 或 Podman 的網路；不動引擎自己的鏈")))

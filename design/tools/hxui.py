@@ -385,7 +385,7 @@ body{{margin:0}}
  .hb .hcell{{width:36px;height:36px}}
  .hb .tabs{{flex-wrap:nowrap;overflow-x:auto}}.hb .tab{{white-space:nowrap;flex:none}}
  .hb .ph .wrap{{width:100%}}
- .hb .pipe{{grid-template-columns:repeat(2,minmax(0,1fr))}}
+ .hb .pipe{{grid-template-columns:repeat(2,minmax(0,1fr))}}.hb .ts .xo{{display:none}}.hb .diff div{{white-space:pre-wrap;overflow-wrap:anywhere}}
 }}
 .hb .tw{{display:grid;grid-template-columns:var(--tc);overflow-x:auto;align-content:start}}
 .hb .tw>*{{grid-column:1/-1;min-width:0}}
@@ -814,8 +814,11 @@ def timeseries(series: list[Series], x_labels: list[str], unit: str = "%", w: in
     idx = list(range(0, n, lab_every))
     if n - 1 - idx[-1] >= lab_every * 0.6:
         idx.append(n - 1)
+    # 窄螢幕只留一半的刻度（最後一個一定留），避免相鄰刻度疊在一起
+    last = len(idx) - 1
+    thin = {k for k in range(len(idx)) if (last - k) % 2 == 1}
     xlab = "".join(
-        f'<span class="{"a0" if (i == 0 and not bar) else ("a1" if (i == n - 1 and not bar) else "")}" style="left:{pct(xpos(i))}">{x_labels[i]}</span>' for i in idx)
+        f'<span class="{"a0" if (i == 0 and not bar) else ("a1" if (i == n - 1 and not bar) else "")}{" xo" if k in thin else ""}" style="left:{pct(xpos(i))}">{x_labels[i]}</span>' for k, i in enumerate(idx))
     hits = []
     for i in range(n):
         lo, hi = max(0.0, xpos(i) - step / 2), min(X, xpos(i) + step / 2)
