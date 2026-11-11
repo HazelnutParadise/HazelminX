@@ -1,0 +1,11 @@
+{
+  "type": "hello",
+  "protocol": {
+    "min": 1,
+    "max": 1
+  },
+  "agentVersion": "0.1.0",
+  "nodeCertificate": "x",
+  "nonce": "x",
+  "capabilities": []
+}

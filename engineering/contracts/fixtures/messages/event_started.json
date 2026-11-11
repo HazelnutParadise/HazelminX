@@ -1,0 +1,9 @@
+{
+  "type": "event",
+  "seq": 16,
+  "kind": "started",
+  "jobId": "job_01HXYZ",
+  "step": 0,
+  "requestId": "stp_job_01HXYZ_0_1",
+  "at": "2026-11-08T03:04:06Z"
+}

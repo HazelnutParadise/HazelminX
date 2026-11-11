@@ -1,0 +1,20 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-11-06T16:45:00Z"},
+  "title": "HazelminX UI/UX 設計方向",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1440, "h": 1560, "title": "方向 A「星圖」", "expand": "fill"},
+    "DirectionB.dc.html": {"x": 1520, "y": 0, "w": 1440, "h": 1560, "title": "方向 B「航站」", "expand": "fill"},
+    "DirectionC.dc.html": {"x": 3040, "y": 0, "w": 1440, "h": 1560, "title": "方向 C「榛果」", "expand": "fill"}
+  },
+  "order": ["Main.dc.html", "DirectionB.dc.html", "DirectionC.dc.html"],
+  "notes": {
+    "title": {"x": 0, "y": -300, "text": "HazelminX 總覽頁：三個設計方向（同一組資料，不同骨架）", "kind": "title1", "maxW": 4480},
+    "a": {"x": 0, "y": 1680, "w": 520, "text": "A「星圖」：風格輪盤抽到「復古未來太空圖錄」。奶油紙底、墨黑、鈷藍一抹；襯線只用在標題，資料層全部無襯線與等寬。左側窄欄導覽，內容像天文圖錄的分頁。", "fill": "blue"},
+    "b": {"x": 1520, "y": 1680, "w": 520, "text": "B「航站」：現實標竿是 Linear 這類鍵盤優先的工具型產品。深暖炭黑底（不是 GitHub 深藍），榛果色單一強調；三欄：導覽／主表／右側「需要處理」。密度最高。", "fill": "orange"},
+    "c": {"x": 3040, "y": 1680, "w": 520, "text": "C「榛果」：假設預算無上限，找 Stripe 設計團隊那種「讓人信任的密集介面」哲學來做。米白底、榛果棕強調、水平頂導覽加次級分頁，12 欄網格。", "fill": "green"}
+  },
+  "designSystems": []
+}

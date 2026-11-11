@@ -1,0 +1,63 @@
+@source "../../node_modules/@cloudflare/kumo/dist/**/*.{js,jsx,ts,tsx}";
+@import "@cloudflare/kumo/styles/tailwind";
+@import "tailwindcss";
+@import "./theme-hazelminx.css";
+
+@import "@fontsource/geist-sans/400.css";
+@import "@fontsource/geist-sans/500.css";
+@import "@fontsource/geist-sans/600.css";
+@import "@fontsource/geist-mono/400.css";
+@import "@fontsource/geist-mono/500.css";
+
+/* Base (DESIGN.md Typography, Elevation & Depth) */
+html {
+  background: var(--color-kumo-canvas);
+  color: var(--text-color-kumo-default);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  font-synthesis: none;
+  line-break: strict;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-kumo-focus);
+  outline-offset: 2px;
+}
+
+.hx-mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Thin scrollbars for every inner scroll area; only the page uses the system scrollbar. */
+.hx-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--hx-faint) 45%, transparent) transparent;
+}
+.hx-scroll:hover {
+  scrollbar-color: var(--hx-faint) transparent;
+}
+
+/* Phones: every control is at least 44px (DESIGN.md Do's). Kumo sizes buttons for desktop (32px). */
+@media (max-width: 767px) {
+  [data-kumo-component="Button"],
+  [data-kumo-component="LinkButton"] {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

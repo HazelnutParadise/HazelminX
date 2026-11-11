@@ -1,0 +1,15 @@
+{
+  "type": "ledger_page",
+  "requestId": "lgp_01HXYZ",
+  "ledgerId": "de76368978f4e798e5b4dbe0abe1043c",
+  "afterSeq": 0,
+  "lines": [
+    "{\"hash\":\"a6011fc93c9f33acbc02cd5d1768ffc6b749af73f6049cb25c193ac7efa38f7f\",\"entry\":{\"seq\":1,\"prev_hash\":\"496a2890fbfa6026b58a7d6170827d56a7cc1254c358ae009e4724e7a374765a\",\"recorded_at\":\"2026-11-08T09:30:00Z\",\"phase\":\"intent\",\"change_id\":\"4f1c2b7e9a0d4c3b8e6f1a2b3c4d5e6f\",\"job_id\":\"job-01JC7Q\",\"request_id\":\"req-01JC7Q\",\"grant_id\":\"grant-7f3a\",\"subject\":\"user-1\",\"action\":\"restart_service\",\"target\":{\"type\":\"systemd_unit\",\"unit\":\"nginx.service\"},\"change\":\"restart\",\"ownership\":\"platform_modified\",\"before\":{\"type\":\"systemd_unit\",\"exists\":true,\"load_state\":\"loaded\",\"unit_file_state\":\"enabled\",\"active_state\":\"inactive\",\"sub_state\":\"dead\"},\"after\":null,\"after_error\":null,\"outcome\":null,\"intent_seq\":null}}",
+    "{\"hash\":\"a351736178aa2c00bacc830c1839bd27338373cc95a28ec6e7035467c5b2b0d8\",\"entry\":{\"seq\":2,\"prev_hash\":\"a6011fc93c9f33acbc02cd5d1768ffc6b749af73f6049cb25c193ac7efa38f7f\",\"recorded_at\":\"2026-11-08T09:30:02Z\",\"phase\":\"result\",\"change_id\":\"4f1c2b7e9a0d4c3b8e6f1a2b3c4d5e6f\",\"job_id\":\"job-01JC7Q\",\"request_id\":\"req-01JC7Q\",\"grant_id\":\"grant-7f3a\",\"subject\":\"user-1\",\"action\":\"restart_service\",\"target\":{\"type\":\"systemd_unit\",\"unit\":\"nginx.service\"},\"change\":\"restart\",\"ownership\":\"platform_modified\",\"before\":{\"type\":\"systemd_unit\",\"exists\":true,\"load_state\":\"loaded\",\"unit_file_state\":\"enabled\",\"active_state\":\"inactive\",\"sub_state\":\"dead\"},\"after\":{\"type\":\"systemd_unit\",\"exists\":true,\"load_state\":\"loaded\",\"unit_file_state\":\"enabled\",\"active_state\":\"active\",\"sub_state\":\"running\"},\"after_error\":null,\"outcome\":{\"status\":\"succeeded\"},\"intent_seq\":1}}"
+  ],
+  "head": {
+    "seq": 2,
+    "hash": "a351736178aa2c00bacc830c1839bd27338373cc95a28ec6e7035467c5b2b0d8"
+  },
+  "more": false
+}

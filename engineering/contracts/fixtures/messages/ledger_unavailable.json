@@ -1,0 +1,6 @@
+{
+  "type": "ledger_unavailable",
+  "requestId": "lgp_01HXYZ",
+  "code": "EXPORT_FAILED",
+  "message": "after_seq 9 is beyond the ledger head 2"
+}

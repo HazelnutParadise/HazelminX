@@ -1,0 +1,109 @@
+/*
+ * HazelminX theme for Kumo (design/component-mapping.md).
+ * Values come from DESIGN.md; light-dark() follows color-scheme, which Kumo sets from data-mode.
+ * Unlayered on purpose: it must beat Kumo's @theme defaults and any layered theme.
+ */
+html[data-theme="hazelminx"] {
+  /* Surfaces: neutral → panel → raised */
+  --color-kumo-canvas: light-dark(#f6f2ea, #161412);
+  --color-kumo-base: light-dark(#fffdf8, #1d1b18);
+  --color-kumo-elevated: light-dark(#efe9de, #262320);
+  --color-kumo-recessed: light-dark(#efe9de, #262320);
+  --color-kumo-control: light-dark(#efe9de, #262320);
+  --color-kumo-overlay: light-dark(#efe9de, #262320);
+  --color-kumo-tint: light-dark(#efe9de, #262320);
+  --color-kumo-fill: light-dark(#efe9de, #262320);
+  --color-kumo-fill-hover: light-dark(#e6dfd2, #2e2a26);
+  --color-kumo-interact: light-dark(#d9d1c2, #35312b);
+  --color-kumo-contrast: light-dark(#1b1814, #ece6da);
+
+  /* Lines */
+  --color-kumo-line: light-dark(#d9d1c2, #35312b);
+  --color-kumo-hairline: light-dark(#ece6da, #2b2825);
+
+  /* Hazel is the only accent */
+  --color-kumo-brand: light-dark(#8f5b23, #d9a066);
+  --color-kumo-brand-hover: light-dark(#7a4d1d, #e2b17d);
+  --color-kumo-focus: light-dark(#8f5b23, #d9a066);
+
+  /* Status */
+  --color-kumo-success: light-dark(#2f6b3c, #9bd3a4);
+  --color-kumo-warning: light-dark(#9a5a0b, #f0b35b);
+  --color-kumo-danger: light-dark(#b4382e, #f28b82);
+  --color-kumo-info: light-dark(#2e5fa8, #8db4f2);
+  --color-kumo-success-tint: light-dark(#efe9de, color-mix(in srgb, #9bd3a4 13%, #1d1b18));
+  --color-kumo-warning-tint: light-dark(#efe9de, color-mix(in srgb, #f0b35b 13%, #1d1b18));
+  --color-kumo-danger-tint: light-dark(#efe9de, color-mix(in srgb, #f28b82 13%, #1d1b18));
+  --color-kumo-info-tint: light-dark(#efe9de, color-mix(in srgb, #8db4f2 13%, #1d1b18));
+
+  /* Text */
+  --text-color-kumo-default: light-dark(#1b1814, #ece6da);
+  --text-color-kumo-strong: light-dark(#1b1814, #ece6da);
+  --text-color-kumo-subtle: light-dark(#5e574c, #a79e8e);
+  --text-color-kumo-placeholder: light-dark(#6b6457, #9a917f);
+  --text-color-kumo-inactive: light-dark(#6b6457, #9a917f);
+  --text-color-kumo-inverse: light-dark(#fffdf8, #1a1410);
+  --text-color-kumo-brand: light-dark(#8f5b23, #d9a066);
+  --text-color-kumo-link: light-dark(#8f5b23, #d9a066);
+  --text-color-kumo-success: light-dark(#2f6b3c, #9bd3a4);
+  --text-color-kumo-warning: light-dark(#9a5a0b, #f0b35b);
+  --text-color-kumo-danger: light-dark(#b4382e, #f28b82);
+  --text-color-kumo-info: light-dark(#2e5fa8, #8db4f2);
+
+  /* HazelminX tokens Kumo has no slot for (DESIGN.md colors, series, single-hue scale) */
+  --hx-faint: light-dark(#6b6457, #9a917f);
+  --hx-hazel-ink: light-dark(#ffffff, #1a1410);
+  --hx-use: light-dark(#857c6f, #a39b8e);
+  --hx-scrim: light-dark(rgb(0 0 0 / 0.25), rgb(0 0 0 / 0.45));
+  --hx-series-1: light-dark(#7c4b02, #af711f);
+  --hx-series-2: light-dark(#2e598f, #5682bb);
+  --hx-series-3: light-dark(#218a45, #47aa62);
+  --hx-series-4: light-dark(#883170, #b55b9a);
+  --hx-q1: light-dark(#f3e6d3, #2a241c);
+  --hx-q2: light-dark(#e3c9a4, #4a3a22);
+  --hx-q3: light-dark(#cfa772, #6e5228);
+  --hx-q4: light-dark(#b38347, #9a6f33);
+  --hx-q5: light-dark(#8f5b23, #d9a066);
+
+  /* Typography */
+  --font-sans:
+    "HX CJK Punctuation", "Geist Sans", "Geist", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --font-mono: "HX CJK Punctuation", "Geist Mono", ui-monospace, Menlo, monospace;
+}
+
+/*
+ * Geist ships full-width CJK punctuation (，：？「」) as narrow Latin-width glyphs, so「要離開嗎？」reads like
+ * ASCII. This face covers only the CJK punctuation ranges and points at the system Chinese fonts; Latin text
+ * still uses Geist. Without any of these local fonts the browser falls through to Geist as before.
+ */
+@font-face {
+  font-family: "HX CJK Punctuation";
+  src:
+    local("PingFangTC-Regular"), local("PingFang TC Regular"), local("PingFang TC"), local("NotoSansTC-Regular"),
+    local("Noto Sans TC Regular"), local("Noto Sans TC"), local("MicrosoftJhengHeiRegular"), local("Microsoft JhengHei");
+  unicode-range: U+3000-303F, U+FF01-FF0F, U+FF1A-FF20, U+FF3B-FF40, U+FF5B-FF65;
+}
+
+/*
+ * Kumo emphasis buttons (primary, destructive) lighten the fill 30% through an inline style and force
+ * white text with a layered !important utility, which fails contrast on hazel. DESIGN.md wants the solid
+ * token with hazel-ink text. Important declarations in an earlier layer beat both the utility and the inline style.
+ */
+@layer base {
+  html[data-theme="hazelminx"] [class*="kumo-button-emphasis-bg"][style*="--color-kumo-brand"] {
+    --kumo-button-emphasis-bg: var(--color-kumo-brand) !important;
+    --kumo-button-emphasis-gradient-start: var(--color-kumo-brand) !important;
+    --kumo-button-emphasis-gradient-end: var(--color-kumo-brand) !important;
+    --kumo-button-emphasis-ring: var(--color-kumo-brand) !important;
+    color: var(--hx-hazel-ink) !important;
+    font-weight: 600;
+  }
+  html[data-theme="hazelminx"] [class*="kumo-button-emphasis-bg"][style*="--color-kumo-danger"] {
+    --kumo-button-emphasis-bg: var(--color-kumo-danger) !important;
+    --kumo-button-emphasis-gradient-start: var(--color-kumo-danger) !important;
+    --kumo-button-emphasis-gradient-end: var(--color-kumo-danger) !important;
+    --kumo-button-emphasis-ring: var(--color-kumo-danger) !important;
+    color: var(--hx-hazel-ink) !important;
+    font-weight: 600;
+  }
+}

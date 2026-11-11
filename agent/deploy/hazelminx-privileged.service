@@ -1,0 +1,39 @@
+[Unit]
+Description=HazelminX privileged executor
+Documentation=https://github.com/HazelnutParadise/HazelminX
+Before=hazelminx-agent.service
+
+[Service]
+Type=simple
+# Runs as root (that is its job) but with the agent's group so the runtime
+# directory (root:hazelminx-agent 0750) and the socket (0660) are reachable
+# only by the agent account.
+User=root
+Group=hazelminx-agent
+ExecStart=/usr/local/bin/hazelminx-privileged run
+Restart=on-failure
+RestartSec=5s
+StartLimitIntervalSec=120
+StartLimitBurst=5
+Environment=HAZELMINX_PRIVILEGED_CONFIG=/etc/hazelminx/privileged.toml
+RuntimeDirectory=hazelminx
+RuntimeDirectoryMode=0750
+RuntimeDirectoryPreserve=no
+ConfigurationDirectory=hazelminx
+LogsDirectory=hazelminx
+# Host change ledger (spec 55.1): root-only, kept across restarts and
+# upgrades; removed only by complete uninstall.
+StateDirectory=hazelminx/ledger
+StateDirectoryMode=0700
+# Only named actions run here; the attack surface is the socket, not a shell.
+ProtectHome=true
+PrivateTmp=true
+ProtectKernelModules=true
+LockPersonality=true
+# Package managers need the network; systemctl needs D-Bus (AF_UNIX).
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+SystemCallArchitectures=native
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

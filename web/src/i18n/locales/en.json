@@ -1,0 +1,147 @@
+{
+  "app": {
+    "name": "HazelminX",
+    "home": "HazelminX overview"
+  },
+  "nav": {
+    "overview": "Overview",
+    "jobs": "Jobs",
+    "events": "Events & alerts",
+    "projects": "Projects & services",
+    "appStore": "App store",
+    "websites": "Websites & ingress",
+    "databases": "Databases",
+    "ai": "AI",
+    "apiProxy": "API proxy",
+    "nodes": "Hosts & nodes",
+    "containers": "Containers",
+    "kubernetes": "Kubernetes",
+    "storage": "Storage & backup",
+    "cron": "Scheduled tasks",
+    "security": "Security",
+    "analytics": "Traffic analytics",
+    "logs": "Logs",
+    "iam": "Identity & access",
+    "settings": "Platform settings",
+    "terminal": "Terminal",
+    "accountSecurity": "Account security"
+  },
+  "navGroup": {
+    "apps": "Apps",
+    "infra": "Infrastructure",
+    "securityLogs": "Security & records",
+    "admin": "Administration"
+  },
+  "shell": {
+    "skipToContent": "Skip to main content",
+    "mainNav": "Main navigation",
+    "search": "Search or run a command",
+    "observed": "Observed",
+    "refreshEvery": "every {{seconds}} s",
+    "attention": "Events & alerts",
+    "jobs": "Running jobs",
+    "terminal": "Terminal",
+    "toLight": "Switch to light mode",
+    "toDark": "Switch to dark mode",
+    "account": "Account",
+    "language": "Language",
+    "collapseNav": "Collapse sidebar",
+    "expandNav": "Expand sidebar",
+    "collapse": "Collapse",
+    "attentionCount_one": "{{count}} needs attention",
+    "attentionCount_other": "{{count}} need attention",
+    "searchEmpty": "No matching page",
+    "stale": "No update for {{seconds}} s",
+    "accountSecurity": "Account security",
+    "signOut": "Sign out",
+    "languageCurrent": "Language · {{language}}",
+    "jobsCount_one": "{{count}} job running",
+    "jobsCount_other": "{{count}} jobs running"
+  },
+  "hostBar": {
+    "label": "Host status",
+    "unreachable_one": "{{count}} host not responding",
+    "unreachable_other": "{{count}} hosts not responding",
+    "others": "{{count}} more",
+    "viewAll": "All hosts",
+    "handle": "Handle"
+  },
+  "saveBar": {
+    "region": "Unsaved changes",
+    "changes_one": "{{count}} unsaved change",
+    "changes_other": "{{count}} unsaved changes",
+    "discard": "Discard",
+    "saving": "Saving…",
+    "failed": "Not saved · {{error}}",
+    "retry": "Try again",
+    "stay": "Stay on this page",
+    "leave": "Leave without saving",
+    "saveAndLeave": "Save and leave",
+    "changesOf_one": "{{subject}}: {{count}} unsaved change",
+    "changesOf_other": "{{subject}}: {{count}} unsaved changes",
+    "leaveTitle_one": "{{count}} change is not saved. Leave anyway?",
+    "leaveTitle_other": "{{count}} changes are not saved. Leave anyway?",
+    "leaveTitleOf_one": "{{subject}} has {{count}} unsaved change. Leave anyway?",
+    "leaveTitleOf_other": "{{subject}} has {{count}} unsaved changes. Leave anyway?"
+  },
+  "componentDown": {
+    "title": "{{name}} stopped · {{host}} · {{duration}}",
+    "kind": {
+      "systemd": "systemd service",
+      "container": "container"
+    },
+    "exit": "Exit code {{code}}",
+    "affected": "Affected",
+    "restart": "Restart {{name}}",
+    "restarting": "Restarting…",
+    "viewLogs": "View logs",
+    "noPermission": "Requires operate permission on {{name}}; ask {{who}}",
+    "logTail": "Log before it stopped",
+    "failures_one": "Restart failed {{count}} time · the platform will not retry on its own",
+    "failures_other": "Restart failed {{count}} times · the platform will not retry on its own"
+  },
+  "page": {
+    "emptyTitle": "{{name}} is not available yet"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "back": "Back to overview",
+    "search": "Search"
+  },
+  "crash": {
+    "title": "This page did not load",
+    "reload": "Reload",
+    "coreStatus": "Core answered {{status}}",
+    "trace": "trace {{trace}}",
+    "copyTrace": "Copy trace ID",
+    "copied": "Copied",
+    "frontend": "The interface hit an error"
+  },
+  "raw": {
+    "original": "Show original",
+    "source": "Show original ({{source}})"
+  },
+  "loading": "Loading",
+  "unknown": "Unknown",
+  "errors": {
+    "UNAUTHENTICATED": "Sign in first.",
+    "FORBIDDEN": "Your role does not allow this action.",
+    "CSRF_TOKEN_MISMATCH": "This page's security token expired. Reload and try again.",
+    "ORIGIN_MISMATCH": "The request did not come from this site and was rejected.",
+    "NOT_FOUND": "The requested resource was not found.",
+    "NETWORK_ERROR": "Cannot reach HazelminX Core.",
+    "UI_NOT_EMBEDDED": "This Core binary has no web interface built in.",
+    "INVALID_RESPONSE": "Core returned a response in an unexpected format.",
+    "unknown": "Core returned an error (HTTP {{status}})."
+  },
+  "kumo": {
+    "label": {
+      "optional": "optional",
+      "tooltip": "More information"
+    },
+    "layerDialog": {
+      "close": "Close",
+      "cancel": "Cancel"
+    }
+  }
+}

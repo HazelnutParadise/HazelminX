@@ -1,0 +1,15 @@
+{
+  "type": "step_execute",
+  "requestId": "stp_job_01HXYZ_0_1",
+  "jobId": "job_01HXYZ",
+  "step": 0,
+  "stepName": "collect agent info",
+  "action": "agent.info",
+  "actionVersion": 1,
+  "params": "rm -rf /",
+  "targetNode": "e0a56a32d47e84d38d4efc694da4e0dc90cf2e44ba0f5b1606b62af4a2087659",
+  "controlGeneration": 3,
+  "expiresAt": "2026-11-08T03:09:05Z",
+  "retryable": true,
+  "irreversible": false
+}
