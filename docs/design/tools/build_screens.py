@@ -1552,8 +1552,8 @@ def container_resources() -> str:
       {du("容器日誌", "3.1 GiB", "3.1 GiB", "依日誌保留設定自動清", 100)}""")
     prune = _fp("清理預覽", f"""
       <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
-        <div class="wrap">{_cb("未使用的映像（7 · 4.1 GiB）", True)}{_cb("建置快取（6.4 GiB）", True)}{_cb("已停止的容器（2）", False)}{_cb("沒被使用的儲存卷（2 · 2.0 GiB）", False, "資料會消失")}</div>
-        <div class="wrap">{_cb("保留回滾要用的映像", True, "shop-api:88b1d02 仍是上一個可回滾版本")}{_cb("只清超過 7 天的", True)}</div>
+        <div class="wrap" style="align-items:flex-start">{_cb("未使用的映像（7 · 4.1 GiB）", True)}{_cb("建置快取（6.4 GiB）", True)}{_cb("已停止的容器（2）", False)}{_cb("沒被使用的儲存卷（2 · 2.0 GiB）", False, "資料會消失")}</div>
+        <div class="wrap" style="align-items:flex-start">{_cb("保留回滾要用的映像", True, "shop-api:88b1d02 仍是上一個可回滾版本")}{_cb("只清超過 7 天的", True)}</div>
         <div class="wrap" style="justify-content:space-between">{U.status("ok", "預計回收 9.7 GiB")}<button type="button" class="btn pri">清理</button></div>
       </div>""")
     def img(repo, tag, digest, size, used_by, created, st):
