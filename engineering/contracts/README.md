@@ -146,6 +146,7 @@ Agent 主動連到 Core 的 Agent 入口（預設 `:9801`，路徑 `/agent/v1/co
 |---|---|---|
 | `jobs` | 2 | `step_execute`（v2 起帶 `resources`）、`step_reconcile`、`event`、`ack` |
 | `agent.info` | 1 | 唯讀動作：回報 Agent 版本、節點指紋、作業系統、架構、主機名 |
+| `host.health` | 1 | 唯讀動作：`collectedAt`、`uptimeSeconds`、`load`（`one`、`five`、`fifteen`）、`memory`（`totalBytes`、`availableBytes`）、`rootFilesystem`（`totalBytes`、`freeBytes`）；讀不到的值是 `null`，不補值。Core 在節點離開維護後的 `node.recheck` 工作用它 |
 | `host.ledger` | 1 | `ledger_pull`、`ledger_page`、`ledger_unavailable` |
 | `node.certificate` | 1 | `certificate_renew`、`certificate_installed`、`certificate_refused` |
 
