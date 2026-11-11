@@ -83,7 +83,7 @@ def overview() -> str:
         U.Series("hazel-jp-02", CPU_JP, "var(--s2)", stale_from=23),
         U.Series("lab-mini", CPU_LAB, "var(--s3)"),
     ], HOURS, unit="%", vmax=100, markers=[(22, "a3f9c1e 部署")],
-        foot='100% = 該節點所有核心 · jp-02 的 <span class="mono">*</span> 為上次觀測（03:41:18） · <a href="#table">表格檢視</a>')
+        foot='100% = 該主機所有核心 · jp-02 的 <span class="mono">*</span> 為上次觀測（03:41:18） · <a href="#table">表格檢視</a>')
     traffic = U.ts_card("今日請求 · 每小時", [
         U.Series("Cloudflare 邊緣", REQ_EDGE, "var(--s1)"),
         U.Series("Zentinel 來源站", REQ_ORIGIN, "var(--s2)"),
@@ -100,7 +100,7 @@ def overview() -> str:
         {U.node_card("hazel-jp-02", "Debian 12 · Docker · 4 核 · 資料碟未綁定", U.status("dng", "沒有回應"), 64, (13.9, 15.5), (870, 931), CPU_JP[-12:], "03:41:18", (3, 3), stale=True)}
         {U.node_card("lab-mini", "Debian 13 · Podman rootless · 4 核", U.status("info", "維護中"), 3, (1.1, 7.6), (38, 118), CPU_LAB[-12:], "5 秒前", (0, 2))}
       </div>
-      <div class="note" style="padding: 0 14px 10px">* 上次觀測值，節點已過期 · 綠色段＝執行中的容器</div>
+      <div class="note" style="padding: 0 14px 10px">* 上次觀測值，主機已過期 · 綠色段＝執行中的容器</div>
     </section>"""
 
     topo = U.topology([
@@ -206,9 +206,9 @@ def range_row(on="24 小時") -> str:
     return f'<div class="wrap"><div class="range" role="group" aria-label="時間範圍">{btns}</div><span class="note" style="margin-left:auto">保留 30 天 · 每 10 秒取樣，24 小時以上顯示每小時平均與最高</span></div>'
 
 
-# ---------- 節點詳情 ----------
+# ---------- 主機詳情 ----------
 def node_tabs(active: str, containers: int = 10, offline: bool = False) -> str:
-    """節點工作區的分頁（學 Cockpit 的單機分頁）：單一主機才有意義的東西都在這裡，側欄不另放。
+    """主機工作區的分頁（學 Cockpit 的單機分頁）：單一主機才有意義的東西都在這裡，側欄不另放。
     分頁永遠留在同一台主機。主機沒有回應時，除了概況以外的分頁停用並說明原因，不跳到別台。"""
     items = [("概況", "NodeDetail.dc.html"), ("系統", "System.dc.html"), (f"容器 {containers}", "Containers.dc.html"), ("檔案", "Files.dc.html"), ("日誌", "NodeLogs.dc.html"), ("終端機", "NodeTerminal.dc.html"), ("變更帳本", "NodeLedger.dc.html")]
     if offline:
@@ -221,7 +221,7 @@ def node_tabs(active: str, containers: int = 10, offline: bool = False) -> str:
 
 
 def node_head(name: str, st: str, note: str, acts: str) -> str:
-    """節點工作區頁首：麵包屑回到主機，名稱、狀態、主要動作。"""
+    """主機工作區頁首：麵包屑回到主機，名稱、狀態、主要動作。"""
     return f"""
     <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px">
       <div class="name">{U.crumbs([("主機", "Nodes.dc.html")])}<h1 class="mono">{name}</h1></div>
@@ -231,8 +231,8 @@ def node_head(name: str, st: str, note: str, acts: str) -> str:
 
 
 def nodes_tabs(active: str) -> str:
-    """主機的頁面分頁：機群（每台一列）與服務模組（模組 × 節點）。"""
-    items = [("主機 · 3", "Nodes.dc.html"), ("服務模組 · 7", "HostServices.dc.html")]
+    """主機的頁面分頁：機群（每台一列）與服務模組（模組 × 主機）。"""
+    items = [("主機 · 4", "Nodes.dc.html"), ("服務模組 · 7", "HostServices.dc.html")]
     return ('<div class="panel"><div class="tabs" role="tablist">' + "".join(
         f'<a class="tab{" on" if l.startswith(active) else ""}" role="tab" aria-selected="{"true" if l.startswith(active) else "false"}" href="{h}">{l}</a>' for l, h in items) + "</div></div>")
 
@@ -242,10 +242,10 @@ def node_detail() -> str:
     <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px">
       <div class="name">{U.crumbs([("主機", "Nodes.dc.html")])}<h1 class="mono">hazel-tw-01</h1></div>
       {U.status("ok", "連線中")}<span class="note">最後聯絡 2 秒前</span>
-      <div class="wrap" style="margin-left: auto"><button type="button" class="btn">終端機</button><button type="button" class="btn">進入維護模式</button><button type="button" class="btn">重新啟動 agent</button><button type="button" class="btn pri">部署到此節點</button></div>
+      <div class="wrap" style="margin-left: auto"><button type="button" class="btn">終端機</button><button type="button" class="btn">進入維護模式</button><button type="button" class="btn">重新啟動 agent</button><button type="button" class="btn pri">部署到此主機</button></div>
     </div>
     <div class="panel"><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); gap: 10px 16px; padding: 12px 14px; font-size: 13px">
-      {kv("作業系統", "Ubuntu 24.04.2 LTS")}{kv("核心", "6.8.0-45-generic")}{kv("CPU", "8 核 · AMD EPYC 7B13")}{kv("記憶體", "31.3 GiB")}{kv("執行階段", "Docker 27.3.1")}{kv("Agent", "hazelminx-agent 0.1.0 · mTLS")}{kv("角色", "控制中心 · 資料節點")}{kv("GPU", "NVIDIA L4 · 24 GiB · 驅動 550.90 · NVML")}
+      {kv("作業系統", "Ubuntu 24.04.2 LTS")}{kv("核心", "6.8.0-45-generic")}{kv("CPU", "8 核 · AMD EPYC 7B13")}{kv("記憶體", "31.3 GiB")}{kv("執行階段", "Docker 27.3.1")}{kv("Agent", "hazelminx-agent 0.1.0 · mTLS")}{kv("角色", "控制中心 · 資料主機")}{kv("GPU", "NVIDIA L4 · 24 GiB · 驅動 550.90 · NVML")}
     </div></div>"""
     hw = (f'<section class="panel" aria-labelledby="h-hw"><div class="ph"><h2 id="h-hw">硬體</h2><span class="note">03:42:06</span></div><div class="hwg">'
           + U.hw_group("CPU", [("8 核", 37, "37%", "")], "EPYC 7B13 · 3.5 GHz · 負載 2.1")
@@ -280,7 +280,7 @@ def node_detail() -> str:
     <section class="panel" aria-labelledby="h-hot">
       <div class="ph"><h2 id="h-hot">最熱容器 · 現在</h2><div class="range" role="group" aria-label="排序依據" style="margin-left:auto"><button type="button" class="btn on" aria-pressed="true">CPU</button><button type="button" class="btn" aria-pressed="false">記憶體</button><button type="button" class="btn" aria-pressed="false">網路</button></div></div>
       {U.ranked([("shop-api", 21.4, "21.4%"), ("shop-worker", 8.9, "8.9%"), ("wiki-app", 3.1, "3.1%"), ("shop-db", 2.6, "2.6%"), ("zentinel", 1.8, "1.8%"), ("hazelminx-agent", 0.4, "0.4%")], vmax=25)}
-      <div class="note" style="padding: 0 14px 10px">只列前 6 個，佔節點 CPU 的 38.2% · <a href="Containers.dc.html" style="color: var(--hazel)">全部容器 →</a></div>
+      <div class="note" style="padding: 0 14px 10px">只列前 6 個，佔主機 CPU 的 38.2% · <a href="Containers.dc.html" style="color: var(--hazel)">全部容器 →</a></div>
     </section>"""
     gpu_util = U.ts_card("GPU 使用率", [U.Series("核心", GPU_UTIL, "var(--s1)", kind="area")], HOURS, unit="%", vmax=100, markers=[(22, "a3f9c1e 部署")],
                          foot="100% = 核心全忙 · 02:00 的高峰是 ollama 批次嵌入")
@@ -361,7 +361,7 @@ def project_list() -> str:
     table = f"""
     <section class="panel" aria-labelledby="h-plist" data-sort="0:asc">
       <div class="ph"><h2 id="h-plist">環境 · 3</h2><div class="wrap" style="margin-left:auto"><label class="inp" style="min-width:220px"><span class="note">搜尋</span><input placeholder="專案、網域、commit" style="background:transparent;border:0;flex:1;min-width:0"></label><span class="chip on">全部 3</span><span class="chip">正式 2</span><span class="chip">測試 1</span><span class="chip">有問題 2</span></div></div>
-      <div class="row hd"><span>專案／環境</span><span>等級</span><span>狀態</span><span>最近部署</span><span class="c3">節點</span><span class="c6">入口</span><span class="c5">近 24 次部署</span><span></span></div>
+      <div class="row hd"><span>專案／環境</span><span>等級</span><span>狀態</span><span>最近部署</span><span class="c3">主機</span><span class="c6">入口</span><span class="c5">近 24 次部署</span><span></span></div>
       {env("shop", "production", U.tier("正式"), U.status("warn", "待批准 #418"), "a3f9c1e", "02:57", "tw-01", "shop.example.tw", "oooooooofoooooooooooooro", '<button type="button" class="btn sm">檢視 #418</button>' + more)}
       {env("shop", "staging", U.tier("測試"), U.status("dng", "部署失敗"), "c91e0d7", "03:12", "lab-mini", "staging.shop.example.tw", "oooofooooooooofoooooffff", '<button type="button" class="btn sm">看日誌</button>' + more)}
       {env("wiki", "production", U.tier("正式"), U.status("warn", "主機沒有回應"), "7d02b4a", "1 天前", "jp-02", "wiki.example.tw", "oooooooooooooooooooooooo", dep + more)}
@@ -413,8 +413,8 @@ def projects() -> str:
                 f'<span class="c5">{U.sparkline(spark)}</span><span class="mono">{rps}<br><span class="note" style="color:{"var(--danger)" if err >= 1 else "var(--faint)"}">錯誤 {err:.2f}%</span></span></a>')
     services = f"""
     <section class="panel" aria-labelledby="h-svc">
-      <div class="ph"><h2 id="h-svc">web 單元 · 服務 · 4</h2><span class="sub">來自 compose.yaml，顯示實際節點與 Port，不只名稱</span></div>
-      <div class="row hd srow"><span>服務</span><span>狀態</span><span class="c3">節點 · Port</span><span class="c4">CPU</span><span class="c4">記憶體</span><span class="c5">請求 1 小時</span><span>請求／秒</span></div>
+      <div class="ph"><h2 id="h-svc">web 單元 · 服務 · 4</h2><span class="sub">來自 compose.yaml，顯示實際主機與 Port，不只名稱</span></div>
+      <div class="row hd srow"><span>服務</span><span>狀態</span><span class="c3">主機 · Port</span><span class="c4">CPU</span><span class="c4">記憶體</span><span class="c5">請求 1 小時</span><span>請求／秒</span></div>
       {svc("shop-api", "ghcr.io/hazelnut/shop-api:a3f9c1e", "tw-01", "8080 → 內部", 21, (812, 2048), "38.2", 0.14, walk(12, 38, 6, 20, 60), U.status("ok", "健康 2／2"))}
       {svc("shop-worker", "ghcr.io/hazelnut/shop-worker:a3f9c1e", "tw-01", "無對外 Port", 9, (410, 1024), "—", 0.0, walk(12, 5, 2, 1, 10), U.status("ok", "健康"))}
       {svc("shop-db", "postgres:16.4", "tw-01", "5432 → 僅內部", 3, (1290, 4096), "—", 0.0, walk(12, 3, 1, 1, 6), U.status("ok", "健康"))}
@@ -475,7 +475,7 @@ def containers() -> str:
     </section>"""
     hot = f"""
     <section class="panel" aria-labelledby="h-hot2">
-      <div class="ph"><h2 id="h-hot2">最吃記憶體</h2><span class="sub">全部節點</span></div>
+      <div class="ph"><h2 id="h-hot2">最吃記憶體</h2><span class="sub">全部主機</span></div>
       {U.ranked([("shop-db", 1290, "1.29 GiB"), ("shop-api", 812, "812 MiB"), ("wiki-db", 540, "540 MiB*"), ("shop-worker", 410, "410 MiB"), ("wiki-app", 356, "356 MiB*"), ("zentinel", 94, "94 MiB")], vmax=1400)}
       <div class="note" style="padding: 0 14px 10px">* 上次觀測（jp-02 過期）</div>
     </section>"""
@@ -486,7 +486,7 @@ def containers() -> str:
     ])
     cmap_panel = f"""
     <section class="panel" aria-labelledby="h-cmap">
-      <div class="ph"><h2 id="h-cmap">容器地圖 · 16</h2><span class="sub">一格一容器，依節點分組；顏色＝CPU，形狀＝異常／過期／已停止。點格子開詳情</span><a class="more" href="#table">表格 →</a></div>
+      <div class="ph"><h2 id="h-cmap">容器地圖 · 16</h2><span class="sub">一格一容器，依主機分組；顏色＝CPU，形狀＝異常／過期／已停止。點格子開詳情</span><a class="more" href="#table">表格 →</a></div>
       {cmap}
     </section>"""
     images = f"""
@@ -507,7 +507,7 @@ def containers() -> str:
     compose = f"""
     <section class="panel" aria-labelledby="h-cp">
       <div class="ph"><h2 id="h-cp">Compose 專案 · 3</h2><span class="sub">完整 Compose 檔由專案頁管理；這裡列引擎看到的</span><a class="more" href="Projects.dc.html">專案與服務 →</a></div>
-      <div class="row hd srow"><span>專案</span><span>狀態</span><span class="c3">節點 · 服務</span><span class="c4">來源</span><span class="c4">上次部署</span><span class="c5"></span><span></span></div>
+      <div class="row hd srow"><span>專案</span><span>狀態</span><span class="c3">主機 · 服務</span><span class="c4">來源</span><span class="c4">上次部署</span><span class="c5"></span><span></span></div>
       <a class="row srow" href="ProjectDetail.dc.html"><span class="name"><span class="n">shop</span><span class="d">production</span></span><span>{U.status("ok", "4/4 執行中")}</span><span class="c3 mono">tw-01 · 4</span><span class="c4 note">GitHub a3f9c1e</span><span class="mono c4">02:57</span><span class="c5"></span><span></span></a>
       <a class="row srow" href="ProjectDetail.dc.html"><span class="name"><span class="n">wiki</span><span class="d">production</span></span><span>{U.status("warn", "過期")}</span><span class="c3 mono">jp-02 · 2</span><span class="c4 note">GitHub 7d02b4a</span><span class="mono c4">1 天前</span><span class="c5"></span><span></span></a>
       <a class="row srow" href="ProjectDetail.dc.html"><span class="name"><span class="n">shop</span><span class="d">staging</span></span><span>{U.status("dng", "1/4 失敗")}</span><span class="c3 mono">lab-mini · 4</span><span class="c4 note">GitHub c91e0d7</span><span class="mono c4">03:12</span><span class="c5"></span><span></span></a>
@@ -645,13 +645,13 @@ def work_center() -> str:
              "健康檢查 <span class='mono'>GET /healthz</span>：2／3 通過 · 失敗時回滾到 a3f9c1e",
              '<button type="button" class="btn sm">要求取消（回滾到 a3f9c1e）</button><button type="button" class="btn sm">看日誌</button>', pct=66)}
         {job("備份 shop-db → S3 tokyo-backups", "hazel-tw-01 · 計畫任務 03:00 · 心跳 1 秒前", U.status("info", "執行中"),
-             [("預檢", "done", "空間足夠"), ("dump", "cur", "此步不能取消"), ("傳輸", "todo", "0.5／1.3 GiB 已排程"), ("校驗", "todo", "sha256 + 還原測試")],
+             [("預檢", "done", "3 秒", "空間足夠"), ("dump", "cur", "進行中", "此步不能取消"), ("傳輸", "todo", "還沒開始", "0.5／1.3 GiB"), ("校驗", "todo", "還沒開始", "sha256 + 還原測試")],
              "<span class='mono'>38 MB/s</span> · 剩 1 分 14 秒 · 不可中斷步驟：pg_dump",
              '<button type="button" class="btn sm" disabled aria-disabled="true" style="opacity:.6">此步不能取消</button><button type="button" class="btn sm">看日誌</button>', pct=39)}
         {job("更新套件 openssl（安全性）", "hazel-jp-02 · 由 tim 手動觸發 03:38:50 · 最後心跳 03:41:18", U.status("warn", "狀態不明"),
-             [("預檢", "done", "7 秒"), ("批准", "done", "tim"), ("執行", "wait", "apt 進行到一半"), ("驗證", "todo", "")],
+             [("預檢", "done", "7 秒", "通過"), ("批准", "done", "tim", "手動觸發"), ("執行", "wait", "狀態不明", "apt 進行到一半"), ("驗證", "todo", "還沒開始", "—")],
              "最後心跳 03:41:18 · 重連後對帳 apt 狀態（政策：不自動重跑）",
-             '<button type="button" class="btn sm">查看節點</button><button type="button" class="btn sm">標記為需人工處理</button>', pulse=True)}
+             '<button type="button" class="btn sm">查看主機</button><button type="button" class="btn sm">標記為需人工處理</button>', pulse=True)}
       </div>
     </section>"""
     waiting = f"""
@@ -659,7 +659,7 @@ def work_center() -> str:
       <div class="ph"><h2 id="h-wait">等待批准 · 1</h2></div>
       <div class="list" style="padding: 12px 14px">
         {job("變更計畫 #418 · shop production · commit 9b3e7f1", "hazel-tw-01 · 由 Webhook 偵測 02:58:30 · 自動部署已暫停", U.status("warn", "等待批准"),
-             [("預檢", "done", "發現 1 個高風險變更"), ("批准", "wait", "需要擁有者"), ("執行", "todo", ""), ("驗證", "todo", "")],
+             [("預檢", "done", "18 秒", "1 個高風險變更"), ("批准", "wait", "等了 44 分", "需要擁有者"), ("執行", "todo", "還沒開始", "—"), ("驗證", "todo", "還沒開始", "—")],
              "規則：新增宿主機掛載 · <span class='mono'>compose.yaml:41  - /:/host:ro</span> · 受影響：shop-api、shop-worker · 策略：滾動",
              '<a class="btn pri sm" href="DeployCheck.dc.html" style="color: var(--hazelink)">檢視差異與批准</a><button type="button" class="btn sm">拒絕</button>')}
       </div>
@@ -671,10 +671,10 @@ def work_center() -> str:
       <div class="ph"><h2 id="h-hist">近 24 小時 · 27 件</h2><a class="more" href="BatchResult.dc.html">批次 #540 部分完成 →</a><div class="legend" style="margin-left:0"><span><i class="rect" style="background: var(--ok)"></i>成功</span><span><i class="rect" style="background: var(--danger)"></i>失敗</span><span><i class="rect" style="background: var(--warn)"></i>回滾</span></div><a class="more" href="#history">全部 →</a></div>
       <div style="padding: 12px 14px; display:flex;flex-direction:column;gap:8px">{U.state_timeline("ooooooooooooofoooooorooooof")}<div class="note" style="display:flex;justify-content:space-between"><span>昨天 03:42</span><span>現在</span></div></div>
       <div class="row hd hrow"><span>工作</span><span>目標</span><span class="c3">時長</span><span>結果</span></div>
-      <div class="row hrow"><span>部署 shop → staging #71</span><span class="mono">lab-mini</span><span class="mono c3">2 分 40 秒</span><span>{U.status("dng", "失敗")} <span class="note">migration 不相容</span></span></div>
-      <div class="row hrow"><span>部署 shop → production #403</span><span class="mono">tw-01</span><span class="mono c3">1 分 48 秒</span><span>{U.status("ok", "成功")} <span class="note">02:57</span></span></div>
-      <div class="row hrow"><span>憑證續期 shop.example.tw</span><span class="mono">zentinel</span><span class="mono c3">31 秒</span><span>{U.status("dng", "失敗")} <span class="note">DNS 驗證逾時</span></span></div>
-      <div class="row hrow"><span>部署 shop → production #402</span><span class="mono">tw-01</span><span class="mono c3">3 分 12 秒</span><span>{U.status("warn", "回滾")} <span class="note">健康檢查失敗</span></span></div>
+      <div class="row hrow"><span class="name"><span class="n">部署 shop → staging #71</span><span class="d">migration 不相容</span></span><span class="mono">lab-mini</span><span class="mono c3">2 分 40 秒</span><span>{U.status("dng", "失敗")}</span></div>
+      <div class="row hrow"><span class="name"><span class="n">部署 shop → production #403</span><span class="d">02:57</span></span><span class="mono">tw-01</span><span class="mono c3">1 分 48 秒</span><span>{U.status("ok", "成功")}</span></div>
+      <div class="row hrow"><span class="name"><span class="n">憑證續期 shop.example.tw</span><span class="d">DNS 驗證逾時</span></span><span class="mono">zentinel</span><span class="mono c3">31 秒</span><span>{U.status("dng", "失敗")}</span></div>
+      <div class="row hrow"><span class="name"><span class="n">部署 shop → production #402</span><span class="d">健康檢查失敗</span></span><span class="mono">tw-01</span><span class="mono c3">3 分 12 秒</span><span>{U.status("warn", "回滾")}</span></div>
     </section>"""
     main = head + tiles + waiting + running + f'<div class="cg">{rate}{hist}</div>'
     return U.shell("jobs", main)
@@ -711,7 +711,7 @@ def github_source() -> str:
         <div class="field"><label for="path">建置方式</label><div class="inp"><span>Dockerfile（倉庫根目錄）</span>{U.status("ok", "已找到")}</div><span class="help">沒有 compose 檔，當成單一服務部署</span></div>
         <div class="field"><label for="wd">工作目錄與 compose 檔</label><div class="inp"><span class="mono">./</span><span class="note" style="margin-left:auto">monorepo 時改成子目錄，例如 ./deploy</span></div><span class="help">下一步一定要指定主檔；repo 裡新舊檔名的 compose 檔都會列出</span></div></div>
         <div class="field"><label>觸發方式</label><div class="wrap"><label class="btn" style="gap:8px"><input type="radio" name="trig" aria-label="觸發方式" checked style="accent-color: var(--hazel)">Webhook（推送即部署）</label><label class="btn" style="gap:8px"><input type="radio" name="trig" aria-label="觸發方式" style="accent-color: var(--hazel)">定期檢查（每 5 分鐘）</label><label class="btn" style="gap:8px"><input type="radio" name="trig" aria-label="觸發方式" style="accent-color: var(--hazel)">只手動</label></div><span class="help">Webhook 會在 GitHub 上建立；沒有公開入口時自動改用定期檢查。</span></div>
-        <div class="field"><label for="env">目標環境與節點</label><div class="wrap"><div class="inp" style="width:auto;min-width:160px"><span>production</span></div><div class="wrap" role="radiogroup" aria-label="目標節點"><button type="button" class="btn on" role="radio" aria-checked="true"><span class="mono">hazel-tw-01</span>{U.attr("storage", "/mnt/data 可用 412 GiB", "412G")}</button><button type="button" class="btn" role="radio" aria-checked="false" aria-disabled="true" style="opacity:.55"><span class="mono">hazel-jp-02</span>{U.attr("attention", "不可選：沒有回應、資料碟 93%", "", "warn")}</button></div></div></div>
+        <div class="field"><label for="env">目標環境與主機</label><div class="wrap"><div class="inp" style="width:auto;min-width:160px"><span>production</span></div><div class="wrap" role="radiogroup" aria-label="目標主機"><button type="button" class="btn on" role="radio" aria-checked="true"><span class="mono">hazel-tw-01</span>{U.attr("storage", "/mnt/data 可用 412 GiB", "412G")}</button><button type="button" class="btn" role="radio" aria-checked="false" aria-disabled="true" style="opacity:.55"><span class="mono">hazel-jp-02</span>{U.attr("attention", "不可選：沒有回應、資料碟 93%", "", "warn")}</button></div></div></div>
       </div>
       <div class="ph" style="border-top: 1px solid var(--line); border-bottom: 0"><div class="wrap" style="margin-left:auto"><a class="btn" href="Projects.dc.html">上一步</a><a class="btn pri" href="ImportConfigure.dc.html">偵測與設定 →</a></div></div>
     </section>"""
@@ -794,10 +794,10 @@ def states() -> str:
         <div class="row" style="padding:0;min-height:36px;border:0"><span class="skel" style="width:40%;height:12px"></span><span class="skel" style="width:20%;height:12px"></span></div>
       </div></section>"""
     empty = f"""
-    <section class="chart" aria-label="空資料範例"><div class="ph"><h2>還沒有節點</h2></div>
+    <section class="chart" aria-label="空資料範例"><div class="ph"><h2>還沒有主機</h2></div>
       <div class="body" style="display:flex;flex-direction:column;gap:10px;padding:20px 14px;align-items:flex-start">
-        <p style="font-size:14px">HazelminX 目前只管理這台控制中心本身。加入第一台節點後，這裡會顯示它的狀態、資源與工作。</p>
-        <p class="note">節點需要能主動連到控制中心的 8443 Port；不需要開放任何入站 Port。</p>
+        <p style="font-size:14px">HazelminX 目前只管理這台控制中心本身。加入第一台主機後，這裡會顯示它的狀態、資源與工作。</p>
+        <p class="note">主機需要能主動連到控制中心的 8443 Port；不需要開放任何入站 Port。</p>
         <div class="wrap"><button type="button" class="btn pri">新增主機</button><a class="btn" href="#docs">看安裝步驟</a></div>
       </div></section>"""
     error = f"""
@@ -813,7 +813,7 @@ def states() -> str:
     <section class="chart" aria-label="部分結果範例"><div class="ph"><h2>部分結果</h2><span class="sub">能拿到的先顯示，缺的說清楚</span></div>
       <div class="body" style="padding:0">
         <div class="banner" style="border-radius:0;border-left:0;border-right:0;border-top:0">{U.status("warn", "1／3 主機沒有回應")}<span>hazel-jp-02 最後回報 03:41:18，以下數字不含它的最新值，標 <span class="mono">*</span> 者為上次觀測。</span><button type="button" class="btn sm" style="margin-left:auto">重新整理</button></div>
-        <div class="tiles" style="padding:12px 14px">{U.stat_tile("各主機 CPU", "32", "%*", "2 節點即時 + 1 上次觀測", None)}{U.stat_tile("資料完整度", "92.3", "%", "流量分析取樣 7.7%", False)}</div>
+        <div class="tiles" style="padding:12px 14px">{U.stat_tile("各主機 CPU", "32", "%*", "2 主機即時 + 1 上次觀測", None)}{U.stat_tile("資料完整度", "92.3", "%", "流量分析取樣 7.7%", False)}</div>
       </div></section>"""
     offline = f"""
     <section class="chart" aria-label="離線範例"><div class="ph"><h2>與控制中心失去連線</h2><span class="sub">保留上一次畫面並降低不透明度，不閃骨架</span></div>
@@ -824,7 +824,7 @@ def states() -> str:
     nodata = f"""
     <section class="chart" aria-label="圖表無資料範例"><div class="ph"><h2>溫度 · CPU 封裝</h2><span class="unit">°C</span></div>
       <div class="body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:150px;padding:12px">
-        <p style="font-size:14px;font-weight:500">這台節點沒有回報溫度</p><p class="note" style="text-align:center">lab-mini 的 hwmon 沒有可讀的感測器。這不是錯誤，圖表保留位置讓版面一致。</p>
+        <p style="font-size:14px;font-weight:500">這台主機沒有回報溫度</p><p class="note" style="text-align:center">lab-mini 的 hwmon 沒有可讀的感測器。這不是錯誤，圖表保留位置讓版面一致。</p>
       </div></section>"""
     danger = f"""
     <section class="chart" aria-label="危險操作確認範例"><div class="ph"><h2>危險操作確認</h2><span class="sub">寫出實際名稱，不只「確定嗎」</span></div>
@@ -912,7 +912,7 @@ def websites() -> str:
       <div class="ph"><h2 id="h-sites">站點 · 3</h2><span class="sub">同一個站點在容器頁、備份頁是同一份資料</span></div>
       <div class="row hd srow"><span>網域</span><span>狀態</span><span class="c3">入口 · 上游</span><span class="c4">憑證</span><span class="c4">WAF</span><span class="c5">請求 1 小時</span><span>今日</span></div>
       {site("shop.example.tw", U.status("warn", "憑證 11 天"), "tw-01", "shop-api:8080", "11 天", "偵測", walk(12, 980, 120, 600, 1300), "production · HTTP/2 · HSTS")}
-      {site("wiki.example.tw", U.status("ok", "正常"), "jp-02", "wiki-app:3000", "71 天", "偵測", walk(12, 470, 60, 300, 650), "production · 沒有回應的節點")}
+      {site("wiki.example.tw", U.status("ok", "正常"), "jp-02", "wiki-app:3000", "71 天", "偵測", walk(12, 470, 60, 300, 650), "production · 沒有回應的主機")}
       {site("staging.shop.example.tw", U.status("dng", "502 上游"), "tw-01", "shop-api:8080（staging）", "44 天", "偵測", walk(12, 80, 30, 10, 140), "staging · 部署失敗後無健康副本")}
     </section>"""
     runtimes = f"""
@@ -965,11 +965,11 @@ def storage() -> str:
     </section>"""
     vols = f"""
     <section class="panel" aria-labelledby="h-vols">
-      <div class="ph"><h2 id="h-vols">最大的儲存卷</h2><span class="sub">全部節點 · 前 8</span><a class="more" href="ContainerResources.dc.html">全部 →</a></div>
+      <div class="ph"><h2 id="h-vols">最大的儲存卷</h2><span class="sub">全部主機 · 前 8</span><a class="more" href="ContainerResources.dc.html">全部 →</a></div>
       {U.ranked([("wiki-media（jp-02）", 190, "190 GiB"), ("shop-db-data（tw-01）", 84, "84 GiB"), ("ollama-models（tw-01）", 61, "61 GiB"), ("wiki-db-data（jp-02）", 42, "42 GiB"), ("backup-staging（tw-01）", 38, "38 GiB"), ("shop-uploads（tw-01）", 27, "27 GiB"), ("registry-cache（tw-01）", 19, "19 GiB"), ("shop-redis-data（tw-01）", 1, "0.8 GiB")], vmax=200)}
     </section>"""
     io = U.ts_card("磁碟 I/O · 全部資料碟", [U.Series("讀取", IO_R, "var(--s1)"), U.Series("寫入", IO_W, "var(--s2)")], HOURS, unit=" MB/s", fmt_val=lambda v: f"{v:.0f}",
-                   markers=[(22, "wiki-db dump")], foot="02:00 的尖峰是每日備份 dump；想看單一磁碟到節點詳情")
+                   markers=[(22, "wiki-db dump")], foot="02:00 的尖峰是每日備份 dump；想看單一磁碟到主機詳情")
 
     def bjob(name, sched, dest, states, last, st):
         return (f'<div style="display:flex;flex-direction:column;gap:8px;padding:12px 14px;background:var(--panel)">'
@@ -998,7 +998,7 @@ def storage() -> str:
         <div><div style="display:flex;justify-content:space-between"><span class="mono">本機 /mnt/backup（tw-01）</span><span class="note">500 GiB</span></div>{U.meter(16, "81 / 500 GiB", warn=80, danger=90)}<span class="note">只放平台快照 · 同一台機器，不算異地</span></div>
       </div>
     </section>"""
-    main = head + U.scope_bar([("全部節點", "3"), ("hazel-tw-01", "Docker"), ("hazel-jp-02", "Docker · 沒有回應"), ("lab-mini", "Podman · K3s")]) + tiles + disks + f'<div class="cg">{vols}{io}</div>' + backups + f'<div class="cg">{verify}{dests}</div>'
+    main = head + U.scope_bar([("全部主機", "3"), ("hazel-tw-01", "Docker"), ("hazel-jp-02", "Docker · 沒有回應"), ("lab-mini", "Podman · K3s")]) + tiles + disks + f'<div class="cg">{vols}{io}</div>' + backups + f'<div class="cg">{verify}{dests}</div>'
     return U.shell("storage", main)
 
 
@@ -1019,8 +1019,8 @@ def events() -> str:
     <section class="panel" aria-labelledby="h-rl">
       <div class="ph"><h2 id="h-rl">告警規則 · 近 24 小時</h2>{U.legend(ALERT_LEGEND)}</div>
       <div class="row hd" style="grid-template-columns:minmax(0,1.3fr) minmax(0,2.2fr) minmax(0,1fr)"><span>規則</span><span>24 小時</span><span>現在</span></div>
-      {rule("主機沒有回應 > 40 秒", "o" * 23 + "f", U.status("dng", "觸發 · jp-02"), "任何節點 · 嚴重")}
-      {rule("資料碟 > 90%", "o" * 18 + "f" * 3 + "r" * 3, U.status("warn", "靜音 22 小時"), "任何節點 · 嚴重")}
+      {rule("主機沒有回應 > 40 秒", "o" * 23 + "f", U.status("dng", "觸發 · jp-02"), "任何主機 · 嚴重")}
+      {rule("資料碟 > 90%", "o" * 18 + "f" * 3 + "r" * 3, U.status("warn", "靜音 22 小時"), "任何主機 · 嚴重")}
       {rule("憑證 < 14 天", "o" * 20 + "f" * 4, U.status("warn", "觸發 · shop.example.tw"), "任何站點 · 警告")}
       {rule("部署失敗", "o" * 14 + "f" + "o" * 8 + "f", U.status("warn", "觸發 · shop staging"), "任何專案 · 警告")}
       {rule("5xx 錯誤率 > 1%（5 分）", "o" * 22 + "f" + "o", U.status("ok", "已恢復 03:01"), "shop-api · 警告")}
@@ -1066,7 +1066,7 @@ def events() -> str:
         {card("警告 · 部署失敗 · 03:12 起", "var(--warn)", "shop staging #71 · lab-mini · 步驟 migrate 結束碼 1", "服務中版本：c91e0d7 之前的 c0ffee1（自動回滾）<br><span class='mono'>migrate: relation 「orders_v2」 already exists (0004_orders.sql:12)</span>", ("看工作", "WorkCenter.dc.html"), "指派給")}
       </div>
     </section>"""
-    main = head + U.scope_bar([("全部節點", "3"), ("hazel-tw-01", "Docker"), ("hazel-jp-02", "Docker · 沒有回應"), ("lab-mini", "Podman · K3s")]) + tiles + rules + f'<div class="cg">{heat}{top}</div>' + route_panel + open_
+    main = head + U.scope_bar([("全部主機", "3"), ("hazel-tw-01", "Docker"), ("hazel-jp-02", "Docker · 沒有回應"), ("lab-mini", "Podman · K3s")]) + tiles + rules + f'<div class="cg">{heat}{top}</div>' + route_panel + open_
     return U.shell("events", main)
 
 
@@ -1075,9 +1075,9 @@ def events() -> str:
 def nodes(part: str | None = None) -> str:
     head = U.page_head("主機", OBS, '<a class="btn pri" href="AddNode.dc.html">新增主機</a>')
     tiles = '<div class="tiles">' + "".join([
-        U.stat_tile("主機", "3", "", "1 連線中 · 1 沒有回應 · 1 維護中", None),
+        U.stat_tile("主機", "4", "", "1 連線中 · 1 沒有回應 · 1 維護中 · 1 版本太舊", None),
         U.stat_tile("引擎環境", "6", "", "Docker 2 · Podman 2 · K3s 1 · kind 1", None),
-        U.stat_tile("節點憑證", "1", "/3 需在 30 天內輪替", "tw-01 剩 12 天", False),
+        U.stat_tile("主機憑證", "1", "/3 需在 30 天內輪替", "tw-01 剩 12 天", False),
         U.stat_tile("待套用安全更新", "12", "套件", "<a href=\"Updates.dc.html\">tw-01 5 · jp-02 5 · lab-mini 2 → 查看</a>", None),
     ]) + "</div>"
     def nrow(name, os_, st, cpu, mem, disk, spark, ctr, last, stale=False, href="NodeDetail.dc.html"):
@@ -1092,7 +1092,7 @@ def nodes(part: str | None = None) -> str:
     fleet = f"""
     <section class="panel" aria-labelledby="h-fl" data-sort="1:desc" data-batch>
       <div class="ph"><h2 id="h-fl">主機 · 4</h2><div class="wrap" style="margin-left:auto"><label class="inp" style="min-width:200px"><span class="note">搜尋</span><input placeholder="名稱、標籤、IP" style="background:transparent;border:0;flex:1;min-width:0"></label><span class="chip on">全部 4</span><span class="chip">production 2</span><span class="chip">lab 1</span><span class="chip">有問題 2</span><span class="range" role="group" aria-label="檢視方式"><button type="button" class="btn" aria-pressed="false">卡片</button><button type="button" class="btn on" aria-pressed="true">表格</button></span></div></div>
-      <div class="row hd"><span>節點</span><span>狀態</span><span>CPU</span><span>記憶體</span><span class="c3">資料碟</span><span class="c5">CPU 1 小時</span><span class="c4">容器</span><span class="c6">最後聯絡</span><span></span></div>
+      <div class="row hd"><span>主機</span><span>狀態</span><span>CPU</span><span>記憶體</span><span class="c3">資料碟</span><span class="c5">CPU 1 小時</span><span class="c4">容器</span><span class="c6">最後聯絡</span><span></span></div>
       {nrow("hazel-jp-02", "Debian 12 · Docker 27.1 · 4 核", U.status("dng", "沒有回應 · 48 秒"), 64, (13.9, 15.5), (870, 931), CPU_JP[-12:], "3/3", "03:41:18", stale=True, href="NodeOffline.dc.html")}
       {nrow("hazel-tw-01", "Ubuntu 24.04 · 控制中心 · 8 核 · L4", U.status("ok", "連線中"), 37, (11.2, 31.3), (412, 931), CPU_TW[-12:], "9/10", "2 秒前")}
       {nrow("lab-mini", "Debian 13 · Podman 5.2 · K3s · 4 核", U.status("info", "維護中"), 3, (1.1, 7.6), (38, 118), CPU_LAB[-12:], "0/2", "5 秒前")}
@@ -1100,7 +1100,7 @@ def nodes(part: str | None = None) -> str:
     </section>"""
     cross = f"""
     <section class="panel" aria-labelledby="h-cross">
-      <div class="ph"><h2 id="h-cross">跨節點資源</h2><span class="sub">同一條尺，看誰還有空間</span></div>
+      <div class="ph"><h2 id="h-cross">跨主機資源</h2><span class="sub">同一條尺，看誰還有空間</span></div>
       <div style="padding:12px 14px;display:flex;flex-direction:column;gap:12px">
         <div><span class="note">CPU（核）</span>{U.tall_bar([(3.0, "tw-01 已用", "var(--q5)"), (2.6, "jp-02 已用*", "var(--q4)"), (0.1, "lab-mini 已用", "var(--q3)")], 16, unit=" 核")}</div>
         <div><span class="note">記憶體（GiB）</span>{U.tall_bar([(11.2, "tw-01", "var(--q5)"), (13.9, "jp-02*", "var(--q4)"), (1.1, "lab-mini", "var(--q3)")], 54.4, unit="G")}</div>
@@ -1111,7 +1111,7 @@ def nodes(part: str | None = None) -> str:
     engines = f"""
     <section class="panel" aria-labelledby="h-eng">
       <div class="ph"><h2 id="h-eng">元件</h2></div>
-      <div style="padding:12px 14px">{U.matrix(["hazel-tw-01", "hazel-jp-02", "lab-mini"], ["Agent", "Zentinel", "節點憑證", "其他管理工具"], [
+      <div style="padding:12px 14px">{U.matrix(["hazel-tw-01", "hazel-jp-02", "lab-mini"], ["Agent", "Zentinel", "主機憑證", "其他管理工具"], [
         [("ok", "0.1.0"), ("ok", "0.6.54"), ("warn", "12 天"), ("none", "")],
         [("warn", "0.1.0 過期"), ("warn", "0.6.50 可更新"), ("ok", "71 天"), ("warn", "1Panel 2.4.1 · 3 容器")],
         [("ok", "0.1.0"), ("none", ""), ("ok", "88 天"), ("none", "")],
@@ -1130,11 +1130,11 @@ def nodes(part: str | None = None) -> str:
       {env("Docker", "hazel-jp-02", U.attr("user", "rootful", "root"), "/var/<wbr>run/<wbr>docker.sock", "27.1.0", U.status("warn", "沒有回應"), U.attr("box", "3 個容器", "3"), more)}
       {env("Podman", "lab-mini", U.attr("user", "rootless · uid 1001", "deploy"), "/run/<wbr>user/<wbr>1001/<wbr>podman/<wbr>podman.sock", "5.2.3", U.status("warn", "未驗證版本"), U.attr("box", "3 個容器", "3"), more)}
       {env("Podman", "lab-mini", U.attr("user", "rootless · uid 1000", "tim"), "/run/<wbr>user/<wbr>1000/<wbr>podman/<wbr>podman.sock", "5.2.3", U.status("info", "socket 未啟用"), U.attr("box", "0 個容器", "0"), more)}
-      {env("K3s 叢集 lab-k3s", "lab-mini · server", U.attr("user", "rootful", "root"), "https://10.8.0.5:6443", "v1.31.2+k3s1", U.status("ok", "執行中"), U.attr("nodes", "2 個節點", "2"), more)}
+      {env("K3s 叢集 lab-k3s", "lab-mini · server", U.attr("user", "rootful", "root"), "https://10.8.0.5:6443", "v1.31.2+k3s1", U.status("ok", "執行中"), U.attr("nodes", "2 個主機", "2"), more)}
     </section>"""
     ports = f"""
     <section class="panel" aria-labelledby="h-fw">
-      <div class="ph"><h2 id="h-fw">Port × 節點</h2><span class="sub">主機規則與容器對外暴露放在同一張圖；Docker 繞過防火牆的 Port 會標出來</span></div>
+      <div class="ph"><h2 id="h-fw">Port × 主機</h2><span class="sub">主機規則與容器對外暴露放在同一張圖；Docker 繞過防火牆的 Port 會標出來</span></div>
       <div style="padding:12px 14px">{U.matrix(['22', '80', '443', '8443', '18080', '5432', '6379', '11434', '轉發規則'], ["hazel-tw-01", "hazel-jp-02", "lab-mini"], [[('ok', 'sshd'), ('ok', 'sshd'), ('ok', 'sshd 2222')], [('ok', 'zentinel'), ('ok', 'zentinel'), ('none', '')], [('ok', 'zentinel'), ('ok', 'zentinel'), ('none', '')], [('ok', 'core · 白名單'), ('none', ''), ('none', '')], [('none', '僅本機（18080）'), ('none', ''), ('none', '')], [('none', '僅內部'), ('dng', 'wiki-db 對外!'), ('none', '')], [('none', '僅內部'), ('none', ''), ('none', '')], [('warn', 'ollama 直通'), ('none', ''), ('none', '')], [('ok', '2 條'), ('none', '0'), ('none', '0')]], first_col="minmax(80px,.6fr)")}</div>
       <div class="note" style="padding:0 14px 10px">■ 紅 = 容器用 <span class="mono">-p</span> 直接對外且沒有規則擋；Docker 的 iptables 鏈會繞過 ufw，所以這裡看的是實際可達</div>
     </section>"""
@@ -1256,7 +1256,7 @@ def appstore() -> str:
         return (f'<a class="appcard" href="AppSettings.dc.html"><span class="ic" aria-hidden="true">{ini}</span><span class="bd"><span class="n">{name} <span class="note">{ver}</span></span><span class="d">{node}</span>{st}{U.meter(meter_pct, meter_txt)}<span class="d">{note}</span>{upg}</span></a>')
     installed = f"""
     <section class="panel" aria-labelledby="h-inst">
-      <div class="ph"><h2 id="h-inst">已安裝 · 7</h2><span class="sub">量表＝該應用的記憶體；黃色＝有新版本</span><div class="wrap" style="margin-left:auto"><span class="chip on">全部節點</span><span class="chip">tw-01 5</span><span class="chip">jp-02 2</span></div></div>
+      <div class="ph"><h2 id="h-inst">已安裝 · 7</h2><span class="sub">量表＝該應用的記憶體；黃色＝有新版本</span><div class="wrap" style="margin-left:auto"><span class="chip on">全部主機</span><span class="chip">tw-01 5</span><span class="chip">jp-02 2</span></div></div>
       <div class="fleet">
         {app("Wk", "Wiki.js", "2.5.303", "jp-02 · 2 容器 · 3000 → wiki.example.tw", U.status("warn", "過期 · 上次觀測"), 35, "356 / 1024 MiB", "資料 /mnt/data/apps/wiki · 備份每日")}
         {app("Ol", "Ollama", "0.5.7", "tw-01 · 1 容器 · GPU L4 · 11434", U.status("ok", "執行中"), 54, "13.1 GiB VRAM", "模型 3 個 · 61 GiB", '<span class="chip on">0.6.1 可更新 · 看變更</span>')}
@@ -1301,10 +1301,10 @@ def appstore() -> str:
     </section>"""
     preflight = f"""
     <section class="panel" aria-labelledby="h-pf">
-      <div class="ph"><h2 id="h-pf">安裝 Nextcloud 的預檢</h2><span class="sub">安裝 = 一個工作：選節點、網路、Port、資料位置，相依服務可重用</span></div>
-      <div style="padding:12px 14px">{U.pipeline([("選節點", "done", "tw-01", "Docker · amd64 OK"), ("相依", "done", "新建 PostgreSQL", "專用"), ("Port", "done", "8081 空", "不與 shop-api 衝突"), ("資料位置", "cur", "/mnt/data/apps", "剩 519 GiB"), ("入口", "todo", "cloud.example.tw", "憑證自動"), ("安裝", "todo", "—", "可看腳本")])}</div>
+      <div class="ph"><h2 id="h-pf">安裝 Nextcloud 的預檢</h2><span class="sub">安裝 = 一個工作：選主機、網路、Port、資料位置，相依服務可重用</span></div>
+      <div style="padding:12px 14px">{U.pipeline([("選主機", "done", "tw-01", "Docker · amd64 OK"), ("相依", "done", "新建 PostgreSQL", "專用"), ("Port", "done", "8081 空", "不與 shop-api 衝突"), ("資料位置", "cur", "/mnt/data/apps", "剩 519 GiB"), ("入口", "todo", "cloud.example.tw", "憑證自動"), ("安裝", "todo", "—", "可看腳本")])}</div>
     </section>"""
-    main = head + U.scope_bar([("全部節點", "7 應用"), ("hazel-tw-01", "Docker"), ("hazel-jp-02", "Docker · 沒有回應"), ("lab-mini", "Podman · K3s")]) + tabs + installed + upg + allapps + f'<div class="cg">{sources}{preflight}</div>'
+    main = head + U.scope_bar([("全部主機", "7 應用"), ("hazel-tw-01", "Docker"), ("hazel-jp-02", "Docker · 沒有回應"), ("lab-mini", "Podman · K3s")]) + tabs + installed + upg + allapps + f'<div class="cg">{sources}{preflight}</div>'
     return U.shell("store", main)
 
 
@@ -1855,7 +1855,7 @@ def list_and_errors() -> str:
     <section class="panel" aria-labelledby="h-bq">
       <div class="ph"><h2 id="h-bq">我的背景查詢 · 10 / 10</h2></div>
       <div class="row hd srow"><span>查詢 · 保存到</span><span>狀態</span><span class="c3">結果</span><span class="c4"></span><span class="c4"></span><span class="c5"></span><span></span></div>
-      {q("操作稽核 · 全部節點 · 10/01–11/08", U.status("ok", "完成"), "41,220 筆", "保存到 11/15", '<a class="btn sm" href="#r">看結果</a>' + U.actions(["download", "trash"]))}
+      {q("操作稽核 · 全部主機 · 10/01–11/08", U.status("ok", "完成"), "41,220 筆", "保存到 11/15", '<a class="btn sm" href="#r">看結果</a>' + U.actions(["download", "trash"]))}
       {q("容器日誌 · shop-api · 關鍵字 timeout", U.status("info", "執行中 62%"), "—", "開始於 03:40", U.actions(["stop"]))}
       {q("網站存取 · shop.example.tw · 5xx", U.status("ok", "完成"), "1,982 筆", "保存到 11/09", '<a class="btn sm" href="#r">看結果</a>' + U.actions(["download", "trash"]))}
       <div style="padding:10px 14px 12px;display:flex;flex-direction:column;gap:8px">
@@ -2048,7 +2048,7 @@ def database() -> str:
       <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px">
         <span class="note">7 筆：tim 改 inventory 3 列（03:10）、analyst 匯出 shop_analytics 1 次（昨天 18:02）、系統備份 2 次、結構變更 0</span></div>
     </section>"""
-    main = head + U.scope_bar([("全部節點", "5 實例"), ("hazel-tw-01", "Docker"), ("hazel-jp-02", "Docker · 沒有回應"), ("lab-mini", "Podman · K3s")]) + tabs + instances + f'<div class="cg">{conn}{slow}</div>' + f'<div class="cg">{dbs}{schema}</div>' + f'<div class="cg">{redis}{audit}</div>'
+    main = head + U.scope_bar([("全部主機", "5 實例"), ("hazel-tw-01", "Docker"), ("hazel-jp-02", "Docker · 沒有回應"), ("lab-mini", "Podman · K3s")]) + tabs + instances + f'<div class="cg">{conn}{slow}</div>' + f'<div class="cg">{dbs}{schema}</div>' + f'<div class="cg">{redis}{audit}</div>'
     return U.shell("db", main)
 
 
@@ -2078,9 +2078,9 @@ def ai() -> str:
         return (f'<div class="row srow"><span class="name"><a class="n" href="#m">{name}</a><span class="d">{src} · {digest}</span></span><span>{st}</span><span class="c3 mono">{node}</span><span class="c4">{U.meter(quota_pct, size, warn=101, danger=101)}</span><span class="c4 note">{note}</span><span class="c5">{load}</span><span>{acts}</span></div>')
     models = f"""
     <section class="panel" aria-labelledby="h-md" data-sort="0:asc" data-batch>
-      <div class="ph"><h2 id="h-md">模型 · 5</h2><span class="sub">量表＝佔該節點模型配額的比例；digest 用來確認下載完整</span><div class="wrap" style="margin-left:auto"><button type="button" class="btn sm">同步清單</button></div></div>
+      <div class="ph"><h2 id="h-md">模型 · 5</h2><span class="sub">量表＝佔該主機模型配額的比例；digest 用來確認下載完整</span><div class="wrap" style="margin-left:auto"><button type="button" class="btn sm">同步清單</button></div></div>
       <div class="wrap" style="padding:10px 14px;border-bottom:1px solid var(--line)"><label class="inp" style="flex:1;min-width:min(240px,100%)"><span class="note">模型</span><input value="deepseek-r1:32b" aria-label="要下載的模型名稱" style="background:transparent;border:0;flex:1;min-width:0"></label><span style="flex:0 1 220px;min-width:160px">{_dd("ollama @ tw-01")}</span><button type="button" class="btn pri">{U.icon("download", 14)}下載模型</button></div>
-      <div class="row hd srow"><span>模型</span><span>狀態</span><span class="c3">節點</span><span class="c4">大小 / 配額</span><span class="c4">備註</span><span class="c5"></span><span></span></div>
+      <div class="row hd srow"><span>模型</span><span>狀態</span><span class="c3">主機</span><span class="c4">大小 / 配額</span><span class="c4">備註</span><span class="c5"></span><span></span></div>
       {model("qwen2.5:14b", "9.0 GiB", 7.5, "tw-01", U.status("ok", "已載入 · GPU"), "sha256:7c1a…", "ollama.com", "Apache-2.0 · 2 請求中", True)}
       {model("llama3.1:8b", "4.9 GiB", 4, "tw-01", U.status("info", "未載入"), "sha256:42e0…", "ollama.com", "Agent wiki-qa 使用中", False)}
       {model("nomic-embed-text", "274 MiB", 0.2, "tw-01", U.status("ok", "已載入 · 嵌入"), "sha256:0a90…", "ollama.com", "02:00 批次嵌入用", True)}
@@ -2093,7 +2093,7 @@ def ai() -> str:
       <div style="padding:12px 14px;display:flex;flex-direction:column;gap:10px">
         <div class="kv"><span class="k">釋放空間</span><span class="v mono">4.9 GiB</span></div>
         <div class="kv"><span class="k">使用中</span><span class="v">{U.status("warn", "Agent wiki-qa")}</span></div>
-        <div class="kv"><span class="k">其他節點</span><span class="v">lab-mini 沒有這個模型</span></div>
+        <div class="kv"><span class="k">其他主機</span><span class="v">lab-mini 沒有這個模型</span></div>
         <div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">取消</button><button type="button" class="btn">先停用 wiki-qa</button><button type="button" class="btn dng">刪除模型</button></div>
       </div>
     </section>"""
@@ -2127,7 +2127,7 @@ def ai() -> str:
       <div style="padding:12px 14px;display:flex;gap:20px;flex-wrap:wrap">{U.ring(58 / 60 * 100, "58", "lab-bot /60 分", warn=85, danger=95)}{U.ring(20, "12", "partner-a /60 分", warn=85, danger=95)}{U.ring(0.5, "3", "tim /600 分", warn=85, danger=95)}
         <div style="display:flex;flex-direction:column;gap:4px;min-width:220px"><span class="note">今日 tokens 產出</span><span class="mono" style="font-size:20px;font-weight:600">1.9M</span>{U.sparkline([int(x) for x in walk(24, 80, 30, 10, 180)], w=200)}</div></div>
     </section>"""
-    main = head + U.scope_bar([("全部節點", "2 推論服務"), ("hazel-tw-01", "GPU L4"), ("lab-mini", "CPU")]) + tabs + inst + models + f'<div class="cg">{pull}{delm}</div>' + chat + mcp + api
+    main = head + U.scope_bar([("全部主機", "2 推論服務"), ("hazel-tw-01", "GPU L4"), ("lab-mini", "CPU")]) + tabs + inst + models + f'<div class="cg">{pull}{delm}</div>' + chat + mcp + api
     return U.shell("ai", main)
 
 
@@ -2255,7 +2255,7 @@ def files() -> str:
                + '<button type="button" class="ib" aria-pressed="false">' + U.icon("eye") + '<span>隱藏檔</span></button></div>')
     crumbs = ('<div class="panel" style="display:flex;align-items:center;gap:10px;padding:6px 12px;flex-wrap:wrap">'
               f'<div class="crumbs"><a href="#r" aria-label="根目錄">{U.icon("storage", 14)}</a><span class="sep">/</span><a href="#1">mnt</a><span class="sep">/</span><a href="#2">data</a><span class="sep">/</span><a href="#3">apps</a><span class="sep">/</span><a href="#4">shop</a></div>'
-              '<span class="note">tim · 可寫 · 5 項 · 48 GiB</span>'
+              '<span class="note">tim · 可寫 · 6 項 · 48 GiB</span>'
               '<label class="inp" style="margin-left:auto;width:auto;flex:1 1 200px;max-width:360px;min-height:34px"><span class="note">搜尋</span><input placeholder="名稱、內容" aria-label="搜尋檔案" style="background:transparent;border:0;flex:1;min-width:0"></label></div>')
     tree_html = U.tree([(0, "/mnt/data", "931G", False), (1, "apps", "402G", False), (2, "shop", "48G", True), (3, "data", "41G", False), (3, "config", "2M", False), (3, "uploads", "7G", False), (2, "wiki", "290G", False), (3, "uploads", "27G", False), (3, "db-data", "84G", False), (2, "ollama", "61G", False), (3, "models", "61G", False), (1, "backups", "38G", False), (2, "2026-11", "9G", False), (2, "2026-10", "29G", False), (1, "hazelminx", "1.2G", False), (1, "nfs", "19G", False)], open_depth=1)
     def frow(name, kind, size, owner, perm, mtime, sel=False, folder=False, up=False):
@@ -2271,21 +2271,21 @@ def files() -> str:
       {frow("uploads", "shop-api 掛載 /app/uploads · 分享 1", "7.2 GiB", "1000:1000", "drwxr-x---", "昨天 21:14", sel=True, folder=True)}
       {frow("config", "", "2.1 MiB", "root:root", "drwxr-x---", "10/30 09:12", folder=True)}
       {frow("compose.yaml", "GitHub a3f9c1e · 歷史 9 版", "3.4 KiB", "root:root", "-rw-r-----", "10/30 09:12")}
-      {frow(".env", "shop-api 環境變數 · 編輯中", "812 B", "root:root", "-rw-------", "10/30 09:12")}
-      <div class="pager"><span>5 項 · 已選 1</span><span class="pg"><button type="button" class="ib" aria-label="上一頁" aria-disabled="true">{U.icon("chevl")}</button><span>1 / 1</span><button type="button" class="ib" aria-label="下一頁" aria-disabled="true">{U.icon("chev")}</button></span></div>
+      {frow(".env", "由變數組產生 · 唯讀", "812 B", "root:root", "-rw-------", "10/30 09:12")}
+      {frow("flags.env", "手動維護 · 編輯中", "824 B", "root:root", "-rw-------", "10/30 09:12")}
+      <div class="pager"><span>6 項 · 已選 1</span><span class="pg"><button type="button" class="ib" aria-label="上一頁" aria-disabled="true">{U.icon("chevl")}</button><span>1 / 1</span><button type="button" class="ib" aria-label="下一頁" aria-disabled="true">{U.icon("chev")}</button></span></div>
     </div>"""
     details = f"""
     <div class="pane detp">
       <div class="pt">{U.icon("folder")}<span class="mono" style="color:var(--ink)">uploads/</span><span style="margin-left:auto">{U.status("ok", "掛載中")}</span></div>
       <dl class="dl"><dt>路徑</dt><dd class="mono">/mnt/<wbr>data/<wbr>apps/<wbr>shop/<wbr>uploads</dd><dt>大小</dt><dd>7.2 GiB · 1,284 檔案 · 36 資料夾</dd><dt>擁有者</dt><dd class="mono">1000:1000（www-data）</dd><dt>權限</dt><dd class="mono">drwxr-x--- (750) · ACL：deploy r-x</dd><dt>修改</dt><dd>昨天 21:14</dd><dt>掛載</dt><dd>容器 shop-api → /app/uploads（rw）</dd><dt>分享</dt><dd>1 條 · 7 天 · 剩 38 次下載</dd><dt>備份</dt><dd>shop-db 每日 03:00（含此目錄）</dd><dt>回收筒</dt><dd>30 天</dd></dl>
-      <div class="wrap" style="padding:0 12px 12px"><button type="button" class="btn sm">權限與 ACL</button><button type="button" class="btn sm">分享連結</button><button type="button" class="btn sm">跨節點複製</button><a class="btn sm" href="Containers.dc.html">shop-api</a></div>
+      <div class="wrap" style="padding:0 12px 12px"><button type="button" class="btn sm">權限與 ACL</button><button type="button" class="btn sm">分享連結</button><button type="button" class="btn sm">跨主機複製</button><a class="btn sm" href="Containers.dc.html">shop-api</a></div>
     </div>"""
     fm = f'<div class="fm"><div class="pane treep"><div class="pt">{U.icon("nodes")}hazel-tw-01<span style="margin-left:auto" class="mono">931G</span></div><div style="padding:6px 8px;overflow:auto">{tree_html}</div></div>{listing}{details}</div>'
     def kv(k, v, cur=False):
         return ("▸" if cur else "") + f'<span class="sx-k">{k}</span><span class="sx-o">=</span><span class="sx-v">{v}</span>'
     env_lines = [
-        '<span class="sx-c"># shop-api · 由 compose.yaml 的 env_file 載入</span>',
-        '<span class="sx-c"># DB_PASSWORD、STRIPE_KEY 由機密庫注入，不寫在這個檔案</span>',
+        '<span class="sx-c"># shop-api 的功能開關 · 手動維護</span>',
         kv("NODE_ENV", "production"),
         kv("PORT", "8080"),
         kv("DATABASE_URL", "postgres://shop@shop-db:5432/shop"),
@@ -2298,26 +2298,25 @@ def files() -> str:
     ]
     editor = f"""
     <section class="panel" aria-labelledby="h-ed">
-      <div class="ph"><h2 id="h-ed" class="mono">/mnt/data/apps/shop/.env</h2><span class="note">hazel-tw-01 · root:root · -rw-------</span><div class="wrap" style="margin-left:auto"></div></div>
-      <div style="padding:12px 14px">{U.code_editor([("compose.yaml", False, False), (".env", True, True)], env_lines,
+      <div class="ph"><h2 id="h-ed" class="mono">/mnt/data/apps/shop/flags.env</h2><span class="note">hazel-tw-01 · root:root · -rw-------</span><div class="wrap" style="margin-left:auto"></div></div>
+      <div style="padding:12px 14px">{U.code_editor([("compose.yaml", False, False), ("flags.env", True, True)], env_lines,
         ["第 8 行，第 26 欄", "dotenv", "UTF-8", "LF", "812 B → 824 B", "未儲存", "外部修改：ops-ann 03:40:12"],
         '<label class="inp" style="min-height:28px;width:auto"><span class="note">語言</span><select aria-label="語言" style="background:transparent;border:0"><option>dotenv</option></select></label>',
         banner=('<div style="display:flex;flex-direction:column;gap:8px;width:100%">'
                 '<div class="wrap">' + U.status("warn", "這個檔案在你編輯時被改過") + '<span>ops-ann 在 03:40:12 存了新版本 · 他改第 6 行 · 你改第 8 行 · 沒有重疊</span></div>'
                 '<div class="mini-diff"><span class="note">第 6 行 · ops-ann</span><span class="mono"><span style="color:var(--danger)">− REDIS_URL=redis://shop-redis:6379</span><br><span style="color:var(--ok)">+ REDIS_URL=redis://shop-redis:6379/1</span></span>'
                 '<span class="note">第 8 行 · 你</span><span class="mono"><span style="color:var(--danger)">− CHECKOUT_TIMEOUT_MS=5000</span><br><span style="color:var(--ok)">+ CHECKOUT_TIMEOUT_MS=8000</span></span></div>'
-                '<div class="wrap"><span class="note">儲存時</span>' + _seg(["合併兩邊（推薦）", "只留我的 · ops-ann 的會不見", "改用 ops-ann 的 · 我的會不見"], 0, "衝突處理") + '</div>'
-                '<div class="wrap">' + U.status("warn", "這個檔案由變數組 production/app.env 產生") + '<span>在這裡改等於讓主機和平台記錄不一致，下次部署會被變數組蓋回。要長期改請到 <a href="ProjectEnv.dc.html">環境變數</a>。</span></div></div>'))}</div>
+                '<div class="wrap"><span class="note">儲存時</span>' + _seg(["合併兩邊", "只留我的", "改用 ops-ann 的"], 0, "衝突處理") + '</div></div>'))}</div>
     </section>"""
     transfers = f"""
     <section class="panel" aria-labelledby="h-tr">
       <div class="ph"><h2 id="h-tr">傳輸 · 2</h2></div>
       <div style="padding:12px 14px;display:flex;flex-direction:column;gap:12px">
         <div><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span>上傳 media-2026-11.tar（4.2 GiB）→ uploads/</span>{U.status("info", "傳輸中")}</div>{U.meter(63, "2.6 / 4.2 GiB · 31 MB/s · 剩 52 秒")}</div>
-        <div><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span>跨節點複製 uploads/ → hazel-jp-02</span>{U.status("warn", "等待 jp-02")}</div>{U.pipeline([("校驗來源", "done", "7.2G", "sha256 清單"), ("傳輸", "wait", "暫停", "jp-02 沒有回應"), ("校驗目的", "todo", "—", ""), ("完成", "todo", "—", "")])}</div>
+        <div><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span>跨主機複製 uploads/ → hazel-jp-02</span>{U.status("warn", "等待 jp-02")}</div>{U.pipeline([("校驗來源", "done", "7.2G", "sha256 清單"), ("傳輸", "wait", "暫停", "jp-02 沒有回應"), ("校驗目的", "todo", "—", ""), ("完成", "todo", "—", "")])}</div>
       </div>
     </section>"""
-    main = head + scope + toolbar + crumbs + fm + editor + transfers + U.savebar(".env：1 處未儲存", "先處理 ops-ann 的修改才能儲存 · 存檔後要重建 shop-api 才會生效", "合併後儲存", "合併後儲存並重建 shop-api")
+    main = head + scope + toolbar + crumbs + fm + editor + transfers + U.savebar("flags.env：1 處未儲存", "先處理 ops-ann 的修改才能儲存 · 存檔後要重建 shop-api 才會生效", "合併後儲存", "合併後儲存並重建 shop-api")
     return U.shell("files", main)
 
 
@@ -2328,7 +2327,7 @@ def cron() -> str:
         U.stat_tile("任務", "9", "", "8 啟用 · 1 暫停", None),
         U.stat_tile("今天執行", "27", "", "成功 25 · 失敗 1 · 略過 1", None, spark=[1, 0, 2, 1, 1, 3, 0, 1, 2, 1, 1, 0, 1, 2, 1, 0, 1, 3, 2, 1, 0, 1, 2, 1]),
         U.stat_tile("下一個", "03:45", "", "清理日誌 @ tw-01（3 分後）", None),
-        U.stat_tile("時鐘偏差", "+3", "ms", "三個節點都在 NTP 同步；jp-02 上次觀測", None),
+        U.stat_tile("時鐘偏差", "+3", "ms", "三個主機都在 NTP 同步；jp-02 上次觀測", None),
     ]) + "</div>"
     hours24 = [f"{(4 + i) % 24:02d}" for i in range(24)]
     sched = f"""
@@ -2347,11 +2346,11 @@ def cron() -> str:
       <div class="row hd srow"><span>任務</span><span>狀態</span><span class="c3">近 24 次</span><span class="c4">上次</span><span class="c4">政策</span><span class="c5"></span><span></span></div>
       {task("wiki-db 備份", "備份", "tw-01", "每天 03:00", U.status("ok", "啟用"), "o" * 24, "今天 03:00 · 2 分 50 秒", "重疊跳過 · 錯過補跑 · 失敗重試 2 次")}
       {task("shop-db 備份", "備份", "tw-01", "每天 03:30", U.status("ok", "啟用"), "o" * 20 + "f" + "o" * 3, "今天 03:30 · 1 分 10 秒", "重疊跳過 · 錯過補跑 · 失敗重試 2 次")}
-      {task("清理日誌", "清理", "全部節點", "每 6 小時", U.status("ok", "啟用"), "o" * 24, "03:00 · 釋出 1.8 GiB", "排隊 · 不補跑 · 不重試")}
+      {task("清理日誌", "清理", "全部主機", "每 6 小時", U.status("ok", "啟用"), "o" * 24, "03:00 · 釋出 1.8 GiB", "排隊 · 不補跑 · 不重試")}
       {task("憑證續期檢查", "維護", "zentinel", "每 12 小時", U.status("warn", "上次失敗"), "o" * 22 + "f" * 2, "02:58 · DNS 驗證逾時", "重疊跳過 · 錯過補跑 · 失敗重試 3 次")}
-      {task("套件安全更新", "維護", "jp-02、lab-mini", "每天 03:00（維護時段）", U.status("warn", "狀態不明 · 等 jp-02 恢復後對帳"), "o" * 23 + "p", '03:38 · apt 進行到一半 · <a href="WorkCenter.dc.html">工作 #512</a>', "排隊 · 不補跑 · 需批准")}
+      {task("套件安全更新", "維護", "jp-02、lab-mini", "每天 03:00", U.status("warn", "狀態不明"), "o" * 23 + "p", '03:38 · 工作 #512 進行到一半', "排隊 · 不補跑 · 需批准")}
       {task("shop 報表", "腳本 · 腳本庫 v3", "tw-01", "每天 20:00", U.status("ok", "啟用"), "o" * 24, "昨天 20:00 · 41 秒", "重疊跳過 · 錯過補跑 · 失敗重試 1 次")}
-      {task("健康探測", "URL", "jp-02", "每 5 分鐘", U.status("warn", "過期"), "o" * 20 + "e" * 4, "03:41 上次觀測", "節點離線時本地續跑")}
+      {task("健康探測", "URL", "jp-02", "每 5 分鐘", U.status("warn", "過期"), "o" * 20 + "e" * 4, "03:41 上次觀測", "主機離線時本地續跑")}
       {task("ClamAV 掃描", "維護", "tw-01", "每週日 05:00", U.status("ok", "啟用"), "o" * 24, "11/02 · 0 感染", "重疊跳過 · 錯過補跑")}
       {task("舊報表歸檔", "腳本", "tw-01", "每月 1 日", U.status("info", "暫停"), "o" * 24, "10/01", "—")}
     </section>"""
@@ -2384,7 +2383,7 @@ def cron() -> str:
       <div class="row srow"><span class="name"><span class="n">archive-old.sh</span><span class="d">把 90 天前的報表壓縮歸檔</span></span><span class="mono">v1</span><span class="c3 note">舊報表歸檔</span><span class="mono c4">9/01 · tim</span><span class="c4"><button type="button" class="btn sm">立即執行</button></span><span class="c5"></span><span></span></div>
       <div class="row srow"><span class="name"><span class="n">clean-docker.sh</span><span class="d">清理無標籤映像</span></span><span class="mono">v2</span><span class="c3 note">未綁定</span><span class="mono c4">10/30 · tim</span><span class="c4"><button type="button" class="btn sm">立即執行</button></span><span class="c5"></span><span></span></div>
     </section>"""
-    main = head + U.scope_bar([("全部節點", "9 任務"), ("hazel-tw-01", "Docker"), ("hazel-jp-02", "Docker · 沒有回應"), ("lab-mini", "Podman · K3s")]) + tiles + sched + tasks + f'<div class="cg">{deps_panel}{run}</div>' + lib
+    main = head + U.scope_bar([("全部主機", "9 任務"), ("hazel-tw-01", "Docker"), ("hazel-jp-02", "Docker · 沒有回應"), ("lab-mini", "Podman · K3s")]) + tiles + sched + tasks + f'<div class="cg">{deps_panel}{run}</div>' + lib
     return U.shell("cron", main)
 
 
@@ -2406,11 +2405,11 @@ def security() -> str:
         [("none", "關閉"), ("none", ""), ("ok", "30/分/IP"), ("ok", "僅 Tunnel"), ("ok", "10 MiB"), ("dng", "上游 502")],
         [("ok", "阻擋"), ("warn", "放行"), ("ok", "Token 限速"), ("ok", "僅 Tunnel"), ("ok", "2 MiB"), ("ok", "2.1 ms")],
       ], first_col="minmax(130px,1.2fr)")}</div>
-      <div class="note" style="padding:0 14px 10px">切成「阻擋」前先用右下的「檢查這個請求」驗證誤判；政策逐步發布到多節點（先 tw-01 再 jp-02）</div>
+      <div class="note" style="padding:0 14px 10px">切成「阻擋」前先用右下的「檢查這個請求」驗證誤判；政策逐步發布到多主機（先 tw-01 再 jp-02）</div>
     </section>"""
     rollout = f"""
     <section class="panel" aria-labelledby="h-ro">
-      <div class="ph"><h2 id="h-ro">發布 shop.example.tw 改成阻擋</h2><span class="sub">變更計畫 #421 · 逐節點、可回退</span></div>
+      <div class="ph"><h2 id="h-ro">發布 shop.example.tw 改成阻擋</h2><span class="sub">變更計畫 #421 · 逐主機、可回退</span></div>
       <div style="padding:12px 14px">{U.pipeline([("誤判檢查", "done", "11 條例外", "wiki 搜尋路徑排除"), ("批准", "done", "tim", "影響 1 站點"), ("tw-01", "cur", "觀察 10 分", "阻擋 0 · 偵測 3"), ("jp-02", "todo", "等 tw-01 通過", "主機沒有回應"), ("完成", "todo", "—", "")])}</div>
     </section>"""
     hits = U.ts_card("WAF 命中 · 每小時 · 全部站點", [U.Series("偵測", [int(x) for x in walk(24, 50, 20, 5, 120, {22: 118})], "var(--s1)"), U.Series("阻擋", [int(x) for x in walk(24, 2, 2, 0, 6)], "var(--danger)")], HOURS, unit="",
@@ -2445,7 +2444,7 @@ CF-Connecting-IP: 203.0.113.7</div>
         [("ok", "ufw 啟用"), ("ok", "0 封鎖"), ("none", "未安裝"), ("warn", "2 待套用")],
       ])}</div>
     </section>"""
-    exposure = ('<h2 class="grp" id="exposure">對外曝露<span class="note">主機與容器 · 3 節點</span></h2>'
+    exposure = ('<h2 class="grp" id="exposure">對外曝露<span class="note">主機與容器 · 3 主機</span></h2>'
                 + nodes(part="published") + f'<div class="cg">{nodes(part="ports")}{fw}</div>' + nodes(part="ssh"))
     web = ('<h2 class="grp" id="waf">網站防護<span class="note">Zentinel WAF · 3 站點</span></h2>'
            + U.scope_bar([("全部入口", "2 Zentinel"), ("Zentinel @ hazel-tw-01", ""), ("Zentinel @ hazel-jp-02", "過期")], label="入口")
@@ -2458,7 +2457,7 @@ CF-Connecting-IP: 203.0.113.7</div>
 def analytics() -> str:
     head = U.page_head("流量分析", OBS, '<button type="button" class="btn">匯出</button><button type="button" class="btn">保留與遮罩</button><button type="button" class="btn">Cloudflare 連線 · 已連接</button>')
     filt = ('<div class="panel"><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:10px 14px">'
-            + "".join(f'<label class="inp" style="width:auto;min-width:150px"><span class="note">{k}</span><select style="background:transparent;border:0;flex:1"><option>{v}</option></select></label>' for k, v in [("時間", "今天"), ("節點", "全部"), ("專案", "全部"), ("網域", "shop.example.tw"), ("服務", "全部"), ("入口", "全部")])
+            + "".join(f'<label class="inp" style="width:auto;min-width:150px"><span class="note">{k}</span><select style="background:transparent;border:0;flex:1"><option>{v}</option></select></label>' for k, v in [("時間", "今天"), ("主機", "全部"), ("專案", "全部"), ("網域", "shop.example.tw"), ("服務", "全部"), ("入口", "全部")])
             + '<span class="chip on">排除機器人</span><span class="chip">只看可信 IP</span></div></div>')
     views = f"""
     <section class="panel" aria-labelledby="h-3v">
@@ -2505,7 +2504,7 @@ def analytics() -> str:
 
 
 
-# ---------- 宿主機系統管理（單一節點） ----------
+# ---------- 宿主機系統管理（單一主機） ----------
 def system() -> str:
     head = f"""
     <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px">
@@ -2546,7 +2545,7 @@ def system() -> str:
     </section>"""
     upd = f"""
     <section class="panel" aria-labelledby="h-upd">
-      <div class="ph"><h2 id="h-upd">安全更新 · 預覽 5 套件</h2><span class="sub">這是一個工作；中途節點斷線不會重跑一半的 apt</span></div>
+      <div class="ph"><h2 id="h-upd">安全更新 · 預覽 5 套件</h2><span class="sub">這是一個工作；中途主機斷線不會重跑一半的 apt</span></div>
       <div style="padding:12px 14px">{U.pipeline([("預檢", "done", "即時", "空間、鎖、來源簽章"), ("下載", "todo", "預估 20 秒", "41 MiB"), ("安裝", "todo", "預估 1 分", "dpkg 不可中斷"), ("重啟服務", "todo", "zentinel、sshd", "各約 1 秒"), ("驗證", "todo", "—", "版本＋服務健康")])}
       <div class="note" style="margin-top:8px">核心更新另排 03:00 維護時段，重開機前列出受影響的 3 個容器</div></div>
     </section>"""
@@ -2606,7 +2605,7 @@ def system() -> str:
     <section class="panel" aria-labelledby="h-time">
       <div class="ph"><h2 id="h-time">時間、主機名稱、開關機</h2></div>
       <div class="fleet" style="grid-template-columns:repeat(auto-fill,minmax(min(220px,100%),1fr))">
-        {kv("時區", "Asia/Taipei（節點）· 使用者顯示 Asia/Taipei", "ncard")}{kv("NTP", "chrony · pool.ntp.org · 偏差 +3 ms · 同步", "ncard")}{kv("主機名稱", "hazel-tw-01 · FQDN hazel-tw-01.example.tw", "ncard")}
+        {kv("時區", "Asia/Taipei（主機）· 使用者顯示 Asia/Taipei", "ncard")}{kv("NTP", "chrony · pool.ntp.org · 偏差 +3 ms · 同步", "ncard")}{kv("主機名稱", "hazel-tw-01 · FQDN hazel-tw-01.example.tw", "ncard")}
         <div class="ncard"><span class="note">運行時間</span><span>41 天 · 上次重開 9 月 27 日（核心更新）</span><span class="note">套用核心更新後要重開機：6.8.0-48</span></div>
         <div class="ncard"><span class="note">重新開機會影響</span><span>{U.segmented([(3, "var(--danger)"), (0, "var(--q2)")])}</span><span class="note">shop-api ×2、shop-db、shop-redis、zentinel · 03:00 備份延後</span></div>
         <div class="ncard"><span class="note">root 密碼</span><span>{U.status("warn", "281 天未換")}</span><span class="note">上次變更 2 月 1 日</span></div>
@@ -2633,14 +2632,14 @@ def iam() -> str:
       <div class="row hd srow"><span>使用者</span><span>狀態</span><span class="c3">二次驗證</span><span class="c4">工作階段</span><span class="c4">最後登入</span><span class="c5"></span><span></span></div>
       {user("tim", "擁有者 · 本機救援帳號", U.status("ok", "TOTP ＋ Passkey ＋ 復原碼"), "3", "03:38 · 203.0.113.7", U.status("ok", "啟用"))}
       {user("deploy-bot", "部署者 · shop、wiki", U.status("info", "服務帳號 · Token"), "2", "02:57 · Webhook", U.status("ok", "啟用"))}
-      {user("ops-ann", "維運者 · 全部節點", U.status("ok", "TOTP"), "1", "昨天 22:10 · OIDC", U.status("ok", "啟用"))}
+      {user("ops-ann", "維運者 · 全部主機", U.status("ok", "TOTP"), "1", "昨天 22:10 · OIDC", U.status("ok", "啟用"))}
       {user("analyst", "唯讀 · shop_analytics", U.status("warn", "未設定 · 7 天內必須"), "1", "3 天前", U.status("ok", "啟用"))}
       {user("old-contractor", "—", U.status("info", "—"), "0", "9 月 2 日", U.status("dng", "停權 · Token 已撤"))}
     </section>"""
     roles = f"""
     <section class="panel" aria-labelledby="h-roles">
       <div class="ph"><h2 id="h-roles">角色 × 資源範圍</h2><span class="sub">預設拒絕；格子＝這個角色對這類資源能做到哪；API 也照這張表擋</span></div>
-      <div style="padding:12px 14px">{U.matrix(["擁有者", "維運者", "部署者", "唯讀", "稽核者"], ["節點", "容器", "專案部署", "檔案", "機密", "終端機", "使用者", "批准高風險"], [
+      <div style="padding:12px 14px">{U.matrix(["擁有者", "維運者", "部署者", "唯讀", "稽核者"], ["主機", "容器", "專案部署", "檔案", "機密", "終端機", "使用者", "批准高風險"], [
         [("ok", "全部"), ("ok", "全部"), ("ok", "全部"), ("ok", "全部"), ("ok", "全部"), ("ok", "root"), ("ok", "全部"), ("ok", "是")],
         [("ok", "全部"), ("ok", "全部"), ("ok", "全部"), ("ok", "全部"), ("warn", "讀"), ("ok", "root"), ("none", "否"), ("warn", "需二人")],
         [("warn", "讀"), ("ok", "指定專案"), ("ok", "指定專案"), ("warn", "專案目錄"), ("warn", "指定專案"), ("warn", "容器內"), ("none", "否"), ("none", "否")],
@@ -2668,7 +2667,7 @@ def iam() -> str:
     </section>"""
     audit = f"""
     <section class="panel" aria-labelledby="h-aud">
-      <div class="ph"><h2 id="h-aud">稽核 · 24 小時</h2><span class="sub">誰在何時改了什麼，連回變更前後摘要、工作編號、節點與結果；機密遮罩</span><a class="more" href="Logs.dc.html">全部日誌 →</a></div>
+      <div class="ph"><h2 id="h-aud">稽核 · 24 小時</h2><span class="sub">誰在何時改了什麼，連回變更前後摘要、工作編號、主機與結果；機密遮罩</span><a class="more" href="Logs.dc.html">全部日誌 →</a></div>
       <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px"><span class="note">每小時筆數</span>{U.sparkline([1, 0, 0, 0, 1, 2, 3, 2, 4, 3, 2, 1, 2, 3, 2, 1, 1, 0, 2, 1, 2, 3, 4, 3], w=420)}
       <div class="note" style="display:flex;justify-content:space-between"><span>昨天 03:42</span><span>現在 · 41 筆</span></div></div>
       <div class="row hd srow"><span>時間</span><span>誰</span><span class="c3">做了什麼</span><span class="c4">對象</span><span class="c4">結果</span><span class="c5"></span><span></span></div>
@@ -2691,10 +2690,10 @@ def settings() -> str:
         return f'<div class="ncard"><span style="font-weight:500">{title}</span>{body}{n}</div>'
     basic = f"""
     <section class="panel" aria-labelledby="h-bs">
-      <div class="ph"><h2 id="h-bs">基本</h2><span class="sub">每個設定有作用範圍：平台／節點／使用者</span></div>
+      <div class="ph"><h2 id="h-bs">基本</h2><span class="sub">每個設定有作用範圍：平台／主機／使用者</span></div>
       <div class="fleet">
-        {card("面板", [("名稱", "HazelminX（榛果）"), ("語言", "繁體中文 · 英文可切"), ("外部位址", "https://panel.example.tw"), ("預設節點", "hazel-tw-01")], "品牌、favicon、登入頁、郵件、CLI、空畫面都是 HazelminX")}
-        {card("時區", [("使用者顯示", "Asia/Taipei（tim）"), ("節點", "tw-01 Taipei · jp-02 Taipei · lab Taipei"), ("儲存", "UTC")], "節點時區與顯示時區分開，不混用")}
+        {card("面板", [("名稱", "HazelminX（榛果）"), ("語言", "繁體中文 · 英文可切"), ("外部位址", "https://panel.example.tw"), ("預設主機", "hazel-tw-01")], "品牌、favicon、登入頁、郵件、CLI、空畫面都是 HazelminX")}
+        {card("時區", [("使用者顯示", "Asia/Taipei（tim）"), ("主機", "tw-01 Taipei · jp-02 Taipei · lab Taipei"), ("儲存", "UTC")], "主機時區與顯示時區分開，不混用")}
         {card("登入與工作階段", [("逾時", "8 小時 · 手機 5 小時"), ("長工作", "不因登入過期取消"), ("目前工作階段", "7 · 可撤銷")])}
       </div>
     </section>"""
@@ -2771,7 +2770,7 @@ def logs() -> str:
     </section>"""
     audit = f"""
     <section class="panel" aria-labelledby="h-la" data-sort="0:desc" data-pages="1–4 / 41">
-      <div class="ph"><h2 id="h-la">操作稽核 · 今天 41 筆</h2><div class="wrap" style="margin-left:auto"><span class="chip on">全部</span><span class="chip">失敗 2</span><span class="chip">tim</span><span class="chip">系統</span><span class="chip">節點 jp-02</span></div></div>
+      <div class="ph"><h2 id="h-la">操作稽核 · 今天 41 筆</h2><div class="wrap" style="margin-left:auto"><span class="chip on">全部</span><span class="chip">失敗 2</span><span class="chip">tim</span><span class="chip">系統</span><span class="chip">主機 jp-02</span></div></div>
       <div class="row hd srow"><span>時間</span><span>誰</span><span class="c3">動作</span><span class="c4">對象</span><span class="c4">結果</span><span class="c5"></span><span></span></div>
       <div class="row srow"><span class="mono">03:38:50</span><span>tim · 203.0.113.7</span><span class="c3 note">套件更新 openssl（工作 #512）</span><span class="mono c4">hazel-jp-02</span><span class="c4">{U.status("warn", "狀態不明")}</span><span class="c5"></span><span></span></div>
       <div class="row srow"><span class="mono">03:30:07</span><span>tim · CLI</span><span class="c3 note">hx jobs list</span><span class="mono c4">管理 API</span><span class="c4">{U.status("ok", "200")}</span><span class="c5"></span><span></span></div>
@@ -2780,7 +2779,7 @@ def logs() -> str:
     </section>"""
     ssh = f"""
     <section class="panel" aria-labelledby="h-ls">
-      <div class="ph"><h2 id="h-ls">SSH 登入 · 24 小時 · 全部節點</h2><span class="sub">失敗來源會餵給 Fail2ban</span></div>
+      <div class="ph"><h2 id="h-ls">SSH 登入 · 24 小時 · 全部主機</h2><span class="sub">失敗來源會餵給 Fail2ban</span></div>
       {U.ranked([("185.220.101.9 · 失敗 ×214 · root", 214, "214 · 已封鎖"), ("45.33.12.9 · 失敗 ×88 · admin", 88, "88 · 已封鎖"), ("203.0.113.7 · 成功 ×6 · tim", 6, "6 · 辦公室"), ("198.51.100.20 · 成功 ×2 · deploy", 2, "2 · CI")], vmax=220)}
     </section>"""
     web = f"""
@@ -2807,7 +2806,7 @@ def logs() -> str:
       {ret("稽核紀錄", "平台資料庫", 9, "180 MiB", "90 天 · 不自動清", "—", U.status("none", "不在自動清理"))}
       <div class="wrap" style="padding:10px 14px 12px"><button type="button" class="btn sm">下次部署時替既有容器加上輪替</button></div>
     </section>"""
-    main = head + U.scope_bar([("全部節點", "3"), ("hazel-tw-01", "Docker"), ("hazel-jp-02", "Docker · 沒有回應"), ("lab-mini", "Podman · K3s")]) + tabs + vol + retention + viewer + audit + f'<div class="cg">{ssh}{web}</div>'
+    main = head + U.scope_bar([("全部主機", "3"), ("hazel-tw-01", "Docker"), ("hazel-jp-02", "Docker · 沒有回應"), ("lab-mini", "Podman · K3s")]) + tabs + vol + retention + viewer + audit + f'<div class="cg">{ssh}{web}</div>'
     return U.shell("logs", main)
 
 
@@ -2842,7 +2841,7 @@ root@hazel-tw-01:~# <span style="background:var(--ink);color:var(--panel)"> </sp
     </section>"""
     hosts = f"""
     <section class="panel" aria-labelledby="h-hs">
-      <div class="ph"><h2 id="h-hs">連線目標</h2><span class="sub">節點經 Agent；外部主機用 SSH 資產（金鑰在機密庫）</span></div>
+      <div class="ph"><h2 id="h-hs">連線目標</h2><span class="sub">主機經 Agent；外部主機用 SSH 資產（金鑰在機密庫）</span></div>
       <div class="row hd srow"><span>目標</span><span>狀態</span><span class="c3">方式</span><span class="c4">身分</span><span class="c4">稽核</span><span class="c5"></span><span></span></div>
       <a class="row srow" href="#h1"><span class="name"><span class="n">hazel-tw-01</span><span class="d">主機</span></span><span>{U.status("ok", "連線中")}</span><span class="c3 note">Agent</span><span class="mono c4">root</span><span class="c4 note">完整錄製</span><span class="c5"></span><span><button type="button" class="btn sm">開啟</button></span></a>
       <a class="row srow" href="#h2"><span class="name"><span class="n">hazel-jp-02</span><span class="d">主機</span></span><span>{U.status("dng", "沒有回應")}</span><span class="c3 note">Agent</span><span class="mono c4">root</span><span class="c4 note">完整錄製</span><span class="c5"></span><span><span tabindex="0" data-tip="主機沒有回應，Agent 與 SSH 都連不到"><button type="button" class="btn sm" disabled>開啟</button></span></span></a>
@@ -2892,7 +2891,7 @@ def app_install() -> str:
     basic = f"""
     <section class="panel"><div class="ph"><h2>基本</h2></div>
       <div style="padding:14px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:14px">
-        {field("名稱", inp("nextcloud", mono=True), "容器與資料目錄用這個名字")}{field("版本", sel("31.0.2（最新）"))}{field("節點", sel("hazel-tw-01 · Docker · amd64"))}{field("資料目錄", inp("/mnt/data/apps/nextcloud"), "剩 519 GiB · 綁定 UUID")}
+        {field("名稱", inp("nextcloud", mono=True), "容器與資料目錄用這個名字")}{field("版本", sel("31.0.2（最新）"))}{field("主機", sel("hazel-tw-01 · Docker · amd64"))}{field("資料目錄", inp("/mnt/data/apps/nextcloud"), "剩 519 GiB · 綁定 UUID")}
       </div></section>"""
     params = f"""
     <section class="panel"><div class="ph"><h2>參數</h2><span class="sub">來自 data.yml</span></div>
@@ -2928,7 +2927,7 @@ def app_install() -> str:
     </section>"""
     preflight = f"""
     <section class="panel"><div class="ph"><h2>安裝前檢查</h2></div>
-      <div style="padding:12px 16px">{U.pipeline([("節點", "done", "tw-01", "amd64 · Docker 27.3"), ("相依", "done", "PostgreSQL 16", "新建 · 專用"), ("Port", "done", "8081 空", ""), ("資料目錄", "done", "519 GiB", "綁定 UUID"), ("記憶體", "done", "20 GiB 可用", "需 2 GiB"), ("入口", "todo", "cloud.example.tw", "憑證申請")])}</div>
+      <div style="padding:12px 16px">{U.pipeline([("主機", "done", "tw-01", "amd64 · Docker 27.3"), ("相依", "done", "PostgreSQL 16", "新建 · 專用"), ("Port", "done", "8081 空", ""), ("資料目錄", "done", "519 GiB", "綁定 UUID"), ("記憶體", "done", "20 GiB 可用", "需 2 GiB"), ("入口", "todo", "cloud.example.tw", "憑證申請")])}</div>
       <div style="padding:0 16px 12px;display:flex;flex-direction:column;gap:6px"><span class="note">安裝＝一個工作：拉取映像 → 建立網路與資料目錄 → 啟動 → 健康檢查 → 綁定入口。關掉頁面照跑。</span>
       <div class="wrap"><button type="button" class="btn pri">安裝</button><button type="button" class="btn">只建立不啟動</button><button type="button" class="btn">加入批次安裝</button></div></div>
     </section>"""
@@ -2976,11 +2975,11 @@ def edge_cases() -> str:
     head = U.page_head("邊界情境", OBS, "")
     def card(title, body):
         return f'<section class="panel"><div class="ph"><h2>{title}</h2></div><div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">{body}</div></section>'
-    big = card("大量資料：1,284 個容器", f"""{U.scope_bar([("全部節點", "1,284 容器"), ("tw-01", "612"), ("jp-02", "410"), ("lab-mini", "262")])}
-      <div class="row hd crow"><span>容器</span><span>狀態</span><span class="c3">節點</span><span class="c4">CPU</span><span class="c4">記憶體</span><span class="c5">網路</span><span class="c5">重啟</span><span class="c5">Port</span><span></span></div>
+    big = card("大量資料：1,284 個容器", f"""{U.scope_bar([("全部主機", "1,284 容器"), ("tw-01", "612"), ("jp-02", "410"), ("lab-mini", "262")])}
+      <div class="row hd crow"><span>容器</span><span>狀態</span><span class="c3">主機</span><span class="c4">CPU</span><span class="c4">記憶體</span><span class="c5">網路</span><span class="c5">重啟</span><span class="c5">Port</span><span></span></div>
       <div class="row crow"><span class="name"><span class="n">shop-api-00412</span><span class="d">ghcr.io/hazelnut/shop-api:a3f9c1e</span></span><span>{U.status("ok", "執行中")}</span><span class="mono c3">tw-01</span><span class="c4">{U.meter(21, "21%")}</span><span class="c4">{U.meter(40, "812M")}</span><span class="c5 mono">3.1 / 11.8</span><span class="c5 mono">0</span><span class="c5 mono">—</span>{U.actions(["log", "term", "restart", "more"])}</div>
       <div class="pager"><span>顯示 1–50 / 1,284 · 虛擬捲動 · 篩選保留在網址</span><span class="pg"><span>每頁 50</span></span></div>
-      <span class="note">容器地圖超過 300 格時改成「節點 × 狀態」摘要格，點節點再展開</span>""")
+      <span class="note">容器地圖超過 300 格時改成「主機 × 狀態」摘要格，點主機再展開</span>""")
     longname = card("超長名稱與路徑", f"""<div class="row cols-3"><span class="name"><span class="n">registry.internal.example.tw:5000/platform-team/backend-services/order-processing-worker-with-very-long-name:2026.11.07-rc.3-amd64</span><span class="d">/mnt/data/apps/order-processing-worker-with-very-long-name/data/uploads/2026/11/07</span></span><span>{U.status("ok", "執行中")}</span><span class="mono">tw-01</span></div>
       <span class="note">名稱可斷行最多 2 行，完整值在 title 與詳情；表格不用省略號吃掉尾端（tag 與副檔名在尾端）</span>""")
     conflict = card("並行編輯衝突", f"""<div class="banner" style="border-color:var(--warn)">{U.status("warn", "版本衝突")}<span>compose.yaml 在你編輯期間被 ops-ann 於 03:40:12 改過（v10）。你的版本基於 v9。</span></div>
@@ -2993,13 +2992,13 @@ def edge_cases() -> str:
       <span class="note">已建立：網路 nextcloud_default、目錄 /mnt/data/apps/nextcloud（空）。未建立：容器、入口。</span>
       <div class="wrap"><button type="button" class="btn pri sm" style="color:var(--hazelink)">改 Port 後重試</button><button type="button" class="btn sm">清掉已建立的部分</button><button type="button" class="btn sm">保留現狀</button></div>""")
     clock = card("時鐘偏差與時區", f"""<div class="banner" style="border-color:var(--warn)">{U.status("warn", "偏差 +4 分 12 秒")}<span>hazel-jp-02 的時鐘比 Core 快 252 秒；憑證、Token 與排程以 Core 時間為準。</span></div>
-      <span class="note">顯示一律帶時區（03:42 UTC+8）；節點時區 Asia/Tokyo 與使用者顯示時區不同時，排程頁兩個都列</span>""")
+      <span class="note">顯示一律帶時區（03:42 UTC+8）；主機時區 Asia/Tokyo 與使用者顯示時區不同時，排程頁兩個都列</span>""")
     upload = card("上傳中斷", f"""{U.meter(63, "2.6 / 4.2 GiB · 已中斷 03:41:30")}
       <div class="wrap"><button type="button" class="btn pri sm" style="color:var(--hazelink)">續傳（分片 312/512）</button><button type="button" class="btn sm">放棄並刪除暫存</button></div>
       <span class="note">分片存 Agent 本機暫存 24 小時；重新整理或換裝置都可續</span>""")
     full = card("磁碟滿", f"""<div class="banner" style="border-color:var(--danger)">{U.status("dng", "/mnt/data 100%")}<span>hazel-jp-02 寫入失敗：No space left on device。平台資料庫在 / 不受影響。</span></div>
       <div class="wrap"><button type="button" class="btn pri sm" style="color:var(--hazelink)">清理可回收 31 GiB</button><button type="button" class="btn sm">停止寫入最多的容器 wiki-media</button><button type="button" class="btn sm">搬移資料</button></div>""")
-    timeout = card("API 逾時與部分失敗", f"""<div class="banner">{U.status("warn", "2／3 節點回應")}<span>lab-mini 在 8 秒內未回應；以下是其餘節點的結果。</span></div>
+    timeout = card("API 逾時與部分失敗", f"""<div class="banner">{U.status("warn", "2／3 主機回應")}<span>lab-mini 在 8 秒內未回應；以下是其餘主機的結果。</span></div>
       <div class="wrap"><button type="button" class="btn sm">重試 lab-mini</button><button type="button" class="btn sm">改成背景工作</button></div>
       <span class="note">批次操作逐一列結果：成功 2、失敗 0、未回應 1；不把未回應算成失敗</span>""")
     unknown = card("不認識的引擎版本／欄位", f"""<div class="banner">{U.status("info", "Docker 29.0.0 未在驗證矩陣")}<span>已驗證 27.x–28.x。只開放讀取與升級路徑；建立／刪除先拒絕。</span></div>
@@ -3015,9 +3014,9 @@ def edge_cases() -> str:
 # ---------- 宿主機服務模組（Webmin 等價） ----------
 def host_services() -> str:
     head = U.page_head("主機", OBS, '<button type="button" class="btn pri">安裝模組</button><button type="button" class="btn">新增 adapter</button>') + nodes_tabs("服務模組")
-    scope = U.scope_bar([("全部節點", "3"), ("hazel-tw-01", "Docker"), ("hazel-jp-02", "過期"), ("lab-mini", "Podman")])
+    scope = U.scope_bar([("全部主機", "3"), ("hazel-tw-01", "Docker"), ("hazel-jp-02", "過期"), ("lab-mini", "Podman")])
     tiles = '<div class="tiles">' + "".join([
-        U.stat_tile("已安裝模組", "7", "/12", "3 節點合計", None),
+        U.stat_tile("已安裝模組", "7", "/12", "3 主機合計", None),
         U.stat_tile("設定驗證失敗", "1", "", "BIND @ jp-02 · named-checkconf", False),
         U.stat_tile("待套用變更", "2", "", "Samba 分享、logrotate", None),
         U.stat_tile("最近回滾", "1", "", "Nginx vhost · 10 月 30 日", None),
@@ -3038,7 +3037,7 @@ def host_services() -> str:
     ], first_col="minmax(150px,1.2fr)")
     modules = f"""
     <section class="panel" aria-labelledby="h-mods">
-      <div class="ph"><h2 id="h-mods">模組 × 節點</h2>{U.legend([("ok", "執行中 · 驗證通過"), ("warn", "待套用"), ("dng", "驗證失敗"), ("info", "已安裝未啟用")])}</div>
+      <div class="ph"><h2 id="h-mods">模組 × 主機</h2>{U.legend([("ok", "執行中 · 驗證通過"), ("warn", "待套用"), ("dng", "驗證失敗"), ("info", "已安裝未啟用")])}</div>
       <div style="padding:12px 16px">{mx}</div>
     </section>"""
     zones = f"""
@@ -3138,7 +3137,7 @@ def _choice(name, ver, lines, btn, on=False, href=None):
 
 def containers_empty() -> str:
     head = U.page_head("容器", OBS, '<button type="button" class="btn">重新偵測</button>')
-    scope = U.scope_bar([("hazel-tw-01", "Docker"), ("hazel-jp-02", "Docker"), ("lab-mini", "Podman"), ("lab-pi-02", "未安裝")], current=3, label="節點")
+    scope = U.scope_bar([("hazel-tw-01", "Docker"), ("hazel-jp-02", "Docker"), ("lab-mini", "Podman"), ("lab-pi-02", "未安裝")], current=3, label="主機")
     choose = f"""
     <section class="panel" aria-labelledby="h-eng">
       <div class="ph"><h2 id="h-eng">lab-pi-02 沒有容器引擎</h2><span class="note mono">Debian 12 · amd64 · 4 核 · 8 GiB · 偵測 03:41:50</span></div>
@@ -3229,8 +3228,10 @@ def _in(val, mono=False, ph=False, tail=""):
     return f'<div class="inp"><span class="{cls}" style="{style}">{val}</span>{tail}</div>'
 
 
-def _dd(val):
-    return f'<div class="inp"><span style="flex:1;min-width:0;overflow-wrap:anywhere">{val}</span>{U.icon("down")}</div>'
+def _dd(val, inline=False):
+    """inline：放在工具列裡，寬度依內容，不佔整行。"""
+    st = ' style="width:auto;flex:none"' if inline else ""
+    return f'<div class="inp"{st}><span style="flex:1;min-width:0;overflow-wrap:anywhere">{val}</span>{U.icon("down")}</div>'
 
 
 def _seg(opts, on=0, label="選項"):
@@ -3294,7 +3295,7 @@ def container_create() -> str:
     image = _fp("映像與位置", _grid(
         _fld("映像", _in("ghcr.io/<wbr>hazelnut/<wbr>report-worker:1.4.0", mono=True, tail=U.status("ok", "tw-01 已有")), "支援 tag 與 digest"),
         _fld("容器名稱", _in("report-worker", mono=True, tail=U.status("ok", "未重複"))),
-        _fld("環境", _dd("Docker（root）@ hazel-tw-01"), "引擎與節點一起選，不自動猜"),
+        _fld("環境", _dd("Docker（root）@ hazel-tw-01"), "引擎與主機一起選，不自動猜"),
         _fld("拉取政策", _seg(["缺少時拉取", "永遠拉取", "不拉取"], 0, "拉取政策"))), hid="img")
     ports = _fp("Port", _erows(["容器 Port", "主機綁定", "對外"], [
         ['<span class="mono">8080/tcp</span>', _in("127.0.0.1:18090", mono=True, tail=U.status("ok", "未占用")), _seg(["經 Zentinel", "只本機", "對外開放"], 0, "對外方式")],
@@ -3366,7 +3367,7 @@ def site_create() -> str:
 def firewall_rule() -> str:
     head = _form_head([("安全防護", "Security.dc.html"), ("對外曝露", "Security.dc.html#exposure")], "新增防火牆規則", '<a class="btn" href="Security.dc.html">取消</a><button type="button" class="btn pri">排入</button>')
     where = _fp("套用到", f"""
-      <div class="row hd"><span>節點</span><span>防火牆</span><span>目前規則</span></div>
+      <div class="row hd"><span>主機</span><span>防火牆</span><span>目前規則</span></div>
       <label class="row"><span class="wrap"><input type="checkbox"><span class="mono">hazel-tw-01</span></span><span>ufw</span><span class="mono">14 條</span></label>
       <label class="row"><span class="wrap"><input type="checkbox" checked><span class="mono">hazel-jp-02</span></span><span>nftables</span><span class="mono">9 條</span></label>
       <div class="row"><span class="wrap"><span tabindex="0" data-tip="先選定 lab-mini 由哪個防火牆寫入"><input type="checkbox" disabled aria-label="lab-mini"></span><span class="mono">lab-mini</span></span><span>{U.status("warn", "ufw ＋ firewalld")}</span><span class="mono">6 ＋ 11 條</span></div>""")
@@ -3408,14 +3409,14 @@ def firewall_rule() -> str:
 def cron_create() -> str:
     head = _form_head([("計畫任務", "Cron.dc.html")], "新增計畫任務", '<a class="btn" href="Cron.dc.html">取消</a><button type="button" class="btn pri">建立</button>')
     kinds = ('<section class="panel"><div class="ph"><h2>類型</h2></div><div class="fleet choices">'
-             + _choice("腳本", "shell", ["在節點上以指定身分執行"], U.status("ok", "已選"), on=True)
+             + _choice("腳本", "shell", ["在主機上以指定身分執行"], U.status("ok", "已選"), on=True)
              + _choice("備份", "", ["改到儲存與備份建立"], '<a class="btn sm" href="BackupCreate.dc.html">前往</a>')
              + _choice("呼叫 URL", "HTTP", ["GET / POST，記錄回應碼"], '<button type="button" class="btn sm">選擇</button>')
              + _choice("容器內指令", "exec", ["在指定容器裡執行"], '<button type="button" class="btn sm">選擇</button>')
              + _choice("清理", "", ["日誌、映像、暫存檔"], '<button type="button" class="btn sm">選擇</button>')
              + _choice("升級套件", "apt · dnf", ["只套安全更新或全部", "在維護時段跑；要重開機時另外排", "主機已開自動安全更新時會提醒重複"], '<button type="button" class="btn sm">選擇</button>') + "</div></section>")
     run = _fp("執行", _grid(
-        _fld("名稱", _in("report-nightly")), _fld("節點", _dd("hazel-tw-01")),
+        _fld("名稱", _in("report-nightly")), _fld("主機", _dd("hazel-tw-01")),
         _fld("執行身分", _dd("deploy（非 root）")), _fld("工作目錄", _in("/mnt/data/apps/report", mono=True)),
         _fld("機密", _dd("report/smtp → $SMTP_PASSWORD"), "以環境變數注入，不寫進腳本")) +
         '<div style="padding:0 16px 14px"><div class="term" style="min-height:96px">#!/usr/bin/env bash\nset -euo pipefail\n./bin/report --since yesterday --mail ops@example.tw</div></div>')
@@ -3555,7 +3556,7 @@ def batch_result() -> str:
       <div class="ph"><h2 id="h-br">每一項</h2><div class="wrap" style="margin-left:auto"><span class="chip on">全部 5</span><span class="chip">失敗 1</span><span class="chip">略過 1</span></div></div>
       <div class="row hd"><span>容器</span><span>結果</span><span>時長</span><span class="c3">原因</span><span></span></div>
       {r("shop-redis", "tw-01 · Docker", U.status("dng", "失敗"), "41 秒", '<span class="mono">health check timeout after 30s</span>', '<button type="button" class="btn sm">重試這項</button>' + log)}
-      {r("wiki-app", "jp-02 · Docker", U.status("info", "略過"), "—", "節點沒有回應，不送出寫入", '<button type="button" class="btn sm">節點恢復後重試</button>')}
+      {r("wiki-app", "jp-02 · Docker", U.status("info", "略過"), "—", "主機沒有回應，不送出寫入", '<button type="button" class="btn sm">主機恢復後重試</button>')}
       {r("shop-api-1", "tw-01 · Docker", U.status("ok", "成功"), "8 秒", "健康 2／2", log)}
       {r("shop-api-2", "tw-01 · Docker", U.status("ok", "成功"), "9 秒", "健康 2／2", log)}
       {r("shop-worker", "tw-01 · Docker", U.status("ok", "成功"), "6 秒", "健康", log)}
@@ -3595,12 +3596,12 @@ def compose_editor() -> str:
     return U.shell("projects", main, collapsed=True)
 
 
-# ---------- 節點工作區：日誌、終端機 ----------
+# ---------- 主機工作區：日誌、終端機 ----------
 def node_logs() -> str:
     head = node_head("hazel-tw-01", U.status("ok", "連線中"), "最後聯絡 2 秒前", '<button type="button" class="btn">匯出</button>') + node_tabs("日誌")
     filt = ('<div class="panel" style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center">'
             + _seg(["全部", "systemd", "容器", "Agent", "Zentinel", "核心"], 0, "來源")
-            + f'<div class="inp" style="min-width:200px;flex:1"><span class="note">搜尋</span><span style="flex:1"></span></div>{_dd("等級：警告以上")}{_dd("最近 1 小時")}'
+            + f'<div class="inp" style="min-width:200px;flex:1"><span class="note">搜尋</span><span style="flex:1"></span></div>{_dd("等級：全部", True)}{_dd("最近 1 小時", True)}'
             + '<button type="button" class="btn on" aria-pressed="true">跟隨最新</button></div>')
     lines = [("03:41:58", "INFO", "ok", "shop-api-1", "GET /api/cart 200 42ms"), ("03:42:01", "WARN", "warn", "shop-api-1", "redis reconnecting (attempt 1)"),
              ("03:42:01", "ERR", "dng", "shop-redis", "Can't open the append-only file: Permission denied"), ("03:42:02", "INFO", "ok", "systemd", "Started docker-shop-redis.scope."),
@@ -3608,7 +3609,7 @@ def node_logs() -> str:
              ("03:42:06", "INFO", "ok", "hazelminx-agent", "heartbeat ok seq=48812 rtt=12ms")]
     body = "\n".join(f'{t} <span style="color:var(--{c if c != "dng" else "danger"})">{lv:<4}</span> <span style="color:var(--muted)">{src:<16}</span> {msg}' for t, lv, c, src, msg in lines)
     viewer = _fp("hazel-tw-01 · 最近 1 小時 · 1,284 行", f'<div style="padding:12px 14px"><div class="term" style="min-height:260px">{body}</div></div>',
-                 extra='<a class="more" href="Logs.dc.html">全部節點的日誌 →</a>')
+                 extra='<a class="more" href="Logs.dc.html">全部主機的日誌 →</a>')
     main = head + filt + viewer
     return U.shell("nodes", main)
 
@@ -3616,7 +3617,7 @@ def node_logs() -> str:
 def node_terminal() -> str:
     head = node_head("hazel-tw-01", U.status("ok", "連線中"), "最後聯絡 2 秒前", '<a class="btn" href="Terminal.dc.html">在多分頁終端機開啟</a>') + node_tabs("終端機")
     who = ('<div class="panel" style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center">'
-           + U.status("dng", "身分 root@hazel-tw-01") + U.tier("正式") + _dd("切換身分：deploy") + '<span class="note">這個工作階段會錄下輸入與輸出 · 閒置 15 分自動結束</span></div>')
+           + _dd("身分：root", True) + U.status("dng", "最高權限") + U.tier("正式") + '<span class="note">這個工作階段會錄下輸入與輸出 · 閒置 15 分自動結束</span></div>')
     term = ('<section class="panel" aria-label="終端機"><div style="padding:12px 14px"><div class="term" style="min-height:320px">'
             'root@hazel-tw-01:~# docker ps --format "{{.Names}}\\t{{.Status}}" | head -4\n'
             'shop-api-1\tUp 46 minutes (healthy)\nshop-api-2\tUp 46 minutes (healthy)\nshop-redis\tRestarting (1) 4 seconds ago\nshop-db\tUp 9 days\n'
@@ -3762,7 +3763,7 @@ def setup() -> str:
 
 # ---------- 跨主機安全更新 ----------
 def updates() -> str:
-    head = _form_head([("主機", "Nodes.dc.html")], "安全更新 · 12 個套件", '<button type="button" class="btn pri">排進 11/9（一）03:00 維護時段</button><button type="button" class="btn">現在套用…</button>')
+    head = _form_head([("主機", "Nodes.dc.html")], "安全更新 · 12 個套件", '<button type="button" class="btn pri">排進 11/9 03:00</button><button type="button" class="btn">現在套用</button>')
     def r(node, st, pk, impact, when, acts):
         return f'<div class="row"><span class="name"><span class="n mono">{node}</span><span class="d">{pk}</span></span><span>{st}</span><span>{impact}</span><span class="c3">{when}</span><span class="wrap" style="justify-content:flex-end;flex-wrap:nowrap">{acts}</span></div>'
     table = f"""
@@ -3772,13 +3773,13 @@ def updates() -> str:
       {r("hazel-jp-02", U.status("dng", "不行 · 主機沒有回應"), "openssl、libssl3、curl、linux-image、docker-ce（5）", U.impacts([("svc", "sshd、zentinel"), ("reboot", "核心 6.1.115")]), "03:00–04:00", '<a class="btn sm" href="NodeOffline.dc.html">看主機</a>')}
       {r("hazel-tw-01", U.status("ok", "可以"), "openssl、libssl3t64、curl、linux-image（5）", U.impacts([("svc", "sshd、zentinel"), ("reboot", "核心 6.8.0-48")]), "03:00–04:00", '<a class="btn sm" href="System.dc.html">看清單</a>')}
       {r("lab-mini", U.status("ok", "可以"), "openssl、libssl3t64（2）", U.impacts([("svc", "sshd")]), "03:00–04:00", '<button type="button" class="btn sm">看清單</button>')}
-      <div class="row"><span class="wrap" style="grid-column:1/-1">{U.status("warn", "會重啟 sshd")}<span>jp-02 就是套用 openssl 後失去回應的；會重啟 sshd 或 Agent 的更新預設一次一台，前一台恢復心跳才套下一台</span>{_seg(["一次一台（推薦）", "全部同時"], 0, "套用方式")}</span></div>
     </section>"""
+    wave = _fp("套用方式", '<div class="wrap" style="padding:12px 16px">' + _seg(["一次一台", "全部同時"], 0, "套用方式") + U.status("warn", "會重啟 sshd") + U.hint("會重啟 sshd 或 Agent 的更新預設一次一台，前一台恢復心跳才套下一台。jp-02 就是套用 openssl 後失去回應的。") + '</div>')
     note = _fp("規則", '<div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">'
                + _chk("ok", "自動套用", "不需要重開機的安全更新，每天在維護時段自動套用", "開")
                + _chk("info", "需要重開機的", "核心等需要重開機的更新，等你按下排程或現在套用", "手動")
                + _chk("warn", "正在進行或狀態不明的更新", "jp-02 的 openssl 更新還沒對帳，這台先不排", "暫停") + '<a class="more" href="Settings.dc.html" style="align-self:flex-start">改規則 →</a></div>')
-    main = head + table + note
+    main = head + table + wave + note
     return U.shell("nodes", main)
 
 
@@ -4320,7 +4321,7 @@ def secrets_page() -> str:
 SCREENS = {
     # name: (title, builder, w, h_guess, mobile)
     "Overview": ("總覽", overview, 1440, 1700),
-    "NodeDetail": ("節點 hazel-tw-01", node_detail, 1440, 1700),
+    "NodeDetail": ("主機 hazel-tw-01", node_detail, 1440, 1700),
     "Projects": ("專案與服務", project_list, 1440, 900),
     "ProjectDetail": ("專案 shop", projects, 1440, 1700),
     "ContainerResources": ("容器 · 映像、儲存卷、網路與快取", container_resources, 1440, 2200),
@@ -4346,8 +4347,8 @@ SCREENS = {
     "CommandPalette": ("⌘K 搜尋", command_palette, 1440, 900),
     "BatchResult": ("批次操作結果", batch_result, 1440, 900),
     "ComposeEditor": ("Compose 編輯器（側欄收合）", compose_editor, 1440, 1100),
-    "NodeLogs": ("節點 hazel-tw-01 › 日誌", node_logs, 1440, 1000),
-    "NodeTerminal": ("節點 hazel-tw-01 › 終端機", node_terminal, 1440, 1000),
+    "NodeLogs": ("主機 hazel-tw-01 › 日誌", node_logs, 1440, 1000),
+    "NodeTerminal": ("主機 hazel-tw-01 › 終端機", node_terminal, 1440, 1000),
     "GitHubSource": ("從 GitHub 匯入", github_source, 1440, 1100),
     "DeployCheck": ("部署檢查 · 變更計畫 #418", lambda: deploy_check(False), 1440, 1500),
     "DeployConfirm": ("批准確認", lambda: deploy_check(True), 1440, 1900),

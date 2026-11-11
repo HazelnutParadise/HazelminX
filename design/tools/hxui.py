@@ -176,9 +176,8 @@ body{{margin:0}}
 .hb .cal i{{display:block;width:12px;height:12px;border-radius:2px;background:var(--q1);position:relative}}
 .hb .cal i.o{{background:var(--ok)}}.hb .cal i.f{{background:var(--danger)}}.hb .cal i.r{{background:var(--warn)}}.hb .cal i.n{{background:transparent;border:1px dashed var(--line)}}
 .hb .cal i.f::after{{content:"";position:absolute;inset:3px;background:var(--panel)}}
-.hb .pipe{{display:flex;flex-wrap:wrap;align-items:stretch;row-gap:10px}}
-.hb .pstage{{display:flex;flex-direction:column;gap:4px;min-width:110px;max-width:280px;flex:1 0 auto;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-size:12px;color:var(--muted);position:relative;background:var(--panel)}}
-.hb .pstage+.pstage{{margin-left:18px}}
+.hb .pipe{{display:grid;grid-template-columns:repeat(auto-fit,minmax(max(84px,calc((100% - (var(--n,4) - 1)*18px)/var(--n,4))),1fr));align-items:stretch;gap:10px 18px}}
+.hb .pstage{{display:flex;flex-direction:column;gap:4px;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-size:12px;color:var(--muted);position:relative;background:var(--panel)}}
 .hb .pstage+.pstage::before{{content:"";position:absolute;left:-12px;top:50%;width:6px;height:6px;border-top:2px solid var(--faint);border-right:2px solid var(--faint);transform:translateY(-50%) rotate(45deg)}}
 .hb .pstage .t{{color:var(--ink);font-weight:500;display:flex;align-items:center;gap:6px}}
 .hb .pstage>*{{overflow-wrap:anywhere}}
@@ -295,7 +294,7 @@ body{{margin:0}}
 .hb .scrim{{background:var(--scrim);padding:24px;display:flex;justify-content:center}}
 .hb .list{{display:flex;flex-direction:column;gap:8px}}
 .hb .job{{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border:1px solid var(--line);border-radius:8px}}
-.hb .job .t{{display:flex;justify-content:space-between;gap:8px}}
+.hb .job>.t{{display:flex;justify-content:space-between;gap:8px}}.hb .job>.t .st{{flex:none;white-space:nowrap;align-self:flex-start}}
 .hb .job .s{{font-size:12px;color:var(--muted)}}
 .hb .prog{{height:4px;background:var(--q2);border-radius:2px;overflow:hidden}}
 .hb .prog i{{display:block;height:100%;background:var(--blue)}}
@@ -386,7 +385,7 @@ body{{margin:0}}
  .hb .hcell{{width:36px;height:36px}}
  .hb .tabs{{flex-wrap:nowrap;overflow-x:auto}}.hb .tab{{white-space:nowrap;flex:none}}
  .hb .ph .wrap{{width:100%}}
- .hb .pstage{{min-width:96px;max-width:220px}}
+ .hb .pipe{{grid-template-columns:repeat(2,minmax(0,1fr))}}
 }}
 .hb .tw{{display:grid;grid-template-columns:var(--tc);overflow-x:auto;align-content:start}}
 .hb .tw>*{{grid-column:1/-1;min-width:0}}
@@ -944,7 +943,7 @@ def hostmap(groups: list, legend: bool = True) -> str:
     lg = ""
     if legend:
         lg = ('<div class="scale" style="margin-top:2px">CPU' + "".join(f'<i style="background:{c}"></i>' for c in q) + '高 · <span class="hcell bad" style="width:16px;height:16px"></span>異常 · <span class="hcell stale" style="width:16px;height:16px"></span>過期 · <span class="hcell off" style="width:16px;height:16px"></span>已停止</div>')
-    return f'<div class="hmap" role="img" aria-label="主機地圖，{len(groups)} 個節點">' + "".join(out) + lg + "</div>"
+    return f'<div class="hmap" role="img" aria-label="主機地圖，{len(groups)} 台主機">' + "".join(out) + lg + "</div>"
 
 
 def tall_bar(parts: list, total: float, unit: str = "G") -> str:
@@ -977,7 +976,7 @@ def pipeline(stages: list) -> str:
     chips = "".join(
         f'<div class="pstage {st}"><span class="t"><span aria-hidden="true" style="color:{ {"done":"var(--ok)","cur":"var(--blue)","wait":"var(--warn)","fail":"var(--danger)","todo":"var(--faint)"}[st] }">{icon[st]}</span>{n}</span>'
         f'<span class="mono">{dur}</span><span>{det}</span></div>' for n, st, dur, det in stages)
-    return f'<div class="pipe">{chips}</div>'
+    return f'<div class="pipe" style="--n:{len(stages)}">{chips}</div>'
 
 
 def topology(columns: list, links: list, w: int = 0, box_w: int = 176, box_h: int = 44, gap: int = 12, col_gap: int = 88, max_rows: int = 6) -> str:
