@@ -375,7 +375,7 @@ def projects() -> str:
     <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px">
       <div class="name">{U.crumbs([("專案與服務", "Projects.dc.html")])}<h1>shop</h1></div>
       <span class="note mono">github.com/hazelnut/shop</span>
-      <div class="wrap" style="margin-left: auto"><a class="btn pri" href="DeployCheck.dc.html">檢視待批准 · 計畫 #418</a><button type="button" class="btn">重新部署目前版本…</button><a class="btn" href="ProjectEnv.dc.html">環境變數</a><a class="btn" href="ProjectTriggers.dc.html">自動部署設定</a></div>
+      <div class="wrap" style="margin-left: auto"><a class="btn pri" href="DeployCheck.dc.html">檢視待批准 · 計畫 #418</a><button type="button" class="btn">重新部署目前版本</button><a class="btn" href="ProjectEnv.dc.html">環境變數</a><a class="btn" href="ProjectTriggers.dc.html">自動部署設定</a></div>
     </div>"""
     tabs = ('<div class="panel"><div class="tabs" role="tablist"><button type="button" class="tab on" role="tab" aria-selected="true">production</button>'
             '<button type="button" class="tab" role="tab" aria-selected="false">staging</button><button type="button" class="tab" aria-label="新增環境">＋ 環境</button></div>'
@@ -403,7 +403,7 @@ def projects() -> str:
       <div style="padding:10px 14px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px;background:var(--raised)">
         <div class="wrap"><strong>部署 #402 和目前（#403）的差別</strong><span class="note">1 個 commit · compose 1 處</span></div>
         <div class="mono" style="font-size:12px"><span style="color:var(--danger)">− image: redis:7.2</span><br><span style="color:var(--ok)">+ image: redis:7.4</span></div>
-        <div class="wrap">{U.status("warn", "#402 部署後健康檢查失敗，當時自動回滾")}<button type="button" class="btn sm">回到 #402…</button><span class="note">回到哪一版都走變更計畫，失敗會自動回到目前版本</span></div></div>
+        <div class="wrap">{U.status("warn", "#402 部署後健康檢查失敗，當時自動回滾")}<button type="button" class="btn sm">回到 #402</button><span class="note">回到哪一版都走變更計畫，失敗會自動回到目前版本</span></div></div>
       <div class="row dprow"><span>部署 #401</span><span class="mono">4e7a9c0 新增 webhook 重試</span><span class="c3">Webhook</span><span class="mono c4">1 分 51 秒</span><span class="wrap">{U.status("ok", "成功")}<a class="btn sm" href="WorkCenter.dc.html">日誌</a><button type="button" class="btn sm">和目前比較</button></span></div>
     </section>"""
 
@@ -725,7 +725,7 @@ def deploy_check(confirm: bool = False) -> str:
     <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px">
       <div class="name">{U.crumbs([("工作中心", "WorkCenter.dc.html"), ("等待批准", "WorkCenter.dc.html#approve")])}<h1>變更計畫 #418 · shop production</h1></div>
       {U.status("warn", "等待批准 · 44 分")}
-      <div class="wrap" style="margin-left: auto"><button type="button" class="btn">拒絕</button><button type="button" class="btn pri">批准並部署…</button></div>
+      <div class="wrap" style="margin-left: auto"><button type="button" class="btn">拒絕</button><button type="button" class="btn pri">批准並部署</button></div>
     </div>"""
     summary = f"""
     <div class="panel"><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr)); gap: 10px 16px; padding: 12px 14px; font-size: 13px">
@@ -734,7 +734,7 @@ def deploy_check(confirm: bool = False) -> str:
     checks = f"""
     <section class="panel" aria-labelledby="h-chk">
       <div class="ph"><h2 id="h-chk">預檢 · 1 高風險、1 警告、6 通過</h2><span class="sub">完成於 02:58:41 · 18 秒</span></div>
-      <div class="check"><span class="mk dng" aria-hidden="true"></span><span><strong>高風險：新增 root 檔案系統掛載</strong><br><span class="ev">compose.yaml:41 · shop-worker · volumes: /:/host:ro</span><br><span class="note">影響：容器可讀整台主機的檔案，含其他專案的資料與機密參照。即使唯讀也超出 shop-worker 原本的範圍。</span></span><span class="note">需要擁有者批准</span></div>
+      <div class="check"><span class="mk dng" aria-hidden="true"></span><span><strong>高風險：新增 root 檔案系統掛載</strong><br><a class="ev" href="#diff-41">compose.yaml:41 · shop-worker · volumes: /:/host:ro</a><br><span style="color:var(--muted);font-size:12.5px">容器可讀整台主機的檔案，含其他專案的資料與機密</span></span><span class="note">需要擁有者批准</span></div>
       <div class="check"><span class="mk warn" aria-hidden="true"></span><span><strong>警告：映像標籤由 commit 短碼改成 latest</strong><br><span class="ev">compose.yaml:12 · shop-api · image: …/shop-api:latest</span><br><span class="note">規則：映像標籤應為固定 commit 短碼 · 影響：回滾目標不可確定</span></span><span class="note">可批准</span></div>
       <div class="check"><span class="mk ok" aria-hidden="true"></span><span>映像可拉取（ghcr.io 認證有效）<br><span class="ev">shop-api:9b3e7f1 · 212 MB · shop-worker:9b3e7f1 · 198 MB</span></span><span class="note">通過</span></div>
       <div class="check"><span class="mk ok" aria-hidden="true"></span><span>Port 無衝突<br><span class="ev">8080 → 僅內部，由 Zentinel 轉發 443</span></span><span class="note">通過</span></div>
@@ -755,7 +755,7 @@ def deploy_check(confirm: bool = False) -> str:
         <div><span class="ln">38</span><span class="ln">38</span><span>  shop-worker:</span></div>
         <div><span class="ln">39</span><span class="ln">39</span><span>    image: ghcr.io/hazelnut/shop-worker:9b3e7f1</span></div>
         <div class="add"><span class="ln"></span><span class="ln">40</span><span>+   volumes:</span></div>
-        <div class="add hot"><span class="ln"></span><span class="ln">41</span><span>+     - /:/host:ro</span></div>
+        <div class="add hot" id="diff-41"><span class="ln"></span><span class="ln">41</span><span>+     - /:/host:ro</span></div>
         <div class="add"><span class="ln"></span><span class="ln">42</span><span>+     - shop-tmp:/tmp</span></div>
       </div>
     </section>"""
@@ -779,7 +779,7 @@ def deploy_check(confirm: bool = False) -> str:
       <div class="row"><span class="mono">shop-worker</span><span>{U.status("ok", "無縫替換")}</span><span class="c3 note">新舊同時消費佇列 · 可接受</span></div>
       <div class="row"><span class="mono">shop-db、shop-redis</span><span>{U.status("info", "不重建")}</span><span class="c3 note">這次沒有變更</span></div>
     </section>"""
-    main = head + summary + checks + swap + diff + modal
+    main = head + summary + checks + diff + swap + modal
     return U.shell("jobs", main)
 
 
@@ -940,7 +940,7 @@ def websites() -> str:
 
 # ---------- 儲存與備份 ----------
 def storage() -> str:
-    head = U.page_head("儲存與備份", OBS, '<a class="btn pri" href="BackupCreate.dc.html">新增備份任務</a><span tabindex="0" data-tip="改用 UUID 掛載，插錯磁碟時不會把資料寫到別顆；不用重開機，下次掛載生效"><button type="button" class="btn">用 UUID 固定 jp-02 /mnt/data…</button></span><a class="btn" href="ContainerResources.dc.html">預覽可回收空間</a>')
+    head = U.page_head("儲存與備份", OBS, '<a class="btn pri" href="BackupCreate.dc.html">新增備份任務</a><span tabindex="0" data-tip="改用 UUID 掛載，插錯磁碟時不會把資料寫到別顆；不用重開機，下次掛載生效"><button type="button" class="btn">用 UUID 固定 jp-02 /mnt/data</button></span><a class="btn" href="ContainerResources.dc.html">預覽可回收空間</a>')
     tiles = '<div class="tiles">' + "".join([
         U.stat_tile("資料碟合計", "1.32", "/ 1.98 TiB", "<a href=\"ContainerResources.dc.html\">jp-02 15 天後滿 · 處理 →</a>", False, spark=walk(12, 1200, 20, 1100, 1330)),
         U.stat_tile("沒用 UUID 掛載", "1", "磁碟", "hazel-jp-02 /mnt/data · 用裝置名稱 sdb1 掛載", False),
@@ -1536,7 +1536,7 @@ def _locked_acts(keys, why):
 
 
 def container_resources() -> str:
-    head = U.page_head("容器資源", OBS, '<button type="button" class="btn pri">拉取映像</button><button type="button" class="btn">建置映像</button><button type="button" class="btn">清理…</button>')
+    head = U.page_head("容器資源", OBS, '<button type="button" class="btn pri">拉取映像</button><button type="button" class="btn">建置映像</button><button type="button" class="btn">清理</button>')
     tabs = ('<div class="panel"><div class="tabs" role="tablist"><a class="tab" role="tab" aria-selected="false" href="Containers.dc.html">容器 · 16</a>'
             '<button type="button" class="tab on" role="tab" aria-selected="true">映像 · 23</button><button type="button" class="tab" role="tab" aria-selected="false">儲存卷 · 9</button>'
             '<button type="button" class="tab" role="tab" aria-selected="false">網路 · 6</button><button type="button" class="tab" role="tab" aria-selected="false">建置快取</button>'
@@ -1724,7 +1724,7 @@ def node_ledger_broken() -> str:
     head = node_head("hazel-tw-01", U.status("dng", "帳本無法使用"), "最後聯絡 2 秒前", '<button type="button" class="btn">下載診斷包</button>') + node_tabs("變更帳本")
     bar = ('<div class="cdown" role="alert"><span class="t"><strong>這台主機的變更帳本無法使用 · 03:40 起</strong>'
            f'<span>{U.status("dng", "完整性檢查失敗 · 第 1,281 筆的雜湊與下一筆的紀錄不符")}</span>'
-           '<span class="note">修好之前，這台主機的所有變更都會被拒絕；讀取、監控、日誌與終端機照常可用</span></span>'
+           '<span style="color:var(--muted);font-size:12.5px">修好之前，這台主機的所有變更都會被拒絕；讀取、監控、日誌與終端機照常可用</span></span>'
            '<span class="acts2"><button type="button" class="btn pri">從 控制中心副本修復</button><button type="button" class="btn">看檢查結果</button></span></div>')
     main = head + bar + _fp("修復方式", f"""
       <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">
@@ -1966,7 +1966,7 @@ config check failed, refusing to start</div></details>""")
         return (f'<div class="savebar" style="position:static"><span class="dot" aria-hidden="true"></span><span><strong>{text}</strong><span class="note"> · {effect}</span></span>'
                 f'<span class="wrap sbtns">{state}</span></div>')
     savebars = box("儲存列的其他狀態", f"""
-      {sb(".env：1 處未儲存", "儲存中", '<button type="button" class="btn" disabled>捨棄</button><button type="button" class="btn pri" disabled>' + U.icon("restart", 14) + '儲存中…</button>')}
+      {sb(".env：1 處未儲存", "儲存中", '<button type="button" class="btn" disabled>捨棄</button><button type="button" class="btn pri" disabled>' + U.icon("restart", 14) + '儲存中</button>')}
       {sb(".env：1 處未儲存", "沒有存成功 · 磁碟唯讀（PLATFORM_DEGRADED）", '<button type="button" class="btn">捨棄</button><button type="button" class="btn pri">再試一次</button>')}
       <div style="border:1px solid var(--line);border-radius:8px;background:var(--raised);padding:14px;display:flex;flex-direction:column;gap:10px" role="dialog" aria-label="離開前">
         <strong>.env 有 1 處沒存，要離開嗎？</strong>
@@ -2510,7 +2510,7 @@ def system() -> str:
     <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px">
       <div class="name">{U.crumbs([("主機", "Nodes.dc.html")])}<h1 class="mono">hazel-tw-01</h1></div>
       {U.status("ok", "連線中")}<span class="note">最後聯絡 2 秒前</span>
-      <div class="wrap" style="margin-left: auto"><a class="btn" href="NodeTerminal.dc.html">終端機</a><button type="button" class="btn">重新開機 tw-01…</button><button type="button" class="btn pri">套用 5 個安全更新到 tw-01…</button></div>
+      <div class="wrap" style="margin-left: auto"><a class="btn" href="NodeTerminal.dc.html">終端機</a><button type="button" class="btn">重新開機 tw-01</button><button type="button" class="btn pri">套用 5 個安全更新到 tw-01</button></div>
     </div>"""
     tabs = ('<nav class="subtabs" aria-label="跳到">' + "".join(f'<a class="st2{" on" if i == 0 else ""}" href="#{h}"{" aria-current=true" if i == 0 else ""}>{t}</a>' for i, (t, h) in enumerate([("套件與更新", "h-pk"), ("服務與計時器", "h-sv"), ("使用者與 sudo", "h-us"), ("網路", "h-net"), ("掛載", "h-mnt"), ("時間與開關機", "h-time"), ("主機工具", "h-tools")])) + '</nav>')
     tools = f"""
@@ -2928,7 +2928,7 @@ def app_install() -> str:
     preflight = f"""
     <section class="panel"><div class="ph"><h2>安裝前檢查</h2></div>
       <div style="padding:12px 16px">{U.pipeline([("主機", "done", "tw-01", "amd64 · Docker 27.3"), ("相依", "done", "PostgreSQL 16", "新建 · 專用"), ("Port", "done", "8081 空", ""), ("資料目錄", "done", "519 GiB", "綁定 UUID"), ("記憶體", "done", "20 GiB 可用", "需 2 GiB"), ("入口", "todo", "cloud.example.tw", "憑證申請")])}</div>
-      <div style="padding:0 16px 12px;display:flex;flex-direction:column;gap:6px"><span class="note">安裝＝一個工作：拉取映像 → 建立網路與資料目錄 → 啟動 → 健康檢查 → 綁定入口。關掉頁面照跑。</span>
+      <div style="padding:0 16px 12px;display:flex;flex-direction:column;gap:6px">
       <div class="wrap"><button type="button" class="btn pri">安裝</button><button type="button" class="btn">只建立不啟動</button><button type="button" class="btn">加入批次安裝</button></div></div>
     </section>"""
     main = head + meta + basic + params + f'<div class="cg">{resources}{advanced}</div>' + preflight
@@ -3131,8 +3131,12 @@ def _chk(kind, title, ev, res):
 def _choice(name, ver, lines, btn, on=False, href=None):
     tag = "a" if href else "div"
     h = f' href="{href}"' if href else ""
-    return (f'<{tag} class="ncard{" on" if on else ""}"{h}><div class="nh"><span class="n">{name}</span><span class="d">{ver}</span></div>'
-            + "".join(f'<span class="note">{l}</span>' for l in lines) + f'<div class="wrap">{btn}</div></{tag}>')
+    # 整張卡片是點選目標，選中的用左上角圓點表示。只有不是「選擇／已選」的動作才留按鈕。
+    plain = re.sub(r"<[^>]+>", "", btn).strip()
+    act = "" if plain in ("選擇", "已選", "已選擇") else f'<div class="wrap">{btn}</div>'
+    role = "" if href else f' role="radio" aria-checked="{"true" if on else "false"}" tabindex="0"'
+    return (f'<{tag} class="ncard pick{" on" if on else ""}"{h}{role}><div class="nh"><span class="rdo" aria-hidden="true"></span><span class="n">{name}</span><span class="d">{ver}</span></div>'
+            + "".join(f'<span class="note">{l}</span>' for l in lines) + f'{act}</{tag}>')
 
 
 def containers_empty() -> str:
@@ -3283,6 +3287,11 @@ def _form_head(crumbs, title, actions):
       <div class="wrap" style="margin-left:auto">{actions}</div></div>"""
 
 
+def _bar(body):
+    """表單底部的動作列：沒有標題的面板。主要動作只出現在這裡，頁首只留取消。"""
+    return f'<div class="panel" style="padding-top:14px">{body}</div>'
+
+
 def _submit(primary, secondary=""):
     sec = f'<button type="button" class="btn">{secondary}</button>' if secondary else ""
     return f'<div class="wrap" style="padding:0 16px 14px"><button type="button" class="btn pri">{primary}</button>{sec}<button type="button" class="btn">取消</button></div>'
@@ -3290,7 +3299,7 @@ def _submit(primary, secondary=""):
 
 # ---------- 建立容器 ----------
 def container_create() -> str:
-    head = _form_head([("容器", "Containers.dc.html")], "建立容器", '<a class="btn" href="Containers.dc.html">取消</a><button type="button" class="btn pri">建立並啟動</button>')
+    head = _form_head([("容器", "Containers.dc.html")], "建立容器", '<a class="btn" href="Containers.dc.html">取消</a>')
     kind = f'<div class="panel" style="padding:10px 14px">{_seg(["單一容器", "Compose 專案（到專案與服務）"], 0, "建立方式")}</div>'
     image = _fp("映像與位置", _grid(
         _fld("映像", _in("ghcr.io/<wbr>hazelnut/<wbr>report-worker:1.4.0", mono=True, tail=U.status("ok", "tw-01 已有")), "支援 tag 與 digest"),
@@ -3328,7 +3337,7 @@ def container_create() -> str:
 
 # ---------- 新增站點 ----------
 def site_create() -> str:
-    head = _form_head([("網站與入口", "Websites.dc.html")], "新增站點", '<a class="btn" href="Websites.dc.html">取消</a><button type="button" class="btn pri">建立站點</button>')
+    head = _form_head([("網站與入口", "Websites.dc.html")], "新增站點", '<a class="btn" href="Websites.dc.html">取消</a>')
     kinds = ('<section class="panel"><div class="ph"><h2>類型</h2></div><div class="fleet choices">'
              + _choice("反向代理", "最常用", ["轉到專案服務、容器或主機 Port"], U.status("ok", "已選"), on=True)
              + _choice("靜態網站", "", ["由 Zentinel 直接提供檔案"], '<a class="btn sm" href="SiteStatic.dc.html">選擇</a>')
@@ -3407,7 +3416,7 @@ def firewall_rule() -> str:
 
 # ---------- 新增計畫任務 ----------
 def cron_create() -> str:
-    head = _form_head([("計畫任務", "Cron.dc.html")], "新增計畫任務", '<a class="btn" href="Cron.dc.html">取消</a><button type="button" class="btn pri">建立</button>')
+    head = _form_head([("計畫任務", "Cron.dc.html")], "新增計畫任務", '<a class="btn" href="Cron.dc.html">取消</a>')
     kinds = ('<section class="panel"><div class="ph"><h2>類型</h2></div><div class="fleet choices">'
              + _choice("腳本", "shell", ["在主機上以指定身分執行"], U.status("ok", "已選"), on=True)
              + _choice("備份", "", ["改到儲存與備份建立"], '<a class="btn sm" href="BackupCreate.dc.html">前往</a>')
@@ -3431,13 +3440,13 @@ def cron_create() -> str:
         _fld("錯過排程時（例如關機）", _seg(["跳過", "開機後補跑一次"], 1, "錯過排程")),
         _fld("逾時", _in("30 分")), _fld("失敗重試", _seg(["不重試", "重試 2 次"], 0, "失敗重試"), "腳本沒標成可重試時不自動重試"),
         _fld("資源上限", _in("CPU 1 核 · 記憶體 512 MiB")), _fld("通知", _dd("失敗時 → Telegram ops"))))
-    main = head + kinds + run + f'<div class="cg">{sched}{behave}</div>' + _fp("建立", '<div style="height:4px"></div>' + _submit("建立", "建立並立即試跑一次"))
+    main = head + kinds + run + f'<div class="cg">{sched}{behave}</div>' + _bar(_submit("建立", "建立並立即試跑一次"))
     return U.shell("cron", main)
 
 
 # ---------- 新增備份任務 ----------
 def backup_create() -> str:
-    head = _form_head([("儲存與備份", "Storage.dc.html")], "新增備份任務", '<a class="btn" href="Storage.dc.html">取消</a><button type="button" class="btn pri">建立</button>')
+    head = _form_head([("儲存與備份", "Storage.dc.html")], "新增備份任務", '<a class="btn" href="Storage.dc.html">取消</a>')
     src = ('<section class="panel"><div class="ph"><h2>備份什麼</h2></div><div class="fleet choices">'
            + _choice("應用", "", ["應用檔案＋它的資料庫"], '<button type="button" class="btn sm">選擇</button>')
            + _choice("資料庫", "shop-db", ["PostgreSQL 16.4 · 1.29 GiB"], U.status("ok", "已選"), on=True)
@@ -3469,8 +3478,8 @@ def backup_create() -> str:
         _fld("加密", _seg(["AES-256（金鑰在機密庫）", "不加密"], 0, "加密")), _fld("壓縮", _dd("zstd 等級 3")),
         _fld("增量", _seg(["關", "開"], 0, "增量")),
         _fld("驗證", '<div style="display:flex;flex-direction:column">' + _cb("傳輸後 sha256 校驗") + _cb("每週還原測試到暫存資料庫") + "</div>")))
-    account = f'<details class="panel"><summary class="ph" style="cursor:pointer"><h2>新增目的地 · S3 相容儲存</h2></summary>{account}</details>'
-    main = head + src + dup + f'<div class="cg">{what}{consist}</div>' + dest + account + f'<div class="cg">{sched}{secure}</div>' + _fp("建立", '<div style="height:4px"></div>' + _submit("建立", "建立並立即備份一次"))
+    account = f'<details class="panel" open><summary class="ph" style="cursor:pointer"><h2>新增目的地 · S3 相容儲存</h2></summary>{account}</details>'
+    main = head + src + dup + f'<div class="cg">{what}{consist}</div>' + dest + account + f'<div class="cg">{sched}{secure}</div>' + _bar(_submit("建立", "建立並立即備份一次"))
     return U.shell("storage", main)
 
 
@@ -3570,7 +3579,7 @@ def compose_editor() -> str:
     head = f"""
     <div class="phead"><div class="name">{U.crumbs([("專案與服務", "Projects.dc.html"), ("shop", "ProjectDetail.dc.html"), ("production", "ProjectDetail.dc.html")])}<h1 class="mono">compose.yaml</h1>{_dd("deploy/compose.yaml（1／2）")}</div>
       <span class="note">deploy/compose.yaml · 來自 GitHub hazelnut/shop@a3f9c1e</span>
-      <div class="wrap" style="margin-left:auto">{_seg(["編輯", "與線上比較"], 0, "檢視")}<button type="button" class="btn">儲存草稿</button><a class="btn pri" href="DeployCheck.dc.html">預覽變更計畫</a></div></div>"""
+      <div class="wrap" style="margin-left:auto">{_seg(["編輯", "與線上比較"], 0, "檢視")}</div></div>"""
     lines = ["services:", "  shop-api:", "    image: ghcr.io/hazelnut/shop-api:${TAG}", "    deploy:", "      replicas: 2", "    ports:", '      - "127.0.0.1:18080:8080"',
              "    env_file: .env", "    depends_on: [shop-db, shop-redis]", "  shop-worker:", "    image: ghcr.io/hazelnut/shop-worker:${TAG}", "    volumes:",
              "      - /:/host:ro", "  shop-redis:", "    image: redis:latest", "  shop-db:", "    image: postgres:16.4", "    volumes:", "      - shop-db-data:/var/lib/postgresql/data"]
@@ -3578,7 +3587,7 @@ def compose_editor() -> str:
     ed = "".join(f'<div class="ln{" " + marks[i] if i in marks else ""}"><span class="no">{i + 1}</span><span class="code">{l}</span></div>' for i, l in enumerate(lines))
     gitsrc = (f'<div class="banner" style="display:flex;flex-direction:column;gap:8px;align-items:flex-start">{U.status("info", "這個檔案在 GitHub 上")}'
               f'<span>在這裡改不會寫回 repo。存的時候選一種：</span>{_seg(["存成平台覆寫層 · 之後 push 也保留", "開 PR 到 hazelnut/shop", "建立 commit 到新分支"], 0, "存到哪裡")}'
-              f'<span class="note">覆寫層和 repo 不一致時，專案頁會標「和 repo 有差異」</span></div>')
+              f'<span style="color:var(--muted);font-size:12.5px">和 repo 不一致時，專案頁會標示</span></div>')
     editor = f'<section class="panel" aria-label="編輯器">{gitsrc}<div class="editor mono">{ed}</div></section>'
     issues = _fp("檢查 · 1 高風險、1 警告", f"""
       <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px">
@@ -3658,7 +3667,7 @@ def node_offline() -> str:
       </div>""")
     actions = _fp("可以做的事", '<div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">'
                   '<div class="wrap"><button type="button" class="btn pri">開主機商主控台 ↗</button><span tabindex="0" data-tip="TCP 22 逾時"><button type="button" class="btn" disabled>SSH 連線</button></span><button type="button" class="btn">標記為維護中（暫停告警）</button><button type="button" class="btn">通知值班 · ops-ann</button></div>'
-                  '<div class="wrap"><span class="note">修不好時</span><button type="button" class="btn">把 wiki 改部署到別台…</button><button type="button" class="btn">移除這台主機…</button></div>'
+                  '<div class="wrap"><span class="note">修不好時</span><button type="button" class="btn">把 wiki 改部署到別台</button><button type="button" class="btn">移除這台主機</button></div>'
                   '<div class="note">主機商主控台的網址在主機設定裡填；沒填時這顆按鈕會帶你去填</div></div>')
     main = head + f'<div class="cg">{impact}{timeline}</div>' + f'<div class="cg">{probes}{blocked}</div>' + actions
     return U.shell("nodes", main)
@@ -3722,7 +3731,7 @@ def project_env() -> str:
 
 # ---------- 邀請同事 ----------
 def user_invite() -> str:
-    head = _form_head([("身分與存取", "IAM.dc.html")], "邀請同事", '<a class="btn" href="IAM.dc.html">取消</a><button type="button" class="btn pri">送出邀請</button>')
+    head = _form_head([("身分與存取", "IAM.dc.html")], "邀請同事", '<a class="btn" href="IAM.dc.html">取消</a>')
     who = _fp("誰", _grid(_fld("Email", _in("mei@example.tw")), _fld("顯示名稱", _in("Mei")), _fld("登入方式", _seg(["密碼＋二次驗證", "公司帳號（OIDC）"], 0, "登入方式"))))
     roles = ('<section class="panel"><div class="ph"><h2>能做什麼</h2></div><div class="fleet choices">'
              + _choice("只能看", "唯讀", ["看得到畫面與日誌", "不能改任何東西、看不到機密值"], U.status("ok", "已選"), on=True)
@@ -3732,7 +3741,7 @@ def user_invite() -> str:
     scope = _fp("範圍", _grid(_fld("可以看的專案", '<div class="wrap">' + _cb("shop") + _cb("wiki", False) + "</div>"),
                              _fld("可以看的主機", '<div class="wrap">' + _cb("hazel-tw-01") + _cb("hazel-jp-02", False) + _cb("lab-mini", False) + "</div>"),
                              _fld("期限", _dd("不設期限")), _fld("二次驗證", U.status("ok", "第一次登入時強制設定"))))
-    main = head + who + roles + scope + _fp("送出", '<div style="height:4px"></div>' + _submit("送出邀請", "產生邀請連結"))
+    main = head + who + roles + scope + _bar(_submit("送出邀請", "產生邀請連結"))
     return U.shell("iam", main)
 
 
@@ -3752,7 +3761,7 @@ def setup() -> str:
       <span>手機不見時，用其中一組登入。每組只能用一次。</span><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;padding:12px;border:1px solid var(--line);border-radius:8px">{codes}</div>
       <div class="wrap"><button type="button" class="btn sm">{U.icon("download", 14)}下載</button><button type="button" class="btn sm">{U.icon("copy", 14)}複製</button></div>{_cb("我已經存在安全的地方", False)}<span tabindex="0" data-tip="勾選「我已經存在安全的地方」後才能繼續"><button type="button" class="btn pri" disabled style="min-height:40px;width:100%">繼續</button></span></section>"""
     s4 = f"""<section style="{card}" aria-labelledby="h-s4">{brand}<h1 id="h-s4" style="font-size:20px">開始使用</h1>
-      <span class="note">這台已經是第一台主機（hazel-tw-01）。接著可以：</span>
+      <span style="font-weight:500">hazel-tw-01 已經是第一台主機 · 接著可以</span>
       <a class="btn" href="Settings.dc.html" style="justify-content:flex-start">1 · 設定面板網址與 HTTPS</a>
       <a class="btn" href="GitHubSource.dc.html" style="justify-content:flex-start">2 · 連接 GitHub，部署第一個專案</a>
       <a class="btn" href="AddNode.dc.html" style="justify-content:flex-start">3 · 加入其他主機</a>
@@ -3855,7 +3864,7 @@ def unit_config() -> str:
       {f("└ db/compose.yaml", True, "—", U.attr("diff", "由 deploy/compose.yaml 的 include 帶入，不能另外勾選", "include"), "shop-db · 以 db/ 解析相對路徑", ok=False)}
       {f("deploy/docker-compose.yml", False, "—", scan_dep, "舊檔名")}
       {f("deploy/monitoring.yml", True, "2", manual, "加上 node-exporter")}
-      <div style="padding:10px 14px 12px" class="wrap"><button type="button" class="btn sm">手動加入其他檔案…</button><button type="button" class="btn sm">預覽合併結果</button><span class="note">平台的覆寫層永遠排在最後</span></div>""",
+      <div style="padding:10px 14px 12px" class="wrap"><button type="button" class="btn sm">手動加入其他檔案</button><button type="button" class="btn sm">預覽合併結果</button><span class="note">平台的覆寫層永遠排在最後</span></div>""",
       sub="掃描整個 repo 的 compose.yaml、compose.yml、docker-compose.yml、docker-compose.yaml 與對應的 override 檔；一定要指定主檔")
     prof = _fp("Profile", f"""
       <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px">
@@ -3973,7 +3982,7 @@ def env_upload() -> str:
 
 # ---------- 新增站點：靜態網站 ----------
 def site_static() -> str:
-    head = _form_head([("網站與入口", "Websites.dc.html"), ("新增站點", "SiteCreate.dc.html")], "靜態網站", '<a class="btn" href="Websites.dc.html">取消</a><button type="button" class="btn pri">建立站點</button>')
+    head = _form_head([("網站與入口", "Websites.dc.html"), ("新增站點", "SiteCreate.dc.html")], "靜態網站", '<a class="btn" href="Websites.dc.html">取消</a>')
     kinds = ('<section class="panel"><div class="ph"><h2>類型</h2></div><div class="fleet choices">'
              + _choice("反向代理", "", ["轉到專案服務、容器或主機 Port"], '<a class="btn sm" href="SiteCreate.dc.html">選擇</a>')
              + _choice("靜態網站", "", ["由 Zentinel 直接提供檔案"], U.status("ok", "已選"), on=True)
@@ -3981,13 +3990,13 @@ def site_static() -> str:
              + _choice("重新導向", "", ["整個網域轉到另一個網址"], '<button type="button" class="btn sm">選擇</button>') + "</div></section>")
     def disk(name, mnt, free, default, created, on=False):
         st = U.status("ok", "已建立") if created else U.status("info", "第一次用時建立")
-        return (f'<div class="ncard{" on" if on else ""}"><div class="nh"><span class="n mono">{mnt}</span><span class="d">{name}</span></div>'
+        return (f'<div class="ncard pick{" on" if on else ""}" role="radio" aria-checked="{"true" if on else "false"}" tabindex="0"><div class="nh"><span class="rdo" aria-hidden="true"></span><span class="n mono">{mnt}</span><span class="d">{name}</span></div>'
                 f'{U.meter(free[0] / free[1] * 100, f"{free[0]}/{free[1]} GiB")}<span class="note">預設位置</span><span class="mono">{default}</span>'
-                f'<div class="wrap">{st}{U.status("ok", "已選") if on else chr(32)}</div></div>')
+                f'<div class="wrap">{st}</div></div>')
     where = f"""
     <section class="panel" aria-labelledby="h-loc">
       <div class="ph"><h2 id="h-loc">檔案放在哪裡</h2><span class="note">Zentinel @ hazel-tw-01 直接讀取，所以要在 tw-01 上</span></div>
-      <div style="padding:12px 14px 4px">{_seg(["用預設位置", "選擇資料夾…", "上傳檔案", "從 Git 部署"], 0, "來源")}</div>
+      <div style="padding:12px 14px 4px">{_seg(["用預設位置", "選擇資料夾", "上傳檔案", "從 Git 部署"], 0, "來源")}</div>
       <div class="fleet choices">
         {disk("資料碟 · sdb1", "/mnt/data", (412, 931), "/mnt/data/sites/report.example.tw", True, on=True)}
         {disk("系統碟 · nvme0n1p2", "/", (36, 94), "/srv/sites/report.example.tw", False)}
@@ -4002,7 +4011,7 @@ def site_static() -> str:
         _fld("首頁", _in("index.html", mono=True)), _fld("找不到頁面時", _seg(["404 頁", "回到 index.html（單頁應用）"], 1, "找不到頁面")),
         _fld("目錄列表", _seg(["關", "開"], 0, "目錄列表")), _fld("快取", _dd("HTML 不快取 · 其他 7 天"))))
     domains = _fp("網域與 HTTPS", _grid(_fld("網域", _in("report.example.tw", mono=True)), _fld("HTTPS", _seg(["自動申請（推薦）", "先不要"], 0, "HTTPS"))))
-    main = head + kinds + where + f'<div class="cg">{serve}{domains}</div>' + _fp("建立", '<div style="height:4px"></div>' + _submit("建立站點"))
+    main = head + kinds + where + f'<div class="cg">{serve}{domains}</div>' + _bar(_submit("建立站點"))
     return U.shell("web", main)
 
 
@@ -4193,7 +4202,7 @@ def fail2ban() -> str:
       <div class="row hd"><span>主機</span><span>服務</span><span>jail</span><span>封鎖中</span><span>封鎖方式</span><span class="c5"></span><span></span></div>
       {host("hazel-tw-01", U.status("dng", "設定錯誤 · 用上一版執行中"), "fail2ban 1.0.2", "4", "9", U.status("ok", "nftables · 和防火牆一致"), '<span class="mono">hazelminx.local:41</span> 語法錯誤')}
       {host("hazel-jp-02", U.status("dng", "沒有回應 · 上次觀測"), "fail2ban 1.0.2", "2", "2*", U.status("warn", "iptables · 防火牆是 nftables"), '<button type="button" class="btn sm">改成 nftables</button>')}
-      {host("lab-mini", U.status("none", "沒有安裝"), "—", "—", "—", "—", '<button type="button" class="btn sm">安裝 fail2ban…</button>')}""")
+      {host("lab-mini", U.status("none", "沒有安裝"), "—", "—", "—", "—", '<button type="button" class="btn sm">安裝 fail2ban</button>')}""")
     err = f"""
     <section class="panel" aria-labelledby="h-f2e">
       <div class="ph"><h2 id="h-f2e">tw-01 · 套用前檢查沒過</h2><span class="sub">沒有重新載入；目前執行的是 v11</span></div>
@@ -4244,7 +4253,7 @@ ERROR  Failed during configuration: /etc/fail2ban/jail.d/hazelminx.local, line 4
     def ban(ip, where, why, since, left, pct):
         return (f'<div class="row srow"><span class="name"><span class="n mono">{ip}</span><span class="d">{why}</span></span><span>{where}</span>'
                 f'<span class="c3 mono">{since}</span><span class="c4">{U.meter(pct, left, warn=101, danger=101)}</span><span class="c4"></span><span class="c5"></span>'
-                f'<span class="wrap" style="flex-wrap:nowrap"><button type="button" class="btn sm">解封…</button>{U.actions(["more"])}</span></div>')
+                f'<span class="wrap" style="flex-wrap:nowrap"><button type="button" class="btn sm">解封</button>{U.actions(["more"])}</span></div>')
     bans = f"""
     <section class="panel" aria-labelledby="h-f2b">
       <div class="ph"><h2 id="h-f2b">封鎖中 · 11</h2><span class="sub">Fail2ban、手動、WAF 放在同一張表</span><div class="wrap" style="margin-left:auto">{U.cb_inline("一台封鎖，所有主機一起封鎖") if hasattr(U, "cb_inline") else _cb("一台封鎖，所有主機一起封鎖", False)}</div></div>
@@ -4262,7 +4271,7 @@ ERROR  Failed during configuration: /etc/fail2ban/jail.d/hazelminx.local, line 4
 
 # ---------- 還原備份 ----------
 def backup_restore() -> str:
-    head = _form_head([("儲存與備份", "Storage.dc.html")], "還原 shop-db", '<a class="btn" href="Storage.dc.html">取消</a><button type="button" class="btn pri">預覽影響</button>')
+    head = _form_head([("儲存與備份", "Storage.dc.html")], "還原 shop-db", '<a class="btn" href="Storage.dc.html">取消</a>')
     def pt(when, size, where, verified, on=False):
         return (f'<div class="row{" sel" if on else ""}"><span class="wrap" style="flex-wrap:nowrap"><input type="radio" name="pt"{" checked" if on else ""} aria-label="{when}"><span class="mono">{when}</span></span>'
                 f'<span class="mono">{size}</span><span>{where}</span><span>{verified}</span><span><button type="button" class="btn sm">{U.icon("download", 14)}下載</button></span></div>')
@@ -4604,7 +4613,38 @@ def iconize(html: str) -> str:
         body = re.sub(r'<div class="foot"><span class="hint".*?</span></div>', "", body, flags=re.S)
         return body.replace("</h2>", "</h2>" + "".join(hints), 1)
     html = re.sub(r'<section\b.*?</section>', sec, html, flags=re.S)
-    return html
+    return _adopt_hints(html)
+
+
+def _adopt_hints(html: str) -> str:
+    """ⓘ 不單獨佔一行：前後都是標籤（沒有緊鄰文字）的 ⓘ，移到它前面最近的標題後面。"""
+    TITLES = ('<span class="n"', '<span class="n ', '<span style="font-weight:500">', "<h2", "<h3", '<span class="t"')
+    pos = 0
+    while True:
+        m = re.compile(r'(?<=>)\s*(<span class="hint"[^>]*>.*?</span>)\s*(?=<)', re.S).search(html, pos)
+        if not m:
+            return html
+        k, hint = m.start(), m.group(1)
+        prev = html[:k].rstrip()
+        # 緊接在文字或另一個 ⓘ 後面的不算孤立
+        if not prev.endswith(("</div>", "</span>", "</a>", "</section>", "</button>", "</label>")) or prev.endswith('</svg></span>'):
+            pos = m.end(); continue
+        t = max(html.rfind(x, max(0, k - 1600), k) for x in TITLES)
+        if t == -1:
+            pos = m.end(); continue
+        tag = re.match(r"<(\w+)", html[t:]).group(1)
+        depth, i = 0, t
+        while True:
+            n = re.compile(rf"<(/?){tag}\b").search(html, i)
+            depth += 1 if n.group(1) == "" else -1
+            i = n.end()
+            if depth == 0:
+                break
+        end = i - len(tag) - 2          # 標題的結束標籤之前
+        if end > k:
+            pos = m.end(); continue
+        html = html[:end] + " " + hint + html[end:k] + html[m.end():]
+        pos = m.end()
 
 
 def declutter(html: str) -> str:
