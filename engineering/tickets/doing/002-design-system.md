@@ -13,9 +13,9 @@ DESIGN.md 定義品牌、色彩、字體、間距、元件狀態、淺深色 tok
 
 ## Acceptance criteria
 
-- [x] 每個主要畫面回答「這是什麼、在哪裡、現在怎麼了、接下來能做什麼」（證據：`docs/design/screenshots/screens/`，12 個畫板每頁標題列含觀測時間與狀態、每張卡片有下一步）
+- [x] 每個主要畫面回答「這是什麼、在哪裡、現在怎麼了、接下來能做什麼」（證據：`design/screenshots/screens/`，12 個畫板每頁標題列含觀測時間與狀態、每張卡片有下一步）
 - [x] 狀態不只靠顏色；危險操作顯示實際節點／磁碟／環境名稱（證據：`DESIGN.md` Shapes 節；`DeployConfirm`、`States` 畫板確認框寫出 hazel-tw-01、production、sda1 並要求輸入）
-- [x] 原型經設計審查（design-review）記錄於 DESIGN-REVIEW.md（2026-11-07 第一輪，總評 7.8，未解決項目已指派票 005、017、096）
+- [x] 原型經設計審查（design-review）記錄於當時的設計審查紀錄檔（已移除，留下的項目在各票的 Notes）（2026-11-07 第一輪，總評 7.8，未解決項目已指派票 005、017、096）
 
 ## Acceptance tests（第 42 章）
 
@@ -32,9 +32,25 @@ DESIGN.md 定義品牌、色彩、字體、間距、元件狀態、淺深色 tok
 ## Delivery record
 
 - 需求：第 07 章介面與操作體驗（UI-005、UI-006、UI-007、UI-011、UI-012 由其他票擁有，本票提供設計基準）。
-- 變更：`DESIGN.md`（方向 B 航站，含圖表規則與驗證過的序列色）、`DESIGN-REVIEW.md`、`docs/design/research-dashboards.md`、`docs/design/screens/` 12 個畫板、`docs/design/tools/` 產生器、`docs/design/screenshots/`。
+- 變更：`DESIGN.md`（方向 B 航站，含圖表規則與驗證過的序列色）、設計審查紀錄檔（已移除）、`design/research-dashboards.md`、`design/screens/` 12 個畫板、`design/tools/` 產生器、`design/screenshots/`。
 - 測試環境：Playwright 1.65（Chromium headless）1440×900 與 360×900，深淺兩主題，全頁截圖；dataviz 驗證器檢查序列色；WCAG 對比公式檢查文字色。
 - 正常案例：12 畫板 × 2 主題渲染零 console 錯誤、無橫向溢出（scrollWidth = viewport）。
 - 失敗案例：第一輪發現 9 個缺陷（長條壓軸、標記文字裁切、寬圖字放大、註腳樣式、欄位重疊、X 標籤重疊、手機導覽直排、差異溢出、小字對比不足），已修正並重新渲染。
 - 資料與安全影響：無（純文件與靜態原型）。
 - 未驗證：T-117 的實際鍵盤走查與螢幕閱讀器要等票 005 有可執行前端；畫布的主題切換互動只在本機靜態渲染驗證。
+
+## Notes
+
+### 待補的設計缺口
+
+- 主機頁看帳本等六項設計缺口，列在 PR #122 描述的「設計缺口」一節。
+- 票 010 的「設計缺口」一節列出 API 已有、畫面還沒畫的狀態。
+
+### 介面檢查找到的 62 個問題還沒修
+
+- **Asked:** 使用者 2026-11-11 要求檢查整個介面，把不合理的地方標在設計畫布上。
+- **Done and checked:** 逐張看過 74 張畫板的淺色版，在畫布第 45 版每張畫板右邊貼了便條，共 62 張。紅色 8 張是破版或會誤導人，其餘是橘色與灰色。畫布要登入才能看，便條實際顯示的樣子沒有確認過。
+- **Tried and failed:** 沒有。
+- **Next:** 等使用者決定先修哪些。修的時候改 `/design/tools/build_screens.py`，重新產生畫板，跑 `/design/tools/scan_layout.py` 確認 79 張都沒有版面問題，再發布到畫布。先修紅色的：安全更新的表格破版、計畫任務有一列破版、手機版工作中心的標籤與表格、主機頁數量對不上、檔案頁讓人編輯平台產生的 `.env`、主機日誌的篩選與內容不符。
+- **Not reviewed:** 第一次啟動、⌘K 搜尋、錯誤與空狀態、部署確認、API 失敗紀錄這 5 張，以及全部畫板的深色版。
+- **Sources:** 設計畫布 <https://claude.ai/artifact/NBXgFGYEiZVnKLraoa7Nt8>；視覺基準 `/DESIGN.md`。

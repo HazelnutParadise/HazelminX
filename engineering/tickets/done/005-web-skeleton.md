@@ -9,7 +9,7 @@
 
 ## What it delivers
 
-web/ 使用 React、TypeScript 與 Vite+：元件庫 Cloudflare Kumo（`@cloudflare/kumo`）＋ `theme-hazelminx.css` 覆蓋語意 token（`docs/design/component-mapping.md`）、路由殼層、設計 token、zh-TW／en 的 i18n、淺深色、API client 產生器、vitest 與 vp check；建置產物可被 Core 嵌入。
+web/ 使用 React、TypeScript 與 Vite+：元件庫 Cloudflare Kumo（`@cloudflare/kumo`）＋ `theme-hazelminx.css` 覆蓋語意 token（`design/component-mapping.md`）、路由殼層、設計 token、zh-TW／en 的 i18n、淺深色、API client 產生器、vitest 與 vp check；建置產物可被 Core 嵌入。
 
 ## Acceptance criteria
 
@@ -19,8 +19,8 @@ web/ 使用 React、TypeScript 與 Vite+：元件庫 Cloudflare Kumo（`@cloudfl
   - 證據：`web/src/components/RawMessage.tsx`（`RawMessage`、`ApiErrorMessage`）；`components.test.tsx` 驗證原文逐字保留（含換行、`translate="no"`）、來源與 trace ID、未知錯誤碼退回 HTTP 狀態。
 - [x] 日期以使用者時區顯示，儲存值為 UTC RFC 3339
   - 證據：`web/src/lib/time.ts`（`parseRfc3339` 嚴格驗證、`toRfc3339Utc`、`formatDateTime` 依時區與語系、`formatElapsed`）；`time.test.ts` 44 條含跨日（2026-11-08T20:00:00Z 在 Asia/Taipei 顯示 11/09）。目前「使用者時區」取瀏覽器時區；帳號層級的時區設定屬身分與設定的票。
-- [x] Kumo 套上 HazelminX 主題後，`docs/design/tools/` 的對比、觸控目標、可及名稱掃描在殼層頁面全部通過
-  - 證據：repo 的 `docs/design/tools/` 只有版面掃描（`scan_layout.py`），對比、觸控目標、可及名稱沒有腳本，所以寫成等效的 Playwright 掃描 `web/e2e/scan.ts`：axe-core WCAG 2.1 A/AA、自算文字對比（含漸層與疊層，axe 漏掉的 Kumo 主要按鈕白字 2.00:1 由它抓到並已修正）、觸控目標（手機 ≥ 44、桌面 ≥ 24）、整頁溢出、文字裁切、未翻譯的 i18n 鍵。涵蓋總覽、平台設定、巢狀路徑、404、共用元件展示頁 × 360／768／1024／1280／1440／1920 × 深淺色 × 中英文 × 側欄收合：開發伺服器 85 條、Core 嵌入的正式建置 71 條全部通過（另含錯誤邊界出現即判失敗、主控台錯誤即判失敗）。
+- [x] Kumo 套上 HazelminX 主題後，`design/tools/` 的對比、觸控目標、可及名稱掃描在殼層頁面全部通過
+  - 證據：repo 的 `design/tools/` 只有版面掃描（`scan_layout.py`），對比、觸控目標、可及名稱沒有腳本，所以寫成等效的 Playwright 掃描 `web/e2e/scan.ts`：axe-core WCAG 2.1 A/AA、自算文字對比（含漸層與疊層，axe 漏掉的 Kumo 主要按鈕白字 2.00:1 由它抓到並已修正）、觸控目標（手機 ≥ 44、桌面 ≥ 24）、整頁溢出、文字裁切、未翻譯的 i18n 鍵。涵蓋總覽、平台設定、巢狀路徑、404、共用元件展示頁 × 360／768／1024／1280／1440／1920 × 深淺色 × 中英文 × 側欄收合：開發伺服器 85 條、Core 嵌入的正式建置 71 條全部通過（另含錯誤邊界出現即判失敗、主控台錯誤即判失敗）。
 - [x] 側欄圖示改用 Phosphor Icons，對照表記在 web/ 的 README
   - 證據：`web/src/app/navigation.ts`；對照表在 `web/README.md`「側欄圖示對照（Phosphor Icons）」。
 

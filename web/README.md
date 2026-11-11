@@ -36,7 +36,7 @@ vp build              # 產出 dist/
 | `src/app/shellStatus.ts`         | 外殼顯示的狀態（觀測時間、告警數、工作數、沒有回應的主機、使用者）；沒有值就不顯示，不補 0                                                                         |
 | `src/shell/`                     | 頂列、側欄、手機 chip 導覽、頁首、空頁、404、載入失敗頁、首次載入骨架（畫板 `ShellStates`）                                                                        |
 | `src/components/`                | 全系統共用元件：儲存列 `SaveBar`、主機狀態列 `HostBar`、元件停止橫條 `ComponentDownBanner`、原文＋白話摘要 `RawMessage`／`ApiErrorMessage`、狀態 pill `StatusPill` |
-| `src/styles/theme-hazelminx.css` | 用 DESIGN.md 色票覆蓋 Kumo 語意 token（對映表在 `docs/design/component-mapping.md`）                                                                               |
+| `src/styles/theme-hazelminx.css` | 用 DESIGN.md 色票覆蓋 Kumo 語意 token（對映表在 `design/component-mapping.md`）                                                                               |
 | `src/i18n/`                      | i18next；`locales/zh-TW.json` 是預設與鍵的基準                                                                                                                     |
 | `src/lib/time.ts`                | RFC 3339 解析、UTC 序列化、依使用者時區顯示                                                                                                                        |
 | `src/api/`                       | `client.ts`（Cookie 工作階段＋CSRF、錯誤轉 `ApiError`）、`typed.ts`（openapi-fetch 型別化 client）                                                                 |

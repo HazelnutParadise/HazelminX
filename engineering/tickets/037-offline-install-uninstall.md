@@ -50,3 +50,9 @@
 ## Delivery record
 
 需求 ID → 變更 → 測試環境 → 正常與失敗案例 → 證據 → 未驗證部分，依規格第 46.4 節填寫於 PR。
+
+## Notes
+
+### 票 113 交過來的項目
+
+- Core 的帳本副本目前只有 `hostledger.Store` 可以讀，還沒有管理 API 與畫面，同步狀態（`host_ledgers.last_error_*`）也還看不到。

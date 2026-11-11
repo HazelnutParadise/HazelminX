@@ -6,7 +6,7 @@
 - 桌面寬度表格或矩陣需要橫向捲動（HSCROLL）
 - 整頁橫向溢出、JS 錯誤
 
-用法：python3 docs/design/tools/scan_layout.py <render-dir>
+用法：python3 design/tools/scan_layout.py <render-dir>
 <render-dir> 是 build_screens.py --render-dir 產出的資料夾。全部通過時結束碼 0。
 需要 playwright（pip install playwright && playwright install chromium）。
 """

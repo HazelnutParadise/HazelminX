@@ -58,7 +58,7 @@ go test ./...
 
 ## Agent 通道（票 007）
 
-Agent 主動連到 `-agent-listen` 的 `/agent/v1/connect`（TLS 1.3 上的 WebSocket），節點不需要開任何入站連接埠。訊息格式、握手與版本規則在 `docs/contracts/README.md`，Go 型別在 `internal/protocol`。
+Agent 主動連到 `-agent-listen` 的 `/agent/v1/connect`（TLS 1.3 上的 WebSocket），節點不需要開任何入站連接埠。訊息格式、握手與版本規則在 `engineering/contracts/README.md`，Go 型別在 `internal/protocol`。
 
 - 第一次啟動時在機密服務建立節點 CA 與 Core 身分（`node-pki/ca`、`node-pki/core`，私鑰加密存放）。節點憑證由 `nodes.PKI.IssueNodeCertificate` 簽發，註冊流程（票 019）會用它；Agent 要釘選的 CA 是 `PKI.CACertificatePEM()`。
 - 每次連線雙方都要證明身分：Core 驗節點憑證鏈、用途、指紋，以及節點私鑰對握手內容的簽章；直連時 TLS 用戶端憑證必須是同一節點。Agent 驗 Core 憑證鏈、`core.hazelminx.internal` 名稱與 Core 的簽章，不看 IP 或主機名。HTTP Header 一律不當身分，所以經會終止 TLS 的代理時仍有獨立的節點身分證明。握手同時以 X25519 交換金鑰，之後每則訊息帶序號與 HMAC，代理插入、重放或調換訊息都會讓會話斷線。
@@ -108,7 +108,7 @@ Agent 主動連到 `-agent-listen` 的 `/agent/v1/connect`（TLS 1.3 上的 WebS
 | `internal/paging` | 列表的 keyset 分頁：把排序與游標換成 SQL 的 ORDER BY 與「在這一筆之後」條件 |
 | `internal/confirm` | ROB-010 確認紀錄：建立、查詢、確認（新連線與入口判定）、標記已回復、查同一資源是否有待確認變更 |
 | `internal/jobs` | 工作引擎：狀態機、冪等鍵、資源鎖、預算、事件序號、診斷、SQLite 儲存 |
-| `internal/protocol` | Core↔Agent 訊息型別、嚴格與寬鬆解碼、版本協商、握手簽章內容；`fixturegen/` 重產 `docs/contracts/fixtures` 的確定性樣本 |
+| `internal/protocol` | Core↔Agent 訊息型別、嚴格與寬鬆解碼、版本協商、握手簽章內容；`fixturegen/` 重產 `engineering/contracts/fixtures` 的確定性樣本 |
 | `internal/nodes` | 節點 PKI、Agent 連線 hub（握手、會話、心跳）、步驟執行器、重連對帳、`node.inspect` 工作種類、向 Agent 要帳本頁（`Hub.PullLedger`） |
 | `internal/grants` | 高權限執行器授權憑證的簽發金鑰與簽發（與 Rust 端用同一份樣本對照） |
 | `internal/hostledger` | 主機變更帳本的 Core 副本：驗證雜湊鏈、保存、依節點同步 |

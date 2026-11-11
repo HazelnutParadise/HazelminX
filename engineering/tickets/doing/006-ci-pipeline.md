@@ -32,3 +32,11 @@ GitHub Actions：Go／Rust／前端的 lint、test、build；Linux x86_64 與 AR
 - 前端 job：等票 005（PR #126）合併後補上，內容是用固定版本的 Vite+ 跑 `vp check`、`vp test`、`vp build`。
 - 前端嵌入 Core：等 005 的 `scripts/embed-web.sh` 進 `main` 後，Core 改以 `-tags embedweb` 建置，冒煙測試改成確認 `/` 回 `index.html`。
 - 正式發版用的簽署、SBOM 與發布流程屬於票 097，不在這張票。
+
+## Notes
+
+### 還沒做完的項目
+
+- 在 `.github/workflows/ci.yml` 加前端 job：用固定版本的 Vite+ 跑 `vp check`、`vp test`、`vp build`，不能用浮動版本。票 005 已經合併，可以接上。
+- 讓 Core 改用 `scripts/embed-web.sh` 以 `-tags embedweb` 建置，冒煙測試從「`/` 回 503」改成「`/` 回 `index.html`」。
+- main 分支還沒設定「CI 通過才能合併」的保護規則，要由 repo 管理者在 GitHub 設定。

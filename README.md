@@ -21,10 +21,10 @@
 
 ## 從哪裡開始讀
 
-1. `docs/spec/HazelminX_Spec_v1.1_zh-TW.md` — 完整規格；`docs/spec/HazelminX_Spec_v1.1_zh-TW.html` 是離線閱讀版。
-2. `ENG.md` — 架構、元件邊界、測試策略與前提假設。
-3. `delivery-status.md` — 目前做到哪、下一張票是什麼。
-4. `docs/tickets/README.md` — 全部票務、依賴與狀態。
+1. `engineering/specs/HazelminX_Spec_v1.1_zh-TW.md` — 完整規格；`engineering/specs/HazelminX_Spec_v1.1_zh-TW.html` 是離線閱讀版。
+2. `engineering/README.md` — 工程文件的索引。
+3. `engineering/architecture.md` — 架構、元件邊界、測試策略與前提假設；每個選擇的原因在 `engineering/decisions/`。
+4. `engineering/tickets/` — 全部票務。還沒開始的在最上層，進行中的在 `doing/`，完成的在 `done/`。
 5. `docs/research/` — 參考專案的原始碼研究。
 
 ## 參考專案與授權

@@ -1,4 +1,4 @@
-//! 契約整合測試，對照 docs/contracts/README.md 與 docs/contracts/fixtures。
+//! 契約整合測試，對照 engineering/contracts/README.md 與 engineering/contracts/fixtures。
 //!
 //! 樣本一律從檔案讀取，不複製進測試。比對 JSON 時比較解析後的值。
 //! 每個測試都會呼叫 hazelminx_protocol 的被測函式，函式仍是 todo!() 時測試必然失敗。
@@ -28,7 +28,7 @@ const HANDSHAKE_STEMS: [&str; 6] = [
 // ---------- 共用工具 ----------
 
 fn fixtures_dir() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/contracts/fixtures")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../engineering/contracts/fixtures")
 }
 
 fn read_fixture(rel: &str) -> String {

@@ -1,7 +1,7 @@
 """產出 HazelminX 方向 B 的主要畫面原型。
 
-用法：python3 docs/design/tools/build_screens.py [--render-dir DIR]
-輸出：docs/design/screens/*.dc.html（Claude Design 畫布格式）
+用法：python3 design/tools/build_screens.py [--render-dir DIR]
+輸出：design/screens/*.dc.html（Claude Design 畫布格式）
      DIR/<name>-{light,dark}.html（本機瀏覽器可直接開）
 """
 from __future__ import annotations

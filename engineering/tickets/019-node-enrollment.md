@@ -39,3 +39,11 @@
 ## Delivery record
 
 需求 ID → 變更 → 測試環境 → 正常與失敗案例 → 證據 → 未驗證部分，依規格第 46.4 節填寫於 PR。
+
+## Notes
+
+### 票 113 交過來的項目
+
+- 節點註冊時把 Core 資料目錄的 `privileged-issuer.pub` 放到主機的 `/etc/hazelminx/privileged/issuer.pub`（與票 013 相同）。
+- 用票 007 的 `nodes.PKI.IssueNodeCertificate` 以一次性註冊碼換節點憑證，寫入 Agent 的 `node.crt`／`core-ca.crt`，並以節點紀錄實作 `nodes.Authorizer` 的撤銷。
+- 設計審查留下：加入節點的註冊碼對話框與「等待連線」狀態要做出來。

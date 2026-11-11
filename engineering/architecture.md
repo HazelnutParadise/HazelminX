@@ -1,7 +1,6 @@
-# Engineering Plan: HazelminX
-_2026-11-06 · eng-architect · HazelnutParadise/hazelminx:main_
+# Architecture: HazelminX
 
-這份檔案記錄跨票共用的技術決策：架構、元件邊界、測試接縫、資料遷移順序與前提假設。每張票自己的驗收條件在 `docs/tickets/`，不在這裡重複。規格原文在 `docs/spec/`；這裡只寫「我們怎麼做」，不改寫「要做成什麼」。
+這份檔案描述系統現在怎麼建：架構、元件邊界、測試接縫、資料遷移順序與前提假設。每個難以回頭的選擇為什麼這樣做，寫在 `engineering/decisions/`。每張票自己的驗收條件在 `engineering/tickets/`，不在這裡重複。規格原文在 `engineering/specs/`；這裡只寫「我們怎麼做」，不改寫「要做成什麼」。
 
 ## Architecture
 
@@ -69,13 +68,13 @@ scripts/   CI 與發布腳本（簽署清單、依賴檢查）
 | Go HTTP 框架 | Gin | 1Panel 與 infra-manager 都用 Gin，移植成本最低；路由定義可產生 OpenAPI。 |
 | 平台資料庫 | SQLite（`modernc.org/sqlite`，純 Go）、WAL、`PRAGMA foreign_keys=ON` | PKG-001 要求乾淨主機無 C 編譯器；1Panel 已使用純 Go 的 glebarez/sqlite。多 Core 不共用同一檔案（35.1）。 |
 | Migration | 版本表 + 有序 SQL 檔 + Go 程式化步驟；只允許向上；啟動時比對 `schemaVersion` 拒絕舊執行檔開新資料 | DAT-006、REL-006。 |
-| Core↔Agent 協定 | Agent 主動建立 WebSocket over TLS 1.3（Core 的 Agent 入口，預設 `:9801`），JSON 訊息；握手四則（hello／welcome／auth／ready）交換 `protocolVersion` 範圍、`capabilities` 與 X25519 公鑰，雙方各以 Ed25519 私鑰簽雙方 nonce、雙方 X25519 公鑰、協定版本、節點指紋、session ID、hello 原文雜湊與 welcome 參數雜湊；之後每則訊息包成帶方向序號與 HMAC-SHA256（金鑰由 X25519 共同秘密經 HKDF 導出）的訊框；Core 有自己的 CA（私鑰在機密服務），節點憑證 EKU 只有 clientAuth、Core 憑證固定名稱 `core.hazelminx.internal`；直連時另要求 TLS 用戶端憑證與握手身分一致，經會終止 TLS 的代理時只靠握手簽章，任何 HTTP Header 都不當身分；握手訊息寬鬆解碼、握手後嚴格解碼；持久事件帶每節點單調序號並由 Core 累計確認；請求帶 `requestId`、`controlGeneration`、`expiresAt`。契約在 `docs/contracts/README.md` | NOD-002、NOD-011、SEC-011、ENG-010、SEC-004。Komodo Periphery 已有 Agent 主動連 Core 的 WebSocket 客戶端（`connection/client.rs`），但身分驗證是 `mogh_pki` 的 Noise 握手而非 mTLS，Go 端沒有現成相容實作；因此 `connection/` 改為 mTLS 加握手簽章，保留其單一 WebSocket 多工請求的設計。docker／stats／terminal 模組保留；`lib/command` 以 shlex 拆參數後走 `Command::args`，可作低權限命令層，但高權限動作仍走 privileged。 |
+| Core↔Agent 協定 | Agent 主動建立 WebSocket over TLS 1.3（Core 的 Agent 入口，預設 `:9801`），JSON 訊息；握手四則（hello／welcome／auth／ready）交換 `protocolVersion` 範圍、`capabilities` 與 X25519 公鑰，雙方各以 Ed25519 私鑰簽雙方 nonce、雙方 X25519 公鑰、協定版本、節點指紋、session ID、hello 原文雜湊與 welcome 參數雜湊；之後每則訊息包成帶方向序號與 HMAC-SHA256（金鑰由 X25519 共同秘密經 HKDF 導出）的訊框；Core 有自己的 CA（私鑰在機密服務），節點憑證 EKU 只有 clientAuth、Core 憑證固定名稱 `core.hazelminx.internal`；直連時另要求 TLS 用戶端憑證與握手身分一致，經會終止 TLS 的代理時只靠握手簽章，任何 HTTP Header 都不當身分；握手訊息寬鬆解碼、握手後嚴格解碼；持久事件帶每節點單調序號並由 Core 累計確認；請求帶 `requestId`、`controlGeneration`、`expiresAt`。契約在 `engineering/contracts/README.md` | NOD-002、NOD-011、SEC-011、ENG-010、SEC-004。Komodo Periphery 已有 Agent 主動連 Core 的 WebSocket 客戶端（`connection/client.rs`），但身分驗證是 `mogh_pki` 的 Noise 握手而非 mTLS，Go 端沒有現成相容實作；因此 `connection/` 改為 mTLS 加握手簽章，保留其單一 WebSocket 多工請求的設計。docker／stats／terminal 模組保留；`lib/command` 以 shlex 拆參數後走 `Command::args`，可作低權限命令層，但高權限動作仍走 privileged。 |
 | GPU 指標 | NVIDIA 以 purego 動態載入 NVML（免 CGO／免綁定），AMD 與 Intel 讀 sysfs（`/sys/class/drm`、hwmon），CLI（nvidia-smi、rocm-smi、intel_gpu_top）只作退路；Rust 端對應用 `libloading` + sysfs | MON-002；Beszel 研究報告第 4 節。缺值明示，不假造跨廠相同欄位。 |
-| 協定單一來源 | `agent/crates/protocol`（Rust serde 型別）+ `docs/contracts/fixtures/*.json` 黃金樣本；Go 端 `core/internal/protocol` 以相同樣本做契約測試 | 兩種語言各自編譯，樣本保證相容。 |
+| 協定單一來源 | `agent/crates/protocol`（Rust serde 型別）+ `engineering/contracts/fixtures/*.json` 黃金樣本；Go 端 `core/internal/protocol` 以相同樣本做契約測試 | 兩種語言各自編譯，樣本保證相容。 |
 | 高權限隔離 | `hazelminx-privileged` 獨立行程（root），Unix socket，`SO_PEERCRED` 驗證呼叫者 uid；每個動作是具名 enum + 結構化參數，執行時以 `Command::args` 傳遞，不經 shell；每個請求附 Core 簽發的 Ed25519 授權憑證（權限名稱清單、有效期上限 24 小時、可依 id 撤銷），執行器以 `issuer.pub` 驗簽並逐動作比對權限；`health`／`revoke` 不排動作名額，輸出走有界通道 | 32.2、SEC-005、SEC-006、SEC-009。Komodo `lib/command` 以 shell 字串執行，不直接沿用。 |
 | 主機變更帳本 | 執行器在每個會改主機的動作前後寫帳本：動作在 `Action::ledger_decl` 宣告會改的對象（只讀動作宣告只讀），執行器先讀出變更前狀態、同步寫入意圖行，才執行，之後讀變更後狀態寫結果行。沒有宣告、帳本不可用、讀不到變更前狀態都拒絕並記安全事件。帳本在 `/var/lib/hazelminx/ledger`（root 0700，上層不得可被他人寫入），每行帶前一行的 SHA-256 形成雜湊鏈，檔案類對象另存原內容備份。Core 的副本經 Core↔Agent 通道同步：Core 為每一頁簽一張只有 `host.ledger.read` 的授權憑證（簽發金鑰在機密服務），送 `ledger_pull`，Agent 轉交執行器的 `ledger_export`，Core 驗證雜湊鏈後存進只能新增的 `host_ledger_lines`。安裝器（013）用同一個 `Recorder` 記錄安裝步驟，安裝前先跑 `snapshot capture` | 增補 07 第 55.1 節、UNX-001、UNX-002、T-250。擁有權依「變更前是否存在」與「變更前後狀態是否不同」判定，之後只升不降。原始行原樣傳給 Core，Go 端以 `json.RawMessage` 驗雜湊，不必重現 Rust 的序列化。 |
 | 工作引擎 | Core 持久化工作與步驟；Agent 在每個步驟開始前與結束後先寫入本機 append-only 紀錄（`journal.jsonl`，fsync）再回報；重連先對帳（Core 以 `step_reconcile` 查 Agent 紀錄）再決定續跑，已完成步驟不重跑，中斷的步驟只有標記可重試時才再跑；資源鎖以「裝置身分 + 掛載 + 正規化路徑」為鍵 | 33 章。 |
-| 前端 | React 19、TypeScript、Vite+（`vp`）；路由 react-router；資料 TanStack Query；表單 react-hook-form + zod；UI 以 Cloudflare Kumo（`@cloudflare/kumo`，MIT，Base UI 原語＋Tailwind v4）為元件底層，主題以 DESIGN.md token 覆蓋 Kumo 語意 token，對映表在 `docs/design/component-mapping.md`；i18n i18next（zh-TW、en）；終端機 xterm.js；編輯器 CodeMirror 6；圖表 Kumo Chart（ECharts 6），配色與規則依 DESIGN.md「資料視覺化」 | 7.2、UI-005；不複製上游品牌素材。 |
+| 前端 | React 19、TypeScript、Vite+（`vp`）；路由 react-router；資料 TanStack Query；表單 react-hook-form + zod；UI 以 Cloudflare Kumo（`@cloudflare/kumo`，MIT，Base UI 原語＋Tailwind v4）為元件底層，主題以 DESIGN.md token 覆蓋 Kumo 語意 token，對映表在 `design/component-mapping.md`；i18n i18next（zh-TW、en）；終端機 xterm.js；編輯器 CodeMirror 6；圖表 Kumo Chart（ECharts 6），配色與規則依 DESIGN.md「資料視覺化」 | 7.2、UI-005；不複製上游品牌素材。 |
 | Zentinel 整合 | 固定版本；Core 產生完整解析後的 KDL（不含 `${VAR}`）→ Agent 經 privileged 寫入候選檔 → `zentinel --validate`（以選定版本能力為準）→ 原子換檔 → SIGHUP → 實際請求驗證 | 研究報告：無 HTTP reload API、無環境變數代換、admin listener 預設 `0.0.0.0:9090` 且無驗證（必須改綁本機並以防火牆限制）。 |
 | 可信訪客 IP | Zentinel 只處理 `X-Forwarded-For` 與 per-listener `trusted-proxies`；`CF-Connecting-IP`／Tunnel 判定由平台維護的 Zentinel agent filter 實作，輸出單一 `X-HazelminX-Client-IP` 供 WAF、限速、分析共用 | IP-002、研究報告第 6 節。 |
 | WAF | 透過 Zentinel agent filter 接 WAF agent（候選：`zentinel-agent-modsec`、ZentinelSec）；核心 `waf.mode` 目前是 hard error，不使用 | 21.1、研究報告第 2 節。候選比較與測試是票 064 的驗收項。 |
@@ -150,3 +149,36 @@ CI 必跑：`go test ./... && go vet`、`cargo test --workspace && cargo clippy 
 - 登入第二步的挑戰與 Passkey 儀式狀態只放記憶體 — Core 重啟後要重新輸入密碼；多 Core 不共用（35.1）。
 - 未設定可信代理（票 065）前，經反向代理進來的請求來源 IP 都相同 — 密碼登入的「曾成功登入的來源」豁免會失真；第二驗證與再次驗證因此不套用這個豁免，改以每帳號計數限制。
 - Passkey 綁定網域；未設定 `--public-origin` 時以請求的 Host 推導，用 IP 開面板時 Passkey 不可用，只能用 TOTP。
+
+## Decisions
+
+- [0001 — 票以「使用者可以做什麼」切，每條需求只有一張擁有票](decisions/0001-slice-tickets-by-user-outcome.md)
+- [0002 — Agent 主動連到 Core](decisions/0002-agent-dials-core.md)
+- [0003 — 高權限執行器是獨立行程，只接受具名動作](decisions/0003-privileged-executor-separate-process.md)
+- [0004 — 可信 IP 與 WAF 用 Zentinel agent filter 實作](decisions/0004-trusted-ip-and-waf-as-zentinel-agent-filter.md)
+- [0005 — TCP／UDP 代理另選元件](decisions/0005-separate-component-for-l4-proxy.md)
+- [0006 — 設計方向選 B「航站」，圖表加量](decisions/0006-design-direction-b-terminal.md)
+- [0007 — 圖表序列色固定四色](decisions/0007-fixed-four-series-colors.md)
+- [0008 — 工作失敗時，全部步驟都能復原才自動復原](decisions/0008-job-rollback-only-when-every-step-can-undo.md)
+- [0009 — 驗證中的工作不可取消，Core 中途停止視同狀態不明](decisions/0009-verifying-jobs-cannot-be-cancelled.md)
+- [0010 — 登入節流用記憶體計數，冷卻上限 15 分鐘](decisions/0010-login-throttling-in-memory.md)
+- [0011 — 不可見範圍的資源回 404，可見但無權才回 403](decisions/0011-invisible-resources-return-404.md)
+- [0012 — 工作 API 掛在 IAM 驗證之後](decisions/0012-jobs-api-behind-iam.md)
+- [0013 — Kumo 主要與危險按鈕用 !important 改成實心 token](decisions/0013-kumo-button-token-override.md)
+- [0014 — 對比、觸控目標、可及名稱用 Playwright 掃描](decisions/0014-accessibility-scan-with-playwright.md)
+- [0015 — API 型別產生器放在獨立小套件](decisions/0015-openapi-generator-in-separate-package.md)
+- [0016 — 使用者時區先取瀏覽器時區](decisions/0016-user-timezone-from-browser.md)
+- [0017 — 主機變更帳本由高權限執行器寫](decisions/0017-host-ledger-written-by-privileged-executor.md)
+- [0018 — Core 的帳本副本走專用訊息與短效授權憑證](decisions/0018-ledger-copy-over-dedicated-messages.md)
+- [0019 — 有第二驗證的帳號分兩步登入](decisions/0019-two-step-login-with-challenge.md)
+- [0020 — 高權限角色沒有第二驗證時限制工作階段](decisions/0020-privileged-roles-require-second-factor.md)
+- [0021 — 第二步失敗按帳號計數，一次只處理一個](decisions/0021-second-step-failures-counted-per-account.md)
+- [0022 — Passkey 以請求主機名稱為 RP ID](decisions/0022-passkey-rp-id-is-request-host.md)
+- [0023 — 主金鑰存在資料目錄的 master.key，多世代保留](decisions/0023-master-key-file-beside-data-dir.md)
+- [0024 — 管理 API 的列表格式與錯誤碼統一](decisions/0024-management-api-list-and-error-shape.md)
+- [0025 — 版本過期回 412，缺少版本回 428](decisions/0025-version-mismatch-412-and-428.md)
+- [0026 — 背景列表查詢結果存獨立表](decisions/0026-background-list-query-results-table.md)
+- [0027 — ROB-010 確認只接受套用者本人的新連線](decisions/0027-rob-010-confirm-from-new-connection.md)
+- [0028 — Core↔Agent 通道的握手與訊息驗證](decisions/0028-core-agent-channel-handshake.md)
+- [0029 — Agent 每個步驟前後先寫 journal 才回報](decisions/0029-agent-step-journal.md)
+- [0030 — 握手訊息寬鬆解碼，之後嚴格解碼](decisions/0030-lenient-handshake-strict-after.md)

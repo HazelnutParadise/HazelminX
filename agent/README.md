@@ -1,13 +1,13 @@
 # HazelminX Rust workspace
 
-每台受管主機上的執行端。以 Komodo Periphery 為改造起點（`docs/research/komodo-periphery.md`），但連線模型、權限邊界與資料契約依 `ENG.md` 重寫。起點 commit、各 crate 的保留／替換／捨棄與授權見 [`UPSTREAM.md`](UPSTREAM.md)；閒置資源量測見 [`PERFORMANCE.md`](PERFORMANCE.md)。
+每台受管主機上的執行端。以 Komodo Periphery 為改造起點（`docs/research/komodo-periphery.md`），但連線模型、權限邊界與資料契約依 `engineering/architecture.md` 重寫。起點 commit、各 crate 的保留／替換／捨棄與授權見 [`UPSTREAM.md`](UPSTREAM.md)；閒置資源量測見 [`PERFORMANCE.md`](PERFORMANCE.md)。
 
 | crate | 執行檔 | 職責 | 票 |
 |---|---|---|---|
 | `crates/agent` | `hazelminx-agent` | 低權限常駐服務：節點身分、偵測、監控、檔案、容器、工作紀錄；主動連回 Core | 004、007、019 |
 | `crates/privileged` | `hazelminx-privileged` | 只接受固定動作的高權限執行器；`client` 模組是 Agent 端客戶端 | 012 |
 | `crates/cli`（未建立） | `hazelminx` | 安裝、更新、診斷、救援、卸載 | 013 |
-| `crates/protocol` | — | Core↔Agent 訊息型別、解碼、版本協商、握手簽章內容；以 `docs/contracts/fixtures` 做契約測試 | 007 |
+| `crates/protocol` | — | Core↔Agent 訊息型別、解碼、版本協商、握手簽章內容；以 `engineering/contracts/fixtures` 做契約測試 | 007 |
 
 ## 建置與測試
 
@@ -52,7 +52,7 @@ privileged_socket = "/run/hazelminx/privileged.sock"  # 高權限執行器的 so
 
 連線與工作紀錄：
 
-- Agent 主動連 Core，握手交換協定版本與能力（`docs/contracts/README.md`）。斷線後重連的等待時間在 0.1 秒到上限之間隨機取，上限從 2 秒起每次加倍、最多 60 秒，連線撐過一分鐘後歸零；協定不相容、節點被撤銷或身分無效時等 5 到 10 分鐘，並在日誌寫出雙方的協定範圍。握手後每則訊息都帶序號與 HMAC，收到驗不過的訊息就斷線。
+- Agent 主動連 Core，握手交換協定版本與能力（`engineering/contracts/README.md`）。斷線後重連的等待時間在 0.1 秒到上限之間隨機取，上限從 2 秒起每次加倍、最多 60 秒，連線撐過一分鐘後歸零；協定不相容、節點被撤銷或身分無效時等 5 到 10 分鐘，並在日誌寫出雙方的協定範圍。握手後每則訊息都帶序號與 HMAC，收到驗不過的訊息就斷線。
 - 每個步驟開始前與結束後都先寫進 `state_dir/jobs/journal.jsonl` 並 fsync，再送給 Core。Core 確認過的序號記在 `state_dir/jobs/acked`；重連後重送未確認的事件。
 - 同一工作步驟已有完成或失敗紀錄時不重跑，直接重送那筆紀錄。寫不了紀錄時拒絕步驟（`JOURNAL_UNAVAILABLE`），步驟跑完卻寫不進結果時主動斷線，讓 Core 重連後對帳。結果超過 256 KiB 記為失敗 `RESULT_TOO_LARGE`。Agent 重開機時正在跑的步驟記為中斷，不會被當成完成；只有 Core 對帳後送來、而且標記可重試的步驟才會再跑一次，否則回 `OUTCOME_UNKNOWN`。
 - 別的節點、已過期、控制世代倒退、未宣告的動作、參數有多餘欄位的步驟一律拒絕，不執行。
@@ -124,7 +124,7 @@ ledger_dir = "/var/lib/hazelminx/ledger"                    # 主機變更帳本
 
 安裝前快照由安裝器（票 013）在寫入任何東西之前執行 `snapshot capture`，記錄已安裝套件、已啟用的 systemd 單元、監聽中的 Port、使用者與群組、防火牆規則數，以及平台會寫入的路徑是否存在（內建清單在 `src/ledger/snapshot.rs`，`--path` 可再加）。讀不到的項目記為 `unavailable` 並附原因，比對時列為無法比較，不算相同。
 
-Core 的副本：Core 經 Core↔Agent 通道送 `ledger_pull`，Agent 用裡面的授權憑證（權限 `host.ledger.read`）呼叫 `ledger_export`，執行器回傳原始行，Core 驗證雜湊鏈後保存（`core/internal/hostledger`）。`ledger_export` 的 `max_bytes` 讓一頁不超過通道的訊息上限。訊息與驗證規則寫在 `docs/contracts/README.md` 的「主機變更帳本」一節。
+Core 的副本：Core 經 Core↔Agent 通道送 `ledger_pull`，Agent 用裡面的授權憑證（權限 `host.ledger.read`）呼叫 `ledger_export`，執行器回傳原始行，Core 驗證雜湊鏈後保存（`core/internal/hostledger`）。`ledger_export` 的 `max_bytes` 讓一頁不超過通道的訊息上限。訊息與驗證規則寫在 `engineering/contracts/README.md` 的「主機變更帳本」一節。
 
 安全事件以 tracing target `hazelminx.security` 輸出，欄位只有識別碼、規則名稱與大小，不含簽章、金鑰或參數值。
 

@@ -2,21 +2,25 @@
 
 ## Required artifacts
 
-- `docs/spec/HazelminX_Spec_v1.1_zh-TW.md` — 產品規格，449 條需求與 186 個驗收案例的唯一來源。實作或驗收任何功能前，先讀該票列出的章節；不得憑記憶改寫需求。`docs/spec/HazelminX_Requirements_v1.1.json` 是同一份內容的機器可讀版。
-- `ENG.md` — 跨票的架構、元件邊界、測試接縫、資料遷移順序與前提假設。改架構、挑測試接縫、寫 migration 或新增元件前先讀。
-- `delivery-status.md` — 目前階段、阻礙、下一個可驗證產出與下一張票。進專案第一件事先讀它。
-- `docs/tickets/` — 每張票一個檔案，含 Epic、User Story、Blocked by、需求 ID 與驗收條件；`README.md` 是索引，`traceability.json` 是需求→票→測試的機器可讀對照。只領取狀態為 `ready` 的票。
+- `engineering/specs/HazelminX_Spec_v1.1_zh-TW.md` — 產品規格，449 條需求與 186 個驗收案例的唯一來源。實作或驗收任何功能前，先讀該票列出的章節；不得憑記憶改寫需求。`engineering/specs/HazelminX_Requirements_v1.1.json` 是同一份內容的機器可讀版。
+- `engineering/README.md` — 工程文件的索引。進專案第一件事先讀它。
+- `engineering/architecture.md` — 系統現在怎麼建：架構、元件邊界、測試接縫、資料遷移順序與前提假設。改架構、挑測試接縫、寫 migration 或新增元件前先讀。
+- `engineering/decisions/` — 每個難以回頭的選擇為什麼這樣做，一個選擇一個檔。提議改掉這類選擇前，先讀對應的紀錄。
+- `engineering/tickets/` — 每張票一個檔案，含 Epic、User Story、Blocked by、需求 ID 與驗收條件。還沒開始的票在最上層，進行中的在 `doing/`，完成的在 `done/`。`README.md` 是索引，`traceability.json` 是需求→票→測試的機器可讀對照。只領取阻擋票都在 `done/` 的票。
+- `engineering/handoff.md` — 沒有票的未完成工作。有這個檔時，進專案先讀它。
+- `engineering/contracts/` — Core 與 Agent 之間的訊息契約與測試用資料。改通道訊息、授權憑證或帳本格式前先讀。
 - `docs/research/` — 參考專案（1Panel、Komodo Periphery、Portainer、infra-manager、Zentinel、Beszel）的原始碼研究報告。重用或模仿它們的做法前先讀對應報告；報告是線索，不是規格。
 - `docs/baseline/` — 1Panel v2.4.1 OSS 功能基線對照（票 092 產出）。宣稱「功能已保留」前，在這裡登記對應證據。
 - `DESIGN.md` — 視覺與互動基準。改任何畫面前先讀；畫面變更須以渲染結果比對它。
-- `DESIGN-REVIEW.md` — 設計審查紀錄與未解決項目。重新審查 UI 前先讀。
+- `design/` — 設計階段的工作檔：畫板、截圖、產生畫板的工具與設計研究。補畫或修改畫板前先讀 `design/README.md`。
 
 ## Handoff expectations
 
 - 每張票在 `ticket/<id>-<slug>` 分支上做，對應 GitHub issue 與草稿 PR。PR 描述依規格第 46.4 節列：需求 ID、變更內容、影響範圍、測試環境、正常與失敗案例、資料與安全影響、實際證據、未驗證部分。
 - 票的驗收條件逐條勾選，附證據；沒有證據的條目保持未勾選。測試通過、尚未測試、受阻、已批准移除分開寫。
-- 交接前更新 `delivery-status.md`：階段、阻礙、下一個可驗證產出、下一張票、決策差異。
-- 票的狀態只有四種：`ready`、`blocked`、`in_progress`、`done`。改狀態同時更新 `docs/tickets/README.md` 與 `traceability.json`。
+- 交接前，做到一半的票把下一個人需要的內容寫在票檔的 `## Notes`：已確認的結果、試過失敗的做法與原因、下一步要跑的檢查。沒有票的未完成工作寫在 `engineering/handoff.md`。
+- 票的進度就是票檔所在的目錄，不在別處重複記錄。交付這張票的那個變更，同時把票檔移到 `done/`。卡住的票留在原地，加一行 `**Blocked:**` 寫缺什麼、等誰。
+- 審查留下、這次不修的問題，寫進負責那張票的 `## Notes`，或另開一張票。不留審查紀錄檔。
 
 ## Planning discipline
 
@@ -27,7 +31,12 @@
 
 ## Update rules
 
-- `ENG.md` 就地更新，不加日期副本、不另開分支版本。
+- `engineering/architecture.md` 就地更新，不加日期副本、不另開分支版本。
+- 決策紀錄核定後不改內容。之後的決定取代它時，寫一份新的，舊的只把狀態行改成 `superseded by NNNN`。
+- 新增 migration 前先看 `main` 上最大的編號。平行分支用到同一個編號時，後合併的一方改號，並同步更新票檔裡的引用。
+- 高權限動作要改到帳本還不認得的對象（防火牆、容器、sysctl、設定鍵）時，先加對應的 `Target` 變體與讀取方式。
+- 參考專案的原始碼放在本機暫存目錄，不進 repo。研究報告是線索，實作前以固定 commit 重新核對。
+- `web/` 用專案內的 `vite-plus`（`./node_modules/.bin/vp`），不直接跑系統的 npm 或 npx。
 - 票檔是驗收條件的唯一來源；GitHub issue 內容從票檔同步，不在 issue 另寫一套條件。
 - 新增或拆分票時，更新 `traceability.json`，確保每條需求 ID 仍只有一張擁有票。
 - 規則條文只寫規則，不寫理由或變更紀錄。
@@ -47,7 +56,7 @@
 - Windows Server 節點（WIN 系列、`scope:pending-approval`）是建議範圍；未經核定與實測不得在 UI 或文件顯示為正式支援。
 - Docker Compose 檔案以 `${VAR:?必須設定 VAR}` 宣告必要變數，不用 `env_file` 屬性；交付前執行 `docker compose config --quiet`。
 - Commit 訊息採 Conventional Commits，英文主旨；以當次實際使用模型的 `Co-Authored-By` 行結尾。
-- 設計與實作並行（2026-11-08 使用者決定）：介面不等全部設計完才實作。實作中發現設計缺少畫面、狀態或元件規格時，不自行設計，在回報與 PR 描述用「設計缺口」標題逐條列出（哪一頁、缺什麼）；設計負責人補畫後同步回 `docs/design/` 與 DESIGN.md。
+- 設計與實作並行（2026-11-08 使用者決定）：介面不等全部設計完才實作。實作中發現設計缺少畫面、狀態或元件規格時，不自行設計，在回報與 PR 描述用「設計缺口」標題逐條列出（哪一頁、缺什麼）；設計負責人補畫後同步回 `design/` 與 DESIGN.md。
 
 ## Follow-ups
 
@@ -67,7 +76,7 @@
 - 背景列表查詢在執行期間會輪流佔用唯一的 SQLite 連線（`store` 設 `SetMaxOpenConns(1)`），大型稽核表上沒有索引的篩選會拖慢其他 API。加讀取用的第二個連線池時，背景查詢要改用它。
 - IAM 的寫入端點（建帳號、改帳號、指派與撤銷角色）還沒經過 `Server.writeBlockers`，平台資料庫唯讀時會回 `INTERNAL` 而不是 `PLATFORM_DEGRADED`。票 017 接上降級偵測時一起處理。
 - ROB-010 確認比對的 `Host` 是用戶端送來的標頭。瀏覽器無法偽造，但腳本或 API Token 可以從舊入口送新的 Host，確認一個其實連不到的網域變更。票 024 決定是否改比 TLS SNI，或限制網域變更只接受瀏覽器工作階段確認。
-- 票 010 的「設計缺口」一節列出 API 已有、畫面還沒畫的狀態（列表邊界、背景查詢、錯誤呈現、版本過期、影響預覽、確認倒數），由設計端補進 `docs/design/`。
+- 票 010 的「設計缺口」一節列出 API 已有、畫面還沒畫的狀態（列表邊界、背景查詢、錯誤呈現、版本過期、影響預覽、確認倒數），由設計端補進 `design/`。
 - 寫入閘門的 `RESOURCE_READ_ONLY`、`CONTROLLER_CONFLICT`、`SCOPE_DEGRADED`、`RESOURCE_REFERENCED` 目前只有單元測試；第一個有受管資源端點的票接上 `ResourceState` 時，補一條經 API 拒絕的測試。
 - Issue #20 比票檔 `020-host-overview-monitoring.md` 多出幾條驗收：GPU 欄位對齊 1Panel、GPU 程序對回所屬容器、硬體依類別分組成卡片、ROB-009，以及驗收案例 T-165、T-172、T-183。票檔是驗收條件的唯一來源，要決定把這些補進票檔，或從 issue 拿掉。
 - `agent/UPSTREAM.md` 把幾件事交給其他票決定，但那些票的驗收還沒寫：票 027 要決定終端機用哪個 Linux 帳號執行、`host.shell` 權限在 Agent 還是 `hazelminx-privileged` 檢查，以及收到 SIGTERM 時結束終端機；票 040 要決定低權限 Agent 怎麼存取 Docker socket；命令層（Komodo `lib/command`）由票 020、040、044 中最先需要的那張移植。

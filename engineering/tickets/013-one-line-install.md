@@ -40,3 +40,11 @@ hazelminx CLI（Rust）的 install：預檢、簽署清單選版本、先下載�
 ## Delivery record
 
 需求 ID → 變更 → 測試環境 → 正常與失敗案例 → 證據 → 未驗證部分，依規格第 46.4 節填寫於 PR。
+
+## Notes
+
+### 票 113 交過來的項目
+
+- 安裝器第一步執行 `hazelminx-privileged snapshot capture`，安裝步驟用 `ledger::recorder::Recorder` 記錄，並讓 `/var/lib/hazelminx` 維持 root 擁有、群組與其他人不可寫。
+- 把 Core 資料目錄的 `privileged-issuer.pub` 放到主機的 `/etc/hazelminx/privileged/issuer.pub`。沒有這個檔，執行器不會啟動，Core 也拿不到帳本。
+- dnf／rpm 主機的帳本只用模擬輸出測過。x86_64 與 ARM64 的 Ubuntu 24.04 已由 CI 以 root 在 systemd 下實測（PR #127）。

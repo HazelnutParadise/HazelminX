@@ -1,6 +1,6 @@
 //! The agent dials the Core (NOD-002): no listening port on the node. One
 //! WebSocket over TLS carries the handshake, then step requests from the
-//! Core and durable events from the agent (docs/contracts/README.md).
+//! Core and durable events from the agent (engineering/contracts/README.md).
 //!
 //! Durable events come from the journal, not from the session: an action
 //! that finishes while the Core is unreachable is journaled, and the next

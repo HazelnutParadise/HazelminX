@@ -205,7 +205,7 @@ HazelminX 是自架伺服器的管理中心。讀者是熟 Docker 與 Linux 的�
 
 ## 資訊架構（東西放在哪裡）
 
-決定依據與其他產品的比較在 `docs/design/information-architecture.md`。規則：
+決定依據與其他產品的比較在 `design/information-architecture.md`。規則：
 
 - **三層位置**：
   - 跨節點的資源放側欄，例如專案、容器、網站、備份。清單上直接標出每個資源在哪台、在哪個環境。
@@ -296,7 +296,7 @@ HazelminX 是自架伺服器的管理中心。讀者是熟 Docker 與 Linux 的�
   - 主機狀態列：有主機沒有回應時，全站頂列下方常駐一行（與降級列分開、不能關閉），彙總「N 台主機沒有回應」與前 3 台名稱，點了進到篩選好的主機清單；維護中的主機不算。
   - 影響預覽：任何寫入前列出受影響對象，資料來自同一份依賴圖；被引用的資源刪除鈕停用並列出引用者。
 - **溫度**：讀得到的感測器全部列出（hwmon 的 CPU 封裝與各核心、主機板、記憶體條、網卡、機殼；smartctl／nvme 的磁碟；NVML 的 GPU 核心、熱點、顯示記憶體；有 IPMI 時加上 BMC 感測器），比例條以該感測器自己的臨界溫度為滿格，依「目前／臨界」排序，標出資料來源；讀不到的不顯示。
-- **邊界情境在真實頁面處理**：不做展示頁。對照表在 docs/design/edge-cases.md。
+- **邊界情境在真實頁面處理**：不做展示頁。對照表在 design/edge-cases.md。
 - **icon button**（`.ib`）：36px 方形、透明底、hover raised；頂列與列尾快速動作共用；有計數時右上角 16px badge。
 - **stat strip**：四個指標排在同一個面板裡以 hairline 分隔，不各自成卡；標籤 12 muted、數值 20/600、變化 12、右側 88×22 sparkline（最新一段榛果色）。
 - **meter**：高 6px、4px 圓角；軌道是序列色最淺階，填充依門檻換色（≥70% warn、≥90% danger），旁邊一定有數字。
@@ -313,7 +313,7 @@ HazelminX 是自架伺服器的管理中心。讀者是熟 Docker 與 Linux 的�
 
 ## Data visualization
 
-依 dataviz 技能與 `docs/design/research-dashboards.md`：
+依 dataviz 技能與 `design/research-dashboards.md`：
 
 - 數字先於圖：單一數值用 stat tile，比例用 meter，整體拆分用細段條，超過七類用表格。
 - 一張圖一個 Y 軸；量級差很多就拆圖或共用索引。
@@ -375,7 +375,7 @@ HazelminX 是自架伺服器的管理中心。讀者是熟 Docker 與 Linux 的�
 
 ## 元件底層
 
-實作用 Cloudflare Kumo（MIT）當元件庫，DESIGN.md 的 token 覆蓋到 Kumo 語意 token；自製的只有圖形元件（拓撲、地圖、環、段條、日曆、流程段、樹）。對映表與風險：`docs/design/component-mapping.md`。
+實作用 Cloudflare Kumo（MIT）當元件庫，DESIGN.md 的 token 覆蓋到 Kumo 語意 token；自製的只有圖形元件（拓撲、地圖、環、段條、日曆、流程段、樹）。對映表與風險：`design/component-mapping.md`。
 
 ## 表格的小功能
 
@@ -426,7 +426,7 @@ HazelminX 是自架伺服器的管理中心。讀者是熟 Docker 與 Linux 的�
 
 ## 可量測的驗收
 
-每次改版跑 `docs/design/tools/` 的掃描：WCAG 對比 0 不合格、觸控目標過小 ≤ 10、無可及名稱 0、文字截斷 ≤ 10、表格空欄只允許骨架列、禁字 0。方法與門檻在 `docs/design/ux-evaluation.md`。
+每次改版跑 `design/tools/` 的掃描：WCAG 對比 0 不合格、觸控目標過小 ≤ 10、無可及名稱 0、文字截斷 ≤ 10、表格空欄只允許骨架列、禁字 0。方法與門檻在 `design/ux-evaluation.md`。
 
 ## Do's and Don'ts
 

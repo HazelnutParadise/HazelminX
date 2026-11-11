@@ -1,4 +1,4 @@
-//! Core<->Agent channel contract (docs/contracts/README.md).
+//! Core<->Agent channel contract (engineering/contracts/README.md).
 //!
 //! Two decoders exist on purpose:
 //! - [`decode_handshake`] reads the five handshake messages and ignores
@@ -8,7 +8,7 @@
 //!   unknown fields and missing fields are errors, and the receiver must not
 //!   act on such a message.
 //!
-//! The JSON shapes are pinned by `docs/contracts/fixtures`; the Go mirror in
+//! The JSON shapes are pinned by `engineering/contracts/fixtures`; the Go mirror in
 //! `core/internal/protocol` is tested against the same files.
 
 use serde::{Deserialize, Serialize};
@@ -476,7 +476,7 @@ pub struct TranscriptInput<'a> {
     pub welcome_digest: &'a str,
 }
 
-/// The exact text each side signs (docs/contracts/README.md). It covers
+/// The exact text each side signs (engineering/contracts/README.md). It covers
 /// both nonces, both key-exchange keys, the whole hello and the welcome's
 /// parameters, so a proxy that changes any of them breaks the signatures.
 pub fn transcript(role: Role, t: &TranscriptInput<'_>) -> String {
@@ -675,7 +675,7 @@ fn frame_mac(key: &[u8; 32], n: u64, body: &str) -> hmac::Hmac<sha2::Sha256> {
     m
 }
 
-/// Wraps a message body as frame number `n` (docs/contracts/README.md).
+/// Wraps a message body as frame number `n` (engineering/contracts/README.md).
 pub fn seal_frame(key: &[u8; 32], n: u64, body: &str) -> String {
     use base64::Engine;
     use hmac::Mac;

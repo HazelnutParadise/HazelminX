@@ -14,7 +14,7 @@
 //	{expires_at}
 //	{permissions joined with ","}
 //
-// with times in RFC 3339 UTC and whole seconds. docs/contracts/fixtures/grant.json
+// with times in RFC 3339 UTC and whole seconds. engineering/contracts/fixtures/grant.json
 // is a grant signed by the Rust side with a fixed key; this package must
 // produce the same bytes and the same signature.
 package grants

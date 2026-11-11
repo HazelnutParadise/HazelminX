@@ -128,7 +128,7 @@
 
 ## 五、已決定的範圍
 
-2026-11-07 使用者決定納入 Webmin 九類規格外模組。規格增補 `docs/spec/addendum-01-host-service-modules.md`、票 100–106（M6）、畫板 HostServices。
+2026-11-07 使用者決定納入 Webmin 九類規格外模組。規格增補 `engineering/specs/addendum-01-host-service-modules.md`、票 100–106（M6）、畫板 HostServices。
 
 ## 六、下一批要畫的細部畫面（依矩陣優先序）
 

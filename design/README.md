@@ -1,6 +1,6 @@
 # 設計過程檔（票 002）
 
-專案根目錄的 `DESIGN.md` 是視覺基準，`DESIGN-REVIEW.md` 是審查紀錄。這個目錄放設計階段的工作檔與原型。
+專案根目錄的 `DESIGN.md` 是視覺基準。這個目錄放設計階段的工作檔與原型。
 
 | 路徑 | 內容 |
 |---|---|
@@ -101,7 +101,7 @@
 ## 重建與驗證
 
 ```bash
-python3 docs/design/tools/build_screens.py --render-dir /tmp/hx-render
+python3 design/tools/build_screens.py --render-dir /tmp/hx-render
 ```
 
 `--render-dir` 會另外輸出可直接用瀏覽器開的 `<畫板>-{dark,light}.html`。要在畫布外預覽 `.dc.html`，拿掉 `support.js`、`<x-dc>`、`<helmet>` 標籤並把 `{{theme}}` 換成 `light` 或 `dark` 即可。

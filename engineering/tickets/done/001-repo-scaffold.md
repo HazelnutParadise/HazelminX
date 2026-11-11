@@ -9,12 +9,12 @@
 
 ## What it delivers
 
-repo 根目錄有 AGENTS.md、CLAUDE.md、ENG.md、delivery-status.md、docs/spec、docs/tickets、.gitattributes、.editorconfig、.gitignore 與 README；GitHub 有對應的 issue、milestone 與標籤。
+repo 根目錄有 AGENTS.md、CLAUDE.md、engineering/architecture.md、進度紀錄檔（後來由票檔所在的目錄取代）、engineering/specs、engineering/tickets、.gitattributes、.editorconfig、.gitignore 與 README；GitHub 有對應的 issue、milestone 與標籤。
 
 ## Acceptance criteria
 
-- [ ] 新 agent 只讀 AGENTS.md、ENG.md、delivery-status.md 就能挑下一張票
-- [ ] docs/spec 內的規格檔 SHA-256 與交付包 SHA256SUMS.txt 相符
+- [ ] 新 agent 只讀 AGENTS.md、engineering/architecture.md、進度紀錄檔（後來由票檔所在的目錄取代） 就能挑下一張票
+- [ ] engineering/specs 內的規格檔 SHA-256 與交付包 SHA256SUMS.txt 相符
 
 ## Delivery record
 

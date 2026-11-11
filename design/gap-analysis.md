@@ -60,7 +60,7 @@
 4. 圖形元素都是連結。
 5. 沒資料不畫：離線用虛線框，未排程用淡格。
 
-新增的圖形元件：ring、node card、host map、topology、tall bar、calendar、pipeline（規格在 DESIGN.md，實作在 `docs/design/tools/hxui.py`）。序列色沿用第一輪驗證過的四色，單色序列沿用榛果五階，沒有新色。
+新增的圖形元件：ring、node card、host map、topology、tall bar、calendar、pipeline（規格在 DESIGN.md，實作在 `design/tools/hxui.py`）。序列色沿用第一輪驗證過的四色，單色序列沿用榛果五階，沒有新色。
 
 ## 四、這輪改了什麼
 
@@ -75,7 +75,7 @@
 | 儲存與備份 | 新畫面 |
 | 事件與告警 | 新畫面 |
 
-驗證：15 個畫板深淺色與 360px 皆以 Playwright 渲染，零 console 錯誤、無橫向溢出；截圖在 `docs/design/screenshots/screens/`。
+驗證：15 個畫板深淺色與 360px 皆以 Playwright 渲染，零 console 錯誤、無橫向溢出；截圖在 `design/screenshots/screens/`。
 
 ## 五、還沒做、要注意
 

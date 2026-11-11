@@ -28,7 +28,7 @@ type grantFixture struct {
 
 func readFixture(t *testing.T) grantFixture {
 	t.Helper()
-	b, err := os.ReadFile(filepath.Join("..", "..", "..", "docs", "contracts", "fixtures", "grant.json"))
+	b, err := os.ReadFile(filepath.Join("..", "..", "..", "engineering", "contracts", "fixtures", "grant.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

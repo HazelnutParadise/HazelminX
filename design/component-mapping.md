@@ -11,7 +11,7 @@
 | 元件 | 54 個：Table（含 CheckCell／CheckHead、sticky 欄）、Sidebar（icon 收合、可拖寬）、Tabs、Dialog、Toasty、CommandPalette、Breadcrumbs、Pagination、Meter、Badge、Banner、Empty、Loader、SensitiveInput、Code、Collapsible、DateRangePicker、Chart／TimeseriesChart、Combobox、TagInput… | `npx @cloudflare/kumo ls` |
 | 沒有的 | 樹狀元件、拓撲圖、熱格、環形量表、日曆熱格、流程段、終端機、編輯器 | 同上 |
 
-結論：採用 Kumo 當元件底層，取代 ENG.md 原本的「Radix Primitives＋自家元件」。DESIGN.md 的 token 對映到 Kumo 的語意 token；我們的圖形元件維持自製（SVG），圖表走 Kumo 的 Chart（ECharts）但配色與規則照 DESIGN.md「資料視覺化」節。
+結論：採用 Kumo 當元件底層，取代 engineering/architecture.md 原本的「Radix Primitives＋自家元件」。DESIGN.md 的 token 對映到 Kumo 的語意 token；我們的圖形元件維持自製（SVG），圖表走 Kumo 的 Chart（ECharts）但配色與規則照 DESIGN.md「資料視覺化」節。
 
 ## Token 對映（DESIGN.md → Kumo）
 
@@ -49,7 +49,7 @@
 ## 風險與驗證（票 005 第一週做）
 
 - Tailwind v4 進入建置鏈；不想用就 `styles/standalone`（CSS 較大）。
-- 主題覆蓋只能靠覆蓋 CSS 變數，Kumo 沒有消費端的 theme generator；要驗證覆蓋後對比仍符合 DESIGN.md 門檻（跑 `docs/design/tools/` 的掃描）。
+- 主題覆蓋只能靠覆蓋 CSS 變數，Kumo 沒有消費端的 theme generator；要驗證覆蓋後對比仍符合 DESIGN.md 門檻（跑 `design/tools/` 的掃描）。
 - 版本更新快（2026 年內 1.0 → 2.17），鎖定版本、每月升級一次並跑視覺回歸。
 - Phosphor Icons 取代畫板裡的自繪線條圖示；側欄圖示對照表在票 005 建立。
 

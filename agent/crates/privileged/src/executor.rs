@@ -1,5 +1,5 @@
 //! Dispatch from a validated [`Action`] to its handler. `Executor` is the
-//! seam the server tests replace (ENG.md: "動作處理器以 trait 替換").
+//! seam the server tests replace (engineering/architecture.md: "動作處理器以 trait 替換").
 //!
 //! An executor must say, per action, what that action changes on the host
 //! ([`Executor::declare`]). The server records declared changes in the host

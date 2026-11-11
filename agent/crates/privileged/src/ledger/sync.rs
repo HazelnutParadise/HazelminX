@@ -9,9 +9,9 @@
 //! On the Core↔Agent channel the Core sends `ledger_pull` with a grant for
 //! `host.ledger.read`; the agent calls `ledger_export` with it and answers
 //! `ledger_page` (the [`LedgerBatch`] fields) or `ledger_unavailable`
-//! (docs/contracts/README.md). Core's check is `core/internal/hostledger`;
+//! (engineering/contracts/README.md). Core's check is `core/internal/hostledger`;
 //! [`LedgerBatch::verify`] is the same rule, and both run against
-//! `docs/contracts/fixtures/host-ledger-batch.json`.
+//! `engineering/contracts/fixtures/host-ledger-batch.json`.
 
 use super::entry::Entry;
 use super::store::{genesis_hash, sha256_hex};
@@ -144,7 +144,7 @@ mod tests {
 
     #[test]
     fn wire_shape_matches_the_contract_fixture() {
-        let text = include_str!("../../../../../docs/contracts/fixtures/host-ledger-batch.json");
+        let text = include_str!("../../../../../engineering/contracts/fixtures/host-ledger-batch.json");
         let batch: LedgerBatch = serde_json::from_str(text).unwrap();
         let head = batch.verify(None).unwrap();
         assert_eq!(head, batch.head);

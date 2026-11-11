@@ -28,3 +28,9 @@ docs/baseline/ 內的機器可讀清單：上游路由／畫面、功能、角�
 ## Delivery record
 
 需求 ID → 變更 → 測試環境 → 正常與失敗案例 → 證據 → 未驗證部分，依規格第 46.4 節填寫於 PR。
+
+## Notes
+
+### 進度
+
+- 草稿 PR #99 進行中，產出放在 `docs/baseline/`。

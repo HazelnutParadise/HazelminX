@@ -18,7 +18,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// harness runs the real store, service and router in-process (ENG.md test
+// harness runs the real store, service and router in-process (engineering/architecture.md test
 // seam: httptest against /management/v1).
 type harness struct {
 	t     *testing.T

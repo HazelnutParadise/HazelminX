@@ -1,4 +1,4 @@
-/* App shell (DESIGN.md Layout, 資訊架構). Reference markup: docs/design/tools/hxui.py topbar()/nav()/shell(). */
+/* App shell (DESIGN.md Layout, 資訊架構). Reference markup: design/tools/hxui.py topbar()/nav()/shell(). */
 
 .hx-shell {
   display: flex;
