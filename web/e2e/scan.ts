@@ -117,7 +117,7 @@ export async function contrastIssues(page: Page): Promise<string[]> {
 
 /**
  * Touch targets (DESIGN.md: ≥ 44px on phones, ≥ 24px on desktop), page overflow, clipped text,
- * and untranslated i18n keys. Port of the checks in docs/design/tools/scan_layout.py plus target size.
+ * and untranslated i18n keys. Port of the checks in design/tools/scan_layout.py plus target size.
  */
 export async function layoutIssues(page: Page): Promise<string[]> {
   return page.evaluate(() => {

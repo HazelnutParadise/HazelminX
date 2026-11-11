@@ -173,7 +173,7 @@ mod tests {
     use std::path::PathBuf;
 
     fn fixtures() -> PathBuf {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../docs/contracts/fixtures")
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../engineering/contracts/fixtures")
     }
 
     /// Lays out an identity dir from the contract fixtures.

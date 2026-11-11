@@ -194,7 +194,7 @@ func (p *PKI) IssueNodeCertificate(pub ed25519.PublicKey, validity time.Duration
 
 // VerifyNodeCertificate checks a PEM node certificate at time now.
 //
-// Expected results (fixtures in docs/contracts/fixtures/pki, verified
+// Expected results (fixtures in engineering/contracts/fixtures/pki, verified
 // against a PKI built from ca.crt for the test):
 //   - node.crt → identity with the fingerprint of node.key's public key;
 //   - node-rogue.crt (other CA) → ErrNodeCertificate;

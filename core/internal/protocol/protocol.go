@@ -1,6 +1,6 @@
 // Package protocol is the Go side of the Core<->Agent channel contract
-// (docs/contracts/README.md). The Rust side is agent/crates/protocol; both are
-// tested against docs/contracts/fixtures.
+// (engineering/contracts/README.md). The Rust side is agent/crates/protocol; both are
+// tested against engineering/contracts/fixtures.
 //
 // DecodeHandshake reads the five handshake messages and ignores unknown
 // fields, so peers of any version can say "incompatible, here is my range".
@@ -576,7 +576,7 @@ type TranscriptInput struct {
 	WelcomeDigest string
 }
 
-// Transcript is the exact text each side signs (docs/contracts/README.md).
+// Transcript is the exact text each side signs (engineering/contracts/README.md).
 // It covers both nonces, both key-exchange keys, the whole hello and the
 // welcome's parameters, so a proxy that changes any of them breaks the
 // signatures.

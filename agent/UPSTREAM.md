@@ -62,12 +62,12 @@ HazelminX 的 Rust Agent 以 Komodo Periphery 為改造起點。本文件固定�
 | `command` | `lib/command` | GPL-3.0-or-later | 保留 | `crates/agent` 的命令層，只給低權限的 Agent 用，`hazelminx-privileged` 有自己的執行器。沒有專屬的票：票 020（GPU 的命令列退路）、040、044（`docker compose` CLI）中最先需要的那張負責移植。保留程序群組隔離、逾時、取消與整組結束。移除接受字串的 API（`run_standard_command`、`run_shell_command`、多行命令），改成參數陣列。`Log` 換成 HazelminX 的步驟紀錄 |
 | `komodo_client` | `client/core/rs` | GPL-3.0-or-later | 替換 | `crates/protocol`（票 007） |
 | `periphery_client` | `client/periphery/rs` | GPL-3.0-or-later | 替換 | `crates/protocol`（票 007） |
-| `transport` | `lib/transport` | GPL-3.0-or-later | 替換 | 票 007 的 WebSocket over mTLS 連線。參考上游在單一連線上多工傳送請求與終端機串流的設計（ENG.md「Core↔Agent 協定」列），不用 Noise 握手 |
-| `encoding` | `lib/encoding` | GPL-3.0-or-later | 替換 | 票 007 的 JSON 訊息格式與黃金樣本（`docs/contracts/fixtures/`） |
-| `environment` | `lib/environment` | GPL-3.0-or-later | 替換 | Compose 的 `--env-file`（ENG.md「Compose 執行」）。環境檔內容與機密解析由票 045 與票 011 決定，Agent 只把收到的內容寫入檔案 |
-| `interpolate` | `lib/interpolate` | GPL-3.0-or-later | 捨棄 | Compose 的變數替換交給 `docker compose` CLI 依 `--env-file` 處理。Core 以 `compose-go/v2` 產生預覽與差異（ENG.md「Compose 執行」） |
+| `transport` | `lib/transport` | GPL-3.0-or-later | 替換 | 票 007 的 WebSocket over mTLS 連線。參考上游在單一連線上多工傳送請求與終端機串流的設計（engineering/architecture.md「Core↔Agent 協定」列），不用 Noise 握手 |
+| `encoding` | `lib/encoding` | GPL-3.0-or-later | 替換 | 票 007 的 JSON 訊息格式與黃金樣本（`engineering/contracts/fixtures/`） |
+| `environment` | `lib/environment` | GPL-3.0-or-later | 替換 | Compose 的 `--env-file`（engineering/architecture.md「Compose 執行」）。環境檔內容與機密解析由票 045 與票 011 決定，Agent 只把收到的內容寫入檔案 |
+| `interpolate` | `lib/interpolate` | GPL-3.0-or-later | 捨棄 | Compose 的變數替換交給 `docker compose` CLI 依 `--env-file` 處理。Core 以 `compose-go/v2` 產生預覽與差異（engineering/architecture.md「Compose 執行」） |
 | `formatting` | `lib/formatting` | GPL-3.0-or-later | 替換 | 錯誤格式化改用 `anyhow` 與結構化日誌 |
-| `git` | `lib/git` | GPL-3.0-or-later | 捨棄 | 不沿用 Periphery 的 Git 實作。Git 取得在受控抓取服務（ENG.md「GitHub」），節點端的隔離抓取由票 049 決定 |
+| `git` | `lib/git` | GPL-3.0-or-later | 捨棄 | 不沿用 Periphery 的 Git 實作。Git 取得在受控抓取服務（engineering/architecture.md「GitHub」），節點端的隔離抓取由票 049 決定 |
 
 ## `bin/periphery` 模組
 
@@ -82,7 +82,7 @@ HazelminX 的 Rust Agent 以 Komodo Periphery 為改造起點。本文件固定�
 | `api/mod.rs` 的 `GetHealth`、`GetVersion` | 替換 | 票 007 的握手（交換協定與能力版本） |
 | `api/mod.rs` 的 `ListGitProviders`、`ListImageRegistries`、`ListSecrets` | 捨棄 | 列出 Periphery 設定檔裡的帳號與機密名稱。HazelminX 的連線與機密在 Core（票 011、047） |
 | `api/git.rs` | 捨棄 | 同 `lib/git` |
-| `api/build/` | 捨棄 | 不沿用 Periphery 的建置 API。隔離建置由票 049 決定（ENG.md「GitHub 部署」） |
+| `api/build/` | 捨棄 | 不沿用 Periphery 的建置 API。隔離建置由票 049 決定（engineering/architecture.md「GitHub 部署」） |
 | `api/keys.rs`、Onboarding 與 Passkey | 替換 | 節點身分在 `crates/agent/src/identity.rs`（Ed25519）。加入流程是票 019 |
 | `connection/`（主動外連、重連、入站伺服器） | 替換 | 票 007。參考主動外連與重連退避的設計。入站伺服器（`server.rs`）不要，節點不開管理連接埠 |
 | `main.rs`（啟動、背景採樣、SIGTERM 時關閉終端機） | 替換 | `crates/agent/src/main.rs`。收到 SIGTERM 時結束終端機的行為屬於票 027 的範圍，但票 027 的驗收還沒有列這一條 |
@@ -93,7 +93,7 @@ HazelminX 的 Rust Agent 以 Komodo Periphery 為改造起點。本文件固定�
 | `stack/` | 捨棄 | Komodo 自己的 Stack 目錄規則（預設 `${root_directory}/stacks`，`root_directory` 預設 `/etc/komodo`），HazelminX 的部署設定由 Core 產生 |
 | GPU 指標 | 新增 | 票 020（MON-002）。上游沒有 GPU 採集 |
 
-上游沒有、要新寫的其他模組（`jobs/`、`probes/`、`files/`、Windows 實作）見 ENG.md 的元件圖與「Hidden assumptions」。呼叫高權限執行器的客戶端已由票 012 建在 `crates/privileged` 的 `client` 模組。
+上游沒有、要新寫的其他模組（`jobs/`、`probes/`、`files/`、Windows 實作）見 engineering/architecture.md 的元件圖與「Hidden assumptions」。呼叫高權限執行器的客戶端已由票 012 建在 `crates/privileged` 的 `client` 模組。
 
 ## 外部相依
 

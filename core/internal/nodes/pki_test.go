@@ -29,7 +29,7 @@ import (
 // valid from 2026-01-01 until 2126, except node-expired.crt (ends 2026-06-01).
 var pkiFixedNow = time.Date(2026, 11, 8, 12, 0, 0, 0, time.UTC)
 
-const pkiFixtureDir = "../../../docs/contracts/fixtures/pki"
+const pkiFixtureDir = "../../../engineering/contracts/fixtures/pki"
 
 // callNoPanic runs fn. The unimplemented PKI functions panic; a panic becomes
 // a failure of the calling (sub)test instead of aborting the whole run.

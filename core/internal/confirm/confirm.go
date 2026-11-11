@@ -9,7 +9,7 @@
 // Limitation: "a new connection" is judged from the TCP connection that
 // reaches Core. When a reverse proxy sits in front of the management entry,
 // Core cannot see the browser's connections and the rule cannot be proven;
-// ROB-010 assumes the browser reaches Core directly (ENG.md).
+// ROB-010 assumes the browser reaches Core directly (engineering/architecture.md).
 package confirm
 
 import (

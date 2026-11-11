@@ -14,7 +14,7 @@ import (
 	"github.com/HazelnutParadise/hazelminx/core/internal/store"
 )
 
-// fakeHandler is the in-process executor the test seam in ENG.md asks for:
+// fakeHandler is the in-process executor the test seam in engineering/architecture.md asks for:
 // every hook can inject a disconnect, a disk-full error or a rollback failure.
 type fakeHandler struct {
 	kind      string

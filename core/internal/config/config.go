@@ -32,7 +32,7 @@ type Config struct {
 	PublicOrigin string
 }
 
-// Defaults match the install layout in ENG.md and spec chapter 37.
+// Defaults match the install layout in engineering/architecture.md and spec chapter 37.
 var Defaults = Config{
 	ListenAddr:      "127.0.0.1:9800",
 	AgentListenAddr: "0.0.0.0:9801",

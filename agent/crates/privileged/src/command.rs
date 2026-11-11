@@ -2,7 +2,7 @@
 //! plus a vector of argv entries and environment pairs; it is handed to the
 //! OS as separate strings, never joined and never parsed by a shell. The
 //! [`CommandRunner`] trait is the test seam: the real runner spawns, the
-//! recording runner just remembers the spec (ENG.md "Test seams").
+//! recording runner just remembers the spec (engineering/architecture.md "Test seams").
 
 use crate::BoxFuture;
 use std::collections::VecDeque;

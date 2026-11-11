@@ -17,8 +17,8 @@ import (
 	"testing"
 )
 
-// fixtureRoot is docs/contracts/fixtures, relative to this package directory.
-const fixtureRoot = "../../../docs/contracts/fixtures"
+// fixtureRoot is engineering/contracts/fixtures, relative to this package directory.
+const fixtureRoot = "../../../engineering/contracts/fixtures"
 
 // decodeFunc matches the signature of Decode and DecodeHandshake.
 type decodeFunc func([]byte) (any, error)

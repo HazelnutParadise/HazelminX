@@ -1,4 +1,4 @@
-//! Socket-layer tests (ENG.md test seam for the privileged executor).
+//! Socket-layer tests (engineering/architecture.md test seam for the privileged executor).
 
 mod common;
 

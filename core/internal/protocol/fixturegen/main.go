@@ -1,12 +1,12 @@
 //go:build ignore
 
-// fixturegen regenerates the deterministic parts of docs/contracts/fixtures:
+// fixturegen regenerates the deterministic parts of engineering/contracts/fixtures:
 // the test PKI (pki/*.pem), signature.json and the handshake samples that
 // embed certificates and proofs. Every key comes from a fixed seed and
 // Ed25519 signatures are deterministic, so running it twice gives identical
 // files. The keys are public test material and must never be deployed.
 //
-//	go run ./internal/protocol/fixturegen/main.go ../docs/contracts/fixtures
+//	go run ./internal/protocol/fixturegen/main.go ../engineering/contracts/fixtures
 package main
 
 import (

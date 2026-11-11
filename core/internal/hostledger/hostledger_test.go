@@ -21,7 +21,7 @@ import (
 
 func fixture(t *testing.T, rel string, v any) {
 	t.Helper()
-	b, err := os.ReadFile(filepath.Join("..", "..", "..", "docs", "contracts", "fixtures", rel))
+	b, err := os.ReadFile(filepath.Join("..", "..", "..", "engineering", "contracts", "fixtures", rel))
 	if err != nil {
 		t.Fatal(err)
 	}

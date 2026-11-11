@@ -1,5 +1,5 @@
 /*
- * HazelminX theme for Kumo (docs/design/component-mapping.md).
+ * HazelminX theme for Kumo (design/component-mapping.md).
  * Values come from DESIGN.md; light-dark() follows color-scheme, which Kumo sets from data-mode.
  * Unlayered on purpose: it must beat Kumo's @theme defaults and any layered theme.
  */
