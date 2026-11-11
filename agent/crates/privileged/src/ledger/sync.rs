@@ -144,7 +144,8 @@ mod tests {
 
     #[test]
     fn wire_shape_matches_the_contract_fixture() {
-        let text = include_str!("../../../../../engineering/contracts/fixtures/host-ledger-batch.json");
+        let text =
+            include_str!("../../../../../engineering/contracts/fixtures/host-ledger-batch.json");
         let batch: LedgerBatch = serde_json::from_str(text).unwrap();
         let head = batch.verify(None).unwrap();
         assert_eq!(head, batch.head);
