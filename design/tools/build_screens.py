@@ -72,7 +72,7 @@ def kv(k, v, cls=""):
 # ---------- 總覽 ----------
 def overview() -> str:
     tiles = '<div class="tiles">' + "".join([
-        U.stat_tile("主機", "2", "/3 連線中", "jp-02 沒有回應", False, spark=[3] * 20 + [2, 2, 2, 2], note=""),
+        U.stat_tile("主機", "2", "/4 連線中", "jp-02 沒有回應 · old-nas 版本太舊", False, spark=[3] * 20 + [2, 2, 2, 2], note=""),
         U.stat_tile("服務", "10", "2 專案", "1 部署失敗（staging）", False, spark=[9, 9, 9, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]),
         U.stat_tile("今日請求（Zentinel 來源站）", U.fmt(sum(REQ_ORIGIN)), "", "較昨日 +8.4%", True, spark=REQ_ORIGIN, note="邊緣完整度 99.1%"),
         U.stat_tile("進行中的工作", "3", "", "1 狀態不明", False, spark=[1, 1, 2, 2, 1, 1, 1, 2, 3, 2, 2, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3]),
@@ -93,13 +93,14 @@ def overview() -> str:
     charts = f'<div class="cg">{fleet}{traffic}</div>'
 
     fleet_cards = f"""
-    <section id="nodes" class="panel" aria-labelledby="h-nodes">
-      <div class="ph"><h2 id="h-nodes">主機 · 3 台</h2>{U.legend(RING_LEGEND)}<a class="more" href="Nodes.dc.html">全部主機 →</a></div>
+    <section class="panel" id="nodes" aria-labelledby="h-nodes">
+      <div class="ph"><h2 id="h-nodes">主機 · 4 台</h2><span class="note">有問題的排前面</span>{U.legend(RING_LEGEND)}<a class="more" href="Nodes.dc.html">全部主機 →</a></div>
       <div class="fleet">
-        {U.node_card("hazel-tw-01", "Ubuntu 24.04 · 控制中心 · Docker · 8 核 · L4 GPU", U.status("ok", "連線中"), 37, (11.2, 31.3), (412, 931), CPU_TW[-12:], "2 秒前", (9, 10))}
         {U.node_card("hazel-jp-02", "Debian 12 · Docker · 4 核 · 資料碟未綁定", U.status("dng", "沒有回應"), 64, (13.9, 15.5), (870, 931), CPU_JP[-12:], "03:41:18", (3, 3), stale=True)}
+        {U.node_card("hazel-tw-01", "Ubuntu 24.04 · 控制中心 · Docker · 8 核 · L4 GPU", U.status("ok", "連線中"), 37, (11.2, 31.3), (412, 931), CPU_TW[-12:], "2 秒前", (9, 10))}
         {U.node_card("lab-mini", "Debian 13 · Podman rootless · 4 核", U.status("info", "維護中"), 3, (1.1, 7.6), (38, 118), CPU_LAB[-12:], "5 秒前", (0, 2))}
-      </div>
+      </div>      <div class="row hd"><span>其他主機 · 1</span><span>狀態</span><span>CPU</span><span>記憶體</span><span></span></div>
+      <a class="row" href="Nodes.dc.html"><span class="name"><span class="n mono">old-nas</span><span class="d">Agent 0.0.9 · 協定 v0</span></span><span>{U.status("dng", "協定不相容")}</span><span class="mono">—</span><span class="mono">—</span><span class="acts"><span class="btn sm">升級 Agent</span></span></a>
       <div class="note" style="padding: 0 14px 10px">* 上次觀測值，主機已過期 · 綠色段＝執行中的容器</div>
     </section>"""
 
@@ -111,7 +112,7 @@ def overview() -> str:
     topo_m = U.flowlist([("Cloudflare", "Zentinel", "155K → 92K/日"), ("Zentinel", "shop.example.tw", "64%"), ("Zentinel", "wiki.example.tw", "31%"), ("Zentinel", "staging.shop", "失敗"),
                          ("shop.example.tw", "shop-api @ tw-01", "4 容器"), ("wiki.example.tw", "wiki-app @ jp-02", "2 容器"), ("staging.shop", "shop-api @ lab-mini", "失敗")])
     topology_panel = f"""
-    <section id="topo" class="panel" aria-labelledby="h-topo">
+    <section class="panel" id="topo" aria-labelledby="h-topo">
       <div class="ph"><h2 id="h-topo">流量拓撲</h2>{U.legend(TOPO_LEGEND)}<a class="more" href="Websites.dc.html">網站與入口 →</a></div>
       <div style="padding: 10px 14px 6px"><div class="ch-d">{topo}</div><div class="ch-m">{topo_m}</div></div>
     </section>"""
@@ -122,13 +123,13 @@ def overview() -> str:
         ("lab-mini", [("shop-api", 0, "off"), ("shop-db", 0, "off"), ("shop-redis", 0, "off")]),
     ])
     hostmap_panel = f"""
-    <section id="hostmap" class="panel" aria-labelledby="h-hm">
+    <section class="panel" id="hostmap" aria-labelledby="h-hm">
       <div class="ph"><h2 id="h-hm">容器地圖 · 16</h2><span class="sub">一格一容器，顏色＝CPU；異常與過期用形狀標</span><a class="more" href="Containers.dc.html">容器 →</a></div>
       {hostmap}
     </section>"""
 
     storage = f"""
-    <section id="storage" class="panel" aria-labelledby="h-sto">
+    <section class="panel" id="storage" aria-labelledby="h-sto">
       <div class="ph"><h2 id="h-sto">儲存與備份</h2><span class="sub">段條＝資料碟怎麼被用掉；日曆＝每日備份結果</span><a class="more" href="Storage.dc.html">儲存與備份 →</a></div>
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 1px; background: var(--line)">
         <div style="display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; background: var(--panel)">
@@ -154,7 +155,7 @@ def overview() -> str:
                 f'<div class="ft"><span class="mono">{commit}</span><span>{when}</span><span style="margin-left:auto" class="mono">{node}</span></div>'
                 f'{U.state_timeline(timeline)}<div class="ft"><span class="note">{domain}</span><span style="margin-left:auto" class="note">{note}</span></div></a>')
     projects = f"""
-    <section id="projects" class="panel" aria-labelledby="h-proj">
+    <section class="panel" id="projects" aria-labelledby="h-proj">
       <div class="ph"><h2 id="h-proj">專案 · 3 環境</h2>{U.legend(TL_LEGEND)}<a class="more" href="Projects.dc.html">全部 →</a></div>
       <div class="fleet">
         {pcard("shop", "production", U.status("ok", "成功"), "a3f9c1e", "02:57", "tw-01", "shop.example.tw", "oooooooofoooooooooooooro", "自動部署暫停：#418 待批准")}
