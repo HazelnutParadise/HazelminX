@@ -54,6 +54,9 @@ pub struct Shared {
     identity: Identity,
     /// The privileged executor, for `ledger_pull`.
     privileged: hazelminx_privileged::client::Client,
+    /// Set when a renewed certificate was stored: the session ends so the
+    /// next connection proves it.
+    renewed: std::sync::atomic::AtomicBool,
 }
 
 impl Shared {
@@ -76,6 +79,7 @@ impl Shared {
             facts,
             identity,
             privileged,
+            renewed: std::sync::atomic::AtomicBool::new(false),
         })
     }
 }
@@ -161,6 +165,7 @@ pub async fn run(
                     reject_code::PROTOCOL_INCOMPATIBLE
                         | reject_code::NODE_REVOKED
                         | reject_code::IDENTITY_INVALID
+                        | reject_code::IDENTITY_CONFLICT
                 );
                 let ours = proto::supported_range();
                 match supported {
@@ -197,9 +202,23 @@ async fn connect_and_serve(opts: &Options, shared: &Arc<Shared>) -> End {
         Ok(m) => m,
         Err(e) => return lost(e),
     };
+    // A renewed certificate that cannot complete a handshake is dropped and
+    // the current one is used again (the Core still accepts it).
+    let give_up_next = |why: &dyn std::fmt::Display| {
+        if material.using_next {
+            warn!(reason = %why, "the renewed certificate did not work; going back to the current one");
+            if let Err(e) = tls::discard_next(&opts.identity_dir) {
+                error!(error = %format!("{e:#}"), "cannot remove node.crt.next");
+            }
+        }
+    };
     let mut ws = match dial(opts, &material).await {
         Ok(ws) => ws,
-        Err(e) => return lost(e),
+        Err(DialError::Tcp(e)) => return lost(e),
+        Err(DialError::Tls(e)) => {
+            give_up_next(&format!("{e:#}"));
+            return lost(e);
+        }
     };
     let ready = match handshake(&mut ws, &material, shared).await {
         Ok(r) => r,
@@ -208,14 +227,26 @@ async fn connect_and_serve(opts: &Options, shared: &Arc<Shared>) -> End {
             message,
             supported,
         }) => {
+            give_up_next(&code);
             return End::Refused {
                 code,
                 message,
                 supported,
             };
         }
-        Err(HandshakeError::Other(e)) => return lost(e),
+        Err(HandshakeError::Other(e)) => {
+            give_up_next(&format!("{e:#}"));
+            return lost(e);
+        }
     };
+    if material.using_next {
+        match tls::promote_next(&opts.identity_dir) {
+            Ok(()) => info!("renewed node certificate is now in use"),
+            Err(e) => {
+                error!(error = %format!("{e:#}"), "cannot switch to the renewed certificate file")
+            }
+        }
+    }
     info!(session = %ready.session_id, protocol = ready.protocol_version, core_version = %ready.core_version, "connected to core");
     let err = serve(ws, shared, ready.keys, ready.heartbeat).await;
     End::Lost {
@@ -224,12 +255,21 @@ async fn connect_and_serve(opts: &Options, shared: &Arc<Shared>) -> End {
     }
 }
 
-async fn dial(opts: &Options, material: &tls::TrustMaterial) -> Result<Ws> {
-    let url =
-        url::Url::parse(&opts.core_url).with_context(|| format!("core_url {:?}", opts.core_url))?;
+/// Why dialing failed: before TLS (network) or from TLS on.
+enum DialError {
+    Tcp(anyhow::Error),
+    Tls(anyhow::Error),
+}
+
+async fn dial(opts: &Options, material: &tls::TrustMaterial) -> std::result::Result<Ws, DialError> {
+    let tcp_err = DialError::Tcp;
+    let url = url::Url::parse(&opts.core_url)
+        .with_context(|| format!("core_url {:?}", opts.core_url))
+        .map_err(tcp_err)?;
     let host = url
         .host_str()
-        .ok_or_else(|| anyhow!("core_url has no host"))?
+        .ok_or_else(|| anyhow!("core_url has no host"))
+        .map_err(tcp_err)?
         .to_string();
     let port = url.port().unwrap_or(443);
     let tcp = tokio::time::timeout(
@@ -237,9 +277,23 @@ async fn dial(opts: &Options, material: &tls::TrustMaterial) -> Result<Ws> {
         TcpStream::connect((host.as_str(), port)),
     )
     .await
-    .map_err(|_| anyhow!("TCP connect to {host}:{port} timed out"))?
-    .with_context(|| format!("TCP connect to {host}:{port}"))?;
+    .map_err(|_| DialError::Tcp(anyhow!("TCP connect to {host}:{port} timed out")))?
+    .with_context(|| format!("TCP connect to {host}:{port}"))
+    .map_err(tcp_err)?;
+    dial_tls(opts, material, &url, host, tcp)
+        .await
+        .map_err(DialError::Tls)
+}
+
+async fn dial_tls(
+    opts: &Options,
+    material: &tls::TrustMaterial,
+    url: &url::Url,
+    host: String,
+    tcp: TcpStream,
+) -> Result<Ws> {
     let _ = tcp.set_nodelay(true);
+    let port = url.port().unwrap_or(443);
     let config = material.client_config(opts.transport, opts.proxy_ca_file.as_deref())?;
     let name = tls::server_name(opts.transport, &host)?;
     let tls = tokio::time::timeout(
@@ -546,6 +600,10 @@ async fn serve(
                                 return e;
                             }
                         }
+                        if shared.renewed.swap(false, std::sync::atomic::Ordering::SeqCst) {
+                            let _ = ws.close(None).await;
+                            return anyhow!("reconnecting with the renewed node certificate");
+                        }
                     }
                     Err(e) => {
                         // Never act on a message we cannot read exactly (NOD-011).
@@ -678,6 +736,10 @@ fn handle(shared: &Arc<Shared>, msg: Message) -> Vec<Message> {
             });
             vec![]
         }
+        Message::CertificateRenew {
+            request_id,
+            certificate,
+        } => vec![renew_certificate(shared, request_id, certificate)],
         Message::ProtocolError { code, message } => {
             warn!(%code, %message, "core could not read an agent message");
             vec![]
@@ -686,6 +748,54 @@ fn handle(shared: &Arc<Shared>, msg: Message) -> Vec<Message> {
             code: proto::protocol_error_code::UNKNOWN_MESSAGE.into(),
             message: "message is not valid in the core→agent direction".into(),
         }],
+    }
+}
+
+/// Checks a renewed certificate against the pinned Core CA and this node's
+/// key and stores it as `node.crt.next`; the session then ends and the next
+/// connection uses it (engineering/contracts/README.md, 憑證輪替).
+fn renew_certificate(shared: &Arc<Shared>, request_id: &str, certificate: &str) -> Message {
+    let dir = shared.identity.dir();
+    let refused = |code: &str, message: String| {
+        warn!(%code, %message, "keeping the current node certificate");
+        Message::CertificateRefused {
+            request_id: request_id.to_string(),
+            code: code.to_string(),
+            message,
+        }
+    };
+    let ca = match std::fs::read_to_string(dir.join(tls::CORE_CA_FILE))
+        .map_err(anyhow::Error::from)
+        .and_then(|p| tls::parse_certificate(&p))
+    {
+        Ok(c) => c,
+        Err(e) => {
+            return refused(
+                proto::certificate_refused_code::WRITE_FAILED,
+                format!("cannot read core-ca.crt: {e:#}"),
+            );
+        }
+    };
+    if let Err(e) =
+        tls::verify_node_certificate(certificate, &ca, shared.identity.verifying_key().as_bytes())
+    {
+        return refused(
+            proto::certificate_refused_code::CERTIFICATE_INVALID,
+            format!("{e:#}"),
+        );
+    }
+    if let Err(e) = tls::write_atomic(dir, tls::NEXT_CERT_FILE, certificate.as_bytes()) {
+        return refused(
+            proto::certificate_refused_code::WRITE_FAILED,
+            format!("{e:#}"),
+        );
+    }
+    info!("renewed node certificate stored; reconnecting to use it");
+    shared
+        .renewed
+        .store(true, std::sync::atomic::Ordering::SeqCst);
+    Message::CertificateInstalled {
+        request_id: request_id.to_string(),
     }
 }
 

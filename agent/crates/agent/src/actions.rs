@@ -2,7 +2,9 @@
 //! declares in `hello`. Every action has a fixed name, a version and a
 //! strict parameter check; anything else is refused before it runs.
 
-use hazelminx_protocol::{CAP_AGENT_INFO, CAP_HOST_LEDGER, CAP_JOBS, Capability, StepFailure};
+use hazelminx_protocol::{
+    CAP_AGENT_INFO, CAP_HOST_LEDGER, CAP_JOBS, CAP_NODE_CERTIFICATE, Capability, StepFailure,
+};
 use serde_json::{Map, Value, json};
 
 /// One action the agent implements.
@@ -40,7 +42,7 @@ pub fn specs() -> &'static [ActionSpec] {
 }
 
 /// Capabilities declared in `hello`: the jobs protocol, the host change
-/// ledger relay (`ledger_pull`), and every action.
+/// ledger relay (`ledger_pull`), certificate rotation, and every action.
 pub fn capabilities() -> Vec<Capability> {
     let mut caps = vec![
         Capability {
@@ -49,6 +51,10 @@ pub fn capabilities() -> Vec<Capability> {
         },
         Capability {
             name: CAP_HOST_LEDGER.to_string(),
+            version: 1,
+        },
+        Capability {
+            name: CAP_NODE_CERTIFICATE.to_string(),
             version: 1,
         },
     ];

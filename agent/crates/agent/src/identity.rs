@@ -62,6 +62,30 @@ impl Identity {
         Ok(Identity { signing, dir })
     }
 
+    /// Moves the current identity aside (to `identity.replaced-<unix time>`)
+    /// and creates a new key, for re-enrolling a cloned host or one whose key
+    /// was revoked. Returns where the old identity went, if there was one.
+    pub fn replace(state_dir: &Path) -> Result<(Identity, Option<PathBuf>)> {
+        let dir = state_dir.join("identity");
+        let mut moved = None;
+        if dir.exists() {
+            let secs = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0);
+            let to = state_dir.join(format!("identity.replaced-{secs}"));
+            anyhow::ensure!(
+                !to.exists(),
+                "{} already exists; try again in a second",
+                to.display()
+            );
+            std::fs::rename(&dir, &to)
+                .with_context(|| format!("move {} to {}", dir.display(), to.display()))?;
+            moved = Some(to);
+        }
+        Ok((Identity::load_or_create(state_dir)?, moved))
+    }
+
     /// Signs `msg` with the node key (handshake proof).
     pub fn sign(&self, msg: &[u8]) -> [u8; 64] {
         use ed25519_dalek::Signer;
@@ -162,6 +186,18 @@ mod tests {
             std::fs::read_to_string(id_dir.join(PRIVATE_KEY_FILE)).unwrap(),
             "garbage"
         );
+    }
+
+    #[test]
+    fn replace_keeps_the_old_identity_aside_and_makes_a_new_key() {
+        let dir = tempfile::tempdir().unwrap();
+        let a = Identity::load_or_create(dir.path()).unwrap();
+        std::fs::write(a.dir().join("node.crt"), "old cert").unwrap();
+        let (b, moved) = Identity::replace(dir.path()).unwrap();
+        assert_ne!(a.fingerprint(), b.fingerprint());
+        let moved = moved.unwrap();
+        assert!(moved.join(PRIVATE_KEY_FILE).exists() && moved.join("node.crt").exists());
+        assert!(!b.dir().join("node.crt").exists());
     }
 
     #[test]
