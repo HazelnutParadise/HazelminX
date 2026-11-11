@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import re
 import math
 from dataclasses import dataclass, field
 
@@ -129,8 +130,8 @@ body{{margin:0}}
 .hb .grid{{stroke:var(--line);stroke-width:1}}
 .hb .ts{{position:relative;font-family:"Geist Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;font-size:11px;color:var(--faint);padding:8px 8px 20px 46px}}.hb .ts .pa{{position:relative;height:100%}}.hb .ts .plot{{display:block;width:100%;height:100%;overflow:visible}}.hb .ts .yl{{position:absolute;left:0;width:40px;top:8px;bottom:20px}}.hb .ts .yl span{{position:absolute;right:0;transform:translateY(-50%);white-space:nowrap}}.hb .ts .xl{{position:absolute;left:46px;right:8px;bottom:0;height:16px}}.hb .ts .xl span{{position:absolute;transform:translateX(-50%);white-space:nowrap}}.hb .ts .xl .a0{{transform:none}}.hb .ts .xl .a1{{transform:translateX(-100%)}}.hb .ts .mk{{position:absolute;top:0;color:var(--muted);white-space:nowrap;line-height:1}}.hb .ts .sdot{{position:absolute;width:9px;height:9px;border-radius:50%;background:var(--panel);border:2px solid;transform:translate(-50%,-50%)}}.hb .ts .hits{{position:absolute;inset:0}}.hb .ts .hit{{position:absolute;top:0;bottom:0;outline:none}}.hb .ts .xh{{position:absolute;top:0;bottom:0;width:1px;background:var(--muted);opacity:0}}.hb .ts .tip{{position:absolute;top:0;left:calc(100% + 6px);z-index:5;display:none;grid-template-columns:auto auto;gap:3px 14px;min-width:120px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--raised);color:var(--ink);white-space:nowrap;opacity:0;pointer-events:none;box-shadow:0 4px 12px rgb(0 0 0/.2)}}.hb .ts .hit.flip .tip{{left:auto;right:calc(100% + 6px)}}.hb .ts .tip .k{{color:var(--muted);display:flex;align-items:center;gap:6px}}.hb .ts .tip .k i{{width:8px;height:8px;border-radius:2px}}.hb .ts .tip b{{font-weight:500;text-align:right}}.hb .ts .hit:hover .xh,.hb .ts .hit:focus-visible .xh{{opacity:1}}.hb .ts .hit:hover .tip,.hb .ts .hit:focus-visible .tip{{display:grid;opacity:1}}
 .hb .ch-m{{display:none}}
-.hb .ranks{{display:flex;flex-direction:column;gap:6px;padding:10px 14px}}
-.hb .rank{{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,2fr) auto;gap:10px;align-items:center;font-size:13px;min-height:28px}}
+.hb .ranks{{display:grid;grid-template-columns:fit-content(46%) minmax(72px,1fr) auto;gap:6px 10px;padding:10px 14px}}
+.hb .rank{{display:grid;grid-template-columns:subgrid;grid-column:1/-1;align-items:center;font-size:13px;min-height:28px}}
 .hb .rank .bar{{height:8px;border-radius:4px;background:var(--q2);overflow:hidden}}
 .hb .rank .bar i{{display:block;height:100%;border-radius:4px;background:var(--s1)}}
 .hb .timeline{{display:flex;gap:2px;height:10px}}
@@ -197,7 +198,7 @@ body{{margin:0}}
 .hb .mx{{display:grid;gap:2px;font-size:12px}}
 .hb .mx .st,.hb .mx .c{{white-space:nowrap}}
 .hb .mx .c{{min-height:32px;display:flex;align-items:center;justify-content:center;gap:4px;background:var(--raised);border-radius:4px;padding:0 6px;text-align:center}}
-.hb .mx .c.empty{{background:transparent;border:1px dashed var(--line);color:var(--faint)}}
+.hb .mx .c.empty{{background:transparent;border:1px dashed var(--line);color:var(--faint)}}.hb .mxlg{{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12px;color:var(--muted)}}.hb .mxlg .c{{display:inline-block;width:18px;height:12px;border:1px dashed var(--line);border-radius:3px}}
 .hb .mx .rl{{display:flex;align-items:center;white-space:normal;overflow-wrap:anywhere;font-family:"Geist Mono",ui-monospace,monospace;color:var(--muted);min-height:32px;line-height:1.3}}
 .hb .mx .cl{{display:flex;align-items:flex-end;justify-content:center;font-size:11px;color:var(--faint);padding-bottom:4px;text-align:center}}
 .hb .tree{{font-family:"Geist Mono",ui-monospace,monospace;font-size:13px}}
@@ -253,7 +254,7 @@ body{{margin:0}}
 .hb .term{{background:#14120F;border:1px solid var(--line);border-radius:8px;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;padding:10px 12px;color:var(--ink);white-space:pre;overflow:auto}}
 .hb .lg{{display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted);margin-left:auto}}
 .hb .lg span{{display:inline-flex;align-items:center;gap:5px}}
-.hb .lg i.sw{{display:inline-block;width:12px;height:8px;border-radius:2px}}
+.hb .lg i.sw{{display:inline-block;width:12px;height:8px;border-radius:2px}}.hb .tall-lg{{margin:6px 0 0;gap:4px 12px}}.hb .tall-lg i.sw{{margin-right:5px;box-shadow:inset 0 0 0 1px var(--line)}}
 .hb .lg i.ln{{display:inline-block;width:18px;border-radius:2px;background:var(--s1)}}
 .hb .lg .st{{gap:5px}}
 .hb .scope{{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;background:var(--panel);border:1px solid var(--line);border-radius:8px}}
@@ -333,7 +334,6 @@ body{{margin:0}}
 .hb .row.cols-5{{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}}
 .hb .row.cols-6{{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}}
 .hb .row.acts-end{{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.2fr) 130px}}
-.hb .rank{{grid-template-columns:minmax(0,1.7fr) minmax(0,2fr) auto}}
 .hb .rank .mono,.hb .flowlist .mono{{white-space:normal!important;overflow-wrap:anywhere;line-height:1.3}}
 .hb .mxw,.hb .heatw{{overflow-x:auto}}
 .hb .meter .tr{{min-width:24px}}.hb .meter .num{{flex:none}}
@@ -960,7 +960,10 @@ def tall_bar(parts: list, total: float, unit: str = "G") -> str:
     free = max(0.0, total - used)
     fw = free / total * 100
     segs.append(f'<i style="width:{fw:.1f}%;background:var(--q1);color:var(--muted)" title="可用 {free:.0f}{unit}">{f"{free:.0f}{unit}" if fw >= 9 else ""}</i>')
-    return '<span class="tall" aria-hidden="true">' + "".join(segs) + "</span>"
+    lg = "".join(f'<span><i class="sw" style="background:{col}" aria-hidden="true"></i>{lab}{"" if re.search(r"[0-9]", lab) else f" {v:g}{unit}"}</span>' for v, lab, col in parts)
+    if fw >= 0.5:
+        lg += f'<span><i class="sw" style="background:var(--q1)" aria-hidden="true"></i>{"其他" if unit == "%" else "可用"} {free:g}{unit}</span>'
+    return '<span class="tall" aria-hidden="true">' + "".join(segs) + f'</span><span class="lg tall-lg" role="list">{lg}</span>'
 
 
 def calendar(states: str, start_label: str = "", end_label: str = "") -> str:
@@ -1057,7 +1060,8 @@ def matrix(rows: list, cols: list, cells: list, first_col: str = "minmax(110px,1
                 out.append(f'<span class="c empty">{txt or "—"}</span>')
             else:
                 out.append(f'<span class="c"><span class="st {kind}"><i aria-hidden="true"></i>{txt}</span></span>')
-    return f'<div class="mxw"><div class="mx" style="grid-template-columns:{first_col} repeat({len(cols)},minmax(max-content,1fr))">' + "".join(out) + "</div></div>"
+    lg = '<div class="mxlg"><span class="c empty" aria-hidden="true"></span>虛線格：沒有設定或不適用</div>' if any(k == "none" for row in cells for k, _ in row) else ""
+    return f'<div class="mxw"><div class="mx" style="grid-template-columns:{first_col} repeat({len(cols)},minmax(max-content,1fr))">' + "".join(out) + f"</div>{lg}</div>"
 
 
 def tree(items: list, open_depth: int = 1) -> str:

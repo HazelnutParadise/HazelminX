@@ -1250,8 +1250,7 @@ def kubernetes() -> str:
 # ---------- 應用商店 ----------
 def appstore() -> str:
     head = U.page_head("應用商店", OBS, '<button type="button" class="btn pri">同步商店</button><button type="button" class="btn">新增來源</button><button type="button" class="btn">本機範本</button>')
-    tabs = ('<div class="panel"><div class="tabs" role="tablist"><button type="button" class="tab on" role="tab" aria-selected="true">已安裝 · 7</button><button type="button" class="tab" role="tab" aria-selected="false">可升級 · 3</button>'
-            '<button type="button" class="tab" role="tab" aria-selected="false">全部應用 · 212</button><button type="button" class="tab" role="tab" aria-selected="false">來源與設定</button></div></div>')
+    tabs = _jump(["已安裝 · 7", "可升級 · 3", "全部應用 · 212", "來源與設定"])
     def app(ini, name, ver, node, st, meter_pct, meter_txt, note, upg=""):
         return (f'<a class="appcard" href="AppSettings.dc.html"><span class="ic" aria-hidden="true">{ini}</span><span class="bd"><span class="n">{name} <span class="note">{ver}</span></span><span class="d">{node}</span>{st}{U.meter(meter_pct, meter_txt)}<span class="d">{note}</span>{upg}</span></a>')
     installed = f"""
@@ -1316,7 +1315,7 @@ def _api_tabs(on):
 
 
 def apiproxy() -> str:
-    head = U.page_head("API 代理", OBS, '<button type="button" class="btn pri">新增服務</button><button type="button" class="btn">發 Token</button><button type="button" class="btn">匯入 infra-manager 資料</button>')
+    head = U.page_head("API 代理", OBS, '<button type="button" class="btn pri">新增服務</button><button type="button" class="btn">發 Token</button>')
     tiles = '<div class="tiles">' + "".join([
         U.stat_tile("啟用服務", "3", "", "共 4 · 1 停用 · 較 30 天前 +1", None),
         U.stat_tile("啟用使用者 · Token", "5 · 7", "", "即將到期 2（7 天內 0）", False),
@@ -1335,18 +1334,17 @@ def apiproxy() -> str:
       <div style="padding:10px 14px 6px"><div class="ch-d">{topo}</div><div class="ch-m">{topo_m}</div></div>
     </section>"""
     def tok(name, owner, scope, days, used, limit):
-        pct = min(100, days / 90 * 100); col = "var(--danger)" if days < 14 else ("var(--warn)" if days < 30 else "var(--ok)")
-        return (f'<div class="rank" style="grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr) auto"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{name} <span class="note">· {owner} · {scope}</span></span>'
-                f'<span class="bar" aria-hidden="true"><i style="width:{pct:.0f}%;background:{col}"></i></span>{U.meter(used / limit * 100, f"{used}/{limit} 次/分")}<span class="mono" style="font-size:12px;color:{col}">{days} 天</span></div>')
+        return (f'<a class="row" href="APIProxyTokens.dc.html"><span class="name"><span class="n mono">{name}</span><span class="d">{owner} · {scope}</span></span>'
+                f'<span>{U.meter(min(100, days / 90 * 100), f"{days} 天", warn=101, danger=101) if days >= 30 else U.status("dng" if days < 14 else "warn", f"剩 {days} 天")}</span>'
+                f'<span>{U.meter(used / limit * 100, f"{used}/{limit}")}</span></a>')
     tokens = f"""
     <section class="panel" aria-labelledby="h-tok">
-      <div class="ph"><h2 id="h-tok">Token · 11</h2><span class="sub">左條＝剩餘效期（滿格 90 天）；右量表＝目前分鐘用量 / 上限</span><a class="more" href="#tokens">全部 →</a></div>
-      <div class="ranks">
+      <div class="ph"><h2 id="h-tok">Token · 11</h2><a class="more" href="APIProxyTokens.dc.html">全部 →</a></div>
+      <div class="row hd"><span>Token</span><span>效期</span><span>每分鐘用量</span></div>
         {tok("hx_live_7f3a…", "lab-bot", "/ollama", 9, 58, 60)}
         {tok("hx_live_c21e…", "partner-a", "/ollama", 41, 12, 60)}
         {tok("hx_live_90bd…", "tim", "/ollama", 77, 3, 600)}
         {tok("hx_ci_118e…", "ci-runner", "/shop-admin", 12, 0, 120)}
-      </div>
       <div class="note" style="padding:0 14px 10px">撤銷 Token 時可選「既有長連線立即斷」或「跑完這一次」；到期前 14 天通知擁有者</div>
     </section>"""
     usage = U.ts_card("今日請求 · 每小時", [U.Series("允許", [int(x) for x in walk(24, 700, 200, 200, 1300)], "var(--s1)"), U.Series("被拒", [int(x) for x in walk(24, 9, 6, 0, 40, {14: 61})], "var(--danger)")], HOURS, unit="",
@@ -1360,7 +1358,7 @@ def apiproxy() -> str:
         return (f'<a class="row srow" href="#svc"><span class="name"><span class="n">{path}</span><span class="d">{upstream}</span></span><span>{st}</span><span class="c3 note">{auth}</span><span class="c4 mono">{rate}</span><span class="c4 mono">{users}</span><span class="c5">{U.sparkline(lat)}</span><span class="mono">{lat[-1]:.0f} ms</span></a>')
     services = f"""
     <section class="panel" aria-labelledby="h-svcs" data-sort="0:asc">
-      <div class="ph"><h2 id="h-svcs">服務 · 4</h2></div>
+      <div class="ph"><h2 id="h-svcs">服務 · 4</h2><button type="button" class="btn sm" style="margin-left:auto">匯入 infra-manager 資料</button></div>
       <div class="row hd srow"><span>路徑</span><span>狀態</span><span class="c3">上游驗證 · Header</span><span class="c4">限速</span><span class="c4">使用者</span><span class="c5">p95 1 小時</span><span>現在</span></div>
       {svc("/ollama", U.status("ok", "啟用"), "ollama:11434 @ tw-01 · 串流 OK", "無 · 加 X-Forwarded-User", "60/分 · 10k/日", "3", walk(12, 180, 25, 140, 260))}
       {svc("/shop-admin", U.status("ok", "啟用"), "shop-api:8080 @ tw-01", "上游 Bearer（機密庫）· 去 Cookie", "600/分", "2", walk(12, 90, 12, 60, 130))}
@@ -1537,10 +1535,7 @@ def _locked_acts(keys, why):
 
 def container_resources() -> str:
     head = U.page_head("容器資源", OBS, '<button type="button" class="btn pri">拉取映像</button><button type="button" class="btn">建置映像</button><button type="button" class="btn">清理</button>')
-    tabs = ('<div class="panel"><div class="tabs" role="tablist"><a class="tab" role="tab" aria-selected="false" href="Containers.dc.html">容器 · 16</a>'
-            '<button type="button" class="tab on" role="tab" aria-selected="true">映像 · 23</button><button type="button" class="tab" role="tab" aria-selected="false">儲存卷 · 9</button>'
-            '<button type="button" class="tab" role="tab" aria-selected="false">網路 · 6</button><button type="button" class="tab" role="tab" aria-selected="false">建置快取</button>'
-            '<button type="button" class="tab" role="tab" aria-selected="false">登錄站 · 2</button></div></div>')
+    tabs = '<div class="panel"><div class="tabs" role="tablist"><a class="tab" role="tab" aria-selected="false" href="Containers.dc.html">容器 · 16</a><button type="button" class="tab on" role="tab" aria-selected="true">映像、儲存卷與網路</button></div></div>' + _jump(["映像 · 23", "儲存卷 · 9", "網路 · 6", "建置快取", "登錄站 · 2"])
     def du(kind, total, used, recl, pct):
         return (f'<div class="row"><span>{kind}</span><span class="mono">{total}</span><span>{U.meter(pct, used)}</span><span class="mono">{recl}</span></div>')
     space = _fp("空間 · Docker（root）@ tw-01", f"""
@@ -2056,8 +2051,7 @@ def database() -> str:
 # ---------- AI ----------
 def ai() -> str:
     head = U.page_head("AI", OBS, '<button type="button" class="btn">安裝 Ollama</button><button type="button" class="btn">新增 MCP 服務</button><button type="button" class="btn">新增 Agent</button>')
-    tabs = ('<div class="panel"><div class="tabs" role="tablist"><button type="button" class="tab on" role="tab" aria-selected="true">模型與推論</button><a class="tab" role="tab" aria-selected="false" href="ModelHub.dc.html">模型庫 · Hugging Face</a><button type="button" class="tab" role="tab" aria-selected="false">Agent · 2</button>'
-            '<button type="button" class="tab" role="tab" aria-selected="false">MCP 服務 · 3</button><button type="button" class="tab" role="tab" aria-selected="false">GPU</button><button type="button" class="tab" role="tab" aria-selected="false">推論 API</button></div></div>')
+    tabs = '<div class="panel"><div class="tabs" role="tablist"><button type="button" class="tab on" role="tab" aria-selected="true">模型與推論</button><a class="tab" role="tab" aria-selected="false" href="ModelHub.dc.html">模型庫 · Hugging Face</a></div></div>' + _jump(["推論服務", "模型", "Agent · 2", "MCP 服務 · 3", "GPU", "推論 API"])
     inst = f"""
     <section class="panel" aria-labelledby="h-ol">
       <div class="ph"><h2 id="h-ol">推論服務 · 2</h2><span class="sub">看見 GPU 不等於容器能用：驅動、容器工具、裝置權限、實際推論分開檢查</span></div>
@@ -2134,9 +2128,7 @@ def ai() -> str:
 # ---------- AI › 模型庫（Hugging Face） ----------
 def model_hub() -> str:
     head = U.page_head("AI", OBS, '<button type="button" class="btn">{}新增模型庫</button><button type="button" class="btn pri">部署推論服務</button>'.format(U.icon("plus", 14)))
-    tabs = ('<div class="panel"><div class="tabs" role="tablist"><a class="tab" role="tab" aria-selected="false" href="AI.dc.html">模型與推論</a>'
-            '<button type="button" class="tab on" role="tab" aria-selected="true">模型庫 · Hugging Face</button><button type="button" class="tab" role="tab" aria-selected="false">Agent · 2</button>'
-            '<button type="button" class="tab" role="tab" aria-selected="false">MCP 服務 · 3</button><button type="button" class="tab" role="tab" aria-selected="false">GPU</button></div></div>')
+    tabs = '<div class="panel"><div class="tabs" role="tablist"><a class="tab" role="tab" aria-selected="false" href="AI.dc.html">模型與推論</a><button type="button" class="tab on" role="tab" aria-selected="true">模型庫 · Hugging Face</button></div></div>'
     def lib(name, host, disk, path, pct, used, n, st):
         return (f'<div class="row srow"><span class="name"><span class="n">{name}</span><span class="d mono">{path}</span></span><span>{st}</span>'
                 f'<span class="c3 mono">{host}</span><span class="c3">{disk}</span><span class="c4">{U.meter(pct, used)}</span><span class="c4 mono">{n}</span>'
@@ -2389,7 +2381,7 @@ def cron() -> str:
 
 # ---------- 安全防護 ----------
 def security() -> str:
-    head = U.page_head("安全防護", OBS, '<a class="btn pri" href="FirewallRule.dc.html">新增防火牆規則</a><button type="button" class="btn">新增 WAF 政策</button><button type="button" class="btn">更新 WAF 規則</button><button type="button" class="btn">匯出安全事件</button>')
+    head = U.page_head("安全防護", OBS, '<a class="btn pri" href="FirewallRule.dc.html">新增防火牆規則</a><button type="button" class="btn">匯出安全事件</button>')
     tiles = '<div class="tiles">' + "".join([
         U.stat_tile("外部可連的容器 Port", "2", "", "5432 wiki-db · 11434 ollama", False),
         U.stat_tile("今日封鎖", "14", "IP", "<a href=\"Fail2ban.dc.html\">Fail2ban 11 · 手動 3 →</a>", None, spark=[2, 1, 3, 0, 1, 4, 2, 1, 0, 2, 3, 1]),
@@ -2416,14 +2408,13 @@ def security() -> str:
                      bar=True, fmt_val=lambda v: f"{v:.0f}", markers=[(22, "掃描高峰")], foot="阻擋只來自 /ollama · 有歧義的 HTTP 請求（重複 Content-Length 等）直接拒絕，不算 WAF 命中")
     policies = f"""
     <section class="panel" aria-labelledby="h-pol">
-      <div class="ph"><h2 id="h-pol">封鎖與例外 · 到期</h2><span class="sub">橫條＝剩餘時間；永久的寫「永久」</span><a class="more" href="Fail2ban.dc.html">全部與 Fail2ban →</a></div>
-      <div class="ranks">
-        <div class="rank"><span class="mono">185.220.101.0/24 · 封鎖</span><span class="bar" aria-hidden="true"><i style="width:80%;background:var(--danger)"></i></span><span class="mono" style="font-size:12px">■ 19 小時 · Fail2ban sshd</span></div>
-        <div class="rank"><span class="mono">45.33.12.9 · 封鎖</span><span class="bar" aria-hidden="true"><i style="width:35%;background:var(--danger)"></i></span><span class="mono" style="font-size:12px">■ 8 小時 · 手動 · tim</span></div>
-        <div class="rank"><span class="mono">RU、KP 地區 · 拒絕</span><span class="bar" aria-hidden="true"><i style="width:100%;background:var(--q4)"></i></span><span class="mono" style="font-size:12px">永久 · shop、wiki</span></div>
-        <div class="rank"><span class="mono">/wiki/search SQLi 規則 · 例外</span><span class="bar" aria-hidden="true"><i style="width:60%;background:var(--warn)"></i></span><span class="mono" style="font-size:12px">○ 18 天 · 審核後續</span></div>
-        <div class="rank"><span class="mono">203.0.113.0/24 · 允許（辦公室）</span><span class="bar" aria-hidden="true"><i style="width:100%;background:var(--ok)"></i></span><span class="mono" style="font-size:12px">永久 · 管理入口</span></div>
-      </div>
+      <div class="ph"><h2 id="h-pol">封鎖與例外</h2><a class="more" href="Fail2ban.dc.html">全部與 Fail2ban →</a></div>
+      <div class="row hd"><span>對象</span><span>規則</span><span>剩餘</span><span></span></div>
+      <div class="row"><span class="name"><span class="n mono">185.220.101.0/24</span><span class="d">Fail2ban sshd</span></span><span>{U.status("dng", "封鎖")}</span><span class="mono">19 小時</span><span class="acts"><button type="button" class="btn sm">解除</button></span></div>
+      <div class="row"><span class="name"><span class="n mono">45.33.12.9</span><span class="d">手動 · tim</span></span><span>{U.status("dng", "封鎖")}</span><span class="mono">8 小時</span><span class="acts"><button type="button" class="btn sm">解除</button></span></div>
+      <div class="row"><span class="name"><span class="n mono">RU、KP 地區</span><span class="d">shop、wiki</span></span><span>{U.status("dng", "拒絕")}</span><span class="mono">永久</span><span class="acts"><button type="button" class="btn sm">解除</button></span></div>
+      <div class="row"><span class="name"><span class="n mono">/wiki/search SQLi 規則</span><span class="d">審核後續</span></span><span>{U.status("warn", "例外")}</span><span class="mono">18 天</span><span class="acts"><button type="button" class="btn sm">解除</button></span></div>
+      <div class="row"><span class="name"><span class="n mono">203.0.113.0/24</span><span class="d">辦公室 · 管理入口</span></span><span>{U.status("ok", "允許")}</span><span class="mono">永久</span><span class="acts"><button type="button" class="btn sm">解除</button></span></div>
     </section>"""
     check = f"""
     <section class="panel" aria-labelledby="h-chk">
@@ -2446,7 +2437,7 @@ CF-Connecting-IP: 203.0.113.7</div>
     </section>"""
     exposure = ('<h2 class="grp" id="exposure">對外曝露<span class="note">主機與容器 · 3 主機</span></h2>'
                 + nodes(part="published") + f'<div class="cg">{nodes(part="ports")}{fw}</div>' + nodes(part="ssh"))
-    web = ('<h2 class="grp" id="waf">網站防護<span class="note">Zentinel WAF · 3 站點</span></h2>'
+    web = ('<h2 class="grp" id="waf">網站防護<span class="note">Zentinel WAF · 3 站點</span><span class="wrap" style="margin-left:auto"><button type="button" class="btn sm">新增 WAF 政策</button><button type="button" class="btn sm">更新 WAF 規則</button></span></h2>'
            + U.scope_bar([("全部入口", "2 Zentinel"), ("Zentinel @ hazel-tw-01", ""), ("Zentinel @ hazel-jp-02", "過期")], label="入口")
            + modes + f'<div class="cg">{rollout}{hits}</div>' + f'<div class="cg">{policies}{check}</div>')
     main = head + tiles + exposure + web
@@ -2649,12 +2640,14 @@ def iam() -> str:
       <div class="note" style="padding:0 14px 10px">專案 A 的使用者猜專案 B 的資源 ID：查詢、下載、搜尋、事件串流一律 404，不洩漏存在</div>
     </section>"""
     def tok(name, owner, scope, days, used):
-        pct = min(100, days / 90 * 100); col = "var(--danger)" if days < 14 else ("var(--warn)" if days < 30 else "var(--ok)")
-        return (f'<div class="rank"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{name} <span class="note">· {owner} · {scope}</span></span><span class="bar" aria-hidden="true"><i style="width:{pct:.0f}%;background:{col}"></i></span><span class="mono" style="font-size:12px;color:{col}">{days} 天 <span class="note">· {used}</span></span></div>')
+        life = U.status("info", "已撤銷") if days == 0 else (U.meter(min(100, days / 90 * 100), f"{days} 天", warn=101, danger=101) if days >= 30 else U.status("dng" if days < 14 else "warn", f"剩 {days} 天"))
+        acts = "<span></span>" if days == 0 else f'<span class="acts"><button type="button" class="btn sm">輪替</button><button type="button" class="btn sm">撤銷</button></span>'
+        return (f'<div class="row"><span class="name"><span class="n mono">{name}</span><span class="d">{owner} · {scope}</span></span><span>{life}</span><span class="mono c3">{used}</span>{acts}</div>')
     tokens = f"""
     <section class="panel" aria-labelledby="h-tk">
-      <div class="ph"><h2 id="h-tk">平台 API Token · 6</h2><span class="sub">有期限、範圍與用途；橫條＝剩餘效期（滿格 90 天）</span></div>
-      <div class="ranks">{tok("hx_pat_3c1f…", "deploy-bot", "部署 shop、wiki", 61, "今天 02:57")}{tok("hx_pat_90bd…", "tim", "全部（CLI）", 77, "03:30")}{tok("hx_mcp_a7e2…", "ops-assistant", "讀取 · 提出計畫", 29, "03:12")}{tok("hx_pat_118e…", "ci-runner", "部署 shop staging", 12, "03:12")}{tok("hx_pat_55aa…", "old-contractor", "已撤銷", 0, "9/02")}</div>
+      <div class="ph"><h2 id="h-tk">平台 API Token · 6</h2><button type="button" class="btn sm" style="margin-left:auto">新增 Token</button></div>
+      <div class="row hd"><span>Token</span><span>效期</span><span class="c3">上次使用</span><span></span></div>
+      {tok("hx_pat_3c1f…", "deploy-bot", "部署 shop、wiki", 61, "今天 02:57")}{tok("hx_pat_90bd…", "tim", "全部（CLI）", 77, "03:30")}{tok("hx_mcp_a7e2…", "ops-assistant", "讀取 · 提出計畫", 29, "03:12")}{tok("hx_pat_118e…", "ci-runner", "部署 shop staging", 12, "03:12")}{tok("hx_pat_55aa…", "old-contractor", "已撤銷", 0, "9/02")}
     </section>"""
     sessions = f"""
     <section class="panel" aria-labelledby="h-ss">
@@ -2683,7 +2676,7 @@ def iam() -> str:
 # ---------- 平台設定 ----------
 def settings() -> str:
     head = U.page_head("平台設定", OBS, f'<button type="button" class="btn">匯出設定</button><button type="button" class="btn">診斷包</button><button type="button" class="btn" aria-disabled="true" data-tip="需要第二位擁有者批准；送出後建立變更計畫" style="opacity:.6">{U.icon("lock", 14)}輪替主金鑰</button><button type="button" class="btn pri">檢查更新</button>')
-    tabs = ('<div class="panel"><div class="tabs" role="tablist">' + "".join(f'<button type="button" class="tab{" on" if i == 0 else ""}" role="tab" aria-selected="{"true" if i == 0 else "false"}">{t}</button>' for i, t in enumerate(["基本", "管理入口與安全", "通知", "更新", "快照與匯入匯出", "整合", "遙測", "關於"])) + '<a class="tab" role="tab" aria-selected="false" href="Secrets.dc.html">機密庫</a><a class="tab" role="tab" aria-selected="false" href="Uninstall.dc.html">解除安裝</a></div></div>')
+    tabs = '<div class="panel"><div class="tabs" role="tablist"><button type="button" class="tab on" role="tab" aria-selected="true">設定</button><a class="tab" role="tab" aria-selected="false" href="Secrets.dc.html">機密庫</a><a class="tab" role="tab" aria-selected="false" href="Uninstall.dc.html">解除安裝</a></div></div>' + _jump(["基本", "管理入口與安全", "通知", "更新", "快照與匯入匯出", "整合", "遙測", "關於"])
     def card(title, rows, note=""):
         body = "".join(f'<div style="display:flex;justify-content:space-between;gap:10px;min-height:32px;align-items:center;border-top:1px solid var(--line);padding:4px 0"><span class="note">{k}</span><span style="text-align:right">{v}</span></div>' for k, v in rows)
         n = f'<span class="note" style="margin-top:6px">{note}</span>' if note else ""
@@ -2851,8 +2844,14 @@ root@hazel-tw-01:~# <span style="background:var(--ink);color:var(--panel)"> </sp
     </section>"""
     cmds = f"""
     <section class="panel" aria-labelledby="h-qc">
-      <div class="ph"><h2 id="h-qc">快捷指令 · 6</h2><span class="sub">可匯入；高風險指令要二次確認</span></div>
-      {U.ranked([("docker ps（健康欄）", 41, "41 次"), ("journalctl -u hazelminx-agent -f", 18, "18 次"), ("df -h /mnt/data", 12, "12 次"), ("pg_isready -h shop-db", 7, "7 次"), ("systemctl restart zentinel ⚠", 3, "3 次"), ("apt list --upgradable", 2, "2 次")], vmax=45)}
+      <div class="ph"><h2 id="h-qc">快捷指令 · 6</h2><button type="button" class="btn sm" style="margin-left:auto">新增</button></div>
+      <div class="row hd"><span>指令</span><span>用過</span><span></span></div>
+      <div class="row"><span class="mono">docker ps</span><span class="mono">41 次</span><span class="acts"><button type="button" class="btn sm">執行</button>{U.actions(["more"])}</span></div>
+      <div class="row"><span class="mono">journalctl -u hazelminx-agent -f</span><span class="mono">18 次</span><span class="acts"><button type="button" class="btn sm">執行</button>{U.actions(["more"])}</span></div>
+      <div class="row"><span class="mono">df -h /mnt/data</span><span class="mono">12 次</span><span class="acts"><button type="button" class="btn sm">執行</button>{U.actions(["more"])}</span></div>
+      <div class="row"><span class="mono">pg_isready -h shop-db</span><span class="mono">7 次</span><span class="acts"><button type="button" class="btn sm">執行</button>{U.actions(["more"])}</span></div>
+      <div class="row"><span class="mono">systemctl restart zentinel</span><span class="mono">3 次</span><span class="acts">{U.status("warn", "要再確認")}<button type="button" class="btn sm">執行</button>{U.actions(["more"])}</span></div>
+      <div class="row"><span class="mono">apt list --upgradable</span><span class="mono">2 次</span><span class="acts"><button type="button" class="btn sm">執行</button>{U.actions(["more"])}</span></div>
     </section>"""
     policy = f"""
     <section class="panel" aria-labelledby="h-tp">
@@ -3221,6 +3220,11 @@ def kubernetes_empty() -> str:
 
 
 # ---------- 表單共用 ----------
+def _jump(items):
+    """同一頁往下排的各區塊：用「跳到」導覽，不用分頁。分頁只留給會換掉整頁內容的切換。"""
+    return ('<nav class="subtabs" aria-label="跳到">' + "".join(f'<a class="st2{" on" if i == 0 else ""}" href="#s{i}"{" aria-current=true" if i == 0 else ""}>{t}</a>' for i, t in enumerate(items)) + "</nav>")
+
+
 def _fld(label, control, help_=""):
     h = f'<span class="help">{help_}</span>' if help_ else ""
     return f'<div class="field"><label>{label}</label>{control}{h}</div>'
