@@ -23,8 +23,10 @@ func (r *Registry) AgentHandler(next http.Handler) http.Handler {
 				writeJSON(w, http.StatusMethodNotAllowed, refusedBody(protocol.EnrollRequestInvalid, "use GET"))
 				return
 			}
-			d, err := r.Discovery(req.Context(), req.URL.Query().Get("codeId"))
+			d, err := r.Discovery(req.Context(), req.URL.Query().Get("codeId"), remoteHost(req.RemoteAddr))
 			switch {
+			case errors.Is(err, ErrTooManyAttempts):
+				writeJSON(w, http.StatusTooManyRequests, refusedBody(protocol.EnrollTooManyTries, "too many unknown codes from this address; wait 10 minutes"))
 			case errors.Is(err, ErrCodeNotFound):
 				writeJSON(w, http.StatusNotFound, refusedBody(protocol.EnrollCodeInvalid, "no usable enrollment code with this id"))
 			case err != nil:

@@ -21,7 +21,7 @@ func TestEnrollmentWaitsForApprovalThenIssuesTheCertificate(t *testing.T) {
 		t.Fatalf("new code: %+v", en)
 	}
 	c, _ := protocol.ParseEnrollmentCode(code)
-	d, err := e.reg.Discovery(context.Background(), c.ID())
+	d, err := e.reg.Discovery(context.Background(), c.ID(), "203.0.113.61")
 	if err != nil || !protocol.VerifyDiscoveryMAC(c.Key(), []byte(d.CACertificate), d.MAC) || d.CACertificate != string(e.pki.CACertificatePEM()) {
 		t.Fatalf("discovery %+v %v", d, err)
 	}
@@ -88,7 +88,7 @@ func TestCodesThatCannotBeUsed(t *testing.T) {
 		t.Fatalf("expired code changed: %+v", again)
 	}
 	c, _ := protocol.ParseEnrollmentCode(expired)
-	if _, err := e.reg.Discovery(ctx, c.ID()); !errors.Is(err, ErrCodeNotFound) {
+	if _, err := e.reg.Discovery(ctx, c.ID(), "203.0.113.61"); !errors.Is(err, ErrCodeNotFound) {
 		t.Fatalf("discovery of an expired code: %v", err)
 	}
 

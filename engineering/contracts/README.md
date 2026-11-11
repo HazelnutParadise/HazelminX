@@ -17,13 +17,13 @@ Agent 主動連到 Core 的 Agent 入口（預設 `:9801`，路徑 `/agent/v1/co
 
 - 形式是 `HZX-` 加四組、每組 4 個字元，例如 `HZX-7Q4M-2KD9-PX81-C3VB`。字元表是 Crockford base32：`0123456789ABCDEFGHJKMNPQRSTVWXYZ`。
 - 正規化：去掉 `-` 與空白，轉大寫，`O` 換成 `0`，`I`、`L` 換成 `1`；結果必須是 `HZX` 加 16 個字元表內的字元。
-- 第一組（例子裡的 `7Q4M`）是查詢 ID `codeId`，可以公開。16 個字元全部是秘密。
+- 第一組（例子裡的 `7Q4M`）是查詢 ID `codeId`，取 CA 時以未驗證的 TLS 送出，視為公開。後三組 12 個字元是秘密（60 位元）。
 - 金鑰 `key` 是 `SHA-256("hazelminx-enroll-v1\n" + 正規化後的碼)` 的 32 位元組。Core 只存這個值，不存碼。
 - 碼只能用一次，有效期預設 10 分鐘，可以設 1 到 60 分鐘。碼建立時可以指定群組。
 
 ### 步驟
 
-1. **取得 Core CA**：`GET /agent/v1/enroll/discovery?codeId=7Q4M`。這一步 Agent 還沒有 CA，`pinned` 模式下不驗 TLS 伺服端憑證；`proxy` 模式照常驗代理的憑證鏈。回應 `200 {"caCertificate": "<PEM>", "mac": "<base64>"}`。`mac` 是 `HMAC-SHA256(key, "hazelminx-enroll-discovery-v1\n" + caCertificate 的位元組)`，標準 base64。Agent 驗不過就停止，不送出註冊碼。查不到可用的碼時回 `404`，錯誤碼 `ENROLLMENT_CODE_INVALID`，不說明原因。
+1. **取得 Core CA**：`GET /agent/v1/enroll/discovery?codeId=7Q4M`。這一步 Agent 還沒有 CA，`pinned` 模式下不驗 TLS 伺服端憑證；`proxy` 模式照常驗代理的憑證鏈。回應 `200 {"caCertificate": "<PEM>", "mac": "<base64>"}`。`mac` 是 `HMAC-SHA256(key, "hazelminx-enroll-discovery-v1\n" + caCertificate 的位元組)`，標準 base64。Agent 驗不過就停止，不送出註冊碼。查不到可用的碼時回 `404`，錯誤碼 `ENROLLMENT_CODE_INVALID`，不說明原因，而且和送錯碼一樣計入下方的次數限制。
 2. **送出註冊碼**：`POST /agent/v1/enroll`。`pinned` 模式下以上一步的 CA 驗 TLS，名稱是 `core.hazelminx.internal`。請求內容：
 
    | 欄位 | 說明 |
@@ -50,7 +50,7 @@ Agent 主動連到 Core 的 Agent 入口（預設 `:9801`，路徑 `/agent/v1/co
 | 403 | `ENROLLMENT_REJECTED` | 管理員拒絕了這台主機 |
 | 403 | `ENROLLMENT_EXPIRED` | 24 小時內沒有人核對 |
 | 403 | `NODE_KEY_REVOKED` | 這把公鑰屬於已撤銷、已被取代或身分衝突的節點；要用 `--new-identity` 換一把金鑰再註冊 |
-| 429 | `TOO_MANY_ATTEMPTS` | 同一來源 10 分鐘內錯了 20 次 |
+| 429 | `TOO_MANY_ATTEMPTS` | 同一來源 10 分鐘內送了 20 次不存在或不對的碼（取 CA 與送出註冊碼合計） |
 
 被拒絕的請求不會改變碼的狀態，也不會延長有效期。
 
@@ -223,7 +223,7 @@ Core 在節點憑證剩不到 30 天時自動輪替，管理員也可以手動�
 
 `PROTOCOL_INCOMPATIBLE`、`HANDSHAKE_MALFORMED`、`IDENTITY_INVALID`（憑證鏈、用途或指紋不符，或這張憑證已被換掉，或節點沒有註冊）、`PROOF_INVALID`、`NODE_REVOKED`（節點已撤銷、已移除，或這把金鑰已被取代）、`IDENTITY_CONFLICT`（同一把節點金鑰同時出現在兩個仍在運作的連線，例如複製的 VM；兩邊都被拒絕，直到管理員重新註冊）、`DUPLICATE_SESSION`（同一節點已有一條仍有回應的連線）。
 
-同一節點的第二條連線完成簽章驗證時，Core 對舊連線送一次 WebSocket ping。5 秒內沒有回應，Core 關掉舊連線，讓新連線進來（Agent 重開或網路中斷後重連都是這種情況）。有回應，就表示同一把金鑰有兩份在運作：Core 有節點名冊時關掉兩邊、把節點標成身分衝突並回 `IDENTITY_CONFLICT`，沒有名冊時只拒絕新連線並回 `DUPLICATE_SESSION`。
+同一節點的第二條連線完成簽章驗證時，Core 對舊連線送一次 WebSocket ping。3 秒內沒有回應，Core 直接切斷舊連線（不等關閉交握），讓新連線進來（Agent 重開或網路中斷後重連都是這種情況）。有回應，就表示同一把金鑰有兩份在運作：Core 有節點名冊時關掉兩邊、把節點標成身分衝突並回 `IDENTITY_CONFLICT`，沒有名冊時只拒絕新連線並回 `DUPLICATE_SESSION`。
 
 ## 樣本
 

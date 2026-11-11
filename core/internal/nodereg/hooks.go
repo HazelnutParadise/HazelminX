@@ -17,16 +17,16 @@ import (
 // rotation, the new one. A refused revoked or removed node records that it
 // was told (the revocation has then propagated).
 func (r *Registry) AuthorizeNode(ctx context.Context, id nodes.NodeIdentity) error {
+	// A retired key stays refused whatever else happens to it.
+	var nodeID string
+	switch e := r.db.QueryRowContext(ctx, `SELECT node_id FROM node_retired_keys WHERE fingerprint = ?`, id.Fingerprint).Scan(&nodeID); {
+	case e == nil:
+		return fmt.Errorf("%w: this key was replaced when node %s enrolled again", nodes.ErrNodeRevoked, nodeID)
+	case !errors.Is(e, sql.ErrNoRows):
+		return e
+	}
 	n, err := r.loadNode(ctx, r.db, "fingerprint = ?", id.Fingerprint)
 	if errors.Is(err, ErrNotFound) {
-		var nodeID string
-		e := r.db.QueryRowContext(ctx, `SELECT node_id FROM node_retired_keys WHERE fingerprint = ?`, id.Fingerprint).Scan(&nodeID)
-		if e == nil {
-			return fmt.Errorf("%w: this key was replaced when node %s enrolled again", nodes.ErrNodeRevoked, nodeID)
-		}
-		if !errors.Is(e, sql.ErrNoRows) {
-			return e
-		}
 		return errors.New("node is not enrolled with this core")
 	}
 	if err != nil {
@@ -67,7 +67,13 @@ func (r *Registry) OnReady(s *nodes.Session) {
 // and hands over a pending or due certificate.
 func (r *Registry) onSession(ctx context.Context, f sessionFacts) {
 	n, err := r.loadNode(ctx, r.db, "fingerprint = ?", f.fp)
-	if err != nil || n.State != StateActive {
+	if err != nil {
+		return
+	}
+	if n.State != StateActive {
+		// Revoked, removed or conflicted while this session's handshake ran:
+		// close it now, as the revocation would have.
+		r.closeAndRecord(ctx, f.fp, "node is "+n.State)
 		return
 	}
 	at := stamp(f.at)
@@ -88,9 +94,13 @@ func (r *Registry) onSession(ctx context.Context, f sessionFacts) {
 		return
 	case rot != nil && rot.DeliveredAt != nil && f.at.After(*rot.DeliveredAt):
 		// The agent stored the new certificate but connected with the old
-		// one: it could not use the new one. Keep both accepted and say so.
+		// one: it could not use it. Keep both accepted, say so, and hand it
+		// over again once RedeliverAfter has passed.
 		_, _ = r.db.ExecContext(ctx, `UPDATE nodes SET rotation_error = ? WHERE id = ? AND next_cert_serial = ?`,
-			"the agent reconnected with its previous certificate after receiving the new one; request the rotation again", n.ID, rot.NewSerial)
+			"the agent reconnected with its previous certificate after receiving the new one; it will be offered again", n.ID, rot.NewSerial)
+		if r.now().Sub(*rot.DeliveredAt) >= RedeliverAfter {
+			r.deliver(ctx, f.fp)
+		}
 		return
 	case rot != nil:
 		r.deliver(ctx, f.fp)

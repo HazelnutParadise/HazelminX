@@ -57,6 +57,8 @@ pub struct Shared {
     /// Set when a renewed certificate was stored: the session ends so the
     /// next connection proves it.
     renewed: std::sync::atomic::AtomicBool,
+    /// Failed connection attempts in a row with `node.crt.next`.
+    next_failures: std::sync::atomic::AtomicU32,
 }
 
 impl Shared {
@@ -80,6 +82,7 @@ impl Shared {
             identity,
             privileged,
             renewed: std::sync::atomic::AtomicBool::new(false),
+            next_failures: std::sync::atomic::AtomicU32::new(0),
         })
     }
 }
@@ -202,11 +205,21 @@ async fn connect_and_serve(opts: &Options, shared: &Arc<Shared>) -> End {
         Ok(m) => m,
         Err(e) => return lost(e),
     };
-    // A renewed certificate that cannot complete a handshake is dropped and
-    // the current one is used again (the Core still accepts it).
-    let give_up_next = |why: &dyn std::fmt::Display| {
-        if material.using_next {
+    // A renewed certificate the Core refuses, or that fails several times in
+    // a row, is dropped and the current one is used again (the Core still
+    // accepts it); a single network failure is not held against it.
+    let give_up_next = |why: &dyn std::fmt::Display, definite: bool| {
+        if !material.using_next {
+            return;
+        }
+        let before = shared
+            .next_failures
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        if discard_renewed(before, definite) {
             warn!(reason = %why, "the renewed certificate did not work; going back to the current one");
+            shared
+                .next_failures
+                .store(0, std::sync::atomic::Ordering::SeqCst);
             if let Err(e) = tls::discard_next(&opts.identity_dir) {
                 error!(error = %format!("{e:#}"), "cannot remove node.crt.next");
             }
@@ -216,7 +229,7 @@ async fn connect_and_serve(opts: &Options, shared: &Arc<Shared>) -> End {
         Ok(ws) => ws,
         Err(DialError::Tcp(e)) => return lost(e),
         Err(DialError::Tls(e)) => {
-            give_up_next(&format!("{e:#}"));
+            give_up_next(&format!("{e:#}"), false);
             return lost(e);
         }
     };
@@ -227,7 +240,7 @@ async fn connect_and_serve(opts: &Options, shared: &Arc<Shared>) -> End {
             message,
             supported,
         }) => {
-            give_up_next(&code);
+            give_up_next(&code, true);
             return End::Refused {
                 code,
                 message,
@@ -235,11 +248,14 @@ async fn connect_and_serve(opts: &Options, shared: &Arc<Shared>) -> End {
             };
         }
         Err(HandshakeError::Other(e)) => {
-            give_up_next(&format!("{e:#}"));
+            give_up_next(&format!("{e:#}"), false);
             return lost(e);
         }
     };
     if material.using_next {
+        shared
+            .next_failures
+            .store(0, std::sync::atomic::Ordering::SeqCst);
         match tls::promote_next(&opts.identity_dir) {
             Ok(()) => info!("renewed node certificate is now in use"),
             Err(e) => {
@@ -253,6 +269,16 @@ async fn connect_and_serve(opts: &Options, shared: &Arc<Shared>) -> End {
         error: err,
         lived: started.elapsed(),
     }
+}
+
+/// Connection attempts in a row a renewed certificate may fail before it
+/// is dropped (a refusal by the Core drops it at once).
+const RENEWED_CERT_ATTEMPTS: u32 = 3;
+
+/// Whether to drop `node.crt.next` after a failure, given how many
+/// failures came before it.
+fn discard_renewed(failures_before: u32, definite: bool) -> bool {
+    definite || failures_before + 1 >= RENEWED_CERT_ATTEMPTS
 }
 
 /// Why dialing failed: before TLS (network) or from TLS on.
@@ -898,6 +924,14 @@ mod tests {
         let err = limit_result(big).unwrap_err();
         assert_eq!(err.code, "RESULT_TOO_LARGE");
         assert!(!err.retryable);
+    }
+
+    #[test]
+    fn renewed_certificate_survives_two_blips_but_not_a_refusal() {
+        assert!(!discard_renewed(0, false));
+        assert!(!discard_renewed(1, false));
+        assert!(discard_renewed(2, false));
+        assert!(discard_renewed(0, true));
     }
 
     #[test]

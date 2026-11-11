@@ -374,6 +374,13 @@ func (r *Registry) Approve(ctx context.Context, id string, in ApproveInput) (Nod
 		return Node{}, err
 	}
 	defer tx.Rollback()
+	// Checked again inside the transaction: the key may have been retired,
+	// revoked or seen twice while the claim waited.
+	if blocked, err := keyBlockedIn(ctx, tx, h.Fingerprint); err != nil {
+		return Node{}, err
+	} else if blocked {
+		return Node{}, statef("this key was revoked, replaced or seen on two hosts after the host used the code; the host must enroll with a new key")
+	}
 	// Facts the host reported replace the old ones; names stay unless the
 	// code carried new ones.
 	const reset = `state = 'active', cert_serial = ?, cert_not_after = ?,
@@ -396,7 +403,14 @@ func (r *Registry) Approve(ctx context.Context, id string, in ApproveInput) (Nod
 			nodeID, name, encodeTags(e.Tags), e.Group, h.Fingerprint, e.publicKey, h.Hostname, h.MachineID, h.OS, h.Arch, h.AgentVersion,
 			cid.Serial, stamp(cid.NotAfter), now, now)
 	case sameKey:
-		_, err = tx.ExecContext(ctx, `UPDATE nodes SET `+reset+` WHERE id = ?`, append(resetArgs, nodeID)...)
+		var res sql.Result
+		res, err = tx.ExecContext(ctx, `UPDATE nodes SET `+reset+` WHERE id = ? AND fingerprint = ? AND state IN ('active', 'removed')`,
+			append(resetArgs, nodeID, h.Fingerprint)...)
+		if err == nil {
+			if k, _ := res.RowsAffected(); k == 0 {
+				return Node{}, statef("node %s changed meanwhile", nodeID)
+			}
+		}
 	default:
 		// Replace: the old key is retired for good, the node keeps its ID.
 		if _, err = tx.ExecContext(ctx, `INSERT INTO node_retired_keys (fingerprint, node_id, retired_at, reason) VALUES (?, ?, ?, 'replaced at re-enrollment')`,
@@ -449,12 +463,18 @@ func (r *Registry) Approve(ctx context.Context, id string, in ApproveInput) (Nod
 
 // Discovery answers GET /agent/v1/enroll/discovery for a code that can still
 // be used or polled.
-func (r *Registry) Discovery(ctx context.Context, codeID string) (protocol.EnrollDiscovery, error) {
+// Unknown code IDs count against source like wrong codes do, so code IDs
+// cannot be enumerated freely.
+func (r *Registry) Discovery(ctx context.Context, codeID, source string) (protocol.EnrollDiscovery, error) {
+	if !r.limiter.allow(source, r.now()) {
+		return protocol.EnrollDiscovery{}, ErrTooManyAttempts
+	}
 	e, ok, err := r.liveEnrollment(ctx, codeID)
 	if err != nil {
 		return protocol.EnrollDiscovery{}, err
 	}
 	if !ok {
+		r.limiter.fail(source, r.now())
 		return protocol.EnrollDiscovery{}, ErrCodeNotFound
 	}
 	ca := r.opts.PKI.CACertificatePEM()
@@ -489,6 +509,10 @@ func refused(status int, code, msg string) (int, protocol.EnrollResponse) {
 // Claim handles POST /agent/v1/enroll. source is the client address for
 // throttling and for the administrator to check.
 func (r *Registry) Claim(ctx context.Context, req protocol.EnrollRequest, source string) (int, protocol.EnrollResponse) {
+	return r.claim(ctx, req, source, true)
+}
+
+func (r *Registry) claim(ctx context.Context, req protocol.EnrollRequest, source string, mayRetry bool) (int, protocol.EnrollResponse) {
 	if !r.limiter.allow(source, r.now()) {
 		return refused(http.StatusTooManyRequests, protocol.EnrollTooManyTries, "too many wrong codes from this address; wait 10 minutes")
 	}
@@ -560,8 +584,12 @@ func (r *Registry) Claim(ctx context.Context, req protocol.EnrollRequest, source
 		return refused(http.StatusInternalServerError, "INTERNAL", "internal error")
 	}
 	if k, _ := res.RowsAffected(); k == 0 {
-		// Another request used it first; answer as for a retry.
-		return r.Claim(ctx, req, source)
+		// Another request used it first (or it just expired); answer as for
+		// a retry, once.
+		if mayRetry {
+			return r.claim(ctx, req, source, false)
+		}
+		return refused(http.StatusForbidden, protocol.EnrollCodeUsed, "the code was used or expired meanwhile")
 	}
 	r.opts.Logger.Info("enrollment code used; waiting for an administrator", "enrollment", e.ID, "fingerprint", fp, "hostname", req.Hostname, "source", source)
 	return http.StatusAccepted, protocol.EnrollResponse{Status: protocol.EnrollPending, EnrollmentID: e.ID, RetryAfterSeconds: 5}
@@ -593,8 +621,14 @@ func (r *Registry) enrollmentForCode(ctx context.Context, code protocol.Enrollme
 
 // keyBlocked: the key was retired, or belongs to a revoked or conflicted node.
 func (r *Registry) keyBlocked(ctx context.Context, fp string) (bool, error) {
+	return keyBlockedIn(ctx, r.db, fp)
+}
+
+func keyBlockedIn(ctx context.Context, q interface {
+	QueryRowContext(context.Context, string, ...any) *sql.Row
+}, fp string) (bool, error) {
 	var n int
-	err := r.db.QueryRowContext(ctx, `SELECT (SELECT COUNT(*) FROM node_retired_keys WHERE fingerprint = ?) +
+	err := q.QueryRowContext(ctx, `SELECT (SELECT COUNT(*) FROM node_retired_keys WHERE fingerprint = ?) +
 		(SELECT COUNT(*) FROM nodes WHERE fingerprint = ? AND state IN ('revoked', 'identity_conflict'))`, fp, fp).Scan(&n)
 	return n > 0, err
 }
@@ -626,14 +660,26 @@ func (l *failureLimiter) allow(src string, now time.Time) bool {
 	return f.n < l.max
 }
 
+// maxLimiterSources bounds the limiter's memory: when full, expired
+// entries go first, then the oldest.
+const maxLimiterSources = 10000
+
 func (l *failureLimiter) fail(src string, now time.Time) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	if len(l.seen) > 10000 {
+	if _, ok := l.seen[src]; !ok && len(l.seen) >= maxLimiterSources {
+		var oldest string
 		for k, f := range l.seen {
 			if now.Sub(f.start) >= l.window {
 				delete(l.seen, k)
+				continue
 			}
+			if oldest == "" || f.start.Before(l.seen[oldest].start) {
+				oldest = k
+			}
+		}
+		if len(l.seen) >= maxLimiterSources && oldest != "" {
+			delete(l.seen, oldest)
 		}
 	}
 	f, ok := l.seen[src]

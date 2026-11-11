@@ -85,7 +85,8 @@ type HubOptions struct {
 	// is refused with DUPLICATE_SESSION and the first keeps running.
 	OnConflict func(fingerprint string)
 	// DuplicatePingTimeout is how long the old session of a node has to
-	// answer a ping when the node connects again. Default 5 s.
+	// answer a ping when the node connects again; keep it well under
+	// HandshakeTimeout. Default 3 s.
 	DuplicatePingTimeout time.Duration
 	Now                  func() time.Time
 	Logger               *slog.Logger
@@ -147,7 +148,7 @@ func NewHub(opts HubOptions) *Hub {
 		opts.Now = time.Now
 	}
 	if opts.DuplicatePingTimeout <= 0 {
-		opts.DuplicatePingTimeout = 5 * time.Second
+		opts.DuplicatePingTimeout = 3 * time.Second
 	}
 	if opts.Logger == nil {
 		opts.Logger = slog.Default()
@@ -608,7 +609,7 @@ func (h *Hub) handshake(r *http.Request, conn *websocket.Conn, slot *handshakeSl
 			return
 		}
 		h.opts.Logger.Info("replacing an unresponsive session of the same node", "node", id.Fingerprint, "old", old.sessionID, "remote", r.RemoteAddr)
-		old.close(websocket.StatusGoingAway, "replaced by a new session of the same node")
+		old.abort()
 		h.mu.Lock()
 		if h.closed {
 			h.mu.Unlock()

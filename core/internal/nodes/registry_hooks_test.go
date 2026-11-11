@@ -7,6 +7,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"net"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -217,3 +218,73 @@ func TestRunnerGateRefusesBeforeSending(t *testing.T) {
 		t.Fatal("step was sent despite the gate")
 	}
 }
+
+// Replacing an unresponsive session must not use up the new handshake's
+// time: the old peer is gone (its packets vanish, TCP stays open), so
+// neither a pong nor a close frame ever comes back.
+func TestReplacingASilentSessionLeavesTimeForReady(t *testing.T) {
+	core := startCore(t, HubOptions{HandshakeTimeout: 3 * time.Second, DuplicatePingTimeout: time.Second})
+	relay := newSilenceableRelay(t, core.srv.Listener.Addr().String())
+	n := newTestNode(t, core.pki)
+	first, err := dialAgent(t, core, "wss://"+relay.addr+protocol.ConnectPath, n, agentOpts{})
+	if err != nil || first.ready == nil {
+		t.Fatalf("first: %v %+v", err, first)
+	}
+	first.serve(t, func(any) []any { return nil })
+	relay.silence()
+	start := time.Now()
+	second, err := dialAgent(t, core, core.url, n, agentOpts{})
+	if err != nil || second.ready == nil {
+		t.Fatalf("reconnect after a silent session (%s): %v %+v", time.Since(start), err, second)
+	}
+}
+
+// silenceableRelay forwards TCP to target until silence(), after which it
+// keeps the connections open but drops every byte in both directions.
+type silenceableRelay struct {
+	addr   string
+	silent atomic.Bool
+}
+
+func newSilenceableRelay(t *testing.T, target string) *silenceableRelay {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { ln.Close() })
+	r := &silenceableRelay{addr: ln.Addr().String()}
+	go func() {
+		for {
+			c, err := ln.Accept()
+			if err != nil {
+				return
+			}
+			u, err := net.Dial("tcp", target)
+			if err != nil {
+				c.Close()
+				continue
+			}
+			t.Cleanup(func() { c.Close(); u.Close() })
+			pipe := func(dst, src net.Conn) {
+				buf := make([]byte, 32<<10)
+				for {
+					k, err := src.Read(buf)
+					if err != nil {
+						return
+					}
+					if !r.silent.Load() {
+						if _, err := dst.Write(buf[:k]); err != nil {
+							return
+						}
+					}
+				}
+			}
+			go pipe(u, c)
+			go pipe(c, u)
+		}
+	}()
+	return r
+}
+
+func (r *silenceableRelay) silence() { r.silent.Store(true) }

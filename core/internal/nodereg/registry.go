@@ -39,6 +39,8 @@ var (
 	ErrRemovalUnavailable = errors.New("nodereg: removal mode not available")
 	// ErrCodeNotFound: no usable enrollment code with that ID.
 	ErrCodeNotFound = errors.New("nodereg: no usable enrollment code")
+	// ErrTooManyAttempts: this source sent too many unknown or wrong codes.
+	ErrTooManyAttempts = errors.New("nodereg: too many wrong enrollment codes from this address")
 )
 
 // ChoiceRequiredError: the host that used the code has a new key but the
@@ -121,6 +123,10 @@ const (
 	// ClockSkewWarning is the agent clock difference shown as a warning.
 	ClockSkewWarning = 60 * time.Second
 	deliverTimeout   = 15 * time.Second
+	// RedeliverAfter: an agent that fell back to its old certificate gets
+	// the new one again after this long (once per interval, so a certificate
+	// the agent cannot use does not cause a reconnect loop).
+	RedeliverAfter = time.Hour
 )
 
 // Channel is what the registry needs from the agent hub.
@@ -211,7 +217,11 @@ func (r *Registry) now() time.Time { return r.opts.Now().UTC() }
 
 // ---- shared helpers ---------------------------------------------------------
 
-func stamp(t time.Time) string { return t.UTC().Format(time.RFC3339Nano) }
+// stampLayout has a fixed width, so SQL compares stored times as text in
+// time order.
+const stampLayout = "2006-01-02T15:04:05.000000000Z"
+
+func stamp(t time.Time) string { return t.UTC().Format(stampLayout) }
 
 func nullStamp(t *time.Time) any {
 	if t == nil {

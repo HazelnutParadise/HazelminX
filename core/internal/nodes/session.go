@@ -173,10 +173,20 @@ func (s *Session) outstandingJobs() []string {
 }
 
 func (s *Session) close(code websocket.StatusCode, reason string) {
+	s.end(func() { _ = s.conn.Close(code, reason) })
+}
+
+// abort ends the session without a close handshake: for a peer that no
+// longer answers, a close would wait for a frame that never comes.
+func (s *Session) abort() {
+	s.end(func() { _ = s.conn.CloseNow() })
+}
+
+func (s *Session) end(closeConn func()) {
 	s.closeOnce.Do(func() {
 		s.hub.unregister(s)
 		close(s.done)
-		_ = s.conn.Close(code, reason)
+		closeConn()
 		if s.hub.opts.OnClosed != nil {
 			go s.hub.opts.OnClosed(s)
 		}

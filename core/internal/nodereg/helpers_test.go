@@ -57,12 +57,14 @@ type fakeChannel struct {
 	mu           sync.Mutex
 	conns        map[string]nodes.ConnectionInfo
 	disconnected []string
-	renewed      map[string][]byte
-	renewErr     error
+
+	renewed    map[string][]byte
+	renewCount map[string]int
+	renewErr   error
 }
 
 func newFakeChannel() *fakeChannel {
-	return &fakeChannel{conns: map[string]nodes.ConnectionInfo{}, renewed: map[string][]byte{}}
+	return &fakeChannel{conns: map[string]nodes.ConnectionInfo{}, renewed: map[string][]byte{}, renewCount: map[string]int{}}
 }
 
 func (f *fakeChannel) Connections() ([]nodes.ConnectionInfo, []nodes.Rejection) {
@@ -80,6 +82,7 @@ func (f *fakeChannel) Disconnect(fp, _ string) bool {
 	defer f.mu.Unlock()
 	_, ok := f.conns[fp]
 	delete(f.conns, fp)
+
 	if ok {
 		f.disconnected = append(f.disconnected, fp)
 	}
@@ -96,6 +99,7 @@ func (f *fakeChannel) RenewCertificate(_ context.Context, fp string, pem []byte)
 		return f.renewErr
 	}
 	f.renewed[fp] = pem
+	f.renewCount[fp]++
 	return nil
 }
 
@@ -181,6 +185,12 @@ func (e *env) newCode(in CreateInput) (Enrollment, string) {
 func (e *env) claim(h host, code string) (int, protocol.EnrollResponse) {
 	e.t.Helper()
 	return e.reg.Claim(context.Background(), h.request(code), "203.0.113.61")
+}
+
+func (f *fakeChannel) renewals(fp string) int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.renewCount[fp]
 }
 
 // enroll runs the whole flow for h and returns the approved node.
