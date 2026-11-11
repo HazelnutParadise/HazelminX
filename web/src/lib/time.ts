@@ -112,6 +112,21 @@ export function formatElapsed(fromIso: string, now: Date, locale: string): strin
     .join(" ");
 }
 
+/**
+ * Time since `fromIso` as a relative phrase in `locale` ("5 分鐘前", "昨天"); `justNow` under a minute.
+ * Returns null when `fromIso` cannot be parsed.
+ */
+export function formatRelative(fromIso: string | undefined, now: Date, locale: string, justNow: string): string | null {
+  const at = fromIso ? parseRfc3339(fromIso) : null;
+  if (!at) return null;
+  const secs = Math.round((now.getTime() - at.getTime()) / 1000);
+  if (secs < 60) return justNow;
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+  if (secs < 3600) return rtf.format(-Math.floor(secs / 60), "minute");
+  if (secs < 86400) return rtf.format(-Math.floor(secs / 3600), "hour");
+  return rtf.format(-Math.floor(secs / 86400), "day");
+}
+
 /** The browser's IANA time zone, falling back to "UTC" when the runtime reports none. */
 export function browserTimeZone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";

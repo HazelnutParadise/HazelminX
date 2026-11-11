@@ -1,0 +1,447 @@
+/* Login, setup, enrolment and the second-factor dialogs (boards Login, Setup, MfaDialogs). */
+
+.hx-auth-main {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: 48px 16px 40px;
+  outline: none;
+}
+
+.hx-auth-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: 380px;
+}
+
+.hx-auth-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 28px;
+  background: var(--color-kumo-base);
+  border: 1px solid var(--color-kumo-line);
+  border-radius: 8px;
+}
+
+.hx-auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.hx-auth-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.hx-auth-sub {
+  margin-top: -8px;
+  font-size: 12px;
+  color: var(--text-color-kumo-subtle);
+  overflow-wrap: anywhere;
+}
+
+.hx-auth-form,
+.hx-factor,
+.hx-codes {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.hx-auth-wide {
+  width: 100%;
+  min-height: 40px;
+  justify-content: center;
+}
+
+.hx-auth-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.hx-auth-row--split {
+  justify-content: space-between;
+}
+
+.hx-auth-lead {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.hx-auth-muted {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-color-kumo-subtle);
+}
+
+.hx-auth-pills {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.hx-auth-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-kumo-hairline);
+}
+
+.hx-auth-help {
+  font-size: 12px;
+  color: var(--text-color-kumo-subtle);
+}
+.hx-auth-help summary {
+  cursor: pointer;
+  min-height: 24px;
+}
+.hx-auth-help p {
+  margin: 6px 0 0;
+  line-height: 1.6;
+}
+.hx-auth-help code,
+.hx-auth-card code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+/* Step bar: three segments, done (ok), current (info), todo (line). */
+.hx-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hx-step {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-color-kumo-subtle);
+}
+.hx-step-bar {
+  height: 4px;
+  border-radius: 4px;
+  background: var(--color-kumo-line);
+}
+.hx-step--done .hx-step-bar {
+  background: var(--color-kumo-success);
+}
+.hx-step--current .hx-step-bar {
+  background: var(--color-kumo-info);
+}
+.hx-step--current {
+  color: var(--text-color-kumo-default);
+  font-weight: 600;
+}
+
+.hx-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-color-kumo-subtle);
+}
+.hx-divider::before,
+.hx-divider::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--color-kumo-line);
+}
+.hx-divider span {
+  text-align: center;
+}
+
+.hx-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.hx-field-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Six boxes over one transparent input. */
+.hx-otp {
+  position: relative;
+}
+.hx-otp-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border: 0;
+  font-size: 16px;
+  cursor: text;
+}
+.hx-otp-input:disabled {
+  cursor: not-allowed;
+}
+.hx-otp-boxes {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+.hx-otp-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  border: 1px solid var(--color-kumo-line);
+  border-radius: 6px;
+  background: var(--color-kumo-elevated);
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+.hx-otp:focus-within .hx-otp-box--active {
+  border-color: var(--color-kumo-brand);
+  box-shadow: 0 0 0 1px var(--color-kumo-brand);
+}
+.hx-otp:focus-within {
+  outline: 2px solid var(--color-kumo-brand);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.hx-otp--invalid .hx-otp-box {
+  border-color: var(--color-kumo-danger);
+}
+.hx-otp--disabled .hx-otp-boxes {
+  opacity: 0.55;
+}
+
+.hx-notice {
+  display: flex;
+}
+
+.hx-link-button {
+  align-self: flex-start;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-color-kumo-subtle);
+  font: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.hx-link-button:hover {
+  color: var(--text-color-kumo-brand);
+}
+
+/* Authenticator app: QR, key, server time. */
+.hx-totp-scan {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.hx-totp--dialog .hx-totp-scan {
+  flex-direction: row;
+  align-items: flex-start;
+}
+.hx-qr {
+  width: 148px;
+  height: 148px;
+  flex: none;
+  border-radius: 6px;
+}
+.hx-totp-details {
+  align-self: stretch;
+  font-size: 12px;
+  color: var(--text-color-kumo-subtle);
+}
+.hx-totp-details summary {
+  cursor: pointer;
+  min-height: 24px;
+}
+.hx-totp-key {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  margin-top: 8px;
+}
+.hx-totp--dialog .hx-totp-key {
+  margin-top: 0;
+}
+.hx-secret {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--color-kumo-line);
+  border-radius: 6px;
+  background: var(--color-kumo-elevated);
+  color: var(--text-color-kumo-default);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+/* Recovery codes. */
+.hx-codes-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+  margin: 0;
+  padding: 14px;
+  list-style: none;
+  border: 1px solid var(--color-kumo-line);
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+
+/* 開始使用 next steps. */
+.hx-next-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hx-next-item {
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--color-kumo-line);
+  border-radius: 6px;
+  background: var(--color-kumo-elevated);
+  color: var(--text-color-kumo-default);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.hx-next-item:hover {
+  border-color: var(--color-kumo-brand);
+}
+.hx-next-item:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Status rows inside dialogs (board MfaDialogs): shape, title + detail, note on the right. */
+.hx-check {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  gap: 4px 12px;
+  align-items: start;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-kumo-hairline);
+  font-size: 13px;
+}
+.hx-check > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.hx-check > div > span {
+  color: var(--text-color-kumo-subtle);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.hx-check-shape {
+  font-size: 14px;
+  line-height: 18px;
+}
+.hx-check--ok .hx-check-shape {
+  color: var(--text-color-kumo-success);
+}
+.hx-check--warn .hx-check-shape {
+  color: var(--text-color-kumo-warning);
+}
+.hx-check--danger .hx-check-shape {
+  color: var(--text-color-kumo-danger);
+}
+.hx-check-note {
+  font-size: 12px;
+  color: var(--text-color-kumo-subtle);
+}
+
+/* Dialogs share the leave-dialog spacing (components/system.css .hx-leave). */
+.hx-dialog {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.hx-dialog-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.hx-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.hx-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.hx-visually-hidden {
+  /* clip-path instead of overflow: hidden, so the layout scan does not read it as clipped text. */
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 767px) {
+  /* Touch targets ≥ 44px on phones (DESIGN.md Layout). */
+  .hx-auth-card input:not([type="checkbox"]),
+  .hx-dialog input:not([type="checkbox"]),
+  .hx-auth-card button,
+  .hx-dialog button,
+  .hx-auth-card summary,
+  .hx-dialog summary {
+    min-height: 44px;
+  }
+  .hx-auth-main {
+    padding: 24px 16px 32px;
+  }
+  .hx-auth-card {
+    padding: 22px 20px;
+  }
+  .hx-totp--dialog .hx-totp-scan {
+    flex-direction: column;
+    align-items: center;
+  }
+  .hx-link-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}

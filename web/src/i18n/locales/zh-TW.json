@@ -126,6 +126,188 @@
     "INVALID_RESPONSE": "Core 回傳的內容不是預期的格式。",
     "unknown": "Core 回傳錯誤（HTTP {{status}}）。"
   },
+  "roles": {
+    "owner": "擁有者",
+    "platform_admin": "平台管理員",
+    "host_operator": "主機維運者",
+    "project_admin": "專案管理員",
+    "db_operator": "資料庫維運者",
+    "auditor": "稽核者",
+    "none": "沒有角色"
+  },
+  "auth": {
+    "username": "帳號",
+    "password": "密碼",
+    "continue": "繼續",
+    "confirm": "確認",
+    "cancel": "取消",
+    "back": "回上一步",
+    "retry": "再試一次",
+    "copy": "複製",
+    "copied": "已複製",
+    "recoveryCode": "復原碼",
+    "usePasskey": "使用 Passkey",
+    "useRecoveryCode": "使用復原碼",
+    "useAuthenticator": "改用驗證器",
+    "progress": "進度",
+    "stepDone": "（完成）",
+    "sessionFailed": "沒辦法確認登入狀態",
+    "steps": {
+      "account": "帳號",
+      "password": "密碼",
+      "factor": "二次驗證",
+      "codes": "復原碼"
+    },
+    "errors": {
+      "wrongPassword": "帳號或密碼不對",
+      "wrongCode": "碼不對",
+      "tooManyAttempts": "錯太多次 · {{wait}} 後再試",
+      "required": "必填",
+      "passwordRequired": "先輸入密碼"
+    },
+    "login": {
+      "title": "登入管理介面",
+      "challengeExpired": "這次登入已逾時 · 請重新輸入密碼",
+      "cannotSignIn": "無法登入？",
+      "lostFactor": "忘記二次驗證：第二步選「使用復原碼」",
+      "lostPassword": "忘記密碼：請管理員重設，或在主機上執行"
+    },
+    "second": {
+      "title": "驗證身分",
+      "subtitle": "{{username}} · 第二步",
+      "orCode": "或輸入驗證器上的 6 位數",
+      "code": "輸入驗證器上的 6 位數"
+    },
+    "setup": {
+      "title": "建立擁有者帳號",
+      "code": "設定碼（安裝結束時印在終端機）",
+      "codeHelp": "找不到或過期：在主機上執行",
+      "codeHelpAfter": "重新印一組，舊的作廢",
+      "codeInvalid": "設定碼不對或已過期",
+      "passwordRule": "至少 {{count}} 個字元",
+      "passwordShort": "密碼至少要 {{count}} 個字元"
+    },
+    "enroll": {
+      "title": "先設定二次驗證",
+      "titleSetup": "綁定二次驗證",
+      "required": "{{role}}必須使用二次驗證",
+      "locked": "設定完成前其他頁面都不能開啟",
+      "orApp": "或用驗證器 App 掃描",
+      "confirm": "確認並繼續",
+      "signedInAs": "目前登入：{{name}}"
+    },
+    "codes": {
+      "title": "存好復原碼",
+      "lead": "手機不見時，用其中一組登入。每組只能用一次。",
+      "download": "下載",
+      "saved": "我已經存在安全的地方",
+      "fileHeader": "HazelminX 復原碼 · {{account}} · {{host}}（每組只能用一次）"
+    },
+    "done": {
+      "title": "開始使用",
+      "lead": "接著可以",
+      "domain": "設定面板網址與 HTTPS",
+      "github": "連接 GitHub，部署第一個專案",
+      "hosts": "加入其他主機",
+      "overview": "先到總覽，之後再說"
+    },
+    "totp": {
+      "qrLabel": "驗證器 App 要掃的 QR 碼",
+      "showKey": "無法掃描？顯示金鑰",
+      "manual": "掃不了就手動輸入金鑰",
+      "copyKey": "複製金鑰",
+      "serverTime": "伺服器時間 {{time}} · 跟手機差太多碼會對不上",
+      "enterCode": "輸入 6 位數",
+      "enterCodeApp": "輸入 App 上的 6 位數",
+      "wrongCode": "碼不對 · 確認手機時間與伺服器相同",
+      "expired": "這次綁定已過期",
+      "restart": "重新開始",
+      "reauthAction": "新增驗證器"
+    },
+    "passkey": {
+      "createHere": "用這台裝置建立 Passkey",
+      "deviceName": "裝置名稱",
+      "start": "開始",
+      "available": "這個網址可以使用 Passkey",
+      "ipAddress": "用 IP 開的面板不能綁定",
+      "ipAddressDetail": "{{host}} · Passkey 需要網域",
+      "useDomain": "改用網域開啟",
+      "unsupported": "這個瀏覽器不能使用 Passkey",
+      "cancelled": "你取消了",
+      "cancelledDetail": "瀏覽器的視窗被關掉，沒有綁定任何東西",
+      "cancelledRetry": "Passkey 沒有完成 · 可以再試一次",
+      "tryAgain": "可以再試一次",
+      "alreadyRegistered": "這把 Passkey 已經綁定過了",
+      "rejected": "瀏覽器回傳的 Passkey 沒有通過驗證",
+      "reauthAction": "新增 Passkey"
+    },
+    "reauth": {
+      "title": "{{action}}前 · 確認是你",
+      "totp": "驗證器 6 位數",
+      "cancelled": "沒有完成重新驗證，什麼都沒變更"
+    }
+  },
+  "account": {
+    "title": "帳號安全 · {{username}}",
+    "actions": "動作",
+    "justNow": "剛剛",
+    "done": "完成",
+    "listSeparator": "與",
+    "factors": {
+      "title": "二次驗證",
+      "titleCount": "二次驗證 · {{count}}",
+      "name": "名稱",
+      "type": "類型",
+      "lastUsed": "最後使用",
+      "typeApp": "驗證器",
+      "app": "驗證器 App",
+      "added": "{{date}} 綁定",
+      "passkeyDetail": "{{rpId}} · {{date}} 綁定",
+      "neverUsed": "從未使用",
+      "none": "還沒有二次驗證",
+      "addPasskey": "新增 Passkey",
+      "addApp": "新增驗證器",
+      "bind": "綁定",
+      "remove": "移除",
+      "removeNamed": "移除 {{name}}",
+      "removeTitle": "移除 {{name}}？",
+      "removeAction": "移除 {{name}}",
+      "stillCanSignIn": "移除後還能登入",
+      "remaining": "移除後還有 {{names}} 可以用",
+      "lastRequired": "最後一個二次驗證不能移除",
+      "lastRequiredDetail": "你的角色必須使用二次驗證，先新增另一個再移除",
+      "lastOptional": "移除後只靠密碼登入",
+      "lastOptionalDetail": "這是最後一個二次驗證"
+    },
+    "codes": {
+      "title": "復原碼",
+      "left": "剩 {{left}} / {{total}} 個",
+      "used": "已用 {{count}} 個",
+      "regenerate": "重新產生",
+      "regenerateAction": "重新產生復原碼",
+      "needFactor": "綁定二次驗證後才會產生復原碼"
+    },
+    "sessions": {
+      "title": "登入中的裝置",
+      "titleCount": "登入中的裝置 · {{count}}",
+      "device": "裝置 · IP",
+      "status": "狀態",
+      "lastActive": "最後活動",
+      "current": "目前這一個",
+      "revoke": "撤銷",
+      "revokeNamed": "撤銷 {{name}}（{{ip}}）",
+      "revokeOthers": "登出其他所有裝置",
+      "unknownDevice": "未知裝置"
+    },
+    "idle": {
+      "title": "閒置設定",
+      "label": "閒置多久自動登出",
+      "default": "平台預設",
+      "defaultIs": "{{duration}}（預設）",
+      "minutes": "{{count}} 分鐘",
+      "hours": "{{count}} 小時"
+    }
+  },
   "kumo": {
     "label": {
       "optional": "選填",
