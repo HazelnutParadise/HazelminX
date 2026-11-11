@@ -25,6 +25,7 @@
 - [ ] **ENV-004** kind、k3d、minikube 的節點容器與 K8s 管理的容器標「由 <叢集> 管理」，寫入動作停用並導向 Kubernetes 頁，統計不重複計數。
 - [ ] **ENV-007** Compose 專案、應用安裝、計畫任務綁定環境；節點上同種引擎多個時要求選擇，不自動猜。
 - [ ] （增補 03 ROB-009，擁有票 020）容器被 OOM 終止時，事件寫出 OOMKilled 與記憶體限制並連到該容器；容器頁顯示 PID 數與檔案描述元開啟數。
+- [ ] （後續事項 2026-11-11）決定並實作低權限 Agent 怎麼存取 Docker socket（`agent/UPSTREAM.md` 交給這張票）。
 
 ## Acceptance tests（第 42 章）
 

@@ -41,3 +41,6 @@ release/
 
 # scripts/embed-web.sh staging
 core/web/.dist.*
+
+# SMB share leftovers
+.smbdelete*

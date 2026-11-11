@@ -14,6 +14,7 @@
 ## Acceptance criteria
 
 - [ ] **UI-005** 使用者可以在手機、桌面與鍵盤操作完成日常管理。 — 完成條件：360px 寬度不隱藏主要操作；鍵盤可到達控制項；狀態不只靠顏色。
+- [ ] （後續事項 2026-11-11）`web/` 的 e2e 與版面、無障礙掃描在 Safari 和 Firefox 也跑過；目前只在 Chromium 跑過。
 
 ## Acceptance tests（第 42 章）
 

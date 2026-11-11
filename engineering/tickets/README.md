@@ -57,6 +57,13 @@
 | 107 | 維運者可以看到每個資源由誰管理、與平台紀錄差在哪，並在寫入前看到影響範圍 | 基礎建設 | 007, 008, 010 | [#114](https://github.com/HazelnutParadise/hazelminx/issues/114) |
 
 規格增補 03（`engineering/specs/addendum-03-robustness.md`，異常情境的整體處理，ROB-001～015、T-157～188、T-231～233 與 T-242～243），2026-11-07 使用者核定，ROB-013～015 於 2026-11-08 加入。ROB-001／002／003／006／012 由票 107 擁有，ROB-004／005／007／008／013 由 017、ROB-009 由 020、ROB-010／014 由 024、ROB-011 由 081、ROB-015 由 035 擁有；010、027、028、040 另有驗證條目。
+| 117 | 同時送出大量密碼猜測時，同一帳號的登入嘗試仍然受冷卻次數限制 | 身分與存取 | — | [#135](https://github.com/HazelnutParadise/hazelminx/issues/135) |
+| 119 | 使用者可以在畫面上登入、完成首次設定、綁定第二驗證並管理自己的帳號安全 | 身分與存取 | 005, 009, 014 | [#137](https://github.com/HazelnutParadise/hazelminx/issues/137) |
+| 120 | 同一秒內建立的工作與稽核紀錄在列表裡依實際時間順序排列 | 基礎建設 | — | [#138](https://github.com/HazelnutParadise/hazelminx/issues/138) |
+| 121 | 大型稽核表上的背景列表查詢執行時，其他 API 不會跟著變慢 | 基礎建設 | — | [#139](https://github.com/HazelnutParadise/hazelminx/issues/139) |
+| 122 | Agent 長期運作時，工作日誌的檔案與記憶體用量不會無限增加 | 節點與 Agent | — | [#140](https://github.com/HazelnutParadise/hazelminx/issues/140) |
+| 123 | 節點憑證第一次建立到一半失敗時，Core 下次啟動可以自己恢復 | 節點與 Agent | — | [#141](https://github.com/HazelnutParadise/hazelminx/issues/141) |
+| 124 | 一個步驟在對帳時反覆重跑超過上限後會停下來，轉成需要處理 | 基礎建設 | — | [#142](https://github.com/HazelnutParadise/hazelminx/issues/142) |
 
 ## M2 容器、Compose 與 GitHub
 
@@ -101,6 +108,7 @@
 | 066 | 使用者可以依時間、節點、網域與入口查看流量、來源、路徑、裝置與 API 用量 | 流量分析 | 065, 035 | [#65](https://github.com/HazelnutParadise/hazelminx/issues/65) |
 | 067 | 管理員可以連接 Cloudflare Analytics 並分開看邊緣與來源站 | 流量分析 | 066 | [#66](https://github.com/HazelnutParadise/hazelminx/issues/66) |
 | 068 | 管理員可以把 OpenResty 網站遷移到 Zentinel，無法轉換的項目先列出 | 遷移與接管 | 056, 059, 060 | [#67](https://github.com/HazelnutParadise/hazelminx/issues/67) |
+| 118 | 有密碼的攻擊者不能靠持續送錯的第二驗證碼把帳號擁有者擋在外面 | 身分與存取 | 065 | [#136](https://github.com/HazelnutParadise/hazelminx/issues/136) |
 
 ## M4 資料庫、AI、備份與監控
 
@@ -142,6 +150,7 @@
 | 097 | 維護者可以發布附簽署清單、SBOM、授權與支援矩陣的正式 Release | 發布與供應鏈 | 006, 036 | [#96](https://github.com/HazelnutParadise/hazelminx/issues/96) |
 | 098 | 驗收者可以依 G-01 至 G-14 門檻與需求→測試→證據追溯表判定可否發布 | 品質與驗收 | 092, 097 | [#97](https://github.com/HazelnutParadise/hazelminx/issues/97) |
 | 099 | 維護者可以依 38 章情境量測效能並附測試條件 | 品質與驗收 | 084, 066 | [#98](https://github.com/HazelnutParadise/hazelminx/issues/98) |
+| 116 | 維護者在第一次正式發版前把所有 migration 合併成單一個 0001，全新安裝直接建出最終結構 | 發布與供應鏈 | — | [#134](https://github.com/HazelnutParadise/hazelminx/issues/134) |
 
 ## M6 宿主機服務模組（Webmin 等價）
 

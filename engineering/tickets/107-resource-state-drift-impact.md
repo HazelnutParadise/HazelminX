@@ -19,6 +19,7 @@
 - [ ] **ROB-006**（增補 03）系統保留資源的名稱、主機名與 IP 歷史，並依機制五判定容器屬於哪個服務。 — 完成條件：改名或換 IP 後歷史與告警仍連到同一資源；機制五表格的七種情況各自判定正確。
 - [ ] **ROB-012**（增補 03）系統可以持續偵測同一主機上的其他管理工具，並標出它們控制的資源（細化 INS-014，從安裝時延伸到持續偵測）。 — 完成條件：1Panel、Portainer、certbot 依已知特徵判定控制的資源（systemd 服務、資料目錄、Compose 工作目錄、容器標籤），判定規則寫在各工具的 adapter；例如 Compose 工作目錄位於 1Panel 安裝目錄的 `apps/` 底下，就判定由 1Panel 控制。Helm 依 Kubernetes 資源的管理標註判定，但經 KUB-007 安裝的 release 控制者是 HazelminX。Cockpit 與 Webmin 直接修改系統檔，沒有可對應到個別資源的紀錄，所以只列在節點頁的元件清單，不指派為任何資源的控制者。判定不出來的容器與 Kubernetes 資源標「控制者不明」，不猜。
 - [ ] （增補 03 51.6）設計時決定並寫進本票：可排隊與直接拒絕的動作清單、排隊工作的預設過期時間（實作時修改票 008 已完成的工作引擎）；「同一張憑證」的判定方式（與 057 共同）。
+- [ ] （後續事項 2026-11-11）寫入閘門的 `RESOURCE_READ_ONLY`、`CONTROLLER_CONFLICT`、`SCOPE_DEGRADED`、`RESOURCE_REFERENCED` 各有一條經 API 被拒絕的測試；目前只有單元測試。第一個有受管資源端點的票接上 `ResourceState` 時補。
 
 ## Acceptance tests
 

@@ -23,6 +23,7 @@
 - [ ] **IP-008** 平台可以清理後送的身分 Header。 — 完成條件：移除外部偽造值後重建可信資訊，避免上游再相信原本不可信 Header。
 - [ ] **IP-009** 管理員可以確認 Tunnel 入口不被其他本機帳號或容器冒用。 — 完成條件：透過專用網路、權限或經驗證的本機連接方式隔離；共享 loopback 單獨不足以通過。
 - [ ] 真實 Tunnel 測試取得正確 IP；本機其他容器模仿 Header 無法取得可信身分
+- [ ] （後續事項 2026-11-11）`secureRequest`（`core/internal/api/iam_routes.go`）只信任可信代理送來的 `X-Forwarded-Proto`。目前無條件相信，Cookie 的 Secure 旗標與沒設 `-public-origin` 時的 Passkey origin 都依它判斷。
 
 ## Acceptance tests（第 42 章）
 
