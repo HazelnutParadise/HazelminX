@@ -48,6 +48,15 @@ const (
 	// CapHostLedger: ledger_pull / ledger_page / ledger_unavailable, the
 	// Core's copy of the host change ledger (spec 55.1).
 	CapHostLedger = "host.ledger"
+	// CapNodeCertificate: certificate_renew / certificate_installed /
+	// certificate_refused (certificate rotation, ticket 019).
+	CapNodeCertificate = "node.certificate"
+)
+
+// certificate_refused codes.
+const (
+	CertificateInvalid     = "CERTIFICATE_INVALID"
+	CertificateWriteFailed = "WRITE_FAILED"
 )
 
 // ledger_unavailable codes.
@@ -71,6 +80,9 @@ const (
 	RejectProofInvalid         = "PROOF_INVALID"
 	RejectNodeRevoked          = "NODE_REVOKED"
 	RejectDuplicateSession     = "DUPLICATE_SESSION"
+	// RejectIdentityConflict: the node key is live in two places at once
+	// (for example a cloned VM); refused until the node re-enrolls.
+	RejectIdentityConflict = "IDENTITY_CONFLICT"
 )
 
 // step_rejected codes.
@@ -92,23 +104,26 @@ const (
 
 // Message type strings.
 const (
-	TypeHello             = "hello"
-	TypeWelcome           = "welcome"
-	TypeReject            = "reject"
-	TypeAuth              = "auth"
-	TypeReady             = "ready"
-	TypeHeartbeat         = "heartbeat"
-	TypeStepExecute       = "step_execute"
-	TypeStepRejected      = "step_rejected"
-	TypeStepReconcile     = "step_reconcile"
-	TypeReconcileReport   = "reconcile_report"
-	TypeEvent             = "event"
-	TypeStepProgress      = "step_progress"
-	TypeAck               = "ack"
-	TypeProtocolError     = "protocol_error"
-	TypeLedgerPull        = "ledger_pull"
-	TypeLedgerPage        = "ledger_page"
-	TypeLedgerUnavailable = "ledger_unavailable"
+	TypeHello                = "hello"
+	TypeWelcome              = "welcome"
+	TypeReject               = "reject"
+	TypeAuth                 = "auth"
+	TypeReady                = "ready"
+	TypeHeartbeat            = "heartbeat"
+	TypeStepExecute          = "step_execute"
+	TypeStepRejected         = "step_rejected"
+	TypeStepReconcile        = "step_reconcile"
+	TypeReconcileReport      = "reconcile_report"
+	TypeEvent                = "event"
+	TypeStepProgress         = "step_progress"
+	TypeAck                  = "ack"
+	TypeProtocolError        = "protocol_error"
+	TypeLedgerPull           = "ledger_pull"
+	TypeLedgerPage           = "ledger_page"
+	TypeLedgerUnavailable    = "ledger_unavailable"
+	TypeCertificateRenew     = "certificate_renew"
+	TypeCertificateInstalled = "certificate_installed"
+	TypeCertificateRefused   = "certificate_refused"
 )
 
 // Durable event kinds.
@@ -316,6 +331,28 @@ type LedgerUnavailable struct {
 	Message   string `json:"message"`
 }
 
+// CertificateRenew hands the agent a new certificate for its existing key.
+type CertificateRenew struct {
+	Type        string `json:"type"`
+	RequestID   string `json:"requestId"`
+	Certificate string `json:"certificate"`
+}
+
+// CertificateInstalled: the agent verified and stored the new certificate
+// and will use it on its next connection.
+type CertificateInstalled struct {
+	Type      string `json:"type"`
+	RequestID string `json:"requestId"`
+}
+
+// CertificateRefused: the agent kept its current certificate.
+type CertificateRefused struct {
+	Type      string `json:"type"`
+	RequestID string `json:"requestId"`
+	Code      string `json:"code"`
+	Message   string `json:"message"`
+}
+
 // Decode errors. Use errors.Is; the wrapped message carries the detail.
 var (
 	// ErrMalformed: not JSON, not an object, or no string "type".
@@ -379,18 +416,21 @@ var handshakeTypes = map[string]func() any{
 }
 
 var sessionTypes = map[string]func() any{
-	TypeHeartbeat:         func() any { return &Heartbeat{} },
-	TypeStepExecute:       func() any { return &StepExecute{} },
-	TypeStepRejected:      func() any { return &StepRejected{} },
-	TypeStepReconcile:     func() any { return &StepReconcile{} },
-	TypeReconcileReport:   func() any { return &ReconcileReport{} },
-	TypeEvent:             func() any { return &Event{} },
-	TypeStepProgress:      func() any { return &StepProgress{} },
-	TypeAck:               func() any { return &Ack{} },
-	TypeProtocolError:     func() any { return &ProtocolError{} },
-	TypeLedgerPull:        func() any { return &LedgerPull{} },
-	TypeLedgerPage:        func() any { return &LedgerPage{} },
-	TypeLedgerUnavailable: func() any { return &LedgerUnavailable{} },
+	TypeHeartbeat:            func() any { return &Heartbeat{} },
+	TypeStepExecute:          func() any { return &StepExecute{} },
+	TypeStepRejected:         func() any { return &StepRejected{} },
+	TypeStepReconcile:        func() any { return &StepReconcile{} },
+	TypeReconcileReport:      func() any { return &ReconcileReport{} },
+	TypeEvent:                func() any { return &Event{} },
+	TypeStepProgress:         func() any { return &StepProgress{} },
+	TypeAck:                  func() any { return &Ack{} },
+	TypeProtocolError:        func() any { return &ProtocolError{} },
+	TypeLedgerPull:           func() any { return &LedgerPull{} },
+	TypeLedgerPage:           func() any { return &LedgerPage{} },
+	TypeLedgerUnavailable:    func() any { return &LedgerUnavailable{} },
+	TypeCertificateRenew:     func() any { return &CertificateRenew{} },
+	TypeCertificateInstalled: func() any { return &CertificateInstalled{} },
+	TypeCertificateRefused:   func() any { return &CertificateRefused{} },
 }
 
 func decode(data []byte, types map[string]func() any, strict bool) (any, error) {

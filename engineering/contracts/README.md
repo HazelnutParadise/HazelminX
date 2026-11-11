@@ -7,7 +7,58 @@ Agent 主動連到 Core 的 Agent 入口（預設 `:9801`，路徑 `/agent/v1/co
 - Core 安裝時產生自己的 CA（Ed25519），CA 私鑰與 Core 身分私鑰存在機密服務（`internal/secrets`），不落明文檔。
 - Core 身分憑證：CA 簽發，EKU `serverAuth`，DNS SAN `core.hazelminx.internal`。Agent 驗 Core 時只看憑證鏈與這個名稱，不看 URL 的 IP 或主機名，所以 Core 換 IP 不影響身分。
 - 節點憑證：CA 簽發，EKU `clientAuth`，CN 是節點指紋（節點 Ed25519 公鑰原始 32 位元組的 SHA-256 小寫 hex）。節點私鑰不離開節點。
-- Agent 端檔案：`state_dir/identity/node.key`、`node.crt`、`core-ca.crt`（後兩者由註冊流程寫入，票 019）。
+- Agent 端檔案：`state_dir/identity/node.key`、`node.crt`、`core-ca.crt`、`privileged-issuer.pub`（後三者由註冊寫入），以及 `state_dir/enrollment.json`（`coreUrl`、`nodeId`、`enrolledAt`；設定檔沒有 `core_url` 時用這裡的網址）。
+
+## 註冊
+
+管理員在 Core 產生一次性註冊碼，在主機上執行 `hazelminx-agent enroll --core-url <Agent 入口網址> --code <註冊碼>`。決策紀錄見 `decisions/0031`。
+
+### 註冊碼
+
+- 形式是 `HZX-` 加四組、每組 4 個字元，例如 `HZX-7Q4M-2KD9-PX81-C3VB`。字元表是 Crockford base32：`0123456789ABCDEFGHJKMNPQRSTVWXYZ`。
+- 正規化：去掉 `-` 與空白，轉大寫，`O` 換成 `0`，`I`、`L` 換成 `1`；結果必須是 `HZX` 加 16 個字元表內的字元。
+- 第一組（例子裡的 `7Q4M`）是查詢 ID `codeId`，可以公開。16 個字元全部是秘密。
+- 金鑰 `key` 是 `SHA-256("hazelminx-enroll-v1\n" + 正規化後的碼)` 的 32 位元組。Core 只存這個值，不存碼。
+- 碼只能用一次，有效期預設 10 分鐘，可以設 1 到 60 分鐘。碼建立時可以指定群組。
+
+### 步驟
+
+1. **取得 Core CA**：`GET /agent/v1/enroll/discovery?codeId=7Q4M`。這一步 Agent 還沒有 CA，`pinned` 模式下不驗 TLS 伺服端憑證；`proxy` 模式照常驗代理的憑證鏈。回應 `200 {"caCertificate": "<PEM>", "mac": "<base64>"}`。`mac` 是 `HMAC-SHA256(key, "hazelminx-enroll-discovery-v1\n" + caCertificate 的位元組)`，標準 base64。Agent 驗不過就停止，不送出註冊碼。查不到可用的碼時回 `404`，錯誤碼 `ENROLLMENT_CODE_INVALID`，不說明原因。
+2. **送出註冊碼**：`POST /agent/v1/enroll`。`pinned` 模式下以上一步的 CA 驗 TLS，名稱是 `core.hazelminx.internal`。請求內容：
+
+   | 欄位 | 說明 |
+   |---|---|
+   | `code` | 註冊碼，可以帶 `-` |
+   | `nodePublicKey` | 節點 Ed25519 公鑰原始 32 位元組，base64url 不補 `=` |
+   | `hostname`、`machineId`、`os`、`arch`、`agentVersion` | 給管理員核對主機用，各自最多 256 個字元；`machineId` 取 `/etc/machine-id`，讀不到時是空字串 |
+   | `group` | 選填。帶了就必須和碼的群組相同 |
+
+   未知欄位、重複的鍵都是錯誤。
+3. **等管理員核對**：第一次送出時 Core 把碼標成「已使用」，記下這把公鑰與主機資料，回 `202 {"status": "pending", "enrollmentId": "...", "retryAfterSeconds": 5}`。Agent 用同一個碼、同一把公鑰重送同一個請求來詢問結果。核對的等待期限是 24 小時，從碼被使用的時間起算，不受碼的有效期影響。
+4. **核准**：回 `200 {"status": "approved", "enrollmentId", "nodeId", "nodeCertificate", "caCertificate", "privilegedIssuerKey"}`。Agent 確認 `caCertificate` 和第一步拿到的相同、`nodeCertificate` 由這張 CA 簽發而且 CN 是自己的指紋，才寫入檔案。核准之後重送同一個請求會拿到同一張憑證。
+
+回應一律是 JSON，帶 `Content-Length`。被拒絕時是 `{"status": "refused", "code", "message"}`：
+
+| HTTP | code | 意思 |
+|---|---|---|
+| 400 | `ENROLLMENT_REQUEST_INVALID` | 請求格式不對 |
+| 403 | `ENROLLMENT_CODE_INVALID` | 沒有這個碼，或秘密部分不符 |
+| 403 | `ENROLLMENT_CODE_EXPIRED` | 碼已過有效期，還沒被使用 |
+| 403 | `ENROLLMENT_CODE_USED` | 碼已經被另一把公鑰使用 |
+| 403 | `ENROLLMENT_CODE_REVOKED` | 管理員作廢了這個碼 |
+| 403 | `ENROLLMENT_GROUP_MISMATCH` | `group` 和碼的群組不同 |
+| 403 | `ENROLLMENT_REJECTED` | 管理員拒絕了這台主機 |
+| 403 | `ENROLLMENT_EXPIRED` | 24 小時內沒有人核對 |
+| 403 | `NODE_KEY_REVOKED` | 這把公鑰屬於已撤銷、已被取代或身分衝突的節點；要用 `--new-identity` 換一把金鑰再註冊 |
+| 429 | `TOO_MANY_ATTEMPTS` | 同一來源 10 分鐘內錯了 20 次 |
+
+被拒絕的請求不會改變碼的狀態，也不會延長有效期。
+
+### 同一台主機再註冊
+
+- 公鑰和既有節點相同：核准後沿用該節點，重新簽發憑證，舊憑證立即失效。
+- 公鑰和已移除（「不再管理」）的節點相同：核准後恢復該節點。
+- 新公鑰，但 `machineId` 和既有節點相同：管理員核准時必須選「取代該節點」或「建立新節點」。取代時節點 ID 不變，舊公鑰從此被拒絕。
 
 ## 握手
 
@@ -83,6 +134,9 @@ Agent 主動連到 Core 的 Agent 入口（預設 `:9801`，路徑 `/agent/v1/co
 | `ledger_pull` | Core→Agent | 要主機變更帳本 `afterSeq` 之後的行：`requestId`、`afterSeq`、`limit`、`grant`（給高權限執行器的授權憑證，見下方「主機變更帳本」） |
 | `ledger_page` | Agent→Core | 一頁帳本原始行：`requestId`、`ledgerId`、`afterSeq`、`lines`、`head`（`seq`、`hash`）、`more` |
 | `ledger_unavailable` | Agent→Core | 拿不到這一頁：`requestId`、`code`、`message` |
+| `certificate_renew` | Core→Agent | 換發節點憑證：`requestId`、`certificate`（PEM），見下方「憑證輪替」 |
+| `certificate_installed` | Agent→Core | 新憑證已驗證並寫入：`requestId` |
+| `certificate_refused` | Agent→Core | 沒有換：`requestId`、`code`（`CERTIFICATE_INVALID`、`WRITE_FAILED`）、`message` |
 
 ### 能力
 
@@ -93,6 +147,7 @@ Agent 主動連到 Core 的 Agent 入口（預設 `:9801`，路徑 `/agent/v1/co
 | `jobs` | 1 | `step_execute`、`step_reconcile`、`event`、`ack` |
 | `agent.info` | 1 | 唯讀動作：回報 Agent 版本、節點指紋、作業系統、架構、主機名 |
 | `host.ledger` | 1 | `ledger_pull`、`ledger_page`、`ledger_unavailable` |
+| `node.certificate` | 1 | `certificate_renew`、`certificate_installed`、`certificate_refused` |
 
 Core 派送前先比對能力；Agent 沒宣告或版本較低的動作，Core 不送出，直接讓步驟失敗為 `CAPABILITY_UNSUPPORTED`。Agent 收到未宣告的動作、多餘參數欄位、別的節點、已過期或控制世代倒退的步驟，一律回 `step_rejected`，不執行。
 
@@ -154,9 +209,21 @@ hazelminx-grant-v1
 | `EXECUTOR_REFUSED` | 執行器拒絕匯出（憑證、權限或參數不對），`message` 帶執行器的錯誤碼 |
 | `EXPORT_FAILED` | 執行器接受了但匯出失敗，例如帳本沒有開啟，或 `afterSeq` 超過主機帳本的最後一行（主機帳本比 Core 副本短） |
 
+### 憑證輪替
+
+1. Core 為同一把節點公鑰簽一張新憑證，記為「待確認」。從這時起 Core 同時接受舊憑證與新憑證。
+2. Core 送 `certificate_renew`。Agent 確認新憑證由自己信任的 Core CA 簽發、用途是 `clientAuth`、CN 是自己的指紋，把它寫成 `node.crt.next`，回 `certificate_installed`，然後正常結束會話。
+3. Agent 下一次連線用新憑證。握手成功（收到 `ready`）後才把 `node.crt.next` 換成 `node.crt`，舊的留在 `node.crt.prev`。
+4. Core 看到這個節點用新憑證完成握手，才停止接受舊憑證。
+5. 用新憑證連線被拒或 TLS 失敗時，Agent 刪掉 `node.crt.next`，改用舊憑證重連。舊憑證在 Core 仍然有效，所以通道不會中斷在一個雙方都不認的狀態。
+
+Core 在節點憑證剩不到 30 天時自動輪替，管理員也可以手動要求。節點離線時，輪替要求留到下一次連線。
+
 ### `reject` 代碼
 
-`PROTOCOL_INCOMPATIBLE`、`HANDSHAKE_MALFORMED`、`IDENTITY_INVALID`（憑證鏈、用途或指紋不符）、`PROOF_INVALID`、`NODE_REVOKED`、`DUPLICATE_SESSION`（同一節點已有連線）。
+`PROTOCOL_INCOMPATIBLE`、`HANDSHAKE_MALFORMED`、`IDENTITY_INVALID`（憑證鏈、用途或指紋不符，或這張憑證已被換掉，或節點沒有註冊）、`PROOF_INVALID`、`NODE_REVOKED`（節點已撤銷、已移除，或這把金鑰已被取代）、`IDENTITY_CONFLICT`（同一把節點金鑰同時出現在兩個仍在運作的連線，例如複製的 VM；兩邊都被拒絕，直到管理員重新註冊）、`DUPLICATE_SESSION`（同一節點已有一條仍有回應的連線）。
+
+同一節點的第二條連線完成簽章驗證時，Core 對舊連線送一次 WebSocket ping。5 秒內沒有回應，Core 關掉舊連線，讓新連線進來（Agent 重開或網路中斷後重連都是這種情況）。有回應，就表示同一把金鑰有兩份在運作：Core 有節點名冊時關掉兩邊、把節點標成身分衝突並回 `IDENTITY_CONFLICT`，沒有名冊時只拒絕新連線並回 `DUPLICATE_SESSION`。
 
 ## 樣本
 
@@ -167,4 +234,5 @@ hazelminx-grant-v1
 - `fixtures/frames.json`：用上面的會話金鑰封好的訊框。兩邊要算出同一個 `mac`、還原出同一個 `body`；訊框的 JSON 文字本身可能不同（Go 會把 `<`、`&` 這類字元跳脫），所以不比對整段文字。改任何一處都要被拒絕。
 - `fixtures/grant.json`：給高權限執行器的授權憑證，用固定種子（公開，只供測試）簽，含簽章內容與公鑰 PEM。
 - `fixtures/host-ledger-batch.json`：執行器 `ledger_export` 回的一頁真實帳本行，`messages/ledger_page.json` 用的是同一組行。
+- `fixtures/enrollment.json`：固定的註冊碼、正規化結果、`key`、一張 CA 的 PEM 與預期的 `mac`，兩邊要算出同樣的值；另含必須被拒絕的碼。
 - `fixtures/pki/`：測試用 CA、Core 與節點憑證（僅供測試，私鑰公開，不得用於任何部署）。
