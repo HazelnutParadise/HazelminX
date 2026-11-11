@@ -428,7 +428,7 @@ body{{margin:0}}
 .hb .gdev h3{{font-size:12px;font-weight:600;color:var(--muted);padding:10px 12px 0;margin:0}}
 @media (max-width:1280px){{.hb .c6{{display:none}}.hb .tw{{--k6: ;}}}}
 .hb .ncard.on{{border-color:var(--hazel);box-shadow:inset 0 0 0 1px var(--hazel)}}
-.hb .ncard.pick{{cursor:pointer}}.hb .ncard.pick .nh .d{{min-height:0}}.hb .ncard.pick:hover{{border-color:var(--hazel)}}.hb .ncard .rdo{{flex:none;width:16px;height:16px;border-radius:50%;border:1.5px solid var(--faint);background:var(--panel);box-sizing:border-box}}.hb .ncard.on .rdo{{border:5px solid var(--hazel)}}
+.hb .appcard .bd>.st{{align-self:flex-start}}.hb .ncard .pipe{{grid-template-columns:repeat(2,minmax(0,1fr))}}.hb .ncard.pick{{cursor:pointer}}.hb .ncard.pick .nh .d{{min-height:0}}.hb .ncard.pick:hover{{border-color:var(--hazel)}}.hb .ncard .rdo{{flex:none;width:16px;height:16px;border-radius:50%;border:1.5px solid var(--faint);background:var(--panel);box-sizing:border-box}}.hb .ncard.on .rdo{{border:5px solid var(--hazel)}}
 .hb .opt{{display:flex;align-items:flex-start;gap:8px;font-size:13px;padding:4px 0}}.hb .opt input{{margin-top:3px}}
 .hb .fleet.choices{{grid-template-columns:repeat(auto-fit,minmax(min(250px,100%),1fr))}}
 .hb .row.sel{{background:color-mix(in srgb,var(--hazel) 8%,transparent)}}

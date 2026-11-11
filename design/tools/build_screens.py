@@ -1258,11 +1258,11 @@ def appstore() -> str:
       <div class="ph"><h2 id="h-inst">已安裝 · 7</h2><span class="sub">量表＝該應用的記憶體；黃色＝有新版本</span><div class="wrap" style="margin-left:auto"><span class="chip on">全部主機</span><span class="chip">tw-01 5</span><span class="chip">jp-02 2</span></div></div>
       <div class="fleet">
         {app("Wk", "Wiki.js", "2.5.303", "jp-02 · 2 容器 · 3000 → wiki.example.tw", U.status("warn", "過期 · 上次觀測"), 35, "356 / 1024 MiB", "資料 /mnt/data/apps/wiki · 備份每日")}
-        {app("Ol", "Ollama", "0.5.7", "tw-01 · 1 容器 · GPU L4 · 11434", U.status("ok", "執行中"), 54, "13.1 GiB VRAM", "模型 3 個 · 61 GiB", '<span class="chip on">0.6.1 可更新 · 看變更</span>')}
+        {app("Ol", "Ollama", "0.5.7", "tw-01 · 1 容器 · GPU L4 · 11434", U.status("ok", "執行中"), 54, "13.1 GiB VRAM", "模型 3 個 · 61 GiB", U.status("warn", "0.6.1 可更新"))}
         {app("Pg", "PostgreSQL", "16.4", "tw-01 · shop-db · 僅內部", U.status("ok", "執行中"), 31, "1.29 / 4 GiB", "由專案 shop 管理 · 升級請到專案")}
         {app("Rd", "Redis", "7.2", "tw-01 · shop-redis", U.status("info", "重啟中 · 第 1 次"), 24, "62 / 256 MiB", "由專案 shop 管理 · 升級請到專案")}
         {app("Zt", "Zentinel", "0.6.54", "tw-01 · 原生 systemd", U.status("ok", "執行中"), 18, "94 MiB", "入口元件，更新走維護流程")}
-        {app("Mr", "mail-relay", "1.2", "tw-01 · 1 容器 · 僅內部", U.status("ok", "執行中"), 8, "20 MiB", "通知用 SMTP 轉送", '<span class="chip on">1.3 可更新</span>')}
+        {app("Mr", "mail-relay", "1.2", "tw-01 · 1 容器 · 僅內部", U.status("ok", "執行中"), 8, "20 MiB", "通知用 SMTP 轉送", U.status("warn", "1.3 可更新"))}
         {app("Up", "Uptime 探測", "2.0", "jp-02 · 1 容器", U.status("warn", "過期 · 上次觀測"), 12, "48 MiB", "對外探測 3 個站點")}
       </div>
     </section>"""
@@ -1276,7 +1276,7 @@ def appstore() -> str:
       <div class="note" style="padding:8px 14px;border-top:1px solid var(--line)">「忽略這個版本」會記住到下一版；Port 衝突在安裝前檢查，不在啟動時才失敗</div>
     </section>"""
     def catalog(ini, name, cat, engines, arch, dl, note):
-        return (f'<a class="appcard" href="#c"><span class="ic" aria-hidden="true">{ini}</span><span class="bd"><span class="n">{name}</span><span class="d">{cat} · {note}</span><span class="wrap">{"".join(f"<span class=chip>{e}</span>" for e in engines)}{"".join(f"<span class=chip>{a}</span>" for a in arch)}</span><span class="d">{dl}</span></span></a>')
+        return (f'<a class="appcard" href="#c"><span class="ic" aria-hidden="true">{ini}</span><span class="bd"><span class="n">{name}</span><span class="d">{cat}{" · " + note if note else ""}</span><span class="d">{"、".join(engines)} · {"、".join(arch)}</span><span class="d">{dl}</span><span class="btn sm" style="align-self:flex-start">安裝</span></span></a>')
     allapps = f"""
     <section class="panel" aria-labelledby="h-all">
       <div class="ph"><h2 id="h-all">全部應用 · 212</h2><span class="sub">1Panel 官方商店 · 同步 03:30 · 完整</span><div class="wrap" style="margin-left:auto"><span class="chip on">全部</span><span class="chip">網站 48</span><span class="chip">資料庫 21</span><span class="chip">AI 17</span><span class="chip">工具 63</span><span class="chip">儲存 19</span><span class="chip">其他 44</span></div></div>
@@ -1298,12 +1298,7 @@ def appstore() -> str:
       <div class="row srow"><span class="name"><span class="n">hazelnut 私有來源</span><span class="d">git.example.tw/apps</span></span><span>{U.status("warn", "同步失敗 2 次")}</span><span class="mono c3">11</span><span class="mono c4">昨天 21:00</span><span class="c4">{U.status("ok", "有效")}</span><span class="c5"></span><span></span></div>
       <div class="row srow"><span class="name"><span class="n">本機範本</span><span class="d">/mnt/data/hazelminx/templates</span></span><span>{U.status("ok", "正常")}</span><span class="mono c3">3</span><span class="mono c4">—</span><span class="c4 note">不適用</span><span class="c5"></span><span></span></div>
     </section>"""
-    preflight = f"""
-    <section class="panel" aria-labelledby="h-pf">
-      <div class="ph"><h2 id="h-pf">安裝 Nextcloud 的預檢</h2><span class="sub">安裝 = 一個工作：選主機、網路、Port、資料位置，相依服務可重用</span></div>
-      <div style="padding:12px 14px">{U.pipeline([("選主機", "done", "tw-01", "Docker · amd64 OK"), ("相依", "done", "新建 PostgreSQL", "專用"), ("Port", "done", "8081 空", "不與 shop-api 衝突"), ("資料位置", "cur", "/mnt/data/apps", "剩 519 GiB"), ("入口", "todo", "cloud.example.tw", "憑證自動"), ("安裝", "todo", "—", "可看腳本")])}</div>
-    </section>"""
-    main = head + U.scope_bar([("全部主機", "7 應用"), ("hazel-tw-01", "Docker"), ("hazel-jp-02", "Docker · 沒有回應"), ("lab-mini", "Podman · K3s")]) + tabs + installed + upg + allapps + f'<div class="cg">{sources}{preflight}</div>'
+    main = head + U.scope_bar([("全部主機", "7 應用"), ("hazel-tw-01", "Docker"), ("hazel-jp-02", "Docker · 沒有回應"), ("lab-mini", "Podman · K3s")]) + tabs + installed + upg + allapps + sources
     return U.shell("store", main)
 
 
@@ -1993,7 +1988,7 @@ def database() -> str:
     def inst(ini, name, ver, node, st, conn, connmax, size, sizemax, expose, bk, note, sel=False):
         cur = ' aria-current="true"' if sel else ""
         return (f'<a class="ncard{" on" if sel else ""}" href="#h-dbi"{cur}><div class="nh"><span class="n">{name}</span>{st}<span class="d">{ver} · {node}</span></div>'
-                f'<div class="rings">{U.ring(conn / connmax * 100, str(conn), f"連線 /{connmax}")}{U.ring(size / sizemax * 100, f"{size}G", f"容量 /{sizemax}G", warn=80, danger=90)}{U.ring(bk, "今天" if bk == 100 else "—", "備份", warn=101, danger=101)}</div>'
+                f'<div class="rings">{U.ring(conn / connmax * 100, str(conn), f"連線 /{connmax}")}{U.ring(size / sizemax * 100, f"{size}G", f"容量 /{sizemax}G", warn=80, danger=90)}</div>{U.status("ok", "今天已備份") if bk == 100 else U.status("warn", "今天沒有備份")}'
                 f'<div class="ft">{expose}<span style="margin-left:auto" class="note">{note}</span></div></a>')
     instances = f"""
     <section class="panel" aria-labelledby="h-dbi">
@@ -2058,11 +2053,11 @@ def ai() -> str:
       <div class="fleet">
         <a class="ncard" href="#ol1"><div class="nh"><span class="n">ollama @ hazel-tw-01</span>{U.status("ok", "執行中")}{U.status("dng", "11434 從外部連得到")}<span class="d">0.5.7 · 容器 · GPU L4 · /ollama 代理</span></div>
           <div class="rings">{U.ring(44, "44%", "GPU 核心")}{U.ring(14.2 / 24 * 100, "14G", "顯示記憶體 /24G")}{U.ring(61 / 120 * 100, "61G", "模型 /120G 配額", warn=80, danger=90)}</div>
-          <div class="ft">{U.steps([("驅動", "done", "550.90"), ("容器工具", "done", "1.16"), ("裝置權限", "done", "gpu=all"), ("實際推論", "done", "38 tok/s")])}</div>
+          <div class="ft">{U.pipeline([("驅動", "done", "550.90", ""), ("容器工具", "done", "1.16", ""), ("裝置權限", "done", "gpu=all", ""), ("實際推論", "done", "38 tok/s", "")])}</div>
           <div class="ft"><span class="note">已載入 qwen2.5:14b · 2 個請求處理中</span><span style="margin-left:auto" class="chip on">0.6.1 可更新</span></div></a>
         <a class="ncard" href="#ol2"><div class="nh"><span class="n">ollama @ lab-mini</span>{U.status("info", "CPU 模式")}<span class="d">0.5.7 · 既有容器（接管）· 11434</span></div>
           <div class="rings">{U.ring(3, "3%", "CPU")}{U.ring(2.1 / 7.6 * 100, "2.1G", "記憶體 /7.6G")}{U.ring(9 / 40 * 100, "9G", "模型 /40G", warn=80, danger=90)}</div>
-          <div class="ft">{U.steps([("驅動", "fail", "無 GPU"), ("容器工具", "todo", "不適用"), ("裝置權限", "todo", "不適用"), ("實際推論", "done", "4 tok/s")])}</div>
+          <div class="ft">{U.pipeline([("驅動", "fail", "無 GPU", ""), ("容器工具", "todo", "不適用", ""), ("裝置權限", "todo", "不適用", ""), ("實際推論", "done", "4 tok/s", "")])}</div>
           <div class="ft"><span class="note">GPU：未偵測到 · 模式：CPU</span></div></a>
       </div>
     </section>"""
@@ -2082,7 +2077,7 @@ def ai() -> str:
       {model("qwen2.5:7b", "4.7 GiB", 11.7, "lab-mini", U.status("ok", "已載入 · CPU"), "sha256:b11c…", "ollama.com", "4 tok/s", True)}
     </section>"""
     delm = f"""
-    <section class="panel" aria-labelledby="h-delm" role="dialog" aria-modal="false">
+    <section class="panel" aria-labelledby="h-delm" role="dialog" aria-modal="true" style="max-width:560px;width:100%;margin:8px auto;box-shadow:0 18px 48px rgb(0 0 0/.22)">
       <div class="ph"><h2 id="h-delm">刪除模型 llama3.1:8b（tw-01）？</h2></div>
       <div style="padding:12px 14px;display:flex;flex-direction:column;gap:10px">
         <div class="kv"><span class="k">釋放空間</span><span class="v mono">4.9 GiB</span></div>
@@ -2870,9 +2865,10 @@ root@hazel-tw-01:~# <span style="background:var(--ink);color:var(--panel)"> </sp
 def app_install() -> str:
     head = f"""
     <div class="phead"><div class="name">{U.crumbs([("應用商店", "AppStore.dc.html")])}<h1>安裝 Nextcloud</h1></div>
-      <div class="wrap" style="margin-left:auto"><a class="btn" href="AppStore.dc.html">取消</a><button type="button" class="btn pri">安裝</button></div></div>"""
-    def field(label, control, help_=""):
-        return f'<div class="field"><label>{label}</label>{control}{f"<span class=help>{help_}</span>" if help_ else ""}</div>'
+      <div class="wrap" style="margin-left:auto"><a class="btn" href="AppStore.dc.html">取消</a></div></div>"""
+    def field(label, control, help_="", wide=False):
+        w = ' style="grid-column:span 2"' if wide else ""
+        return f'<div class="field"{w}><label>{label}</label>{control}{f"<span class=help>{help_}</span>" if help_ else ""}</div>'
     def inp(val, ro=False, mono=True):
         return f'<div class="inp"><span class="{"mono" if mono else ""}" style="flex:1">{val}</span>{"" if not ro else U.icon("eye")}</div>'
     def sel(val):
@@ -2884,7 +2880,7 @@ def app_install() -> str:
         <div style="flex:1;min-width:220px;display:flex;flex-direction:column;gap:4px"><span style="font-weight:600;font-size:15px">Nextcloud <span class="note">· 儲存 · AGPL-3.0</span></span>
           <span class="note">來源 1Panel 官方商店 · key nextcloud · 版本 31.0.2 / 30.0.8 / 29.0.14 · 架構 amd64、arm64 · 需要記憶體 2 GiB · GPU 不需要</span>
           <div class="wrap"><a class="chip" href="#web">網站</a><a class="chip" href="#gh">GitHub</a><a class="chip" href="#doc">文件</a><a class="chip" href="#readme">README</a><a class="chip" href="#compose">docker-compose.yml</a><a class="chip" href="#script">安裝腳本</a></div></div>
-        <div style="display:flex;flex-direction:column;gap:6px;min-width:200px">{U.status("ok", "漏洞：0 已知（31.0.2）")}{U.status("ok", "簽章：有效")}{U.status("info", "已安裝 0 · 上限 1")}</div>
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:200px">{U.status("ok", "漏洞：0 已知（31.0.2）")}{U.status("ok", "簽章：有效")}{U.status("info", "已安裝 0 · 上限 1")}</div>
       </div>
     </section>"""
     basic = f"""
@@ -2893,23 +2889,23 @@ def app_install() -> str:
         {field("名稱", inp("nextcloud", mono=True), "容器與資料目錄用這個名字")}{field("版本", sel("31.0.2（最新）"))}{field("主機", sel("hazel-tw-01 · Docker · amd64"))}{field("資料目錄", inp("/mnt/data/apps/nextcloud"), "剩 519 GiB · 綁定 UUID")}
       </div></section>"""
     params = f"""
-    <section class="panel"><div class="ph"><h2>參數</h2><span class="sub">來自 data.yml</span></div>
+    <section class="panel"><div class="ph"><h2>參數</h2><span class="sub">來自範本 data.yml</span></div>
       <div style="padding:14px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:14px">
-        {field("HTTP Port（PANEL_APP_PORT_HTTP）", f'<div class="inp"><span class="mono" style="flex:1">8081</span>{U.status("ok", "未被占用")}</div>', "1024–65535 · 已檢查 tw-01 監聽與容器 -p")}
-        {field("資料庫（PANEL_DB_HOST）", sel("新建 PostgreSQL 16（專用）"), "也可以重用既有資料庫；正式資料庫共用會互相影響")}
-        {field("資料庫名稱（PANEL_DB_NAME）", inp("nextcloud"))}{field("資料庫帳號（PANEL_DB_USER）", inp("nextcloud"))}
-        {field("資料庫密碼（PANEL_DB_USER_PASSWORD）", inp("•••••••••••••••• 隨機產生", ro=True), "存入機密庫，不進變更紀錄")}
-        {field("快取（PANEL_REDIS_HOST）", sel("新建 Redis 7.4"))}
-        {field("管理員帳號（NEXTCLOUD_ADMIN_USER）", inp("admin"))}{field("管理員密碼（NEXTCLOUD_ADMIN_PASSWORD）", inp("•••••••••••••••• 隨機產生", ro=True))}
-        {field("信任網域（NEXTCLOUD_TRUSTED_DOMAINS）", inp("cloud.example.tw"))}
+        {field("HTTP Port", f'<div class="inp"><span class="mono" style="flex:1">8081</span>{U.status("ok", "未被占用")}</div>', "1024–65535 · 已檢查 tw-01 監聽與容器 -p")}
+        {field("資料庫", sel("新建 PostgreSQL 16（專用）"), "也可以重用既有資料庫；正式資料庫共用會互相影響")}
+        {field("資料庫名稱", inp("nextcloud"))}{field("資料庫帳號", inp("nextcloud"))}
+        {field("資料庫密碼", inp("•••••••••••••••• 隨機產生", ro=True), "存入機密庫，不進變更紀錄")}
+        {field("快取", sel("新建 Redis 7.4"))}
+        {field("管理員帳號", inp("admin"))}{field("管理員密碼", inp("•••••••••••••••• 隨機產生", ro=True))}
+        {field("信任網域", inp("cloud.example.tw"))}
       </div></section>"""
     resources = f"""
     <section class="panel"><div class="ph"><h2>資源與網路</h2></div>
       <div style="padding:14px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:14px">
         {field("CPU 上限", inp("2 核"))}{field("記憶體上限", inp("4 GiB"), "最低 2 GiB")}{field("GPU", sel("不使用"))}
         {field("加入網路", '<div class="wrap"><span class="chip on">nextcloud_default（專用，自動建立）</span><span class="chip">hzx-ollama · 連 Ollama</span><span tabindex="0" data-tip="範本寫的共用網路；加入後會跟所有 1Panel 應用互通"><span class="chip">1panel-network</span></span><span class="chip">＋ 其他網路</span></div>', "安裝後也可以隨時加入或移出")}
-        {field("資料位置 · /var/www/html", sel("/mnt/data/apps/nextcloud/html（預設）"), "每顆資料磁碟有預設位置；也可以選資料夾")}
-        {field("資料位置 · /var/www/html/data", sel("/mnt/fast/hazelminx/apps/nextcloud/data"), "使用者檔案；放在比較快的磁碟")}
+        {field("資料位置 · /var/www/html", sel("/mnt/data/apps/nextcloud/html（預設）"), "每顆資料磁碟有預設位置；也可以選資料夾", wide=True)}
+        {field("資料位置 · /var/www/html/data", sel("/mnt/fast/hazelminx/apps/nextcloud/data"), "使用者檔案；放在比較快的磁碟", wide=True)}
         {field("對外", sel("只透過 Zentinel（不開主機 Port）"), "選「開放主機 Port」會寫進防火牆矩陣")}{field("網域", inp("cloud.example.tw"), "Zentinel 站點 · 自動申請憑證")}{field("映像拉取", sel("安裝時拉取 · 登錄站 docker.io"))}
       </div></section>"""
     def cv(item, orig, ours):
@@ -4076,7 +4072,7 @@ def object_storage() -> str:
       <div style="padding:12px 14px">{U.pipeline([("建立 bucket", "done", "2 個", "media 上"), ("複製物件", "cur", "68% · 28/41 GiB", "逐個 bucket"), ("核對", "todo", "—", "物件數與大小"), ("切換應用端點", "todo", "—", "shop-api、report"), ("保留舊服務", "todo", "7 天", "之後才可刪除")])}</div>
     </section>"""
     def bk(name, svcn, objs, size, quota, acc, ver, life, users):
-        return (f'<div class="row srow"><span class="name"><a class="n mono" href="#b">{name}</a><span class="d">{svcn}</span></span><span>{acc}</span>'
+        return (f'<div class="row srow{" sel" if name == "uploads" else ""}"><span class="name"><a class="n mono" href="#b">{name}</a><span class="d">{svcn}</span></span><span>{acc}</span>'
                 f'<span class="c3 mono">{objs}</span><span class="c3">{U.meter(quota[0], quota[1]) if quota else size}</span><span class="c4">{ver}</span><span class="c4">{life}</span>'
                 f'<span class="c5">{users}</span><span>{U.actions(["share", "more"])}</span></div>')
     buckets = f"""
@@ -4103,10 +4099,10 @@ def object_storage() -> str:
     </section>"""
     def ob(name, size, mod, kind="file"):
         ic = U.icon("files" if kind == "dir" else "copy", 14)
-        return f'<div class="row"><span class="wrap" style="flex-wrap:nowrap"><input type="checkbox" aria-label="選取 {name}"><span class="mono">{name}</span></span><span class="mono">{size}</span><span class="c3">{mod}</span><span>{U.actions(["download", "share", "trash"])}</span></div>'
+        return f'<div class="row{" sel" if name == "sku-10482.jpg" else ""}"><span class="wrap" style="flex-wrap:nowrap"><input type="checkbox" aria-label="選取 {name}"{" checked" if name == "sku-10482.jpg" else ""}><span class="mono">{name}</span></span><span class="mono">{size}</span><span class="c3">{mod}</span><span>{U.actions(["download", "share", "trash"])}</span></div>'
     browse = f"""
     <section class="panel" aria-labelledby="h-ob">
-      <div class="ph"><h2 id="h-ob">uploads / products / 2026-11 /</h2><span class="sub">184,203 個物件 · 每頁 50</span>
+      <div class="ph"><h2 id="h-ob">瀏覽 bucket uploads · products / 2026-11 /</h2><span class="sub">184,203 個物件 · 每頁 50</span>
         <div class="wrap" style="margin-left:auto"><button type="button" class="btn sm">{U.icon("upload", 14)}上傳</button><button type="button" class="btn sm">新增資料夾</button></div></div>
       <div style="padding:10px 14px" class="wrap"><label class="inp" style="flex:1;min-width:min(220px,100%)">{U.icon("search", 14)}<input value="products/2026-11/" aria-label="前綴搜尋" style="background:transparent;border:0;flex:1;min-width:0" class="mono"></label><span class="note">以前綴搜尋</span></div>
       <div class="row hd"><span>名稱</span><span>大小</span><span class="c3">修改時間</span><span></span></div>
@@ -4121,7 +4117,7 @@ def object_storage() -> str:
       <div class="ph"><h2 id="h-sh">分享連結 · sku-10482.jpg</h2></div>
       {_grid(_fld("有效期限", _seg(["1 小時", "1 天", "7 天"], 0, "有效期限"), "最長 7 天"), _fld("連結", _in("https://media.example.tw/uploads/products/2026-11/sku-10482.jpg?X-Amz-Expires=3600&amp;…", mono=True, tail=f'<button type="button" class="ib" aria-label="複製">{U.icon("copy")}</button>')))}
     </section>"""
-    main = head + U.scope_bar([("全部服務", "3"), ("media", "tw-01"), ("backups", "lab-mini")]) + services + migrate + buckets + f'<div class="cg">{keys}{share}</div>' + browse
+    main = head + U.scope_bar([("全部服務", "3"), ("media", "tw-01"), ("backups", "lab-mini")]) + services + migrate + buckets + browse + f'<div class="cg">{share}{keys}</div>'
     return U.shell("objstore", main)
 
 
