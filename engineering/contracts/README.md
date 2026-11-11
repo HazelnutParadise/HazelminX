@@ -123,7 +123,7 @@ Agent 主動連到 Core 的 Agent 入口（預設 `:9801`，路徑 `/agent/v1/co
 | type | 方向 | 用途 |
 |---|---|---|
 | `heartbeat` | 雙向 | 每 `heartbeatSeconds` 一次；超過三個週期沒收到任何訊息就斷線 |
-| `step_execute` | Core→Agent | 執行一個工作步驟：`requestId`、`jobId`、`step`、`stepName`、`action`、`actionVersion`、`params`（物件）、`targetNode`、`controlGeneration`、`expiresAt`、`retryable`、`irreversible` |
+| `step_execute` | Core→Agent | 執行一個工作步驟：`requestId`、`jobId`、`step`、`stepName`、`action`、`actionVersion`、`params`（物件）、`targetNode`、`resources`（見下方「資源範圍」）、`controlGeneration`、`expiresAt`、`retryable`、`irreversible` |
 | `step_rejected` | Agent→Core | 沒有執行就拒絕，也用來回答 Agent 自己的紀錄有問題的情況：`code`、`message`，不支援時附 `supported` 能力清單 |
 | `step_reconcile` | Core→Agent | 查詢 Agent 持久紀錄中某步驟的結果，不執行 |
 | `reconcile_report` | Agent→Core | `started`、`completed`、`failed`、`evidence`、`error` |
@@ -144,12 +144,12 @@ Agent 主動連到 Core 的 Agent 入口（預設 `:9801`，路徑 `/agent/v1/co
 
 | name | version | 說明 |
 |---|---|---|
-| `jobs` | 1 | `step_execute`、`step_reconcile`、`event`、`ack` |
+| `jobs` | 2 | `step_execute`（v2 起帶 `resources`）、`step_reconcile`、`event`、`ack` |
 | `agent.info` | 1 | 唯讀動作：回報 Agent 版本、節點指紋、作業系統、架構、主機名 |
 | `host.ledger` | 1 | `ledger_pull`、`ledger_page`、`ledger_unavailable` |
 | `node.certificate` | 1 | `certificate_renew`、`certificate_installed`、`certificate_refused` |
 
-Core 派送前先比對能力；Agent 沒宣告或版本較低的動作，Core 不送出，直接讓步驟失敗為 `CAPABILITY_UNSUPPORTED`。Agent 收到未宣告的動作、多餘參數欄位、別的節點、已過期或控制世代倒退的步驟，一律回 `step_rejected`，不執行。
+Core 派送前先比對能力；Agent 沒宣告或版本較低的動作，Core 不送出，直接讓步驟失敗為 `CAPABILITY_UNSUPPORTED`。Agent 收到未宣告的動作、多餘參數欄位、別的節點、已過期、控制世代倒退或碰到工作沒保留的資源的步驟，一律回 `step_rejected`，不執行。
 
 ### `step_rejected` 代碼
 
@@ -162,6 +162,15 @@ Core 派送前先比對能力；Agent 沒宣告或版本較低的動作，Core �
 | `STALE_CONTROL_GENERATION` | `controlGeneration` 小於 Agent 已見過的最大值 |
 | `OUTCOME_UNKNOWN` | 紀錄顯示這個步驟開始過但沒有結束（例如 Agent 中途重開機），要先對帳；請求標記可重試時才會再跑 |
 | `JOURNAL_UNAVAILABLE` | Agent 寫不了步驟紀錄（例如磁碟滿），所以什麼都沒做；可以稍後重試 |
+| `WRONG_RESOURCE_SCOPE` | 動作會碰到 `resources` 沒列的資源，或 `resources` 裡有沒名字、不乾淨的項目 |
+
+### 資源範圍
+
+`step_execute` 的 `resources` 是工作在這個節點保留的資源，每一項是 `{"kind", "id"}`，沒有就送空陣列（不能是 `null`）。Core 依工作的資源產生：`path` 用解析後的路徑（沒有時用原路徑），`disk` 用裝置、`mount` 用掛載點，其他種類用 ID；只送屬於這個節點的項目。叫不出名字的資源（例如沒有路徑的 `path`），Core 不送出步驟，直接讓它失敗為 `RESOURCE_UNNAMED`。
+
+Agent 的每個動作宣告它的參數會碰哪些資源。唯讀動作（目前是 `agent.info`）什麼都不碰；其他動作碰到的每一項都必須在 `resources` 裡：同種類、同 ID，`path` 也可以是列出路徑底下的路徑（以 `/` 為界，`/` 本身涵蓋全部）。路徑必須是絕對路徑，不能有 `.`、`..` 或空段，Agent 不替它清理。不同種類之間不互相涵蓋：保留整顆磁碟，不代表可以碰那顆磁碟上的路徑，動作宣告哪一種，工作就要保留哪一種。比對只看名字，不追 symlink，連結的安全由各動作與高權限執行器負責。
+
+這一層保證 Agent 只碰工作保留的資源；資源本身該不該由這個工作碰（擁有者），由 Core 決定（票 090）。
 
 同一個 `jobId`＋`step` 已有完成或失敗紀錄時，Agent 不重跑，直接重送那筆持久事件。步驟跑完卻寫不進紀錄時，Agent 結束會話；重連後 Core 對帳，看到的是「開始過、沒有結束」。
 

@@ -23,12 +23,17 @@
 //!    the full capability list;
 //! 8. the action's `validate` refuses `params` → reject `INVALID_PARAMS`
 //!    with the validator's message;
-//! 9. otherwise journal `started` (fsynced) and return `Run`.
+//! 9. a resource in `resources` is unnamed or unclean, or one the action
+//!    `touches` is not covered by `resources` → reject `WRONG_RESOURCE_SCOPE`
+//!    (SEC-004). Same kind and same id, or for `path` a descendant at a `/`
+//!    boundary; paths must be absolute with no `.`, `..` or empty segment.
+//!    The check is on names only: symlinks are the action's concern;
+//! 10. otherwise journal `started` (fsynced) and return `Run`.
 
 use crate::actions::ActionSpec;
 use crate::journal::{Journal, NewRecord, Record, StepState};
 use anyhow::{Result, bail};
-use hazelminx_protocol::{Capability, EventKind, Message, StepFailure, step_reject_code};
+use hazelminx_protocol::{Capability, EventKind, Message, Resource, StepFailure, step_reject_code};
 use serde_json::{Map, Value};
 use std::collections::HashSet;
 use time::OffsetDateTime;
@@ -116,6 +121,7 @@ impl Steps {
             action_version,
             params,
             target_node,
+            resources,
             control_generation,
             expires_at,
             retryable,
@@ -196,6 +202,14 @@ impl Steps {
 
         if let Err(message) = (spec.validate)(params) {
             return Ok(reject(step_reject_code::INVALID_PARAMS, message, None));
+        }
+
+        if let Err(message) = check_scope(resources, &(spec.touches)(params)) {
+            return Ok(reject(
+                step_reject_code::WRONG_RESOURCE_SCOPE,
+                message,
+                None,
+            ));
         }
 
         let started = self.journal.append(NewRecord {
@@ -364,3 +378,55 @@ impl Steps {
 
 #[cfg(test)]
 mod tests;
+
+/// SEC-004: every resource the action touches must be listed. Names are
+/// compared, never resolved on this host.
+fn check_scope(listed: &[Resource], touched: &[Resource]) -> std::result::Result<(), String> {
+    for r in listed {
+        if r.kind.is_empty() || r.id.is_empty() {
+            return Err(format!(
+                "the step lists a resource without kind or id: {r:?}"
+            ));
+        }
+        if r.kind == "path" && !clean_absolute(&r.id) {
+            return Err(format!(
+                "listed path {:?} is not an absolute clean path",
+                r.id
+            ));
+        }
+    }
+    for t in touched {
+        if t.kind == "path" && !clean_absolute(&t.id) {
+            return Err(format!(
+                "the action would act on {:?}, which is not an absolute clean path",
+                t.id
+            ));
+        }
+        let covered = listed.iter().any(|r| {
+            r.kind == t.kind
+                && (r.id == t.id
+                    || (t.kind == "path"
+                        && (r.id == "/" || t.id.starts_with(&format!("{}/", r.id)))))
+        });
+        if !covered {
+            return Err(format!(
+                "the action would act on {} {:?}, which this job did not reserve",
+                t.kind, t.id
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// Absolute, and no `.`, `..` or empty segment; `/` itself is clean.
+fn clean_absolute(p: &str) -> bool {
+    if p == "/" {
+        return true;
+    }
+    match p.strip_prefix('/') {
+        Some(rest) => rest
+            .split('/')
+            .all(|seg| !seg.is_empty() && seg != "." && seg != ".."),
+        None => false,
+    }
+}

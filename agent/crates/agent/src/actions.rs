@@ -3,7 +3,8 @@
 //! strict parameter check; anything else is refused before it runs.
 
 use hazelminx_protocol::{
-    CAP_AGENT_INFO, CAP_HOST_LEDGER, CAP_JOBS, CAP_NODE_CERTIFICATE, Capability, StepFailure,
+    CAP_AGENT_INFO, CAP_HOST_LEDGER, CAP_JOBS, CAP_NODE_CERTIFICATE, Capability, JOBS_VERSION,
+    Resource, StepFailure,
 };
 use serde_json::{Map, Value, json};
 
@@ -15,6 +16,30 @@ pub struct ActionSpec {
     /// Rejects params this version does not define (unknown keys, wrong
     /// types). Returning `Err` means the step is refused, not run.
     pub validate: fn(&Map<String, Value>) -> Result<(), String>,
+    /// The resources the (validated) params act on. A step is refused when
+    /// any of them is not in its `resources` (SEC-004).
+    pub touches: fn(&Map<String, Value>) -> Vec<Resource>,
+}
+
+/// Actions that only read; they touch nothing. Every other action must name
+/// what it touches (checked by a test).
+pub const READ_ONLY: &[&str] = &[CAP_AGENT_INFO];
+
+fn touches_nothing(_: &Map<String, Value>) -> Vec<Resource> {
+    Vec::new()
+}
+
+/// Example params of each writing action, for the test that it names what
+/// it touches.
+#[cfg(test)]
+pub fn sample_params(name: &str) -> Option<Map<String, Value>> {
+    match name {
+        #[cfg(feature = "test-actions")]
+        test_actions::SLEEP => json!({"millis": 1, "counterFile": "/tmp/c"})
+            .as_object()
+            .cloned(),
+        _ => None,
+    }
 }
 
 fn no_params(p: &Map<String, Value>) -> Result<(), String> {
@@ -31,12 +56,14 @@ pub fn specs() -> &'static [ActionSpec] {
             name: CAP_AGENT_INFO,
             version: 1,
             validate: no_params,
+            touches: touches_nothing,
         },
         #[cfg(feature = "test-actions")]
         ActionSpec {
             name: test_actions::SLEEP,
             version: 1,
             validate: test_actions::validate_sleep,
+            touches: test_actions::touches_sleep,
         },
     ]
 }
@@ -47,7 +74,7 @@ pub fn capabilities() -> Vec<Capability> {
     let mut caps = vec![
         Capability {
             name: CAP_JOBS.to_string(),
-            version: 1,
+            version: JOBS_VERSION,
         },
         Capability {
             name: CAP_HOST_LEDGER.to_string(),
@@ -130,6 +157,17 @@ pub mod test_actions {
             return Err("millis is required".into());
         }
         Ok(())
+    }
+
+    /// The counter file it writes.
+    pub fn touches_sleep(p: &Map<String, Value>) -> Vec<Resource> {
+        match p.get("counterFile") {
+            Some(Value::String(f)) => vec![Resource {
+                kind: "path".into(),
+                id: f.clone(),
+            }],
+            _ => Vec::new(),
+        }
     }
 
     /// Appends one line to `counterFile` (if given) when it starts, then

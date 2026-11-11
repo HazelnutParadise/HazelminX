@@ -94,6 +94,9 @@ const (
 	StepRejectStaleControlGeneration = "STALE_CONTROL_GENERATION"
 	StepRejectOutcomeUnknown         = "OUTCOME_UNKNOWN"
 	StepRejectJournalUnavailable     = "JOURNAL_UNAVAILABLE"
+	// StepRejectWrongResourceScope: the action would act on a resource the
+	// step's resources do not list (SEC-004).
+	StepRejectWrongResourceScope = "WRONG_RESOURCE_SCOPE"
 )
 
 // protocol_error codes.
@@ -214,10 +217,18 @@ type StepExecute struct {
 	ActionVersion     int                        `json:"actionVersion"`
 	Params            map[string]json.RawMessage `json:"params"`
 	TargetNode        string                     `json:"targetNode"`
+	Resources         []Resource                 `json:"resources"`
 	ControlGeneration int64                      `json:"controlGeneration"`
 	ExpiresAt         time.Time                  `json:"expiresAt"`
 	Retryable         bool                       `json:"retryable"`
 	Irreversible      bool                       `json:"irreversible"`
+}
+
+// Resource names one resource a job reserved, as the agent checks it: a
+// step's action may only act on resources its step lists.
+type Resource struct {
+	Kind string `json:"kind"`
+	ID   string `json:"id"`
 }
 
 type StepRejected struct {

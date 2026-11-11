@@ -68,7 +68,12 @@ pub mod step_reject_code {
     pub const STALE_CONTROL_GENERATION: &str = "STALE_CONTROL_GENERATION";
     pub const OUTCOME_UNKNOWN: &str = "OUTCOME_UNKNOWN";
     pub const JOURNAL_UNAVAILABLE: &str = "JOURNAL_UNAVAILABLE";
+    /// The action would act on a resource the step's `resources` do not list.
+    pub const WRONG_RESOURCE_SCOPE: &str = "WRONG_RESOURCE_SCOPE";
 }
+
+/// Version of the `jobs` capability: 2 carries `resources` in `step_execute`.
+pub const JOBS_VERSION: u32 = 2;
 
 /// `protocol_error` codes.
 pub mod protocol_error_code {
@@ -100,6 +105,16 @@ pub struct ExecutorGrant {
     pub expires_at: String,
     /// Hex Ed25519 signature over the executor's canonical grant bytes.
     pub signature: String,
+}
+
+/// One resource a job reserved, as named in `step_execute`: paths by their
+/// absolute clean path, disks by device, mounts by mount point, other kinds
+/// by id.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Resource {
+    pub kind: String,
+    pub id: String,
 }
 
 /// Last line of a host ledger: its sequence number and hash.
@@ -212,6 +227,9 @@ pub enum Message {
         action_version: u32,
         params: Map<String, Value>,
         target_node: String,
+        /// The job's reserved resources on this node; the action may act
+        /// only on these.
+        resources: Vec<Resource>,
         control_generation: u64,
         #[serde(with = "time::serde::rfc3339")]
         expires_at: OffsetDateTime,

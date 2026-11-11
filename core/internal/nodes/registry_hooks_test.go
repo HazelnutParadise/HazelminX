@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -288,3 +289,66 @@ func newSilenceableRelay(t *testing.T, target string) *silenceableRelay {
 }
 
 func (r *silenceableRelay) silence() { r.silent.Store(true) }
+
+// SEC-004: the step carries the job's resources on this node, always as a
+// list; a resource that cannot be named for the agent fails the step
+// before anything is sent; an agent that does not speak jobs v2 gets
+// nothing.
+func TestRunnerSendsTheJobsResourcesOnThisNode(t *testing.T) {
+	core := startCore(t, HubOptions{})
+	caps := []protocol.Capability{{Name: protocol.CapJobs, Version: 2}, {Name: protocol.CapAgentInfo, Version: 1}}
+	a, n := connect(t, core, agentOpts{caps: caps})
+	var mu sync.Mutex
+	var got []*protocol.StepExecute
+	a.serve(t, func(m any) []any {
+		if s, ok := m.(*protocol.StepExecute); ok {
+			mu.Lock()
+			got = append(got, s)
+			mu.Unlock()
+			return []any{event(s, uint64(len(got)), protocol.EventCompleted, map[string]any{})}
+		}
+		return nil
+	})
+	runner := NewStepRunner(core.hub)
+	j, s := testJob(n.fp)
+	j.Resources = []jobs.ResourceRef{{Kind: "path", Path: "/srv/app"}, {Kind: "path", Path: "/other", Node: "someone-else"}, {Kind: "service", ID: "nginx.service", Node: n.fp}}
+	if _, err := runner.Execute(context.Background(), j, s, &recorder{}, Action{Name: protocol.CapAgentInfo, Version: 1}); err != nil {
+		t.Fatal(err)
+	}
+	j2, s2 := testJob(n.fp)
+	j2.ID = "job_noresources"
+	if _, err := runner.Execute(context.Background(), j2, s2, &recorder{}, Action{Name: protocol.CapAgentInfo, Version: 1}); err != nil {
+		t.Fatal(err)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	want := []protocol.Resource{{Kind: "path", ID: "/srv/app"}, {Kind: "service", ID: "nginx.service"}}
+	if len(got) != 2 || len(got[0].Resources) != 2 || got[0].Resources[0] != want[0] || got[0].Resources[1] != want[1] {
+		t.Fatalf("resources sent: %+v", got)
+	}
+	b, _ := protocol.Encode(got[1])
+	if !strings.Contains(string(b), `"resources":[]`) {
+		t.Fatalf("a job without resources must send an empty list: %s", b)
+	}
+
+	j3, s3 := testJob(n.fp)
+	j3.ID = "job_badref"
+	j3.Resources = []jobs.ResourceRef{{Kind: "path"}}
+	_, err := runner.Execute(context.Background(), j3, s3, &recorder{}, Action{Name: protocol.CapAgentInfo, Version: 1})
+	var se *jobs.StepError
+	if !errors.As(err, &se) || se.Code != CodeResourceUnnamed || se.Retryable || !se.NothingChanged {
+		t.Fatalf("unnamed resource: %v", err)
+	}
+}
+
+func TestRunnerNeedsJobsV2(t *testing.T) {
+	core := startCore(t, HubOptions{})
+	a, n := connect(t, core, agentOpts{caps: []protocol.Capability{{Name: protocol.CapJobs, Version: 1}, {Name: protocol.CapAgentInfo, Version: 1}}})
+	a.serve(t, func(any) []any { return nil })
+	j, s := testJob(n.fp)
+	_, err := NewStepRunner(core.hub).Execute(context.Background(), j, s, &recorder{}, Action{Name: protocol.CapAgentInfo, Version: 1})
+	var se *jobs.StepError
+	if !errors.As(err, &se) || se.Code != CodeCapabilityUnsupported {
+		t.Fatalf("jobs v1 agent: %v", err)
+	}
+}

@@ -18,7 +18,14 @@ const (
 	CodeNodeOffline           = "NODE_OFFLINE"
 	CodeCapabilityUnsupported = "CAPABILITY_UNSUPPORTED"
 	CodeStepRejected          = "STEP_REJECTED"
+	// CodeResourceUnnamed: a resource the job reserves cannot be named to the
+	// agent (no path, device, mount or id), so the step is not sent.
+	CodeResourceUnnamed = "RESOURCE_UNNAMED"
 )
+
+// JobsProtocolVersion is the jobs capability version the runner needs:
+// version 2 carries the job's resources in step_execute (SEC-004).
+const JobsProtocolVersion = 2
 
 // StepRunner executes job steps on agents. Job handlers for host-changing
 // kinds call it from Execute and Reconcile.
@@ -70,7 +77,7 @@ func (r *StepRunner) Execute(ctx context.Context, job *jobs.Job, step *jobs.Step
 		return nil, &jobs.StepError{Code: CodeNodeOffline, Summary: fmt.Sprintf("node %s is not connected; nothing was sent", short(job.Node)), Retryable: true, NothingChanged: true,
 			SuggestedActions: []string{"check-node-connection", "retry"}}
 	}
-	if !s.Supports(protocol.CapJobs, 1) || !s.Supports(a.Name, a.Version) {
+	if !s.Supports(protocol.CapJobs, JobsProtocolVersion) || !s.Supports(a.Name, a.Version) {
 		return nil, &jobs.StepError{Code: CodeCapabilityUnsupported, NothingChanged: true,
 			Summary:          fmt.Sprintf("agent %s does not support %s v%d (it declares %s); nothing was sent", s.agentVersion, a.Name, a.Version, capList(s.caps)),
 			SuggestedActions: []string{"upgrade-agent"}}
@@ -82,6 +89,10 @@ func (r *StepRunner) Execute(ctx context.Context, job *jobs.Job, step *jobs.Step
 			return nil, &jobs.StepError{Code: "INVALID_PARAMS", Summary: fmt.Sprintf("param %q: %v", k, err), NothingChanged: true}
 		}
 		params[k] = b
+	}
+	resources, err := stepResources(job)
+	if err != nil {
+		return nil, err
 	}
 	reqID, err := requestID("stp", job.ID, step.Index)
 	if err != nil {
@@ -102,7 +113,7 @@ func (r *StepRunner) Execute(ctx context.Context, job *jobs.Job, step *jobs.Step
 			rep.Heartbeat()
 		}}
 	msg := protocol.StepExecute{Type: protocol.TypeStepExecute, RequestID: reqID, JobID: job.ID, Step: step.Index, StepName: step.Name,
-		Action: a.Name, ActionVersion: a.Version, Params: params, TargetNode: job.Node, ControlGeneration: job.ControlGeneration,
+		Action: a.Name, ActionVersion: a.Version, Params: params, TargetNode: job.Node, Resources: resources, ControlGeneration: job.ControlGeneration,
 		ExpiresAt: r.hub.opts.Now().UTC().Add(r.StepTTL).Truncate(time.Second), Retryable: step.Retryable, Irreversible: step.Irreversible}
 	if err := s.request(reqID, p, msg); err != nil {
 		return nil, fmt.Errorf("%w: %v", jobs.ErrDisconnected, err)
@@ -180,6 +191,24 @@ func (r *StepRunner) Reconcile(ctx context.Context, job *jobs.Job, step *jobs.St
 	case <-ctx.Done():
 		return rep, fmt.Errorf("%w: %w", jobs.ErrDisconnected, ctx.Err())
 	}
+}
+
+// stepResources names the job's resources on its node for the agent; refs
+// of other nodes are left out. Always a list, never null.
+func stepResources(job *jobs.Job) ([]protocol.Resource, error) {
+	out := make([]protocol.Resource, 0, len(job.Resources))
+	for _, r := range job.Resources {
+		if r.Node != "" && r.Node != job.Node {
+			continue
+		}
+		kind, id, ok := jobs.WireResource(r)
+		if !ok {
+			return nil, &jobs.StepError{Code: CodeResourceUnnamed, NothingChanged: true,
+				Summary: fmt.Sprintf("the job reserves a %q resource without a path, device, mount or id; the agent could not check it, so nothing was sent", r.Kind)}
+		}
+		out = append(out, protocol.Resource{Kind: kind, ID: id})
+	}
+	return out, nil
 }
 
 func requestID(prefix, jobID string, step int) (string, error) {

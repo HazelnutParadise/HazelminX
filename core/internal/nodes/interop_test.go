@@ -231,7 +231,13 @@ func (e *interopEnv) waitSession(within time.Duration) *Session {
 
 func (e *interopEnv) submit(kind, reqID string) *jobs.Job {
 	e.t.Helper()
-	j, _, err := e.engine.Submit(context.Background(), jobs.SubmitRequest{RequestID: reqID, Kind: kind, Node: e.fp})
+	req := jobs.SubmitRequest{RequestID: reqID, Kind: kind, Node: e.fp}
+	if kind == kindTestSleep {
+		// test.sleep writes its counter file; the agent refuses it unless the
+		// job reserves that path (SEC-004).
+		req.Resources = []jobs.ResourceRef{{Kind: "path", Path: e.sleep.counterFile, Node: e.fp}}
+	}
+	j, _, err := e.engine.Submit(context.Background(), req)
 	if err != nil {
 		e.t.Fatal(err)
 	}
@@ -522,4 +528,24 @@ func TestInteropJournalFailingMidStepEndsSessionForReconcile(t *testing.T) {
 
 func tlsToCore(t *testing.T, core *testCore) *tls.Config {
 	return &tls.Config{RootCAs: coreCAPool(t, core.pki), ServerName: protocol.CoreServerName}
+}
+
+// SEC-004 with the real agent: a step whose action writes a file the job
+// did not reserve is refused and never runs.
+func TestInteropStepOutsideItsResourcesIsRefused(t *testing.T) {
+	e := newInteropEnv(t, HubOptions{})
+	e.start(e.url("127.0.0.1"), "")
+	e.waitSession(10 * time.Second)
+	j, _, err := e.engine.Submit(context.Background(), jobs.SubmitRequest{RequestID: "sleep-unreserved", Kind: kindTestSleep, Node: e.fp,
+		Resources: []jobs.ResourceRef{{Kind: "path", Path: "/somewhere/else", Node: e.fp}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	j = e.waitJob(j.ID, 15*time.Second, jobs.StateFailed, jobs.StateSucceeded, jobs.StateNeedsAttention)
+	if j.State == jobs.StateSucceeded || !strings.Contains(j.ErrorCode+j.StateReason, protocol.StepRejectWrongResourceScope) {
+		t.Fatalf("job %s %s %s %s", j.State, j.ErrorCode, j.StateReason, e.logs.String())
+	}
+	if e.sleep.runs(t) != 0 {
+		t.Fatal("the refused step ran")
+	}
 }

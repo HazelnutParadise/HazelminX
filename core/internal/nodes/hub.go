@@ -547,7 +547,7 @@ func (h *Hub) handshake(r *http.Request, conn *websocket.Conn, slot *handshakeSl
 		fail(with(protocol.RejectHandshakeMalformed, "hello kex: "+err.Error()))
 		return
 	}
-	coreCaps := []protocol.Capability{{Name: protocol.CapJobs, Version: 1}}
+	coreCaps := []protocol.Capability{{Name: protocol.CapJobs, Version: JobsProtocolVersion}}
 	heartbeat := int(h.opts.Heartbeat / time.Second)
 	// The signatures cover the whole hello as received and the welcome's
 	// parameters, so a proxy cannot alter either side's offer.
