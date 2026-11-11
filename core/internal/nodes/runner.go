@@ -29,6 +29,9 @@ type StepRunner struct {
 	StepTTL time.Duration
 	// ReconcileTimeout bounds a step_reconcile round trip. Default 30 s.
 	ReconcileTimeout time.Duration
+	// Gate, when set, may refuse a step before anything is sent: the node
+	// registry refuses revoked nodes and new jobs on nodes in maintenance.
+	Gate func(ctx context.Context, job *jobs.Job) *jobs.StepError
 }
 
 // NewStepRunner returns a runner on hub.
@@ -57,6 +60,11 @@ type Action struct {
 //   - failed event: *jobs.StepError with the agent's code and evidence;
 //   - completed event: the step's result, evidence attached to rep.
 func (r *StepRunner) Execute(ctx context.Context, job *jobs.Job, step *jobs.Step, rep jobs.Reporter, a Action) (json.RawMessage, error) {
+	if r.Gate != nil {
+		if se := r.Gate(ctx, job); se != nil {
+			return nil, se
+		}
+	}
 	s, ok := r.hub.Session(job.Node)
 	if !ok {
 		return nil, &jobs.StepError{Code: CodeNodeOffline, Summary: fmt.Sprintf("node %s is not connected; nothing was sent", short(job.Node)), Retryable: true, NothingChanged: true,

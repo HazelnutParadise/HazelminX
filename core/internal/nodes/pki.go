@@ -61,6 +61,9 @@ type NodeIdentity struct {
 	Fingerprint string
 	PublicKey   ed25519.PublicKey
 	NotAfter    time.Time
+	// Serial is the certificate serial number, lowercase hex. The registry
+	// uses it to tell a rotated certificate from the one it replaces.
+	Serial string
 }
 
 // PKI holds the Core CA and the Core identity in memory.
@@ -232,7 +235,7 @@ func (p *PKI) VerifyNodeCertificate(certPEM []byte, now time.Time) (NodeIdentity
 	if cert.Subject.CommonName != fp {
 		return NodeIdentity{}, fmt.Errorf("%w: common name is not the key fingerprint", ErrNodeCertificate)
 	}
-	return NodeIdentity{Fingerprint: fp, PublicKey: pub, NotAfter: cert.NotAfter.UTC()}, nil
+	return NodeIdentity{Fingerprint: fp, PublicKey: pub, NotAfter: cert.NotAfter.UTC(), Serial: cert.SerialNumber.Text(16)}, nil
 }
 
 // newPKIFromParts builds a PKI from already-parsed material. Tests use it

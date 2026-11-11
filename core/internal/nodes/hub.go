@@ -25,6 +25,23 @@ import (
 // connect any more (ticket 019 keeps the revocation list).
 var ErrNodeRevoked = errors.New("nodes: node is revoked")
 
+// ErrIdentityConflict is what an Authorizer returns for a node whose key was
+// seen live in two places (for example a cloned VM).
+var ErrIdentityConflict = errors.New("nodes: node identity is in conflict")
+
+// Errors of RenewCertificate.
+var (
+	ErrNotConnected      = errors.New("nodes: node is not connected")
+	ErrCapabilityMissing = errors.New("nodes: agent does not declare node.certificate v1")
+)
+
+// CertificateRefusedError: the agent kept its current certificate.
+type CertificateRefusedError struct{ Code, Message string }
+
+func (e *CertificateRefusedError) Error() string {
+	return "nodes: agent refused the new certificate: " + e.Code + ": " + e.Message
+}
+
 // Authorizer decides whether a node with a valid certificate may connect.
 type Authorizer interface {
 	AuthorizeNode(ctx context.Context, id NodeIdentity) error
@@ -60,8 +77,18 @@ type HubOptions struct {
 	// inFlight lists the jobs that had a step outstanding on the node's
 	// previous session when it ended.
 	OnReady func(s *Session, inFlight []string)
-	Now     func() time.Time
-	Logger  *slog.Logger
+	// OnClosed runs in its own goroutine after a session ended.
+	OnClosed func(s *Session)
+	// OnConflict is called when a second session of a node proves the key
+	// while the first still answers pings: two live copies of one key. Both
+	// sessions are then closed with IDENTITY_CONFLICT. Without it the second
+	// is refused with DUPLICATE_SESSION and the first keeps running.
+	OnConflict func(fingerprint string)
+	// DuplicatePingTimeout is how long the old session of a node has to
+	// answer a ping when the node connects again. Default 5 s.
+	DuplicatePingTimeout time.Duration
+	Now                  func() time.Time
+	Logger               *slog.Logger
 	// Range is the protocol range this hub speaks; zero means
 	// protocol.SupportedRange(). Tests use it to stand in for an older or
 	// newer Core.
@@ -119,6 +146,9 @@ func NewHub(opts HubOptions) *Hub {
 	if opts.Now == nil {
 		opts.Now = time.Now
 	}
+	if opts.DuplicatePingTimeout <= 0 {
+		opts.DuplicatePingTimeout = 5 * time.Second
+	}
 	if opts.Logger == nil {
 		opts.Logger = slog.Default()
 	}
@@ -157,6 +187,11 @@ type ConnectionInfo struct {
 	RemoteAddr      string                `json:"remoteAddr"`
 	ConnectedAt     time.Time             `json:"connectedAt"`
 	LastSeenAt      time.Time             `json:"lastSeenAt"`
+	// CertificateSerial is the serial of the certificate this session proved.
+	CertificateSerial string `json:"certificateSerial"`
+	// ClockSkewSeconds is the agent clock minus the Core clock, from the
+	// latest heartbeat; nil until one arrived.
+	ClockSkewSeconds *int `json:"clockSkewSeconds"`
 }
 
 // Connections lists live sessions (by node ID) and recent refusals (newest
@@ -182,6 +217,54 @@ func (h *Hub) Session(nodeID string) (*Session, bool) {
 	defer h.mu.Unlock()
 	s, ok := h.sessions[nodeID]
 	return s, ok
+}
+
+// Disconnect closes the live session of a node (revocation, removal,
+// maintenance re-check) and reports whether there was one.
+func (h *Hub) Disconnect(fingerprint, reason string) bool {
+	s, ok := h.Session(fingerprint)
+	if !ok {
+		return false
+	}
+	s.close(websocket.StatusPolicyViolation, reason)
+	return true
+}
+
+// RenewCertificate hands a live node a new certificate for its key and
+// waits for the agent to say it stored it. ErrNotConnected,
+// ErrCapabilityMissing, *CertificateRefusedError, ErrSessionClosed or the
+// context's error otherwise.
+func (h *Hub) RenewCertificate(ctx context.Context, fingerprint string, certPEM []byte) error {
+	s, ok := h.Session(fingerprint)
+	if !ok {
+		return ErrNotConnected
+	}
+	if !s.Supports(protocol.CapNodeCertificate, 1) {
+		return ErrCapabilityMissing
+	}
+	reqID, err := requestID("crt", short(fingerprint), 0)
+	if err != nil {
+		return err
+	}
+	p := &pending{result: make(chan any, 1)}
+	if err := s.request(reqID, p, protocol.CertificateRenew{Type: protocol.TypeCertificateRenew, RequestID: reqID, Certificate: string(certPEM)}); err != nil {
+		return err
+	}
+	defer s.forget(reqID)
+	select {
+	case v := <-p.result:
+		switch m := v.(type) {
+		case *protocol.CertificateInstalled:
+			return nil
+		case *protocol.CertificateRefused:
+			return &CertificateRefusedError{Code: m.Code, Message: m.Message}
+		}
+		return fmt.Errorf("nodes: unexpected answer %T", v)
+	case <-s.Done():
+		return ErrSessionClosed
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 // Close ends every session and refuses new ones.
@@ -433,8 +516,11 @@ func (h *Hub) handshake(r *http.Request, conn *websocket.Conn, slot *handshakeSl
 	}
 	if err := h.opts.Authorizer.AuthorizeNode(ctx, id); err != nil {
 		code := protocol.RejectIdentityInvalid
-		if errors.Is(err, ErrNodeRevoked) {
+		switch {
+		case errors.Is(err, ErrNodeRevoked):
 			code = protocol.RejectNodeRevoked
+		case errors.Is(err, ErrIdentityConflict):
+			code = protocol.RejectIdentityConflict
 		}
 		fail(with(code, err.Error()))
 		return
@@ -506,8 +592,34 @@ func (h *Hub) handshake(r *http.Request, conn *websocket.Conn, slot *handshakeSl
 	}
 	if old, ok := h.sessions[id.Fingerprint]; ok {
 		h.mu.Unlock()
-		fail(with(protocol.RejectDuplicateSession, fmt.Sprintf("node already has session %s from %s; a second live copy of this node key (for example a cloned VM) is refused", old.sessionID, old.remote)))
-		return
+		// A node that restarted or lost its network reconnects before Core
+		// noticed the old session died; a clone has a live old session.
+		pctx, pcancel := context.WithTimeout(ctx, h.opts.DuplicatePingTimeout)
+		alive := old.conn.Ping(pctx) == nil
+		pcancel()
+		if alive {
+			if h.opts.OnConflict != nil {
+				h.opts.OnConflict(id.Fingerprint)
+				old.close(websocket.StatusPolicyViolation, protocol.RejectIdentityConflict)
+				fail(with(protocol.RejectIdentityConflict, fmt.Sprintf("node key is live in two places (session %s from %s and this one from %s), for example a cloned VM; both are refused until the node enrolls again", old.sessionID, old.remote, r.RemoteAddr)))
+				return
+			}
+			fail(with(protocol.RejectDuplicateSession, fmt.Sprintf("node already has session %s from %s; a second live copy of this node key (for example a cloned VM) is refused", old.sessionID, old.remote)))
+			return
+		}
+		h.opts.Logger.Info("replacing an unresponsive session of the same node", "node", id.Fingerprint, "old", old.sessionID, "remote", r.RemoteAddr)
+		old.close(websocket.StatusGoingAway, "replaced by a new session of the same node")
+		h.mu.Lock()
+		if h.closed {
+			h.mu.Unlock()
+			_ = conn.Close(websocket.StatusGoingAway, "core shutting down")
+			return
+		}
+		if other, ok := h.sessions[id.Fingerprint]; ok {
+			h.mu.Unlock()
+			fail(with(protocol.RejectDuplicateSession, fmt.Sprintf("node already has session %s from %s", other.sessionID, other.remote)))
+			return
+		}
 	}
 	h.sessions[id.Fingerprint] = s
 	inFlight := h.orphaned[id.Fingerprint]
