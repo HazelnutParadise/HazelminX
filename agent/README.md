@@ -30,13 +30,16 @@ cd ../core && HAZELMINX_AGENT_BIN=<target>/debug/hazelminx-agent go test ./inter
 hazelminx-agent --config /etc/hazelminx/agent.toml run
 hazelminx-agent identity        # 印出節點指紋與公鑰位置
 hazelminx-agent check-config    # 印出生效設定
+hazelminx-agent enroll --core-url https://core.example:9801 --code HZX-XXXX-XXXX-XXXX-XXXX
 ```
+
+`enroll` 用管理員產生的一次性註冊碼加入 Core：先取得 Core CA 並以註冊碼驗證，再送出節點公鑰與主機名稱、machine-id、作業系統，等管理員在 Core 核准（預設最多等 30 分鐘，`--wait-seconds` 可改；中斷後用同一個碼重跑會接著等）。核准後寫入 `identity/node.crt`、`identity/core-ca.crt`、`identity/privileged-issuer.pub`（安裝程式要以 root 複製到 `/etc/hazelminx/privileged/issuer.pub`）與 `state_dir/enrollment.json`。要以 Agent 的執行帳號跑，檔案擁有者才會對。`--group` 帶碼的群組；`--new-identity` 把舊金鑰移到 `identity.replaced-<時間>` 再產生新金鑰，給複製出來的主機或金鑰被撤銷、取代的節點用。
 
 設定檔 `agent.toml`（缺檔即用預設）：
 
 ```toml
 state_dir = "/var/lib/hazelminx/agent"   # 節點身分、工作紀錄
-core_url = "https://core.example:9801"    # Core 的 Agent 通道；未設定表示尚未加入
+core_url = "https://core.example:9801"    # Core 的 Agent 通道；未設定時用 enroll 記下的網址
 node_name = "db-01"                        # 顯示名稱；身分以金鑰指紋為準
 log_format = "json"                        # json 或 text
 core_transport = "pinned"                  # pinned（預設）或 proxy
@@ -48,11 +51,13 @@ privileged_socket = "/run/hazelminx/privileged.sock"  # 高權限執行器的 so
 
 旗標與環境變數：`--config`／`HAZELMINX_AGENT_CONFIG`、`--state-dir`／`HAZELMINX_AGENT_STATE_DIR`、`--core-url`／`HAZELMINX_AGENT_CORE_URL`、`--log-format`／`HAZELMINX_AGENT_LOG_FORMAT`。
 
-節點身分是 Ed25519 金鑰，第一次啟動產生在 `state_dir/identity/`（目錄 0700、私鑰 0600），指紋是公鑰的 SHA-256。私鑰損壞時報錯停止，不會悄悄重新產生。連線還需要同目錄的 `node.crt`（Core 簽發的節點憑證）與 `core-ca.crt`（Core CA），由註冊流程（票 019）寫入；缺少時 Agent 會說明「尚未加入」並以退避重試。
+節點身分是 Ed25519 金鑰，第一次啟動產生在 `state_dir/identity/`（目錄 0700、私鑰 0600），指紋是公鑰的 SHA-256。私鑰損壞時報錯停止，不會悄悄重新產生。連線還需要同目錄的 `node.crt`（Core 簽發的節點憑證）與 `core-ca.crt`（Core CA），由 `enroll` 寫入；缺少時 Agent 會說明「尚未加入」並以退避重試。
+
+Core 換發憑證時（剩不到 30 天自動換，或管理員要求），Agent 驗過新憑證後存成 `node.crt.next` 並重連；新憑證握手成功才換成 `node.crt`，舊的留在 `node.crt.prev`。新憑證連不上時刪掉 `node.crt.next`，改回舊憑證。
 
 連線與工作紀錄：
 
-- Agent 主動連 Core，握手交換協定版本與能力（`engineering/contracts/README.md`）。斷線後重連的等待時間在 0.1 秒到上限之間隨機取，上限從 2 秒起每次加倍、最多 60 秒，連線撐過一分鐘後歸零；協定不相容、節點被撤銷或身分無效時等 5 到 10 分鐘，並在日誌寫出雙方的協定範圍。握手後每則訊息都帶序號與 HMAC，收到驗不過的訊息就斷線。
+- Agent 主動連 Core，握手交換協定版本與能力（`engineering/contracts/README.md`）。斷線後重連的等待時間在 0.1 秒到上限之間隨機取，上限從 2 秒起每次加倍、最多 60 秒，連線撐過一分鐘後歸零；協定不相容、節點被撤銷、身分無效或身分衝突（同一把金鑰在兩台主機上同時運作）時等 5 到 10 分鐘，並在日誌寫出雙方的協定範圍。握手後每則訊息都帶序號與 HMAC，收到驗不過的訊息就斷線。
 - 每個步驟開始前與結束後都先寫進 `state_dir/jobs/journal.jsonl` 並 fsync，再送給 Core。Core 確認過的序號記在 `state_dir/jobs/acked`；重連後重送未確認的事件。
 - 同一工作步驟已有完成或失敗紀錄時不重跑，直接重送那筆紀錄。寫不了紀錄時拒絕步驟（`JOURNAL_UNAVAILABLE`），步驟跑完卻寫不進結果時主動斷線，讓 Core 重連後對帳。結果超過 256 KiB 記為失敗 `RESULT_TOO_LARGE`。Agent 重開機時正在跑的步驟記為中斷，不會被當成完成；只有 Core 對帳後送來、而且標記可重試的步驟才會再跑一次，否則回 `OUTCOME_UNKNOWN`。
 - 別的節點、已過期、控制世代倒退、未宣告的動作、參數有多餘欄位的步驟一律拒絕，不執行。
