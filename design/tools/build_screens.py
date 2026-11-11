@@ -242,7 +242,8 @@ def node_detail() -> str:
       <div class="name">{U.crumbs([("主機", "Nodes.dc.html")])}<h1 class="mono">hazel-tw-01</h1></div>
       {U.status("ok", "連線中")}<span class="note">最後聯絡 2 秒前</span>
       <div class="wrap" style="margin-left: auto"><button type="button" class="btn">終端機</button><button type="button" class="btn">進入維護模式</button><button type="button" class="btn">重新啟動 agent</button><button type="button" class="btn pri">部署到此主機</button></div>
-    </div>
+    </div>"""
+    spec = f"""
     <div class="panel"><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); gap: 10px 16px; padding: 12px 14px; font-size: 13px">
       {kv("作業系統", "Ubuntu 24.04.2 LTS")}{kv("核心", "6.8.0-45-generic")}{kv("CPU", "8 核 · AMD EPYC 7B13")}{kv("記憶體", "31.3 GiB")}{kv("執行階段", "Docker 27.3.1")}{kv("Agent", "hazelminx-agent 0.1.0 · mTLS")}{kv("角色", "控制中心 · 資料主機")}{kv("GPU", "NVIDIA L4 · 24 GiB · 驅動 550.90 · NVML")}
     </div></div>"""
@@ -337,7 +338,7 @@ def node_detail() -> str:
       <div class="note" style="padding: 8px 14px 10px">不以 <span class="mono">privileged</span> 當通用解法 · 驅動升級會影響整台主機，從 <a href="WorkCenter.dc.html" style="color: var(--hazel)">工作中心</a> 走批准流程</div>
     </section>"""
     tabs = node_tabs("概況")
-    main = (head + tabs + hw + range_row() + f'<div class="cg">{cpu}{mem}{io}{net}{load}{temp}</div><div class="cg">{disks}{hot}</div>'
+    main = (head + tabs + spec + hw + range_row() + f'<div class="cg">{cpu}{mem}{io}{net}{load}{temp}</div><div class="cg">{disks}{hot}</div>'
             + nodes(part="procs") + gpu_head + gpu_dev + gpu_proc + f'<div class="cg">{gpu_util}{gpu_vram}{gpu_power}</div>' + gpu_auth)
     return U.shell("nodes", main)
 
@@ -492,16 +493,28 @@ def containers() -> str:
     <section class="panel" aria-labelledby="h-img">
       <div class="ph"><h2 id="h-img">映像 · 23 · tw-01</h2><span class="sub">段條＝使用中／未用／建置快取；拉取、推送、匯入匯出、建置、標籤</span><div class="wrap" style="margin-left:auto"><button type="button" class="btn sm">清理未使用 4.1 GiB</button><a class="more" href="ContainerResources.dc.html">管理 →</a></div></div>
       <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px">{U.tall_bar([(9.8, "使用中 16", "var(--q5)"), (4.1, "未使用 7", "var(--q3)"), (1.2, "建置快取", "var(--q2)")], 15.1, unit="G")}
-      <div class="scale"><i style="background:var(--q5)"></i>使用中 <i style="background:var(--q3)"></i>未使用（可回收） <i style="background:var(--q2)"></i>建置快取</div></div>
+</div>
       {U.ranked([("ghcr.io/hazelnut/shop-api:a3f9c1e", 812, "812 MiB · 使用中"), ("ollama/ollama:0.5.7", 2900, "2.9 GiB · 使用中"), ("postgres:16.4", 430, "430 MiB · 使用中"), ("ghcr.io/hazelnut/shop-api:88b1d02", 810, "810 MiB · 未使用 · 可回收"), ("node:22（建置）", 1100, "1.1 GiB · 未使用")], vmax=3000)}
     </section>"""
     netvol = f"""
     <section class="panel" aria-labelledby="h-nv">
-      <div class="ph"><h2 id="h-nv">網路、儲存卷、登錄站</h2><a class="more" href="ContainerResources.dc.html">管理 →</a></div>
-      <div style="padding:12px 14px">{U.matrix(["shop_default（bridge）", "wiki_default（bridge）", "hzx-ollama（bridge）", "shop-db-data（volume）", "wiki-media（volume）", "ghcr.io（登錄站）", "registry.example.tw"], ["狀態", "關聯", "備註"], [
-        [("ok", "4 容器"), ("none", "shop-api、worker、db、redis"), ("none", "172.18.0.0/16 · 不對外")], [("warn", "上次觀測"), ("none", "wiki-app、wiki-db"), ("none", "jp-02")], [("ok", "2 容器"), ("none", "ollama、nextcloud"), ("none", "平台元件網路")],
-        [("ok", "84 GiB"), ("none", "shop-db"), ("none", "/mnt/data · 綁定 UUID")], [("warn", "190 GiB"), ("none", "wiki-app"), ("none", "jp-02 · 未綁定")], [("ok", "已登入"), ("none", "hazelnut 組織"), ("none", "Token 61 天")], [("ok", "已登入"), ("none", "私有"), ("none", "鏡像 docker.io")],
-      ], first_col="minmax(190px,1.4fr)")}</div>
+      <div class="ph"><h2>網路 · 3</h2><a class="more" href="ContainerResources.dc.html">管理 →</a></div>
+      <div class="row hd"><span>網路</span><span>狀態</span><span>容器</span></div>
+      <div class="row"><span class="name"><span class="n mono">shop_default</span><span class="d">bridge · 172.18.0.0/16 · 不對外</span></span><span>{U.status("ok", "4 容器")}</span><span class="mono">shop-api、worker、db、redis</span></div>
+      <div class="row"><span class="name"><span class="n mono">wiki_default</span><span class="d">bridge · jp-02</span></span><span>{U.status("warn", "上次觀測")}</span><span class="mono">wiki-app、wiki-db</span></div>
+      <div class="row"><span class="name"><span class="n mono">hzx-ollama</span><span class="d">bridge · 平台元件網路</span></span><span>{U.status("ok", "2 容器")}</span><span class="mono">ollama、nextcloud</span></div>
+    </section>
+    <section class="panel">
+      <div class="ph"><h2>儲存卷 · 2</h2><a class="more" href="ContainerResources.dc.html">管理 →</a></div>
+      <div class="row hd"><span>儲存卷</span><span>大小</span><span>容器</span></div>
+      <div class="row"><span class="name"><span class="n mono">shop-db-data</span><span class="d">/mnt/data · 綁定 UUID</span></span><span>{U.status("ok", "84 GiB")}</span><span class="mono">shop-db</span></div>
+      <div class="row"><span class="name"><span class="n mono">wiki-media</span><span class="d">jp-02 · 未綁定</span></span><span>{U.status("warn", "190 GiB")}</span><span class="mono">wiki-app</span></div>
+    </section>
+    <section class="panel">
+      <div class="ph"><h2>登錄站 · 2</h2><a class="more" href="ContainerResources.dc.html">管理 →</a></div>
+      <div class="row hd"><span>登錄站</span><span>狀態</span><span>用途</span></div>
+      <div class="row"><span class="name"><span class="n mono">ghcr.io</span><span class="d">Token 61 天</span></span><span>{U.status("ok", "已登入")}</span><span class="mono">hazelnut 組織</span></div>
+      <div class="row"><span class="name"><span class="n mono">registry.example.tw</span><span class="d">鏡像 docker.io</span></span><span>{U.status("ok", "已登入")}</span><span class="mono">私有</span></div>
     </section>"""
     compose = f"""
     <section class="panel" aria-labelledby="h-cp">
@@ -872,7 +885,7 @@ def websites() -> str:
         pct = min(100, days / 90 * 100)
         col = "var(--danger)" if days < 14 else ("var(--warn)" if days < 30 else "var(--ok)")
         shape = "■" if days < 14 else ("○" if days < 30 else "●")
-        return (f'<div class="rank" style="grid-template-columns:minmax(0,1.1fr) minmax(0,1.2fr) auto"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{domain}</span>'
+        return (f'<div class="rank"><span class="mono" style="white-space:nowrap">{domain}</span>'
                 f'<span class="bar" aria-hidden="true" style="position:relative"><i style="width:{pct:.0f}%;background:{col}"></i><b style="position:absolute;left:{14/90*100:.1f}%;top:-3px;width:1px;height:14px;background:var(--faint)"></b></span>'
                 f'<span class="mono" style="font-size:12px;color:{col}">{shape} {days} 天 <span class="note">· {issuer} · {auto}</span></span></div>')
     certs = f"""
@@ -899,7 +912,7 @@ def websites() -> str:
       <div class="ph"><h2 id="h-ip">訪客 IP 來源 · 今日</h2><span class="sub">只有可信入口的 Header 會被採用；偽造 Header 的直接連線不能指定別人的 IP</span></div>
       <div style="padding: 12px 14px; display:flex; flex-direction:column; gap:8px">
         {U.tall_bar([(98.7, "Cloudflare Tunnel（CF-Connecting-IP）90,807", "var(--q5)"), (1.1, "直接連線（來源 IP）1,012", "var(--q3)"), (0.2, "不可信 Header（已忽略）182", "var(--danger)")], 100, unit="%")}
-        <div class="scale"><i style="background:var(--q5)"></i>Tunnel 98.7% <i style="background:var(--q3)"></i>直接連線 1.1% <i style="background:var(--danger)"></i>不可信 Header 0.2%（限速與封鎖用真實來源 IP）</div>
+
       </div>
     </section>"""
 
@@ -939,7 +952,7 @@ def websites() -> str:
 
 # ---------- 儲存與備份 ----------
 def storage() -> str:
-    head = U.page_head("儲存與備份", OBS, '<a class="btn pri" href="BackupCreate.dc.html">新增備份任務</a><span tabindex="0" data-tip="改用 UUID 掛載，插錯磁碟時不會把資料寫到別顆；不用重開機，下次掛載生效"><button type="button" class="btn">用 UUID 固定 jp-02 /mnt/data</button></span><a class="btn" href="ContainerResources.dc.html">預覽可回收空間</a>')
+    head = U.page_head("儲存與備份", OBS, '<a class="btn pri" href="BackupCreate.dc.html">新增備份任務</a><span tabindex="0" data-tip="改用 UUID 掛載，插錯磁碟時不會把資料寫到別顆；不用重開機，下次掛載生效"><button type="button" class="btn">用 UUID 固定 jp-02</button></span><a class="btn" href="ContainerResources.dc.html">預覽可回收空間</a>')
     tiles = '<div class="tiles">' + "".join([
         U.stat_tile("資料碟合計", "1.32", "/ 1.98 TiB", "<a href=\"ContainerResources.dc.html\">jp-02 15 天後滿 · 處理 →</a>", False, spark=walk(12, 1200, 20, 1100, 1330)),
         U.stat_tile("沒用 UUID 掛載", "1", "磁碟", "hazel-jp-02 /mnt/data · 用裝置名稱 sdb1 掛載", False),
@@ -955,7 +968,7 @@ def storage() -> str:
                 f'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="note" style="color:{col}">{note}</span><span style="margin-left:auto" class="note">30 天</span>{U.sparkline(growth, w=80)}</div></div>')
     disks = f"""
     <section class="panel" aria-labelledby="h-disks">
-      <div class="ph"><h2 id="h-disks">資料碟</h2><span class="sub">段條＝誰吃掉了空間；未綁定裝置身分的磁碟，重開機掛錯時不會被擋下</span><div class="scale" style="margin-left:auto"><i style="background:var(--q5)"></i>容器資料 <i style="background:var(--q4)"></i>資料庫／媒體 <i style="background:var(--q3)"></i>備份暫存 <i style="background:var(--q2)"></i>可回收 <i style="background:var(--q1)"></i>可用</div></div>
+      <div class="ph"><h2 id="h-disks">資料碟</h2><span class="sub">段條＝誰吃掉了空間；未綁定裝置身分的磁碟，重開機掛錯時不會被擋下</span></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:1px;background:var(--line)">
         {disk("hazel-tw-01", "/mnt/data", "sdb1 → by-uuid/5a7c…e2 · xfs", U.status("ok", "已綁定 UUID"), [(290, "容器資料", "var(--q5)"), (84, "資料庫", "var(--q4)"), (38, "備份暫存", "var(--q3)"), (12, "可回收映像", "var(--q2)")], 931, walk(12, 390, 8, 370, 412), "412 / 931 GiB · +38 GiB · 預估 410 天後滿")}
         {disk("hazel-jp-02", "/mnt/data", "sdb1（未綁定）· ext4", U.status("dng", "沒用 UUID 掛載 · 用裝置名稱 sdb1 掛載"), [(610, "容器資料", "var(--q5)"), (190, "媒體", "var(--q4)"), (70, "備份暫存", "var(--q3)"), (31, "可回收映像", "var(--q2)")], 931, walk(12, 760, 15, 740, 870), "870 / 931 GiB · +121 GiB · 預估 15 天後滿", warn=True)}
@@ -1104,7 +1117,7 @@ def nodes(part: str | None = None) -> str:
         <div><span class="note">CPU（核）</span>{U.tall_bar([(3.0, "tw-01 已用", "var(--q5)"), (2.6, "jp-02 已用*", "var(--q4)"), (0.1, "lab-mini 已用", "var(--q3)")], 16, unit=" 核")}</div>
         <div><span class="note">記憶體（GiB）</span>{U.tall_bar([(11.2, "tw-01", "var(--q5)"), (13.9, "jp-02*", "var(--q4)"), (1.1, "lab-mini", "var(--q3)")], 54.4, unit="G")}</div>
         <div><span class="note">資料碟（GiB）</span>{U.tall_bar([(412, "tw-01", "var(--q5)"), (870, "jp-02*", "var(--q4)"), (38, "lab-mini", "var(--q3)")], 1980, unit="G")}</div>
-        <div class="scale"><i style="background:var(--q5)"></i>tw-01 <i style="background:var(--q4)"></i>jp-02（* 上次觀測） <i style="background:var(--q3)"></i>lab-mini <i style="background:var(--q1)"></i>可用</div>
+
       </div>
     </section>"""
     engines = f"""
@@ -2495,7 +2508,7 @@ def system() -> str:
     <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px">
       <div class="name">{U.crumbs([("主機", "Nodes.dc.html")])}<h1 class="mono">hazel-tw-01</h1></div>
       {U.status("ok", "連線中")}<span class="note">最後聯絡 2 秒前</span>
-      <div class="wrap" style="margin-left: auto"><a class="btn" href="NodeTerminal.dc.html">終端機</a><button type="button" class="btn">重新開機 tw-01</button><button type="button" class="btn pri">套用 5 個安全更新到 tw-01</button></div>
+      <div class="wrap" style="margin-left: auto"><a class="btn" href="NodeTerminal.dc.html">終端機</a><button type="button" class="btn">重新開機</button><button type="button" class="btn pri">套用 5 個安全更新</button></div>
     </div>"""
     tabs = ('<nav class="subtabs" aria-label="跳到">' + "".join(f'<a class="st2{" on" if i == 0 else ""}" href="#{h}"{" aria-current=true" if i == 0 else ""}>{t}</a>' for i, (t, h) in enumerate([("套件與更新", "h-pk"), ("服務與計時器", "h-sv"), ("使用者與 sudo", "h-us"), ("網路", "h-net"), ("掛載", "h-mnt"), ("時間與開關機", "h-time"), ("主機工具", "h-tools")])) + '</nav>')
     tools = f"""
@@ -2592,7 +2605,7 @@ def system() -> str:
       <div class="fleet" style="grid-template-columns:repeat(auto-fill,minmax(min(220px,100%),1fr))">
         {kv("時區", "Asia/Taipei（主機）· 使用者顯示 Asia/Taipei", "ncard")}{kv("NTP", "chrony · pool.ntp.org · 偏差 +3 ms · 同步", "ncard")}{kv("主機名稱", "hazel-tw-01 · FQDN hazel-tw-01.example.tw", "ncard")}
         <div class="ncard"><span class="note">運行時間</span><span>41 天 · 上次重開 9 月 27 日（核心更新）</span><span class="note">套用核心更新後要重開機：6.8.0-48</span></div>
-        <div class="ncard"><span class="note">重新開機會影響</span><span>{U.segmented([(3, "var(--danger)"), (0, "var(--q2)")])}</span><span class="note">shop-api ×2、shop-db、shop-redis、zentinel · 03:00 備份延後</span></div>
+        <div class="ncard"><span class="note">重新開機會影響</span><span>{U.status("dng", "5 個服務會中斷")}</span><span class="note">shop-api ×2、shop-db、shop-redis、zentinel · 03:00 備份延後</span></div>
         <div class="ncard"><span class="note">root 密碼</span><span>{U.status("warn", "281 天未換")}</span><span class="note">上次變更 2 月 1 日</span></div>
       </div>
     </section>"""
@@ -2745,7 +2758,7 @@ def logs() -> str:
                     HOURS, unit="", fmt_val=lambda v: f"{v / 1000:.1f}K" if v >= 1000 else f"{v:.0f}", markers=[(22, "jp-02 沒有回應")], foot="7 天、500 萬筆的查詢 p95 < 3 秒；太大的查詢先回「要不要改成工作查詢」· 保留：稽核 1 年、存取 30 天、系統 14 天")
     viewer = f"""
     <section class="panel" aria-labelledby="h-lv">
-      <div class="ph"><h2 id="h-lv">主機系統 · hazel-jp-02 · journald</h2><span class="sub">虛擬捲動、可取消、保留篩選；有資料量與截斷提示</span><div class="wrap" style="margin-left:auto">{_seg(["15 分", "1 小時", "24 小時", "自訂"], 1, "時間範圍")}<span class="chip on">tail 500</span><span class="chip">時間戳</span><span class="chip">反向</span><span class="chip">只看 err+</span><span class="chip">即時 5 秒</span></div></div>
+      <div class="ph"><h2 id="h-lv">主機系統 · journald</h2>{_dd("hazel-jp-02", True)}<span class="sub">虛擬捲動、可取消、保留篩選；有資料量與截斷提示</span><div class="wrap" style="margin-left:auto">{_seg(["15 分", "1 小時", "24 小時", "自訂"], 1, "時間範圍")}<span class="chip on">tail 500</span><span class="chip">時間戳</span><span class="chip">反向</span><span class="chip">只看 err+</span><span class="chip">即時 5 秒</span></div></div>
       <div style="padding:10px 14px"><label class="inp" style="margin-bottom:8px"><span class="note">搜尋</span><input value="hazelminx-agent" aria-label="搜尋日誌" style="background:transparent;border:0;flex:1;min-width:0"></label>
       <div class="term">03:41:18 jp-02 hazelminx-agent[1180]: <span style="color:var(--ok)">INFO</span>  heartbeat ok seq=48812 rtt=41ms
 03:41:28 jp-02 hazelminx-agent[1180]: <span style="color:var(--warn)">WARN</span>  heartbeat send failed: dial tcp 203.0.113.22:8443: i/o timeout
@@ -2783,7 +2796,7 @@ def logs() -> str:
                 f'<span class="c3">{U.meter(used, limit)}</span><span class="c4">{keep}</span><span class="c4 mono">{last}</span><span class="c5"></span><span>{U.actions(["more"])}</span></div>')
     retention = f"""
     <section class="panel" aria-labelledby="h-ret">
-      <div class="ph"><h2 id="h-ret">保留與自動清理 · hazel-tw-01</h2><div class="wrap" style="margin-left:auto"><button type="button" class="btn sm">預覽並立即清理</button></div></div>
+      <div class="ph"><h2 id="h-ret">保留與自動清理</h2>{_dd("hazel-tw-01", True)}<div class="wrap" style="margin-left:auto"><button type="button" class="btn sm">預覽並立即清理</button></div></div>
       <div class="row hd srow"><span>日誌</span><span>自動清理</span><span class="c3">用量 / 上限</span><span class="c4">保留</span><span class="c4">上次清理</span><span class="c5"></span><span></span></div>
       {ret("系統日誌（journald）", "SystemMaxUse · MaxRetentionSec", 61, "610 MiB / 1 GiB", "30 天", "03:00", U.status("ok", "開啟 · 預設"))}
       {ret("平台建立的容器", "每個容器 5 個檔 × 10 MiB", 34, "最多 50 MiB / 容器", "依大小輪替", "持續", U.status("ok", "開啟 · 預設"))}
@@ -3092,13 +3105,13 @@ def host_services() -> str:
     <section class="panel" aria-labelledby="h-inst" data-sort="0:asc" data-batch>
       <div class="ph"><h2 id="h-inst">已安裝模組 · 7</h2><div class="wrap" style="margin-left:auto"><button type="button" class="btn sm">停止選取</button><button type="button" class="btn sm">移除選取</button></div></div>
       <div class="row hd mrow"><span>模組</span><span class="c3">版本</span><span>服務</span><span class="c4">開機啟動</span><span></span></div>
-      {mrow("BIND DNS", "hazel-tw-01 · named", "9.18.28", U.status("ok", "執行中"), "開", mb("停止") + mb("重新啟動") + mb("重新安裝") + mm)}
-      {mrow("BIND DNS", "hazel-jp-02 · named", "9.18.28", U.status("dng", "設定驗證失敗"), "開", mb("看輸出", True) + mb("重新安裝") + mm)}
-      {mrow("Postfix／Dovecot", "hazel-tw-01 · postfix、dovecot", "3.7.11 · 2.3.19", U.status("ok", "執行中"), "開", mb("停止") + mb("重新啟動") + mb("重新安裝") + mm)}
-      {mrow("Samba", "hazel-tw-01 · smbd、nmbd", "4.19.5", U.status("ok", "執行中"), "開", mb("停止") + mb("重新啟動") + mb("重新安裝") + mm)}
-      {mrow("Nginx（原生）", "hazel-tw-01 · nginx", "1.26.2", U.status("ok", "執行中"), "開", mb("停止") + mb("重新啟動") + mb("重新安裝") + mm)}
+      {mrow("BIND DNS", "hazel-tw-01 · named", "9.18.28", U.status("ok", "執行中"), "開", mb("停止") + mb("重新啟動") + mm)}
+      {mrow("BIND DNS", "hazel-jp-02 · named", "9.18.28", U.status("dng", "設定驗證失敗"), "開", mb("看輸出", True) + mm)}
+      {mrow("Postfix／Dovecot", "hazel-tw-01 · postfix、dovecot", "3.7.11 · 2.3.19", U.status("ok", "執行中"), "開", mb("停止") + mb("重新啟動") + mm)}
+      {mrow("Samba", "hazel-tw-01 · smbd、nmbd", "4.19.5", U.status("ok", "執行中"), "開", mb("停止") + mb("重新啟動") + mm)}
+      {mrow("Nginx（原生）", "hazel-tw-01 · nginx", "1.26.2", U.status("ok", "執行中"), "開", mb("停止") + mb("重新啟動") + mm)}
       {mrow("Nginx（原生）", "lab-mini · nginx", "1.26.2", U.status("info", "已停止"), "關", mb("啟動", True) + mb("重新安裝") + mb("移除") + mm)}
-      {mrow("DHCP（Kea）", "hazel-jp-02 · kea-dhcp4", "2.4.1", U.status("ok", "執行中"), "開", mb("停止") + mb("重新啟動") + mb("重新安裝") + mm)}
+      {mrow("DHCP（Kea）", "hazel-jp-02 · kea-dhcp4", "2.4.1", U.status("ok", "執行中"), "開", mb("停止") + mb("重新啟動") + mm)}
     </section>"""
     remove = f"""
     <section class="chart" aria-label="移除模組確認範例"><div class="ph"><h2>移除模組</h2></div>
@@ -3508,7 +3521,7 @@ def add_node() -> str:
         </div>
         <div class="wrap"><button type="button" class="btn pri">是這台，加入</button><button type="button" class="btn">不是，拒絕並作廢註冊碼</button></div>
       </div>""", sub="同一台重新註冊不會變成第二個主機")
-    waiting = _fp("還沒連上時", f"""
+    waiting = _fp("還沒連上？", f"""
       <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">
         <div class="wrap">{U.status("info", "等待主機連線…")}<span class="note">指令跑完後通常 10 秒內會出現在這裡</span></div>
         {_chk("warn", "指令報錯", "看主機終端機最後幾行；常見是沒有 sudo 權限或系統不支援", "<a href='AddNode.dc.html'>支援的系統</a>")}
@@ -3516,7 +3529,8 @@ def add_node() -> str:
         {_chk("warn", "註冊碼過期", "超過 10 分鐘或已經用過", '<button type="button" class="btn sm">重新產生</button>')}
       </div>""")
     done = _fp("4 · 完成後", '<div class="wrap" style="padding:12px 16px"><a class="btn pri" href="NodeDetail.dc.html">看這台主機</a><a class="btn" href="GitHubSource.dc.html">部署專案到這台</a><a class="btn" href="Storage.dc.html">設定資料碟</a></div>')
-    main = head + steps + f'<div class="cg">{setup}{code}</div>' + verify + f'<div class="cg">{waiting}{done}</div>'
+    waiting = waiting.replace('<section class="panel"', '<details class="panel"', 1).replace("</section>", "</details>").replace('<div class="ph">', '<summary class="ph" style="cursor:pointer">', 1).replace("</h2></div>", "</h2></summary>", 1)
+    main = head + steps + f'<div class="cg">{setup}{code}</div>' + verify + waiting
     return U.shell("nodes", main)
 
 
@@ -3670,7 +3684,7 @@ def node_offline() -> str:
                   '<div class="wrap"><button type="button" class="btn pri">開主機商主控台 ↗</button><span tabindex="0" data-tip="TCP 22 逾時"><button type="button" class="btn" disabled>SSH 連線</button></span><button type="button" class="btn">標記為維護中（暫停告警）</button><button type="button" class="btn">通知值班 · ops-ann</button></div>'
                   '<div class="wrap"><span class="note">修不好時</span><button type="button" class="btn">把 wiki 改部署到別台</button><button type="button" class="btn">移除這台主機</button></div>'
                   '<div class="note">主機商主控台的網址在主機設定裡填；沒填時這顆按鈕會帶你去填</div></div>')
-    main = head + f'<div class="cg">{impact}{timeline}</div>' + f'<div class="cg">{probes}{blocked}</div>' + actions
+    main = head + actions + f'<div class="cg">{impact}{timeline}</div>' + f'<div class="cg">{probes}{blocked}</div>'
     return U.shell("nodes", main)
 
 
@@ -4592,7 +4606,7 @@ def iconize(html: str) -> str:
     out, pos = [], 0
     for m in re.finditer(r'<span class="hint".*?</span>', html, flags=re.S):
         start = m.start()
-        f = html.rfind('<div class="field"', 0, start)
+        f = html.rfind('<div class="field', 0, start)
         lab = html.find("</label>", f) if f != -1 else -1
         if f != -1 and f < lab < start and lab >= pos:
             out.append(html[pos:lab]); out.append(" " + m.group(0)); out.append(html[lab:start]); pos = m.end()
