@@ -4315,7 +4315,7 @@ def backup_restore() -> str:
 
 # ---------- 機密庫 ----------
 def secrets_page() -> str:
-    head = _form_head([("平台設定", "Settings.dc.html")], "機密庫", '<button type="button" class="btn pri">新增機密</button>')
+    head = _form_head([("平台設定", "Settings.dc.html")], "機密庫", '<span tabindex="0" data-tip="需要第二位擁有者批准；送出後建立變更計畫"><button type="button" class="btn">輪替主金鑰</button></span><button type="button" class="btn pri">新增機密</button>')
     def sec(name, kind, used, rotated, exp, st):
         return (f'<div class="row srow"><span class="name"><span class="n mono">{name}</span><span class="d">{kind}</span></span><span>{st}</span>'
                 f'<span class="c3">{used}</span><span class="c4 mono">{rotated}</span><span class="c4">{exp}</span><span class="c5"></span><span>{U.actions(["rename", "more"])}</span></div>')

@@ -113,8 +113,8 @@ body{margin:0}
 .hb .grid{stroke:var(--line);stroke-width:1}
 .hb .ts{position:relative;font-family:"Geist Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;font-size:11px;color:var(--faint);padding:8px 8px 20px 46px}.hb .ts .pa{position:relative;height:100%}.hb .ts .plot{display:block;width:100%;height:100%;overflow:visible}.hb .ts .yl{position:absolute;left:0;width:40px;top:8px;bottom:20px}.hb .ts .yl span{position:absolute;right:0;transform:translateY(-50%);white-space:nowrap}.hb .ts .xl{position:absolute;left:46px;right:8px;bottom:0;height:16px}.hb .ts .xl span{position:absolute;transform:translateX(-50%);white-space:nowrap}.hb .ts .xl .a0{transform:none}.hb .ts .xl .a1{transform:translateX(-100%)}.hb .ts .mk{position:absolute;top:0;color:var(--muted);white-space:nowrap;line-height:1}.hb .ts .sdot{position:absolute;width:9px;height:9px;border-radius:50%;background:var(--panel);border:2px solid;transform:translate(-50%,-50%)}.hb .ts .hits{position:absolute;inset:0}.hb .ts .hit{position:absolute;top:0;bottom:0;outline:none}.hb .ts .xh{position:absolute;top:0;bottom:0;width:1px;background:var(--muted);opacity:0}.hb .ts .tip{position:absolute;top:0;left:calc(100% + 6px);z-index:5;display:none;grid-template-columns:auto auto;gap:3px 14px;min-width:120px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--raised);color:var(--ink);white-space:nowrap;opacity:0;pointer-events:none;box-shadow:0 4px 12px rgb(0 0 0/.2)}.hb .ts .hit.flip .tip{left:auto;right:calc(100% + 6px)}.hb .ts .tip .k{color:var(--muted);display:flex;align-items:center;gap:6px}.hb .ts .tip .k i{width:8px;height:8px;border-radius:2px}.hb .ts .tip b{font-weight:500;text-align:right}.hb .ts .hit:hover .xh,.hb .ts .hit:focus-visible .xh{opacity:1}.hb .ts .hit:hover .tip,.hb .ts .hit:focus-visible .tip{display:grid;opacity:1}
 .hb .ch-m{display:none}
-.hb .ranks{display:flex;flex-direction:column;gap:6px;padding:10px 14px}
-.hb .rank{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,2fr) auto;gap:10px;align-items:center;font-size:13px;min-height:28px}
+.hb .ranks{display:grid;grid-template-columns:fit-content(46%) minmax(72px,1fr) auto;gap:6px 10px;padding:10px 14px}
+.hb .rank{display:grid;grid-template-columns:subgrid;grid-column:1/-1;align-items:center;font-size:13px;min-height:28px}
 .hb .rank .bar{height:8px;border-radius:4px;background:var(--q2);overflow:hidden}
 .hb .rank .bar i{display:block;height:100%;border-radius:4px;background:var(--s1)}
 .hb .timeline{display:flex;gap:2px;height:10px}
@@ -160,9 +160,8 @@ body{margin:0}
 .hb .cal i{display:block;width:12px;height:12px;border-radius:2px;background:var(--q1);position:relative}
 .hb .cal i.o{background:var(--ok)}.hb .cal i.f{background:var(--danger)}.hb .cal i.r{background:var(--warn)}.hb .cal i.n{background:transparent;border:1px dashed var(--line)}
 .hb .cal i.f::after{content:"";position:absolute;inset:3px;background:var(--panel)}
-.hb .pipe{display:flex;flex-wrap:wrap;align-items:stretch;row-gap:10px}
-.hb .pstage{display:flex;flex-direction:column;gap:4px;min-width:110px;max-width:280px;flex:1 0 auto;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-size:12px;color:var(--muted);position:relative;background:var(--panel)}
-.hb .pstage+.pstage{margin-left:18px}
+.hb .pipe{display:grid;grid-template-columns:repeat(auto-fit,minmax(max(84px,calc((100% - (var(--n,4) - 1)*18px)/var(--n,4))),1fr));align-items:stretch;gap:10px 18px}
+.hb .pstage{display:flex;flex-direction:column;gap:4px;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-size:12px;color:var(--muted);position:relative;background:var(--panel)}
 .hb .pstage+.pstage::before{content:"";position:absolute;left:-12px;top:50%;width:6px;height:6px;border-top:2px solid var(--faint);border-right:2px solid var(--faint);transform:translateY(-50%) rotate(45deg)}
 .hb .pstage .t{color:var(--ink);font-weight:500;display:flex;align-items:center;gap:6px}
 .hb .pstage>*{overflow-wrap:anywhere}
@@ -182,7 +181,7 @@ body{margin:0}
 .hb .mx{display:grid;gap:2px;font-size:12px}
 .hb .mx .st,.hb .mx .c{white-space:nowrap}
 .hb .mx .c{min-height:32px;display:flex;align-items:center;justify-content:center;gap:4px;background:var(--raised);border-radius:4px;padding:0 6px;text-align:center}
-.hb .mx .c.empty{background:transparent;border:1px dashed var(--line);color:var(--faint)}
+.hb .mx .c.empty{background:transparent;border:1px dashed var(--line);color:var(--faint)}.hb .mxlg{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12px;color:var(--muted)}.hb .mxlg .c{display:inline-block;width:18px;height:12px;border:1px dashed var(--line);border-radius:3px}
 .hb .mx .rl{display:flex;align-items:center;white-space:normal;overflow-wrap:anywhere;font-family:"Geist Mono",ui-monospace,monospace;color:var(--muted);min-height:32px;line-height:1.3}
 .hb .mx .cl{display:flex;align-items:flex-end;justify-content:center;font-size:11px;color:var(--faint);padding-bottom:4px;text-align:center}
 .hb .tree{font-family:"Geist Mono",ui-monospace,monospace;font-size:13px}
@@ -218,7 +217,7 @@ body{margin:0}
 .hb .fm{grid-template-columns:240px minmax(0,1fr) 280px}
 .hb .frow.sel{background:color-mix(in srgb,var(--hazel) 12%,transparent)}
 .hb .ck{display:inline-flex;align-items:center;justify-content:center;width:28px;min-height:28px}
-.hb .ck input{width:16px;height:16px;accent-color:var(--hazel);margin:0}
+.hb .ck input{width:16px;height:16px;accent-color:var(--hazel);margin:0}.hb input.lockck{accent-color:var(--hazel);pointer-events:none;cursor:not-allowed;opacity:.75}
 .hb .hd .sortable{display:inline-flex;align-items:center;gap:4px;cursor:pointer}
 .hb .hd .sortable svg{color:var(--faint);opacity:.5}
 .hb .hd .sortable.on svg{color:var(--hazel);opacity:1}
@@ -238,7 +237,7 @@ body{margin:0}
 .hb .term{background:#14120F;border:1px solid var(--line);border-radius:8px;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;padding:10px 12px;color:var(--ink);white-space:pre;overflow:auto}
 .hb .lg{display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted);margin-left:auto}
 .hb .lg span{display:inline-flex;align-items:center;gap:5px}
-.hb .lg i.sw{display:inline-block;width:12px;height:8px;border-radius:2px}
+.hb .lg i.sw{display:inline-block;width:12px;height:8px;border-radius:2px}.hb .tall-lg{margin:6px 0 0;gap:4px 12px}.hb .tall-lg i.sw{margin-right:5px;box-shadow:inset 0 0 0 1px var(--line)}
 .hb .lg i.ln{display:inline-block;width:18px;border-radius:2px;background:var(--s1)}
 .hb .lg .st{gap:5px}
 .hb .scope{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;background:var(--panel);border:1px solid var(--line);border-radius:8px}
@@ -279,7 +278,7 @@ body{margin:0}
 .hb .scrim{background:var(--scrim);padding:24px;display:flex;justify-content:center}
 .hb .list{display:flex;flex-direction:column;gap:8px}
 .hb .job{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border:1px solid var(--line);border-radius:8px}
-.hb .job .t{display:flex;justify-content:space-between;gap:8px}
+.hb .job>.t{display:flex;justify-content:space-between;gap:8px}.hb .job>.t .st{flex:none;white-space:nowrap;align-self:flex-start}
 .hb .job .s{font-size:12px;color:var(--muted)}
 .hb .prog{height:4px;background:var(--q2);border-radius:2px;overflow:hidden}
 .hb .prog i{display:block;height:100%;background:var(--blue)}
@@ -318,7 +317,6 @@ body{margin:0}
 .hb .row.cols-5{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}
 .hb .row.cols-6{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}
 .hb .row.acts-end{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.2fr) 130px}
-.hb .rank{grid-template-columns:minmax(0,1.7fr) minmax(0,2fr) auto}
 .hb .rank .mono,.hb .flowlist .mono{white-space:normal!important;overflow-wrap:anywhere;line-height:1.3}
 .hb .mxw,.hb .heatw{overflow-x:auto}
 .hb .meter .tr{min-width:24px}.hb .meter .num{flex:none}
@@ -370,7 +368,7 @@ body{margin:0}
  .hb .hcell{width:36px;height:36px}
  .hb .tabs{flex-wrap:nowrap;overflow-x:auto}.hb .tab{white-space:nowrap;flex:none}
  .hb .ph .wrap{width:100%}
- .hb .pstage{min-width:96px;max-width:220px}
+ .hb .pipe{grid-template-columns:repeat(2,minmax(0,1fr))}.hb .ts .xo{display:none}.hb .diff div{white-space:pre-wrap;overflow-wrap:anywhere}
 }
 .hb .tw{display:grid;grid-template-columns:var(--tc);overflow-x:auto;align-content:start}
 .hb .tw>*{grid-column:1/-1;min-width:0}
@@ -413,6 +411,7 @@ body{margin:0}
 .hb .gdev h3{font-size:12px;font-weight:600;color:var(--muted);padding:10px 12px 0;margin:0}
 @media (max-width:1280px){.hb .c6{display:none}.hb .tw{--k6: ;}}
 .hb .ncard.on{border-color:var(--hazel);box-shadow:inset 0 0 0 1px var(--hazel)}
+.hb .appcard .bd>.st{align-self:flex-start}.hb .ncard>.st{align-self:flex-start}.hb .field.wide{grid-column:span 2}@media (max-width:767px){.hb .field.wide{grid-column:auto}}.hb .ncard .pipe{grid-template-columns:repeat(2,minmax(0,1fr))}.hb .ncard.pick{cursor:pointer}.hb .ncard.pick .nh .d{min-height:0}.hb .ncard.pick:hover{border-color:var(--hazel)}.hb .ncard .rdo{flex:none;width:16px;height:16px;border-radius:50%;border:1.5px solid var(--faint);background:var(--panel);box-sizing:border-box}.hb .ncard.on .rdo{border:5px solid var(--hazel)}
 .hb .opt{display:flex;align-items:flex-start;gap:8px;font-size:13px;padding:4px 0}.hb .opt input{margin-top:3px}
 .hb .fleet.choices{grid-template-columns:repeat(auto-fit,minmax(min(250px,100%),1fr))}
 .hb .row.sel{background:color-mix(in srgb,var(--hazel) 8%,transparent)}
@@ -507,11 +506,17 @@ root@hazel-tw-01:~# <span style="background:var(--ink);color:var(--panel)"> </sp
       <a class="row  cols-6" href="#h5"><span class="name"><span class="n">shop-api（容器）</span><span class="d">tw-01 · docker exec</span></span><span><span class="st ok"><i aria-hidden="true"></i>執行中</span></span><span class="c3 note">Agent · exec</span><span class="mono c4">node（容器內）</span><span class="c4 note">指令紀錄</span><span><button type="button" class="btn sm">開啟</button></span></a></div>
     </section>
     <section class="panel" aria-labelledby="h-qc">
-      <div class="ph"><h2 id="h-qc">快捷指令 · 6</h2></div>
-      <div class="ranks"><div class="rank"><span class="mono">docker ps（健康欄）</span><span class="bar" aria-hidden="true"><i style="width: 91%"></i></span><span class="mono" style="font-size:12px;white-space:nowrap!important">41 次</span></div><div class="rank"><span class="mono">journalctl -u hazelminx-agent -f</span><span class="bar" aria-hidden="true"><i style="width: 40%"></i></span><span class="mono" style="font-size:12px;white-space:nowrap!important">18 次</span></div><div class="rank"><span class="mono">df -h /mnt/data</span><span class="bar" aria-hidden="true"><i style="width: 27%"></i></span><span class="mono" style="font-size:12px;white-space:nowrap!important">12 次</span></div><div class="rank"><span class="mono">pg_isready -h shop-db</span><span class="bar" aria-hidden="true"><i style="width: 16%"></i></span><span class="mono" style="font-size:12px;white-space:nowrap!important">7 次</span></div><div class="rank"><span class="mono">systemctl restart zentinel ⚠</span><span class="bar" aria-hidden="true"><i style="width: 7%"></i></span><span class="mono" style="font-size:12px;white-space:nowrap!important">3 次</span></div><div class="rank"><span class="mono">apt list --upgradable</span><span class="bar" aria-hidden="true"><i style="width: 4%"></i></span><span class="mono" style="font-size:12px;white-space:nowrap!important">2 次</span></div></div>
+      <div class="ph"><h2 id="h-qc">快捷指令 · 6</h2><button type="button" class="btn sm" style="margin-left:auto">新增</button></div>
+      <div class="tw" style="--tc:minmax(min(160px,34%),1fr) auto auto"><div class="row hd r0"><span class=""><span class="sortable on">指令 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg></span></span><span class=""><span class="sortable">用過 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/></svg></span></span><span class=""></span></div>
+      <div class="row r0"><span class="mono">docker ps</span><span class="mono">41 次</span><span class="acts"><button type="button" class="btn sm">執行</button><span class="acts"><button type="button" class="ib" aria-label="更多" title="更多"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18" cy="12" r="1.2"/></svg></button></span></span></div>
+      <div class="row r0"><span class="mono">journalctl -u hazelminx-agent -f</span><span class="mono">18 次</span><span class="acts"><button type="button" class="btn sm">執行</button><span class="acts"><button type="button" class="ib" aria-label="更多" title="更多"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18" cy="12" r="1.2"/></svg></button></span></span></div>
+      <div class="row r0"><span class="mono">df -h /mnt/data</span><span class="mono">12 次</span><span class="acts"><button type="button" class="btn sm">執行</button><span class="acts"><button type="button" class="ib" aria-label="更多" title="更多"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18" cy="12" r="1.2"/></svg></button></span></span></div>
+      <div class="row r0"><span class="mono">pg_isready -h shop-db</span><span class="mono">7 次</span><span class="acts"><button type="button" class="btn sm">執行</button><span class="acts"><button type="button" class="ib" aria-label="更多" title="更多"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18" cy="12" r="1.2"/></svg></button></span></span></div>
+      <div class="row r0"><span class="wrap" style="flex-wrap:nowrap"><span class="mono">systemctl restart zentinel</span><span class="st warn"><i aria-hidden="true"></i>要再確認</span></span><span class="mono">3 次</span><span class="acts"><button type="button" class="btn sm">執行</button><span class="acts"><button type="button" class="ib" aria-label="更多" title="更多"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18" cy="12" r="1.2"/></svg></button></span></span></div>
+      <div class="row r0"><span class="mono">apt list --upgradable</span><span class="mono">2 次</span><span class="acts"><button type="button" class="btn sm">執行</button><span class="acts"><button type="button" class="ib" aria-label="更多" title="更多"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18" cy="12" r="1.2"/></svg></button></span></span></div></div>
     </section></div>
     <section class="panel" aria-labelledby="h-tp">
-      <div class="ph"><h2 id="h-tp">稽核政策與設定</h2></div>
+      <div class="ph"><h2 id="h-tp">稽核政策與設定</h2><a class="btn sm" href="Settings.dc.html" style="margin-left:auto">修改</a></div>
       <div class="fleet" style="grid-template-columns:repeat(auto-fill,minmax(min(220px,100%),1fr))">
         <span class="ncard" style="display:flex;flex-direction:column;gap:2px"><span class="note">root 終端機</span><span>完整錄製（輸入＋輸出）· 保留 90 天</span></span><span class="ncard" style="display:flex;flex-direction:column;gap:2px"><span class="note">一般帳號</span><span>指令紀錄 · 保留 30 天</span></span><span class="ncard" style="display:flex;flex-direction:column;gap:2px"><span class="note">容器終端機</span><span>指令紀錄 · 只有容器唯讀權限的人不能開宿主機 root</span></span>
         <span class="ncard" style="display:flex;flex-direction:column;gap:2px"><span class="note">外觀</span><span>Geist Mono 13px · 行高 1.4 · 深色</span></span><span class="ncard" style="display:flex;flex-direction:column;gap:2px"><span class="note">預設連線</span><span>hazel-tw-01 · root</span></span><span class="ncard" style="display:flex;flex-direction:column;gap:2px"><span class="note">AI 輔助</span><span>關閉（可選 ops-assistant 解釋輸出）</span></span>
