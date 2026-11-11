@@ -138,7 +138,6 @@ def overview() -> str:
           <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span class="mono" style="font-weight: 500">hazel-jp-02 /mnt/data</span>{U.status("dng", "沒用 UUID 掛載 · 用裝置名稱 sdb1 掛載")}</div>
           {U.tall_bar([(610, "容器資料", "var(--q5)"), (190, "媒體", "var(--q4)"), (70, "備份暫存", "var(--q3)")], 931)}
           <span class="note" style="color: var(--danger)">870 / 931 GiB · 30 天 +121 GiB · 預估 15 天後滿</span>
-          <div class="scale"><i style="background:var(--q5)"></i>容器資料 <i style="background:var(--q4)"></i>資料庫／媒體 <i style="background:var(--q3)"></i>備份暫存 <i style="background:var(--q1)"></i>可用</div>
         </div>
         <div style="display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; background: var(--panel)">
           <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span style="font-weight: 500">每日備份 · wiki-db → S3 tokyo</span><span class="note">近 98 天</span></div>
@@ -1502,7 +1501,7 @@ def apiproxy_failures() -> str:
         return (f'<div class="row srow"><span class="name"><span class="n mono">{t}</span><span class="d">{who}</span></span><span>{kind}</span>'
                 f'<span class="c3">{reason}</span><span class="c3 mono">{svc}</span><span class="c4 mono">{code}</span><span class="c4 mono">{up}</span><span></span></div>')
     rows = f"""
-    <section class="panel" aria-labelledby="h-fl" data-pages="1–6 / 212">
+    <section class="panel" aria-labelledby="h-fl" data-pages="1–8 / 212">
       <div class="ph"><h2 id="h-fl">失敗紀錄</h2></div>
       <div class="wrap" style="padding:10px 14px;border-bottom:1px solid var(--line)"><span style="flex:0 1 180px;min-width:150px">{_dd("類型：全部")}</span><span style="flex:0 1 180px;min-width:150px">{_dd("服務：全部")}</span><span style="flex:0 1 150px;min-width:130px">{_dd("回應碼：全部")}</span><span style="flex:0 1 220px;min-width:180px">{_dd("11/08 00:00 – 現在")}</span><button type="button" class="btn">查詢</button></div>
       <div class="row hd srow"><span>時間 · 呼叫者</span><span>類型</span><span class="c3">原因</span><span class="c3">服務</span><span class="c4">回應碼</span><span class="c4">上游回應碼</span><span></span></div>
@@ -2845,7 +2844,7 @@ root@hazel-tw-01:~# <span style="background:var(--ink);color:var(--panel)"> </sp
       <div class="row"><span class="mono">journalctl -u hazelminx-agent -f</span><span class="mono">18 次</span><span class="acts"><button type="button" class="btn sm">執行</button>{U.actions(["more"])}</span></div>
       <div class="row"><span class="mono">df -h /mnt/data</span><span class="mono">12 次</span><span class="acts"><button type="button" class="btn sm">執行</button>{U.actions(["more"])}</span></div>
       <div class="row"><span class="mono">pg_isready -h shop-db</span><span class="mono">7 次</span><span class="acts"><button type="button" class="btn sm">執行</button>{U.actions(["more"])}</span></div>
-      <div class="row"><span class="mono">systemctl restart zentinel</span><span class="mono">3 次</span><span class="acts">{U.status("warn", "要再確認")}<button type="button" class="btn sm">執行</button>{U.actions(["more"])}</span></div>
+      <div class="row"><span class="wrap" style="flex-wrap:nowrap"><span class="mono">systemctl restart zentinel</span>{U.status("warn", "要再確認")}</span><span class="mono">3 次</span><span class="acts"><button type="button" class="btn sm">執行</button>{U.actions(["more"])}</span></div>
       <div class="row"><span class="mono">apt list --upgradable</span><span class="mono">2 次</span><span class="acts"><button type="button" class="btn sm">執行</button>{U.actions(["more"])}</span></div>
     </section>"""
     policy = f"""
@@ -2867,8 +2866,8 @@ def app_install() -> str:
     <div class="phead"><div class="name">{U.crumbs([("應用商店", "AppStore.dc.html")])}<h1>安裝 Nextcloud</h1></div>
       <div class="wrap" style="margin-left:auto"><a class="btn" href="AppStore.dc.html">取消</a></div></div>"""
     def field(label, control, help_="", wide=False):
-        w = ' style="grid-column:span 2"' if wide else ""
-        return f'<div class="field"{w}><label>{label}</label>{control}{f"<span class=help>{help_}</span>" if help_ else ""}</div>'
+        w = " wide" if wide else ""
+        return f'<div class="field{w}"><label>{label}</label>{control}{f"<span class=help>{help_}</span>" if help_ else ""}</div>'
     def inp(val, ro=False, mono=True):
         return f'<div class="inp"><span class="{"mono" if mono else ""}" style="flex:1">{val}</span>{"" if not ro else U.icon("eye")}</div>'
     def sel(val):
@@ -3224,8 +3223,8 @@ def _jump(items):
 def _fld(label, control, help_="", wide=False):
     """wide：值很長的欄位（映像名稱、指令、路徑）佔兩欄，不讓值折成兩行。"""
     h = f'<span class="help">{help_}</span>' if help_ else ""
-    w = ' style="grid-column:span 2"' if wide else ""
-    return f'<div class="field"{w}>{label and f"<label>{label}</label>"}{control}{h}</div>'
+    w = " wide" if wide else ""
+    return f'<div class="field{w}">{label and f"<label>{label}</label>"}{control}{h}</div>'
 
 
 def _in(val, mono=False, ph=False, tail=""):
