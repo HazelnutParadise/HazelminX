@@ -303,7 +303,7 @@ body{{margin:0}}
 .hb .note{{font-size:12px;color:var(--faint)}}
 .hb .wrap{{display:flex;flex-wrap:wrap;gap:8px;align-items:center}}
 .hb .scroll{{overflow-x:auto}}
-.hb .aside{{width:340px;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:18px;padding:18px 16px 24px}}
+.hb .mtitle{{display:none}}.hb .aside{{width:340px;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:18px;padding:18px 16px 24px}}
 .hb .main{{flex:999 1 560px;min-width:0;display:flex;flex-direction:column;gap:16px;padding:16px 24px 40px}}
 .hb .layout{{display:flex;flex-wrap:wrap;align-items:stretch;flex:1}}
 .hb .side{{width:220px;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:10px;padding:12px 10px 16px}}
@@ -347,7 +347,7 @@ body{{margin:0}}
 .hb .rrow{{--t:24px minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,.5fr) minmax(0,.6fr)}}
 @media (max-width:1280px){{.hb .frow{{--t:28px minmax(0,2fr) 90px 100px}}.hb .frow>:nth-child(4){{display:none}}}}
 @media (max-width:1024px){{.hb .c5{{display:none}}.hb .crow{{--t:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.5fr) minmax(0,.9fr) minmax(0,.9fr) 100px}}.hb .acts .ib:nth-child(n+3){{display:none}}}}
-@media (max-width:900px){{.hb .side{{order:-2}}.hb .aside{{order:-1;width:100%;border-left:0;border-bottom:1px solid var(--line)}}.hb #attention article:nth-of-type(n+3){{display:none}}.hb #attention .mall{{display:inline-flex}}}}
+@media (max-width:900px){{.hb .side{{order:-3}}.hb .mtitle{{display:block;order:-2;padding:14px 16px 0;font-size:20px}}.hb .layout:has(.mtitle) .main h1{{display:none}}.hb .aside{{order:-1;width:100%;border-left:0;border-bottom:1px solid var(--line)}}.hb #attention article:nth-of-type(n+3){{display:none}}.hb #attention .mall{{display:inline-flex}}}}
 .hb #attention .mall{{display:none}}
 @media (max-width:900px){{.hb .top{{flex-wrap:wrap;padding:8px 12px;gap:8px;min-height:0}}.hb .crumb{{display:none}}.hb .top .search{{order:3;flex:1 1 100%;max-width:none;margin:0}}.hb .obs{{display:none}}.hb .ib.user span{{display:none}}.hb .side{{width:100%;border-right:0;border-bottom:1px solid var(--line);flex-direction:row;flex-wrap:nowrap;overflow-x:auto;gap:4px;padding:8px 12px}}.hb .navgrp{{display:none}}.hb .navcol{{flex-direction:row;flex:none;gap:4px}}.hb .side .nv{{width:auto;min-width:44px;justify-content:center;min-height:36px;padding:0 10px;white-space:nowrap;font-size:13px}}.hb .side .nv .cnt{{margin-left:4px}}.hb .side .coll{{display:none}}.hb .nv svg{{display:none}}.hb .brand{{width:auto;border:0;padding:0 12px}}}}
 @media (max-width:1100px){{.hb .aside{{width:100%;border-left:0;border-top:1px solid var(--line)}}.hb .fm{{grid-template-columns:220px minmax(0,1fr)}}.hb .fm .pane.detp{{grid-column:1/-1;border-top:1px solid var(--line)}}}}
@@ -664,7 +664,12 @@ def component_down(name: str, host: str, since: str, exit_info: str, impact: str
 
 
 def shell(current: str, main: str, aside: str | None = None, **kw) -> str:
-    aside_html = f'<aside class="aside" aria-label="需要處理與進行中的工作">{aside}</aside>' if aside else ""
+    aside_html = ""
+    if aside:
+        # 手機寬度時右欄排到內容前面，所以另外放一個只在手機顯示的頁面標題，讓標題永遠在最上面
+        t = re.search(r"<h1[^>]*>(.*?)</h1>", main, re.S)
+        mt = f'<h1 class="mtitle">{t.group(1)}</h1>' if t else ""
+        aside_html = f'{mt}<aside class="aside" aria-label="需要處理與進行中的工作">{aside}</aside>'
     return (f'<div class="hb theme-{{{{theme}}}}" style="min-height: 100vh; display: flex; flex-direction: column">'
             f'{topbar(current, **kw)}{host_bar()}<div class="layout">{nav(current, **kw)}<main class="main">{main}</main>{aside_html}</div></div>')
 

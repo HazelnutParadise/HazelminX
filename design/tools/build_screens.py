@@ -2387,7 +2387,7 @@ def cron() -> str:
 
 
 # ---------- 安全防護 ----------
-def security() -> str:
+def security(part: str | None = None) -> str:
     head = U.page_head("安全防護", OBS, '<a class="btn pri" href="FirewallRule.dc.html">新增防火牆規則</a><button type="button" class="btn">匯出安全事件</button>')
     tiles = '<div class="tiles">' + "".join([
         U.stat_tile("外部可連的容器 Port", "2", "", "5432 wiki-db · 11434 ollama", False),
@@ -2447,7 +2447,11 @@ CF-Connecting-IP: 203.0.113.7</div>
     web = ('<h2 class="grp" id="waf">網站防護<span class="note">Zentinel WAF · 3 站點</span><span class="wrap" style="margin-left:auto"><button type="button" class="btn sm">新增 WAF 政策</button><button type="button" class="btn sm">更新 WAF 規則</button></span></h2>'
            + U.scope_bar([("全部入口", "2 Zentinel"), ("Zentinel @ hazel-tw-01", ""), ("Zentinel @ hazel-jp-02", "過期")], label="入口")
            + modes + f'<div class="cg">{rollout}{hits}</div>' + f'<div class="cg">{policies}{check}</div>')
-    main = head + tiles + exposure + web
+    waf = part == "waf"
+    tabs = ('<div class="panel"><div class="tabs" role="tablist">'
+            + f'<a class="tab{"" if waf else " on"}" role="tab" aria-selected="{"false" if waf else "true"}" href="Security.dc.html">對外曝露 · 2 個要處理</a>'
+            + f'<a class="tab{" on" if waf else ""}" role="tab" aria-selected="{"true" if waf else "false"}" href="SecurityWaf.dc.html">網站防護</a></div></div>')
+    main = head + tabs + (web if waf else tiles + exposure)
     return U.shell("security", main)
 
 
@@ -3019,7 +3023,7 @@ def edge_cases() -> str:
 
 
 # ---------- 宿主機服務模組（Webmin 等價） ----------
-def host_services() -> str:
+def host_services(part: str | None = None) -> str:
     head = U.page_head("主機", OBS, '<button type="button" class="btn pri">安裝模組</button><button type="button" class="btn">新增 adapter</button>') + nodes_tabs("服務模組")
     scope = U.scope_bar([("全部主機", "3"), ("hazel-tw-01", "Docker"), ("hazel-jp-02", "過期"), ("lab-mini", "Podman")])
     tiles = '<div class="tiles">' + "".join([
@@ -3049,7 +3053,7 @@ def host_services() -> str:
     </section>"""
     zones = f"""
     <section class="panel" aria-labelledby="h-z" data-sort="0:asc">
-      <div class="ph"><h2 id="h-z">BIND DNS @ hazel-tw-01 · zone · 3</h2><div class="wrap" style="margin-left:auto"><span class="chip on">結構化</span><span class="chip">named.conf 原始檔</span><span class="chip">版本 7</span><button type="button" class="btn sm pri" style="color:var(--hazelink)">新增 zone</button></div></div>
+      <div class="ph"><h2 id="h-z">zone · 3</h2><div class="wrap" style="margin-left:auto"><span class="chip on">結構化</span><span class="chip">named.conf 原始檔</span><span class="chip">版本 7</span><button type="button" class="btn sm pri" style="color:var(--hazelink)">新增 zone</button></div></div>
       <div class="row hd srow"><span>zone</span><span>驗證</span><span class="c3">類型</span><span class="c4">序號</span><span class="c4">紀錄</span><span class="c5">轉送</span><span></span></div>
       <a class="row srow" href="#z1"><span class="name"><span class="n">example.tw</span><span class="d">/etc/bind/zones/db.example.tw</span></span><span>{U.status("ok", "checkzone 通過")}</span><span class="c3">主要</span><span class="mono c4">2026110702</span><span class="mono c4">18</span><span class="mono c5">→ 203.0.113.53</span>{U.actions(["log", "restart", "more"])}</a>
       <a class="row srow" href="#z2"><span class="name"><span class="n">internal.example.tw</span><span class="d">/etc/bind/zones/db.internal</span></span><span>{U.status("ok", "checkzone 通過")}</span><span class="c3">主要</span><span class="mono c4">2026110401</span><span class="mono c4">41</span><span class="mono c5">—</span>{U.actions(["log", "restart", "more"])}</a>
@@ -3105,7 +3109,7 @@ def host_services() -> str:
     <section class="panel" aria-labelledby="h-inst" data-sort="0:asc" data-batch>
       <div class="ph"><h2 id="h-inst">已安裝模組 · 7</h2><div class="wrap" style="margin-left:auto"><button type="button" class="btn sm">停止選取</button><button type="button" class="btn sm">移除選取</button></div></div>
       <div class="row hd mrow"><span>模組</span><span class="c3">版本</span><span>服務</span><span class="c4">開機啟動</span><span></span></div>
-      {mrow("BIND DNS", "hazel-tw-01 · named", "9.18.28", U.status("ok", "執行中"), "開", mb("停止") + mb("重新啟動") + mm)}
+      {mrow("BIND DNS", "hazel-tw-01 · named", "9.18.28", U.status("ok", "執行中"), "開", '<a class="btn sm" href="HostServiceBind.dc.html">設定</a>' + mb("停止") + mb("重新啟動") + mm)}
       {mrow("BIND DNS", "hazel-jp-02 · named", "9.18.28", U.status("dng", "設定驗證失敗"), "開", mb("看輸出", True) + mm)}
       {mrow("Postfix／Dovecot", "hazel-tw-01 · postfix、dovecot", "3.7.11 · 2.3.19", U.status("ok", "執行中"), "開", mb("停止") + mb("重新啟動") + mm)}
       {mrow("Samba", "hazel-tw-01 · smbd、nmbd", "4.19.5", U.status("ok", "執行中"), "開", mb("停止") + mb("重新啟動") + mm)}
@@ -3125,7 +3129,12 @@ def host_services() -> str:
         <div class="field"><label for="rmc">輸入 <span class="mono">bind@hazel-tw-01</span> 以確認</label><div class="inp"><input id="rmc" style="background:transparent;border:0;flex:1"></div></div>
         <div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">取消</button><button type="button" class="btn dng" disabled aria-disabled="true" style="opacity:.6">移除</button></div>
       </div></div></section>"""
-    main = head + scope + tiles + modules + installed + zones + records + f'<div class="cg">{apply}{history}</div>' + U.savebar("example.tw 紀錄：1 筆新增、1 筆修改", "按套用才會寫進 BIND，並先跑 named-checkzone", "套用到 BIND") + rdiff + remove
+    if part == "bind":
+        bhead = _form_head([("主機", "Nodes.dc.html"), ("服務模組", "HostServices.dc.html")], "BIND DNS · hazel-tw-01",
+                           U.status("ok", "執行中") + '<button type="button" class="btn">重新啟動</button><a class="btn" href="HostServices.dc.html">回模組清單</a>')
+        main = bhead + zones + records + f'<div class="cg">{apply}{history}</div>' + rdiff + U.savebar("example.tw 紀錄：1 筆新增、1 筆修改", "按套用才會寫進 BIND，並先跑 named-checkzone", "套用到 BIND")
+        return U.shell("svcmod", main)
+    main = head + scope + tiles + modules + installed + remove
     return U.shell("svcmod", main)
 
 
@@ -4065,7 +4074,7 @@ def folder_picker() -> str:
 
 
 # ---------- 物件儲存（增補 08 OBJ） ----------
-def object_storage() -> str:
+def object_storage(part: str | None = None) -> str:
     head = U.page_head("物件儲存", OBS, '<button type="button" class="btn">{}新增 bucket</button><button type="button" class="btn pri">{}建立物件儲存服務</button>'.format(U.icon("plus", 14), U.icon("plus", 14)))
     def svc(name, host, path, eng, pct, used, nb, st):
         return (f'<div class="row srow"><span class="name"><a class="n" href="#svc">{name}</a><span class="d mono">{path}</span></span><span>{st}</span>'
@@ -4085,7 +4094,7 @@ def object_storage() -> str:
       <div style="padding:12px 14px">{U.pipeline([("建立 bucket", "done", "2 個", "media 上"), ("複製物件", "cur", "68% · 28/41 GiB", "逐個 bucket"), ("核對", "todo", "—", "物件數與大小"), ("切換應用端點", "todo", "—", "shop-api、report"), ("保留舊服務", "todo", "7 天", "之後才可刪除")])}</div>
     </section>"""
     def bk(name, svcn, objs, size, quota, acc, ver, life, users):
-        return (f'<div class="row srow{" sel" if name == "uploads" else ""}"><span class="name"><a class="n mono" href="#b">{name}</a><span class="d">{svcn}</span></span><span>{acc}</span>'
+        return (f'<div class="row srow"><span class="name"><a class="n mono" href="{"ObjectBucket.dc.html" if name == "uploads" else "#b"}">{name}</a><span class="d">{svcn}</span></span><span>{acc}</span>'
                 f'<span class="c3 mono">{objs}</span><span class="c3">{U.meter(quota[0], quota[1]) if quota else size}</span><span class="c4">{ver}</span><span class="c4">{life}</span>'
                 f'<span class="c5">{users}</span><span>{U.actions(["share", "more"])}</span></div>')
     buckets = f"""
@@ -4115,7 +4124,7 @@ def object_storage() -> str:
         return f'<div class="row{" sel" if name == "sku-10482.jpg" else ""}"><span class="wrap" style="flex-wrap:nowrap"><input type="checkbox" aria-label="選取 {name}"{" checked" if name == "sku-10482.jpg" else ""}><span class="mono">{name}</span></span><span class="mono">{size}</span><span class="c3">{mod}</span><span>{U.actions(["download", "share", "trash"])}</span></div>'
     browse = f"""
     <section class="panel" aria-labelledby="h-ob">
-      <div class="ph"><h2 id="h-ob">瀏覽 bucket uploads · products / 2026-11 /</h2><span class="sub">184,203 個物件 · 每頁 50</span>
+      <div class="ph"><h2 id="h-ob">products / 2026-11 /</h2><span class="sub">184,203 個物件 · 每頁 50</span>
         <div class="wrap" style="margin-left:auto"><button type="button" class="btn sm">{U.icon("upload", 14)}上傳</button><button type="button" class="btn sm">新增資料夾</button></div></div>
       <div style="padding:10px 14px" class="wrap"><label class="inp" style="flex:1;min-width:min(220px,100%)">{U.icon("search", 14)}<input value="products/2026-11/" aria-label="前綴搜尋" style="background:transparent;border:0;flex:1;min-width:0" class="mono"></label><span class="note">以前綴搜尋</span></div>
       <div class="row hd"><span>名稱</span><span>大小</span><span class="c3">修改時間</span><span></span></div>
@@ -4126,11 +4135,18 @@ def object_storage() -> str:
       {_pager("顯示 1–4 / 4", "")}
     </section>"""
     share = f"""
-    <section class="panel" aria-labelledby="h-sh">
+    <section class="panel" aria-labelledby="h-sh" role="dialog" aria-modal="true" style="max-width:640px;width:100%;margin:8px auto;box-shadow:0 18px 48px rgb(0 0 0/.22)">
       <div class="ph"><h2 id="h-sh">分享連結 · sku-10482.jpg</h2></div>
       {_grid(_fld("有效期限", _seg(["1 小時", "1 天", "7 天"], 0, "有效期限"), "最長 7 天"), _fld("連結", _in("https://media.example.tw/uploads/products/2026-11/sku-10482.jpg?X-Amz-Expires=3600&amp;…", mono=True, tail=f'<button type="button" class="ib" aria-label="複製">{U.icon("copy")}</button>')))}
+      <div class="wrap" style="justify-content:flex-end;padding:0 16px 14px"><button type="button" class="btn">關閉</button><button type="button" class="btn pri">複製連結</button></div>
     </section>"""
-    main = head + U.scope_bar([("全部服務", "3"), ("media", "tw-01"), ("backups", "lab-mini")]) + services + migrate + buckets + browse + f'<div class="cg">{share}{keys}</div>'
+    if part == "bucket":
+        bhead = _form_head([("物件儲存", "ObjectStorage.dc.html"), ("media", "ObjectStorage.dc.html")], "bucket uploads",
+                           U.status("info", "私有") + '<button type="button" class="btn">上傳</button><button type="button" class="btn">設定</button>')
+        info = ('<div class="panel"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(170px,100%),1fr));gap:10px 16px;padding:12px 14px;font-size:13px">'
+                + kv("物件", "184,203") + kv("大小", "124 / 200 GiB") + kv("版本控制", "開") + kv("生命週期", "沒有設定") + kv("誰在用", '<a href="ProjectDetail.dc.html">shop web</a>') + "</div></div>")
+        return U.shell("objstore", bhead + info + browse + share)
+    main = head + U.scope_bar([("全部服務", "3"), ("media", "tw-01"), ("backups", "lab-mini")]) + services + migrate + buckets + keys
     return U.shell("objstore", main)
 
 
@@ -4394,6 +4410,7 @@ SCREENS = {
     "AI": ("AI", ai, 1440, 2600),
     "ModelHub": ("AI · 模型庫", model_hub, 1440, 2200),
     "ObjectStorage": ("物件儲存", object_storage, 1440, 2200),
+    "ObjectBucket": ("物件儲存 › bucket uploads", lambda: object_storage("bucket"), 1440, 1200),
     "ProjectTriggers": ("專案 shop › 自動部署", project_triggers, 1440, 1300),
     "ComposeCompat": ("部署前檢查 · n8n-stack", compose_compat, 1440, 1300),
     "Fail2ban": ("安全防護 · Fail2ban", fail2ban, 1440, 2000),
@@ -4402,6 +4419,7 @@ SCREENS = {
     "Files": ("檔案", files, 1440, 2200),
     "Cron": ("計畫任務", cron, 1440, 2600),
     "Security": ("安全防護", security, 1440, 2400),
+    "SecurityWaf": ("安全防護 › 網站防護", lambda: security("waf"), 1440, 1500),
     "Analytics": ("流量分析", analytics, 1440, 2400),
     "IAM": ("身分與存取", iam, 1440, 2400),
     "Uninstall": ("平台設定 · 解除安裝", uninstall, 1440, 2000),
@@ -4417,6 +4435,7 @@ SCREENS = {
     "AppSettings": ("nextcloud · 網路與掛載", app_settings, 1440, 1300),
     "AppInstall": ("安裝應用（1Panel 市集）", app_install, 1440, 1800),
     "HostServices": ("服務模組（Webmin 等價）", host_services, 1440, 1900),
+    "HostServiceBind": ("服務模組 › BIND DNS", lambda: host_services("bind"), 1440, 1900),
     "ContainersEmpty": ("容器引擎未安裝", containers_empty, 1440, 1900),
     "KubernetesEmpty": ("Kubernetes 未連接", kubernetes_empty, 1440, 1500),
     "Login": ("登入", login, 1440, 900),

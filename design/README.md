@@ -17,7 +17,7 @@
 | `ux-evaluation.md` | UX 評估方法清單（專家審查、量測、真人測試）、門檻與改前改後數字、畫面文字來源規則 |
 | `ux-walkthrough.md` | 認知走查（六個任務）與啟發式掃描，以及市面面板版面慣例對照 |
 | `gap-analysis.md` | 規格 vs 畫面、參考專案 vs 我們的缺口盤點，與「圖形為主」第二輪的改動清單 |
-| `screens/` | 方向 B 定稿的 79 個畫板（Claude Design 畫布格式 `.dc.html`），由 `tools/build_screens.py` 產生 |
+| `screens/` | 方向 B 定稿的 82 個畫板（Claude Design 畫布格式 `.dc.html`），由 `tools/build_screens.py` 產生 |
 | `tools/hxui.py` | 共用 token CSS、導覽、圖表元件（純 SVG，CSS hover，不用 JavaScript） |
 | `tools/build_screens.py` | 示例資料與各畫面內容；執行後重建 `screens/` |
 | `screenshots/` | Playwright 渲染結果：桌面 1440 深淺色、手機 360 |
@@ -46,7 +46,9 @@
 | AccountSecurity／MfaDialogs | 帳號的第二驗證、復原碼、登入中的裝置、閒置設定、網域變更影響；綁定 TOTP 與 Passkey、登入第二步錯誤、重新驗證、強制綁定（票 014） | 表格、對話框 |
 | ListAndErrors／ChangeSafety | 列表底部（總數已知、超過查詢上限、逾時總數未知）、背景查詢與兩種被拒狀態、錯誤物件的呈現；版本過期、影響預覽、套用確認倒數、別人的變更在等確認（票 010） | 分頁列、表格、錯誤橫條 |
 | ShellStates | 外殼的各種狀態：帳號選單、未登入頂列、觀測時間沒資料、側欄收合、空頁、404、載入失敗、第一次載入、原文加白話摘要、元件停止橫條與儲存列的其他狀態（票 005） | 骨架、橫條、對話框 |
-| ObjectStorage | 物件儲存服務、bucket、存取金鑰、物件瀏覽與分享連結、從 MinIO 遷移（增補 08） | 服務表與量表、遷移流程段、bucket 表 |
+| ObjectStorage／ObjectBucket | 物件儲存服務、bucket、存取金鑰、從 MinIO 遷移；點 bucket 進去瀏覽物件、開分享連結對話框（增補 08） | 服務表與量表、遷移流程段、bucket 表、物件表 |
+| Security／SecurityWaf | 安全防護的兩個分頁：對外曝露（容器 Port、Port × 主機、主機防護、SSH）與網站防護（WAF 模式、發布、命中、封鎖與例外、規則檢查） | 格子表、WAF 長條、封鎖表 |
+| HostServices／HostServiceBind | 服務模組清單與模組 × 主機；點 BIND 的「設定」進去編輯 zone 與紀錄、套用流程、設定版本與回滾差異 | 元件矩陣、紀錄表、套用流程段 |
 | ProjectTriggers | 每個環境聽哪個分支或標籤、Webhook 狀態、路徑篩選、最近每次觸發的結果（增補 08） | 環境觸發表、觸發紀錄 |
 | ComposeCompat | 既有 compose 直接部署前會出什麼事：外部網路、container_name、資料目錄、機密、對外 Port（增補 08） | 檢查表、跨專案依賴、掛載路徑 |
 | Fail2ban | 每台主機的 Fail2ban、jail、試跑篩選規則、允許清單、統一封鎖清單（增補 09） | 主機表、jail 表、封鎖剩餘時間量表 |
