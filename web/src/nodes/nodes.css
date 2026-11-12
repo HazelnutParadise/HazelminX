@@ -416,8 +416,10 @@
     display: inline-flex;
     align-items: center;
   }
-  .hx-crumbs a {
+  .hx-crumbs a,
+  .hx-btn-link {
     min-width: 44px;
+    justify-content: center;
   }
   .hx-strip-cell {
     border-left: 0;
