@@ -14,11 +14,11 @@ FONT_LINK = ('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?fam
 
 DARK = dict(bg="#161412", panel="#1D1B18", raised="#262320", line="#35312B", ink="#ECE6DA", muted="#A79E8E",
             faint="#9A917F", hazel="#D9A066", hazelink="#1A1410", use="#A39B8E", blue="#8DB4F2", warn="#F0B35B",
-            danger="#F28B82", ok="#9BD3A4", s1="#AF711F", s2="#5682BB", s3="#47AA62", s4="#B55B9A",
+            danger="#F28B82", ok="#9BD3A4", s1="#AF711F", s2="#5682BB", s3="#47AA62", s4="#B55B9A", s5="#C4BDB0",
             q1="#2A241C", q2="#4A3A22", q3="#6E5228", q4="#9A6F33", q5="#D9A066", scrim="rgba(0,0,0,.45)", hairline="#2B2825")
 LIGHT = dict(bg="#F6F2EA", panel="#FFFDF8", raised="#EFE9DE", line="#D9D1C2", ink="#1B1814", muted="#5E574C",
              faint="#6B6457", hazel="#8F5B23", hazelink="#FFFFFF", use="#857C6F", blue="#2E5FA8", warn="#9A5A0B",
-             danger="#B4382E", ok="#2F6B3C", s1="#7C4B02", s2="#2E598F", s3="#218A45", s4="#883170",
+             danger="#B4382E", ok="#2F6B3C", s1="#7C4B02", s2="#2E598F", s3="#218A45", s4="#883170", s5="#3B362F",
              q1="#F3E6D3", q2="#E3C9A4", q3="#CFA772", q4="#B38347", q5="#8F5B23", scrim="rgba(0,0,0,.25)", hairline="#ECE6DA")
 
 
@@ -966,9 +966,9 @@ def tall_bar(parts: list, total: float, unit: str = "G") -> str:
         parts = [(v, lab, CAT.get(col, col)) for v, lab, col in parts]
     for v, lab, col in parts:
         w = v / total * 100
-        solid = any(k in col for k in ("--s1", "--s2", "--s3", "--s4", "ok", "warn", "danger", "blue"))
+        solid = any(k in col for k in ("--s1", "--s2", "--s3", "--s4", "--s5", "ok", "warn", "danger", "blue"))
         txt = f"{v:.0f}{unit}" if (w >= 9 and (solid or "q4" in col or "q5" in col)) else ""
-        fg = "#fff" if solid else "var(--ink)"
+        fg = "var(--panel)" if "--s5" in col else "#fff" if solid else "var(--ink)"
         segs.append(f'<i style="width:{w:.1f}%;background:{col};color:{fg}" title="{lab} {v:.0f}{unit}">{txt}</i>')
     free = max(0.0, total - used)
     fw = free / total * 100
