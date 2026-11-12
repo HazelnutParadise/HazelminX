@@ -29,6 +29,10 @@ type Session struct {
 	remote          string
 	connectedAt     time.Time
 	lastSeen        atomic.Int64 // unix nanos
+	// skew is the agent clock minus ours in seconds, from the latest
+	// heartbeat; hasSkew is set once one arrived.
+	skew    atomic.Int64
+	hasSkew atomic.Bool
 
 	// keys authenticate every frame after ready; sendN and recvN count
 	// frames per direction (sendN is only touched by writeLoop).
@@ -51,7 +55,7 @@ type pending struct {
 	// event and progress are set for step_execute waiters only.
 	progress func(*protocol.StepProgress)
 	event    func(*protocol.Event) // non-terminal events (started)
-	result   chan any              // *protocol.Event (completed/failed), *protocol.StepRejected, *protocol.ReconcileReport, *protocol.LedgerPage, *protocol.LedgerUnavailable
+	result   chan any              // *protocol.Event (completed/failed), *protocol.StepRejected, *protocol.ReconcileReport, *protocol.LedgerPage, *protocol.LedgerUnavailable, *protocol.CertificateInstalled, *protocol.CertificateRefused
 }
 
 // NodeID is the node fingerprint.
@@ -71,15 +75,26 @@ func (s *Session) Capabilities() []protocol.Capability {
 	return append([]protocol.Capability(nil), s.caps...)
 }
 
+// Identity is what the node's certificate proved for this session.
+func (s *Session) Identity() NodeIdentity { return s.id }
+
+// Info describes the session as Connections does.
+func (s *Session) Info() ConnectionInfo { return s.info() }
+
 // Done is closed when the session ends.
 func (s *Session) Done() <-chan struct{} { return s.done }
 
 func (s *Session) touch() { s.lastSeen.Store(s.hub.opts.Now().UnixNano()) }
 
 func (s *Session) info() ConnectionInfo {
-	return ConnectionInfo{NodeID: s.id.Fingerprint, SessionID: s.sessionID, AgentVersion: s.agentVersion, ProtocolVersion: s.protocolVersion,
+	ci := ConnectionInfo{NodeID: s.id.Fingerprint, SessionID: s.sessionID, AgentVersion: s.agentVersion, ProtocolVersion: s.protocolVersion,
 		AgentRange: s.agentRange, Capabilities: s.Capabilities(), Transport: s.transport, RemoteAddr: s.remote,
-		ConnectedAt: s.connectedAt, LastSeenAt: time.Unix(0, s.lastSeen.Load()).UTC()}
+		ConnectedAt: s.connectedAt, LastSeenAt: time.Unix(0, s.lastSeen.Load()).UTC(), CertificateSerial: s.id.Serial}
+	if s.hasSkew.Load() {
+		v := int(s.skew.Load())
+		ci.ClockSkewSeconds = &v
+	}
+	return ci
 }
 
 // send queues a message. Core→agent traffic is small (requests, acks,
@@ -158,10 +173,23 @@ func (s *Session) outstandingJobs() []string {
 }
 
 func (s *Session) close(code websocket.StatusCode, reason string) {
+	s.end(func() { _ = s.conn.Close(code, reason) })
+}
+
+// abort ends the session without a close handshake: for a peer that no
+// longer answers, a close would wait for a frame that never comes.
+func (s *Session) abort() {
+	s.end(func() { _ = s.conn.CloseNow() })
+}
+
+func (s *Session) end(closeConn func()) {
 	s.closeOnce.Do(func() {
 		s.hub.unregister(s)
 		close(s.done)
-		_ = s.conn.Close(code, reason)
+		closeConn()
+		if s.hub.opts.OnClosed != nil {
+			go s.hub.opts.OnClosed(s)
+		}
 	})
 }
 
@@ -222,6 +250,8 @@ func (s *Session) protocolError(code, message string) {
 func (s *Session) handle(msg any) {
 	switch m := msg.(type) {
 	case *protocol.Heartbeat:
+		s.skew.Store(int64(m.At.Sub(s.hub.opts.Now()).Round(time.Second) / time.Second))
+		s.hasSkew.Store(true)
 	case *protocol.Event:
 		// Events are routed by job and step, not by request id: an agent
 		// answers a repeated step_execute by re-sending the recorded event of
@@ -255,10 +285,19 @@ func (s *Session) handle(msg any) {
 		if p := s.lookup(m.RequestID); p != nil {
 			s.deliver(m.RequestID, p, m)
 		}
+	case *protocol.CertificateInstalled:
+		if p := s.lookup(m.RequestID); p != nil {
+			s.deliver(m.RequestID, p, m)
+		}
+	case *protocol.CertificateRefused:
+		if p := s.lookup(m.RequestID); p != nil {
+			s.deliver(m.RequestID, p, m)
+		}
 	case *protocol.ProtocolError:
 		s.hub.opts.Logger.Warn("agent could not read a core message", "node", s.id.Fingerprint, "code", m.Code, "detail", m.Message)
 	default:
-		// step_execute, step_reconcile, ack and ledger_pull only flow core→agent.
+		// step_execute, step_reconcile, ack, ledger_pull and certificate_renew
+		// only flow core→agent.
 		s.protocolError(protocol.ErrorUnknownMessage, "message is not valid in the agent→core direction")
 	}
 }

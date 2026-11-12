@@ -5,7 +5,7 @@
 
 use super::*;
 use crate::actions;
-use hazelminx_protocol::EventKind;
+use hazelminx_protocol::{EventKind, Resource};
 use serde_json::json;
 use std::path::Path;
 use time::Duration;
@@ -35,6 +35,7 @@ struct Req {
     control_generation: u64,
     expires_at: OffsetDateTime,
     retryable: bool,
+    resources: Vec<Resource>,
 }
 
 impl Req {
@@ -52,6 +53,7 @@ impl Req {
             control_generation: 3,
             expires_at: now() + Duration::minutes(5),
             retryable: false,
+            resources: Vec::new(),
         }
     }
 
@@ -65,6 +67,7 @@ impl Req {
             action_version: self.action_version,
             params: self.params.clone(),
             target_node: self.target_node.clone(),
+            resources: self.resources.clone(),
             control_generation: self.control_generation,
             expires_at: self.expires_at,
             retryable: self.retryable,
@@ -904,4 +907,163 @@ fn reconcile_never_journals_even_when_called_repeatedly() {
         before,
         "reconcile never writes to the journal"
     );
+}
+
+// ---------- SEC-004: resource scope ----------
+
+/// An action that writes the file named by its `file` param.
+fn validate_touch(p: &Map<String, Value>) -> Result<(), String> {
+    match p.get("file") {
+        Some(Value::String(_)) if p.len() == 1 => Ok(()),
+        _ => Err("touch takes exactly one string param \"file\"".into()),
+    }
+}
+
+fn touches_file(p: &Map<String, Value>) -> Vec<Resource> {
+    vec![Resource {
+        kind: "path".into(),
+        id: p["file"].as_str().unwrap_or_default().to_string(),
+    }]
+}
+
+static TOUCH_SPECS: [actions::ActionSpec; 1] = [actions::ActionSpec {
+    name: "test.touch",
+    version: 1,
+    validate: validate_touch,
+    touches: touches_file,
+}];
+
+fn touch_steps(dir: &Path) -> Steps {
+    Steps::new(
+        Journal::open(dir).expect("journal opens"),
+        NODE.to_string(),
+        &TOUCH_SPECS,
+        Vec::new(),
+    )
+}
+
+fn touch(job: &str, file: &str, resources: &[(&str, &str)]) -> Req {
+    let mut r = Req::new(job, 0);
+    r.action = "test.touch".into();
+    r.params = json!({ "file": file }).as_object().unwrap().clone();
+    r.resources = resources
+        .iter()
+        .map(|(k, i)| Resource {
+            kind: k.to_string(),
+            id: i.to_string(),
+        })
+        .collect();
+    r
+}
+
+fn rejected_code(d: Decision) -> String {
+    match d {
+        Decision::Reject(Message::StepRejected { code, .. }) => code,
+        other => panic!("expected a rejection, got {other:?}"),
+    }
+}
+
+#[test]
+fn step_inside_its_resources_runs() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut steps = touch_steps(dir.path());
+    run(
+        &mut steps,
+        &touch("j1", "/srv/app/data.txt", &[("path", "/srv/app")]),
+    );
+    run(
+        &mut steps,
+        &touch("j2", "/srv/app", &[("path", "/srv/app")]),
+    );
+    run(
+        &mut steps,
+        &touch("j3", "/etc/x", &[("service", "a"), ("path", "/etc/x")]),
+    );
+    run(&mut steps, &touch("j4", "/anything", &[("path", "/")]));
+}
+
+#[test]
+fn step_outside_its_resources_is_refused_and_not_journaled() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut steps = touch_steps(dir.path());
+    for (job, file, res) in [
+        ("o1", "/etc/passwd", vec![("path", "/srv/app")]),
+        ("o2", "/srv/application", vec![("path", "/srv/app")]),
+        ("o3", "/srv/app", vec![("path", "/srv/app/sub")]),
+        ("o4", "/srv/app", vec![("mount", "/srv/app")]),
+        ("o5", "/srv/app", vec![]),
+    ] {
+        let d = decide(&mut steps, &touch(job, file, &res).msg(), now());
+        assert_eq!(
+            rejected_code(d),
+            step_reject_code::WRONG_RESOURCE_SCOPE,
+            "{job}"
+        );
+        assert!(
+            matches!(steps.journal().step_state(job, 0), StepState::NotStarted),
+            "{job} journaled"
+        );
+    }
+}
+
+#[test]
+fn unclean_or_unnamed_resources_are_refused() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut steps = touch_steps(dir.path());
+    for (job, file, res) in [
+        (
+            "u1",
+            "/srv/app/../../etc/passwd",
+            vec![("path", "/srv/app")],
+        ),
+        ("u2", "/srv/app/./x", vec![("path", "/srv/app")]),
+        ("u3", "/srv//app/x", vec![("path", "/srv/app")]),
+        ("u4", "relative/x", vec![("path", "relative")]),
+        ("u5", "/srv/app/x", vec![("path", "")]),
+        ("u6", "/srv/app/x", vec![("", "/srv/app")]),
+        ("u7", "/srv/app/x", vec![("path", "/srv/app/")]),
+        ("u8", "/srv/app/x", vec![("path", "/srv/../srv/app")]),
+    ] {
+        let d = decide(&mut steps, &touch(job, file, &res).msg(), now());
+        assert_eq!(
+            rejected_code(d),
+            step_reject_code::WRONG_RESOURCE_SCOPE,
+            "{job}"
+        );
+    }
+}
+
+#[test]
+fn wrong_node_and_expiry_still_come_before_the_scope() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut steps = touch_steps(dir.path());
+    let mut r = touch("w1", "/etc/passwd", &[]);
+    r.target_node = "other".into();
+    assert_eq!(
+        rejected_code(decide(&mut steps, &r.msg(), now())),
+        step_reject_code::WRONG_NODE
+    );
+    let r = touch("w2", "/etc/passwd", &[]).expired();
+    assert_eq!(
+        rejected_code(decide(&mut steps, &r.msg(), now())),
+        step_reject_code::EXPIRED
+    );
+}
+
+/// Every action that is not read-only must name what it touches, so a new
+/// host action cannot skip the scope check by forgetting to.
+#[test]
+fn every_writing_action_declares_what_it_touches() {
+    for spec in actions::specs() {
+        if actions::READ_ONLY.contains(&spec.name) {
+            continue;
+        }
+        let sample = actions::sample_params(spec.name)
+            .unwrap_or_else(|| panic!("{} has no sample params for this test", spec.name));
+        assert!(
+            !(spec.touches)(&sample).is_empty(),
+            "{} touches nothing for its sample params",
+            spec.name
+        );
+    }
 }

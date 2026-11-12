@@ -1,0 +1,6 @@
+{
+  "type": "certificate_refused",
+  "requestId": "crt_01HXYZ",
+  "code": "CERTIFICATE_INVALID",
+  "message": "certificate common name is not this node's fingerprint"
+}

@@ -120,6 +120,9 @@ type messageCase struct {
 
 var messageCases = map[string]messageCase{
 	"ack.json":                     {false, reflect.TypeOf(&Ack{})},
+	"certificate_installed.json":   {false, reflect.TypeOf(&CertificateInstalled{})},
+	"certificate_refused.json":     {false, reflect.TypeOf(&CertificateRefused{})},
+	"certificate_renew.json":       {false, reflect.TypeOf(&CertificateRenew{})},
 	"auth.json":                    {true, reflect.TypeOf(&Auth{})},
 	"event_completed.json":         {false, reflect.TypeOf(&Event{})},
 	"event_failed.json":            {false, reflect.TypeOf(&Event{})},

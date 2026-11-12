@@ -236,7 +236,7 @@ func dialAgent(t *testing.T, core *testCore, url string, n testNode, o agentOpts
 	}
 	caps := o.caps
 	if caps == nil {
-		caps = []protocol.Capability{{Name: protocol.CapJobs, Version: 1}, {Name: protocol.CapAgentInfo, Version: 1}}
+		caps = []protocol.Capability{{Name: protocol.CapJobs, Version: JobsProtocolVersion}, {Name: protocol.CapAgentInfo, Version: 1}}
 	}
 	kexKey, kex, err := protocol.NewKex()
 	if err != nil {

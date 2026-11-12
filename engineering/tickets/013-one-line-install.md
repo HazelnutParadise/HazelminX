@@ -48,3 +48,12 @@ hazelminx CLI（Rust）的 install：預檢、簽署清單選版本、先下載�
 - 安裝器第一步執行 `hazelminx-privileged snapshot capture`，安裝步驟用 `ledger::recorder::Recorder` 記錄，並讓 `/var/lib/hazelminx` 維持 root 擁有、群組與其他人不可寫。
 - 把 Core 資料目錄的 `privileged-issuer.pub` 放到主機的 `/etc/hazelminx/privileged/issuer.pub`。沒有這個檔，執行器不會啟動，Core 也拿不到帳本。
 - dnf／rpm 主機的帳本只用模擬輸出測過。x86_64 與 ARM64 的 Ubuntu 24.04 已由 CI 以 root 在 systemd 下實測（PR #127）。
+
+### 票 019 交過來的項目
+
+- 遠端主機加入：安裝腳本以 Agent 的執行帳號跑 `hazelminx-agent enroll --core-url <Agent 入口網址> --code <註冊碼>`（帳號錯了，`identity/` 的擁有者會不對）。註冊成功後，再以 root 把 `state_dir/identity/privileged-issuer.pub` 複製到 `/etc/hazelminx/privileged/issuer.pub`，然後啟動 Agent 服務。Agent 會用 `state_dir/enrollment.json` 記下的網址連回，`agent.toml` 不必寫 `core_url`。
+- `enroll` 會等管理員核准（預設 30 分鐘）。腳本中斷後用同一個碼重跑會接著等，不會變成第二台主機。
+- 本機第一個節點（Core 與 Agent 在同一台）目前也要走同樣的註冊碼流程。若要省掉核准步驟，需要另外決定，不在票 019 的範圍。
+- （PR #143 審查 2026-11-12）高權限執行器信任的簽發公鑰，是由低權限的 Agent 帳號先寫到 `state_dir/identity/privileged-issuer.pub`，再由安裝腳本以 root 複製到 `/etc/hazelminx/privileged/issuer.pub`。Agent 帳號被攻陷時，可以在複製前換掉這個檔，讓執行器信任攻擊者的簽發金鑰。動工時要決定安裝腳本怎麼確認這個檔沒有被換過，例如：
+  - 以 root 直接向 Core 取得公鑰，用註冊時取得的 Core CA 驗證 Core，不經過 Agent 帳號寫的檔。
+  - 或者核對 Core 管理介面顯示的公鑰指紋，與管理員在安裝時輸入的指紋一致。
