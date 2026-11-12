@@ -13,7 +13,7 @@
     "databases": "Databases",
     "ai": "AI",
     "apiProxy": "API proxy",
-    "nodes": "Hosts & nodes",
+    "nodes": "Hosts",
     "containers": "Containers",
     "kubernetes": "Kubernetes",
     "storage": "Storage & backup",

@@ -13,7 +13,7 @@
     "databases": "資料庫",
     "ai": "AI",
     "apiProxy": "API 代理",
-    "nodes": "主機與節點",
+    "nodes": "主機",
     "containers": "容器",
     "kubernetes": "Kubernetes",
     "storage": "儲存與備份",

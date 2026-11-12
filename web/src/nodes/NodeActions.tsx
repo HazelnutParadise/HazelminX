@@ -389,6 +389,8 @@ function RevokeDialog({ node, onClose }: { node: Node; onClose: () => void }) {
     },
   });
   const matches = typed.trim() === name;
+  // A connected host is cut off now; any other host only hears of it when it next connects.
+  const online = node.connection.state === "online";
   return (
     <ActionDialog
       title={t("nodes.revoke.title", { name })}
@@ -407,11 +409,11 @@ function RevokeDialog({ node, onClose }: { node: Node; onClose: () => void }) {
       }
     >
       <ul className="hx-consequences hx-consequences--danger">
-        <li>{t("nodes.revoke.effectSession")}</li>
+        {online && <li>{t("nodes.revoke.effectSession")}</li>}
         <li>{t("nodes.revoke.effectReconnect")}</li>
         <li>{t("nodes.revoke.effectJobs")}</li>
         <li>{t("nodes.revoke.effectKey")}</li>
-        {node.connection.state !== "online" && <li>{t("nodes.revoke.effectOffline")}</li>}
+        {!online && <li>{t("nodes.revoke.effectOffline")}</li>}
       </ul>
       <Input
         label={t("nodes.revoke.reason")}
