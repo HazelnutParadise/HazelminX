@@ -6,8 +6,9 @@
 //! 1. `targetNode` is not this node → reject `WRONG_NODE`;
 //! 2. the journal has a terminal record for (jobId, step) → `Resend` that
 //!    record (never run again, even if the request is expired or stale:
-//!    re-sending a record executes nothing); when only the compacted
-//!    outcome is left → reject `OUTCOME_UNKNOWN`, so the Core reconciles;
+//!    re-sending a record executes nothing); a completed step whose
+//!    records were compacted (its result is gone) → reject
+//!    `OUTCOME_UNKNOWN`, so the Core reconciles;
 //! 3. the journal shows the step started and it is still running in this
 //!    process → `AlreadyRunning` (its outcome event will follow);
 //! 4. the journal shows the step started but it is not running (the agent
@@ -164,7 +165,7 @@ impl Steps {
             StepState::Compacted(_) => {
                 return Ok(reject(
                     step_reject_code::OUTCOME_UNKNOWN,
-                    "this step finished earlier and only its outcome is kept; reconcile to read it"
+                    "this step completed earlier and only its outcome is kept; reconcile to read it"
                         .to_string(),
                     None,
                 ));
@@ -294,7 +295,7 @@ impl Steps {
     /// - completed → started=true, completed=true, evidence of the record;
     /// - failed → started=true, failed=true, the record's evidence and
     ///   error;
-    /// - compacted → the same as completed or failed, from the outcome;
+    /// - compacted → the same as completed, from the outcome;
     /// - every report carries the reconcile's requestId, jobId and step.
     pub fn reconcile(&self, msg: &Message) -> Result<ReconcileAnswer> {
         let Message::StepReconcile {

@@ -24,11 +24,13 @@
 //!
 //! The Core acknowledges an event as soon as it arrives, before its job
 //! state is saved, so an acknowledged step may still be reconciled later.
-//! A compacted step therefore keeps its outcome (kind, evidence, error) in
+//! A compacted step therefore keeps its last record without the result in
 //! `dir/journal.outcomes.jsonl`, written before the journal drops the
-//! records: a reconcile reports that outcome, a repeated `step_execute` is
-//! refused as outcome unknown, and the step never starts again. Only the
-//! newest [`OUTCOMES_MAX_STEPS`] outcomes are kept.
+//! records: a reconcile reports that outcome, and the step never starts
+//! again. A repeated `step_execute` gets the failed record re-sent, or, for
+//! a completed step whose result is gone, is refused as outcome unknown so
+//! the Core reconciles. Only the newest [`OUTCOMES_MAX_STEPS`] outcomes are
+//! kept.
 //!
 //! The archive is an audit copy the agent never reads to answer the Core;
 //! it is rotated to `journal.archive.1.jsonl` when it reaches
@@ -185,6 +187,24 @@ pub struct Outcome {
     pub error: Option<StepFailure>,
 }
 
+impl Outcome {
+    /// The terminal record this outcome was taken from, without its result.
+    fn to_record(&self) -> Record {
+        Record {
+            seq: self.seq,
+            kind: self.kind,
+            job_id: self.job_id.clone(),
+            step: self.step,
+            request_id: self.request_id.clone(),
+            at: self.at,
+            control_generation: self.control_generation,
+            evidence: self.evidence.clone(),
+            result: None,
+            error: self.error.clone(),
+        }
+    }
+}
+
 /// What the journal knows about one step.
 #[derive(Debug, Clone, PartialEq)]
 pub enum StepState {
@@ -197,8 +217,9 @@ pub enum StepState {
     },
     Completed(Record),
     Failed(Record),
-    /// The step finished and its records were compacted; only the outcome
-    /// is left.
+    /// The step completed and its records were compacted; only the outcome
+    /// is left (the result is not). A compacted failed step answers as
+    /// `Failed` with its rebuilt record.
     Compacted(Outcome),
 }
 
@@ -357,9 +378,10 @@ impl Journal {
     /// - moved records leave memory and `journal.jsonl`, and are appended to
     ///   the archive (mode 0600) with every field intact; `last_seq`,
     ///   `acked` and `max_control_generation` do not change;
-    /// - each moved step's last record is kept as its outcome
-    ///   (`step_state` → `Compacted`, across restarts); a new `started` for
-    ///   it is refused; beyond `OUTCOMES_MAX_STEPS` the lowest seqs go;
+    /// - each moved step's last record is kept as its outcome, across
+    ///   restarts: `step_state` → `Compacted` for a completed step, `Failed`
+    ///   with the rebuilt record for a failed one; a new `started` for it is
+    ///   refused; beyond `OUTCOMES_MAX_STEPS` the lowest seqs go;
     /// - the archive is rotated before appending once it is at least
     ///   `ARCHIVE_MAX_BYTES`;
     /// - after an earlier compaction was cut off, records already in the
@@ -547,6 +569,8 @@ impl Journal {
             let _ = fs::remove_file(&tmp);
         }
         renamed?;
+        // The outcomes rename must be durable before the journal rename.
+        sync_dir(&self.dir)?;
         #[cfg(test)]
         self.crash(CrashPoint::AfterOutcomes)?;
         Ok(())
@@ -666,6 +690,9 @@ impl Journal {
             .find(|r| r.job_id == job_id && r.step == step)
         {
             None => match self.outcomes.get(&(job_id.to_string(), step)) {
+                // A failed record has no result, so it is rebuilt whole and
+                // can still be re-sent.
+                Some(o) if o.kind == EventKind::Failed => StepState::Failed(o.to_record()),
                 Some(o) => StepState::Compacted(o.clone()),
                 None => StepState::NotStarted,
             },

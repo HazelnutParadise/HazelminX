@@ -155,7 +155,7 @@ fn compact_moves_only_acked_finished_jobs_past_retention_to_the_archive() {
     ));
     assert!(matches!(
         j.step_state("job-failed", 1),
-        StepState::Compacted(_)
+        StepState::Failed(_)
     ));
     assert_eq!(
         jobs_of(&j.records),
