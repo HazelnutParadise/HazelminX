@@ -69,8 +69,9 @@ pub const RETAIN_AGE: time::Duration = time::Duration::days(7);
 /// At most this many settled records stay in the journal, newest jobs first.
 pub const RETAIN_MAX_RECORDS: usize = 10_000;
 /// The archive is rotated once it reaches this size, checked before each
-/// batch; with the previous generation it takes about twice this on disk,
-/// plus one batch (a soft cap: the first compaction of a long-grown journal
+/// batch, so each generation holds at most this plus one batch; with the
+/// previous generation the archive takes at most about 2 × (this + one
+/// batch) on disk (a soft cap: the first compaction of a long-grown journal
 /// can write a larger batch, which the next rotation then drops).
 pub const ARCHIVE_MAX_BYTES: u64 = 16 * 1024 * 1024;
 /// Outcomes of compacted steps, rewritten (temp file, fsync, rename) by
@@ -434,9 +435,13 @@ impl Journal {
         self.records = kept;
         self.floor = floor;
         self.outcomes = outcomes;
+        // Until this fsync succeeds the old journal may come back after a
+        // power loss, so `append` redoes it before writing anything.
+        self.dir_unsynced = true;
         #[cfg(test)]
         self.crash(CrashPoint::AfterRename)?;
         sync_dir(&self.dir)?;
+        self.dir_unsynced = false;
         self.archive_clean = true;
         Ok(moved.len())
     }
@@ -636,7 +641,9 @@ impl Journal {
     ///   caller, not by the journal.)
     /// - `Completed`/`Failed` when the step is not `Interrupted` (never
     ///   started, or already finished) → error, nothing written;
-    /// - records of other (job, step) pairs do not interfere.
+    /// - records of other (job, step) pairs do not interfere;
+    /// - after a compaction whose final directory fsync failed, that fsync
+    ///   is redone first; if it fails again → error, nothing written.
     pub fn append(&mut self, rec: NewRecord) -> Result<Record> {
         let last = self.last_kind(&rec.job_id, rec.step);
         if !transition_allowed(last, rec.kind) {
@@ -647,6 +654,13 @@ impl Journal {
                 rec.step,
                 last
             );
+        }
+
+        if self.dir_unsynced {
+            #[cfg(test)]
+            self.crash(CrashPoint::PendingDirSync)?;
+            sync_dir(&self.dir).context("redo the directory fsync of the last compaction")?;
+            self.dir_unsynced = false;
         }
 
         let stored = Record {
