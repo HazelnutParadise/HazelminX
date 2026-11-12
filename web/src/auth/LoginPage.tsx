@@ -2,23 +2,20 @@ import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
 import { LockSimpleIcon } from "@phosphor-icons/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Navigate, useSearchParams } from "react-router";
-import { parseRfc3339 } from "../lib/time";
+import { Navigate, useLocation, useNavigate, useSearchParams } from "react-router";
 import { useDocumentTitle } from "../shell/useDocumentTitle";
-import { useNow } from "../shell/useNow";
 import { authApi, authKeys, isApiError, type FactorMethod, type FactorProof } from "./api";
 import { AUTH_PATHS, safeNext, withNext } from "./nextPath";
 import { AuthCard, AuthError, Divider, Notice, OtpInput } from "./parts";
 import { useRetryCountdown } from "./hooks";
-import { useSession } from "./session";
+import { forgetAccountData, useSession, useSignOut } from "./session";
 import { getPasskey, passkeyBlock, passkeyFailure } from "./webauthn";
 
 interface Challenge {
   token: string;
   methods: string[];
-  expiresAt?: string;
   username: string;
 }
 
@@ -34,22 +31,39 @@ export function LoginPage() {
   const session = useSession();
   const setup = useQuery({ queryKey: authKeys.setup, queryFn: authApi.setupStatus });
   const client = useQueryClient();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const signOut = useSignOut();
+  // Set by useSignOut when Core did not confirm the sign-out: the old session may still work.
+  const signOutFailed = (location.state as { signOutFailed?: boolean } | null)?.signOutFailed === true;
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [username, setUsername] = useState("");
   const [expired, setExpired] = useState(false);
   useDocumentTitle(t("auth.login.title"));
 
-  if (session.status === "signed-in") {
+  if (session.status === "signed-in" && !signOutFailed) {
     const s = session.session;
     return <Navigate to={s.secondFactorEnrollmentRequired ? withNext(AUTH_PATHS.enroll, next) : next} replace />;
   }
   if (setup.data?.needsSetup) return <Navigate to={AUTH_PATHS.setup} replace />;
   if (session.status === "loading") return null;
 
-  const signedIn = () => client.invalidateQueries({ queryKey: authKeys.session });
+  const signedIn = () => {
+    forgetAccountData(client);
+    if (signOutFailed) void navigate(location.pathname + location.search, { replace: true, state: null });
+    return client.invalidateQueries({ queryKey: authKeys.session });
+  };
 
   return (
     <div className="hx-auth-stack">
+      {signOutFailed && (
+        <div className="hx-auth-row">
+          <Notice tone="warn">{t("auth.login.signOutFailed")}</Notice>
+          <Button variant="secondary" onClick={() => void signOut()}>
+            {t("auth.login.signOutRetry")}
+          </Button>
+        </div>
+      )}
       {challenge ? (
         <SecondFactorStep
           challenge={challenge}
@@ -107,7 +121,6 @@ function PasswordStep({
         onChallenge({
           token: res.challengeToken,
           methods: res.methods ?? [],
-          expiresAt: res.challengeExpiresAt,
           username: username.trim(),
         });
         return;
@@ -178,7 +191,8 @@ function SecondFactorStep({
 }) {
   const { t } = useTranslation();
   const has = (m: FactorMethod) => challenge.methods.includes(m);
-  const passkey = has("passkey") && passkeyBlock() === null;
+  const block = has("passkey") ? passkeyBlock() : null;
+  const passkey = has("passkey") && block === null;
   const [mode, setMode] = useState<"code" | "recovery" | "none">(() =>
     has("totp") ? "code" : passkey ? "none" : "recovery",
   );
@@ -187,15 +201,11 @@ function SecondFactorStep({
   const [error, setError] = useState<unknown>(null);
   const [cancelled, setCancelled] = useState(false);
   const retryIn = useRetryCountdown(error);
-  const now = useNow(1000);
   const codeLabelId = useId();
   const blocked = busy || retryIn > 0;
 
-  const expiresAt = challenge.expiresAt ? parseRfc3339(challenge.expiresAt) : null;
-  const timedOut = !!expiresAt && now >= expiresAt;
-  useEffect(() => {
-    if (timedOut) onBack(true);
-  }, [timedOut, onBack]);
+  // Expiry is Core's call (LOGIN_CHALLENGE_INVALID): comparing challengeExpiresAt with this browser's clock
+  // would send a user whose clock runs ahead straight back to the password, every time.
 
   const send = async (proof: FactorProof) => {
     setBusy(true);
@@ -245,6 +255,12 @@ function SecondFactorStep({
         }}
         noValidate
       >
+        {block && (
+          <Notice tone="warn">
+            {block === "ip-address" ? t("auth.passkey.ipAddress") : t("auth.passkey.unsupported")}
+          </Notice>
+        )}
+        {challenge.methods.length === 0 && <Notice tone="danger">{t("auth.second.noMethods")}</Notice>}
         {passkey && (
           <Button
             variant="primary"

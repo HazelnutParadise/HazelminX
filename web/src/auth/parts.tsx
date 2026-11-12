@@ -149,7 +149,17 @@ export function AuthError({
   if (isApiError(error, "TOO_MANY_ATTEMPTS")) {
     const wait = retryIn ?? error.retryAfterSeconds ?? 60;
     if (wait <= 0) return null;
-    return <Notice tone="danger">{t("auth.errors.tooManyAttempts", { wait: formatWait(wait) })}</Notice>;
+    // The alert is read once with the wait Core reported; the visible countdown is not announced every second.
+    return (
+      <div className="hx-notice">
+        <span className="hx-visually-hidden" role="alert">
+          {t("auth.errors.tooManyAttemptsSr", { wait: formatWait(error.retryAfterSeconds ?? 60) })}
+        </span>
+        <span aria-hidden="true">
+          <StatusPill tone="danger">{t("auth.errors.tooManyAttempts", { wait: formatWait(wait) })}</StatusPill>
+        </span>
+      </div>
+    );
   }
   if (isApiError(error)) {
     const key = messages[error.code];

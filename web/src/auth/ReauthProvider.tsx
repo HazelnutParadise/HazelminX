@@ -20,7 +20,14 @@ export function ReauthProvider({ children }: { children: ReactNode }) {
     null,
   );
   const ask = useCallback<Ask>(
-    (title) => new Promise<void>((resolve, reject) => setPending({ title, resolve, reject })),
+    (title) =>
+      new Promise<void>((resolve, reject) =>
+        setPending((prev) => {
+          // One dialog at a time: an earlier request still waiting is cancelled, never left hanging.
+          prev?.reject(new ReauthCancelled());
+          return { title, resolve, reject };
+        }),
+      ),
     [],
   );
   return (
@@ -44,7 +51,7 @@ export function ReauthProvider({ children }: { children: ReactNode }) {
 }
 
 const MESSAGES = {
-  INVALID_CREDENTIALS: "auth.errors.wrongPassword",
+  INVALID_CREDENTIALS: "auth.errors.wrongPasswordOnly",
   SECOND_FACTOR_INVALID: "auth.errors.wrongCode",
   NOT_AVAILABLE: "auth.passkey.ipAddress",
 };
@@ -65,7 +72,8 @@ function ReauthDialog({ title, onDone, onCancel }: { title: string; onDone: () =
   const submitted = useRef(false);
 
   const mode: FactorMethod | null = !methods.any ? null : useRecovery || !methods.totp ? "recovery-code" : "totp";
-  const blocked = retryIn > 0 || busy || factors.isPending;
+  // Without the factor list the dialog cannot tell which second factor to ask for.
+  const blocked = retryIn > 0 || busy || factors.isPending || factors.isError;
 
   const run = async (proof?: { method: FactorMethod; code?: string; credential?: unknown }) => {
     if (!password) {
@@ -172,6 +180,14 @@ function ReauthDialog({ title, onDone, onCancel }: { title: string; onDone: () =
               />
             )}
             {cancelled && <Notice tone="warn">{t("auth.passkey.cancelledRetry")}</Notice>}
+            {factors.isError && (
+              <div className="hx-auth-row">
+                <AuthError error={factors.error} />
+                <Button variant="secondary" onClick={() => void factors.refetch()}>
+                  {t("auth.retry")}
+                </Button>
+              </div>
+            )}
             <AuthError error={error} messages={MESSAGES} retryIn={retryIn} />
             {methods.totp && methods.recovery && (
               <button type="button" className="hx-link-button" onClick={() => setUseRecovery((v) => !v)}>

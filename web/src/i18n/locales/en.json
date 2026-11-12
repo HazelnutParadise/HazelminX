@@ -171,20 +171,25 @@
       "wrongCode": "Wrong code",
       "tooManyAttempts": "Too many attempts · try again in {{wait}}",
       "required": "Required",
-      "passwordRequired": "Enter your password first"
+      "passwordRequired": "Enter your password first",
+      "wrongPasswordOnly": "Wrong password",
+      "tooManyAttemptsSr": "Too many attempts. You can try again in {{wait}}"
     },
     "login": {
       "title": "Sign in to the panel",
       "challengeExpired": "This sign-in timed out · enter your password again",
       "cannotSignIn": "Can't sign in?",
       "lostFactor": "Lost your second factor: choose \"Use a recovery code\" in the second step",
-      "lostPassword": "Forgot your password: ask an admin to reset it, or run this on the host"
+      "lostPassword": "Forgot your password: ask an admin to reset it, or run this on the host",
+      "signOutFailed": "Sign-out was not confirmed; this device may still be signed in",
+      "signOutRetry": "Sign out again"
     },
     "second": {
       "title": "Verify it's you",
       "subtitle": "{{username}} · step 2",
       "orCode": "or enter the 6 digits from your authenticator",
-      "code": "Enter the 6 digits from your authenticator"
+      "code": "Enter the 6 digits from your authenticator",
+      "noMethods": "This account has no second factor that works at this address; ask an admin for help"
     },
     "setup": {
       "title": "Create the owner account",

@@ -2,7 +2,7 @@ import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
 import { CopyIcon, LockSimpleIcon } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
-import { useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { activeLocale } from "../i18n";
 import { browserTimeZone, formatDateTime, parseRfc3339, toRfc3339Utc } from "../lib/time";
@@ -55,7 +55,6 @@ export function TotpSetup({
   const retryIn = useRetryCountdown(error);
   const now = useNow(1000);
   const codeLabelId = useId();
-  const enrolled = useRef(false);
 
   const e = begun.data;
   const serverNow = e ? new Date(now.getTime() + e.clockOffsetMs) : null;
@@ -74,7 +73,6 @@ export function TotpSetup({
     setError(null);
     try {
       const result = await authApi.confirmTotp(value);
-      enrolled.current = true;
       onEnrolled(result);
     } catch (err) {
       setError(err);
@@ -82,12 +80,6 @@ export function TotpSetup({
     } finally {
       setBusy(false);
     }
-  };
-
-  const cancel = () => {
-    // Drop the pending secret; Core keeps a confirmed authenticator untouched.
-    if (e && !enrolled.current) void authApi.removeTotp().catch(() => undefined);
-    onCancel?.();
   };
 
   if (begun.isPending) return <p className="hx-auth-muted">{t("loading")}</p>;
@@ -180,8 +172,10 @@ export function TotpSetup({
         <AuthError error={error} messages={TOTP_MESSAGES} retryIn={retryIn} />
       )}
       <div className={variant === "dialog" ? "hx-dialog-actions" : undefined}>
+        {/* Cancel sends no DELETE: Core ends every other session on any authenticator removal, and an
+            unconfirmed enrolment is no factor anyway; it lapses on its own or the next enrolment replaces it. */}
         {onCancel && (
-          <Button variant="secondary" onClick={cancel} disabled={busy}>
+          <Button variant="secondary" onClick={onCancel} disabled={busy}>
             {t("auth.cancel")}
           </Button>
         )}

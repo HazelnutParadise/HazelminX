@@ -163,20 +163,25 @@
       "wrongCode": "碼不對",
       "tooManyAttempts": "錯太多次 · {{wait}} 後再試",
       "required": "必填",
-      "passwordRequired": "先輸入密碼"
+      "passwordRequired": "先輸入密碼",
+      "wrongPasswordOnly": "密碼不對",
+      "tooManyAttemptsSr": "錯太多次，{{wait}} 後才能再試"
     },
     "login": {
       "title": "登入管理介面",
       "challengeExpired": "這次登入已逾時 · 請重新輸入密碼",
       "cannotSignIn": "無法登入？",
       "lostFactor": "忘記二次驗證：第二步選「使用復原碼」",
-      "lostPassword": "忘記密碼：請管理員重設，或在主機上執行"
+      "lostPassword": "忘記密碼：請管理員重設，或在主機上執行",
+      "signOutFailed": "沒有確認登出成功，這台裝置可能還在登入狀態",
+      "signOutRetry": "再登出一次"
     },
     "second": {
       "title": "驗證身分",
       "subtitle": "{{username}} · 第二步",
       "orCode": "或輸入驗證器上的 6 位數",
-      "code": "輸入驗證器上的 6 位數"
+      "code": "輸入驗證器上的 6 位數",
+      "noMethods": "這個帳號在這個網址沒有可用的二次驗證，請找管理員協助"
     },
     "setup": {
       "title": "建立擁有者帳號",

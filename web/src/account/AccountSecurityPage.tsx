@@ -132,6 +132,7 @@ function FactorsPanel() {
   const added = (r: EnrollmentResult) => {
     setAdding(null);
     void client.invalidateQueries({ queryKey: authKeys.factors });
+    void client.invalidateQueries({ queryKey: authKeys.sessions });
     if (r.recoveryCodes?.length) setCodes(r.recoveryCodes);
   };
 
@@ -276,6 +277,7 @@ function RemoveFactorDialog({
       ),
     onSuccess: async () => {
       await client.invalidateQueries({ queryKey: authKeys.factors });
+      void client.invalidateQueries({ queryKey: authKeys.sessions });
       onClose();
     },
   });

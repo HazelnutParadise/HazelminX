@@ -28,10 +28,21 @@ export function createQueryClient(): QueryClient {
   });
   function onApiError(err: unknown, key: readonly unknown[] | undefined) {
     if (!(err instanceof ApiError) || !SESSION_LOST.has(err.code)) return;
-    if (key && key[0] === authKeys.session[0] && key[1] === authKeys.session[1]) return;
+    if (key && isSessionKey(key)) return;
+    // Whoever signs in next must not see this account's cached factors, devices or settings.
+    if (err.code === "UNAUTHENTICATED") forgetAccountData(client);
     void client.invalidateQueries({ queryKey: authKeys.session });
   }
   return client;
+}
+
+function isSessionKey(key: readonly unknown[]): boolean {
+  return key[0] === authKeys.session[0] && key[1] === authKeys.session[1];
+}
+
+/** Drops every cached query except the session itself, so one account's data never shows for another. */
+export function forgetAccountData(client: QueryClient) {
+  client.removeQueries({ predicate: (q) => !isSessionKey(q.queryKey) });
 }
 
 export function useSession(): SessionState {
@@ -58,18 +69,23 @@ function toApiError(err: unknown): ApiError {
   return new ApiError({ status: 0, code: "NETWORK_ERROR", message, raw: message });
 }
 
-/** Signs out, opens the login page (without `next`) and forgets everything cached for the account. */
+/**
+ * Signs out, opens the login page (without `next`) and forgets everything cached for the account. When Core
+ * did not confirm the sign-out (unreachable, or any error but "already signed out"), the session may still
+ * be valid: the login page says so and offers to try again instead of quietly signing the user back in.
+ */
 export function useSignOut() {
   const client = useQueryClient();
   const navigate = useNavigate();
   return async () => {
+    let failed = false;
     try {
       await authApi.logout();
-    } catch {
-      // Already signed out or Core unreachable: the cookie is cleared or useless either way.
+    } catch (err) {
+      failed = !isApiError(err, "UNAUTHENTICATED");
     }
     // Same tick: the router leaves the guarded page before the guard can see the empty session.
-    void navigate(AUTH_PATHS.login, { replace: true });
+    void navigate(AUTH_PATHS.login, { replace: true, state: failed ? { signOutFailed: true } : undefined });
     client.removeQueries();
     client.setQueryData(authKeys.session, null);
   };

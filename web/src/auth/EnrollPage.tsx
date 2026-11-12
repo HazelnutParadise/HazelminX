@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Navigate, useNavigate, useSearchParams } from "react-router";
 import { PAGES } from "../app/navigation";
 import { useDocumentTitle } from "../shell/useDocumentTitle";
-import { authApi, authKeys, type EnrollmentResult, type SessionResponse } from "./api";
+import { authKeys, type EnrollmentResult, type SessionResponse } from "./api";
 import { PasskeyButton, TotpSetup } from "./FactorSetup";
 import { AUTH_PATHS, safeNext, withNext } from "./nextPath";
 import { AuthCard, AuthError, Divider, Notice, RecoveryCodes, StepBar, type StepState } from "./parts";
@@ -157,13 +157,9 @@ function EnrollFlow({
           </div>
         )}
         <StepBar steps={steps("current", "todo")} />
-        <PasskeyButton
-          onEnrolled={(r) => {
-            // The authenticator app below opened an enrolment of its own; drop it, the passkey is enough.
-            void authApi.removeTotp().catch(() => undefined);
-            onEnrolled(r);
-          }}
-        />
+        {/* The authenticator enrolment below stays pending after a passkey is added; it is no factor and
+            lapses on its own (removing it would end the user's other sessions). */}
+        <PasskeyButton onEnrolled={onEnrolled} />
         <Divider>{t("auth.enroll.orApp")}</Divider>
         <TotpSetup variant="card" submitLabel={t("auth.enroll.confirm")} onEnrolled={onEnrolled} />
         <div className="hx-auth-foot">
