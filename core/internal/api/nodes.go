@@ -223,6 +223,17 @@ func (h *nodeRoutes) failedAfter(c *gin.Context, err error) bool {
 	return true
 }
 
+// auditChange audits a change that was made. When its result could not be
+// read back (err is ErrAfterCommit) the values taken from the result are
+// unknown, so the row records only that, not empty values that would read
+// as a change to empty.
+func (h *nodeRoutes) auditChange(c *gin.Context, err error, action, kind, id string, scope iam.Scope, after map[string]any) {
+	if err != nil {
+		after = map[string]any{"readBackFailed": true}
+	}
+	h.audit(c, action, kind, id, scope, after)
+}
+
 // auditTimeout bounds the audit write of a change that already happened.
 const auditTimeout = 10 * time.Second
 
@@ -329,11 +340,11 @@ func (h *nodeRoutes) update(c *gin.Context) {
 	if !h.changed(c, err) {
 		return
 	}
-	h.audit(c, "nodes.update", "node", n.ID, nodeScopeOf(n.ID), map[string]any{"name": n.Name, "tags": n.Tags, "group": n.Group})
-	setETag(c, n.Version)
+	h.auditChange(c, err, "nodes.update", "node", n.ID, nodeScopeOf(n.ID), map[string]any{"name": n.Name, "tags": n.Tags, "group": n.Group})
 	if h.failedAfter(c, err) {
 		return
 	}
+	setETag(c, n.Version)
 	c.JSON(http.StatusOK, nodeResponse{Node: n})
 }
 
@@ -352,7 +363,7 @@ func (h *nodeRoutes) revoke(c *gin.Context) {
 	if n.Revocation != nil {
 		after["sessionClosedAt"], after["pending"] = n.Revocation.SessionClosedAt, n.Revocation.Pending
 	}
-	h.audit(c, "nodes.revoke", "node", n.ID, nodeScopeOf(n.ID), after)
+	h.auditChange(c, err, "nodes.revoke", "node", n.ID, nodeScopeOf(n.ID), after)
 	if h.failedAfter(c, err) {
 		return
 	}
@@ -370,7 +381,7 @@ func (h *nodeRoutes) rotate(c *gin.Context) {
 	if r := n.Certificate.Rotation; r != nil {
 		after["newSerial"], after["deliveredAt"], after["error"] = r.NewSerial, r.DeliveredAt, r.Error
 	}
-	h.audit(c, "nodes.rotate-certificate", "node", n.ID, nodeScopeOf(n.ID), after)
+	h.auditChange(c, err, "nodes.rotate-certificate", "node", n.ID, nodeScopeOf(n.ID), after)
 	if h.failedAfter(c, err) {
 		return
 	}
@@ -392,7 +403,7 @@ func (h *nodeRoutes) maintenance(c *gin.Context) {
 	for _, j := range affected {
 		out.AffectedJobs = append(out.AffectedJobs, affectedJob{ID: j.ID, Kind: j.Kind, State: j.State})
 	}
-	h.audit(c, "nodes.maintenance", "node", n.ID, nodeScopeOf(n.ID), map[string]any{"enabled": in.Enabled, "reason": in.Reason, "affectedJobs": len(out.AffectedJobs)})
+	h.auditChange(c, err, "nodes.maintenance", "node", n.ID, nodeScopeOf(n.ID), map[string]any{"enabled": in.Enabled, "reason": in.Reason, "affectedJobs": len(out.AffectedJobs)})
 	if h.failedAfter(c, err) {
 		return
 	}
@@ -406,7 +417,7 @@ func (h *nodeRoutes) recheck(c *gin.Context) {
 	if !h.changed(c, err) {
 		return
 	}
-	h.audit(c, "nodes.recheck", "node", n.ID, nodeScopeOf(n.ID), nil)
+	h.auditChange(c, err, "nodes.recheck", "node", n.ID, nodeScopeOf(n.ID), nil)
 	if h.failedAfter(c, err) {
 		return
 	}
@@ -424,7 +435,7 @@ func (h *nodeRoutes) remove(c *gin.Context) {
 	if !h.changed(c, err) {
 		return
 	}
-	h.audit(c, "nodes.remove", "node", n.ID, nodeScopeOf(n.ID), map[string]any{"mode": in.Mode})
+	h.auditChange(c, err, "nodes.remove", "node", n.ID, nodeScopeOf(n.ID), map[string]any{"mode": in.Mode})
 	if h.failedAfter(c, err) {
 		return
 	}
@@ -448,7 +459,7 @@ func (h *nodeRoutes) createEnrollment(c *gin.Context) {
 		return
 	}
 	// The audit row names the code by its public id only.
-	h.audit(c, "nodes.enrollment.create", "node-enrollment", e.ID, iam.Global, map[string]any{"codeId": e.CodeID, "expiresAt": e.ExpiresAt, "name": e.Name, "group": e.Group})
+	h.auditChange(c, err, "nodes.enrollment.create", "node-enrollment", e.ID, iam.Global, map[string]any{"codeId": e.CodeID, "expiresAt": e.ExpiresAt, "name": e.Name, "group": e.Group})
 	if h.failedAfter(c, err) {
 		return
 	}
@@ -494,7 +505,7 @@ func (h *nodeRoutes) withdrawEnrollment(c *gin.Context) {
 	if !h.changed(c, err) {
 		return
 	}
-	h.audit(c, "nodes.enrollment.withdraw", "node-enrollment", e.ID, iam.Global, map[string]any{"codeId": e.CodeID})
+	h.auditChange(c, err, "nodes.enrollment.withdraw", "node-enrollment", e.ID, iam.Global, map[string]any{"codeId": e.CodeID})
 	if h.failedAfter(c, err) {
 		return
 	}
@@ -516,7 +527,7 @@ func (h *nodeRoutes) approve(c *gin.Context) {
 	if !h.changed(c, err) {
 		return
 	}
-	h.audit(c, "nodes.enrollment.approve", "node-enrollment", c.Param("id"), iam.Global,
+	h.auditChange(c, err, "nodes.enrollment.approve", "node-enrollment", c.Param("id"), iam.Global,
 		map[string]any{"nodeId": n.ID, "fingerprint": n.Fingerprint, "replaceNodeId": in.ReplaceNodeID, "asNewNode": in.AsNewNode})
 	if h.failedAfter(c, err) {
 		return
@@ -531,7 +542,7 @@ func (h *nodeRoutes) reject(c *gin.Context) {
 	if !h.changed(c, err) {
 		return
 	}
-	h.audit(c, "nodes.enrollment.reject", "node-enrollment", e.ID, iam.Global, nil)
+	h.auditChange(c, err, "nodes.enrollment.reject", "node-enrollment", e.ID, iam.Global, nil)
 	if h.failedAfter(c, err) {
 		return
 	}

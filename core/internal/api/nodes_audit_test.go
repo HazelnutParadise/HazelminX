@@ -72,8 +72,13 @@ func TestNodeChangeIsAuditedWhenItsResultCannotBeReadBack(t *testing.T) {
 	if n, err := reg.GetNode(context.Background(), id); err != nil || !n.Maintenance.Enabled {
 		t.Fatalf("maintenance not on: %+v %v", n.Maintenance, err)
 	}
-	if !hasAudit(owner, "nodes.maintenance", id) {
+	ev := auditEvent(owner, "nodes.maintenance", id)
+	if ev == nil {
 		t.Fatal("committed change not audited when its result could not be read back")
+	}
+	// The row says the result is unknown instead of recording empty values.
+	if after := obj(ev["after"]); after["readBackFailed"] != true || len(after) != 1 {
+		t.Fatalf("audit after of an unread change: %v", ev["after"])
 	}
 }
 
@@ -88,13 +93,15 @@ func enrolledNode(t *testing.T, owner *client, reg *nodereg.Registry) string {
 	return obj(r.Body["node"])["id"].(string)
 }
 
-func hasAudit(owner *client, action, id string) bool {
+func hasAudit(owner *client, action, id string) bool { return auditEvent(owner, action, id) != nil }
+
+func auditEvent(owner *client, action, id string) map[string]any {
 	r := owner.do(http.MethodGet, "/management/v1/audit-events?limit=200", nil, nil)
 	for _, it := range r.Body["items"].([]any) {
 		ev := obj(it)
 		if ev["action"] == action && ev["resourceId"] == id {
-			return true
+			return ev
 		}
 	}
-	return false
+	return nil
 }

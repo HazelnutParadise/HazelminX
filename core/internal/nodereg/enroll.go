@@ -230,8 +230,15 @@ func (r *Registry) CreateEnrollment(ctx context.Context, in CreateInput) (Enroll
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, id, code.ID(), code.Key(), name, encodeTags(tags), group, in.Actor, stamp(now), stamp(now.Add(ttl))); err != nil {
 			return Enrollment{}, zero, err
 		}
-		e, err := r.readBackEnrollment(ctx, id)
-		return e, code, err
+		// The code is shown only in this answer, so a failed read-back
+		// must not lose it: answer with what was just written.
+		e, err := r.GetEnrollment(ctx, id)
+		if err != nil {
+			r.opts.Logger.Error("enrollment created but could not be read back; answering with the written values", "enrollment", id, "error", err)
+			e = Enrollment{ID: id, CodeID: code.ID(), Name: name, Tags: tags, Group: group, State: EnrollmentWaiting, CreatedBy: in.Actor,
+				CreatedAt: parseStamp(stamp(now)), ExpiresAt: parseStamp(stamp(now.Add(ttl))), MatchingNodes: []NodeMatch{}, Version: 1}
+		}
+		return e, code, nil
 	}
 	return Enrollment{}, zero, errors.New("nodereg: could not draw an unused code id")
 }
