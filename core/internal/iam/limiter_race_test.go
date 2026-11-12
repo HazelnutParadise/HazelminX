@@ -149,6 +149,26 @@ func TestExpiredCoolDownAdmitsOneAttemptAtATime(t *testing.T) {
 	}
 }
 
+// Ticket 126 review: an account in cool-down reports its real wait even when
+// the source's budget is also full of attempts in flight.
+func TestBlockedAccountReportsRealWaitWhileSourceIsBusy(t *testing.T) {
+	l, _ := newTestLimiter()
+	for i := range DefaultLimiterPolicy.SourceMaxFailures - 1 {
+		l.Failure(fmt.Sprintf("user-%d", i), "7.7.7.7")
+	}
+	for i := range DefaultLimiterPolicy.AccountFreeFailures {
+		l.Failure("owner", fmt.Sprintf("8.8.8.%d", i))
+	}
+	held, _ := l.Begin("someone", "7.7.7.7", false)
+	if held == nil {
+		t.Fatal("the last source place must be admitted")
+	}
+	defer held.Done()
+	if a, retry := l.Begin("owner", "7.7.7.7", false); a != nil || retry <= 0 {
+		t.Fatalf("blocked account must report its cool-down (a=%v retry=%v)", a, retry)
+	}
+}
+
 // Ticket 126: after a burst over several accounts and sources, admitted and
 // refused, the bookkeeping for attempts in flight is empty again.
 func TestConcurrentSprayLeavesNoPendingEntries(t *testing.T) {
