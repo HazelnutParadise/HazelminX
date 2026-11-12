@@ -149,20 +149,43 @@ func (k *configKind) Job(p *Plan) (jobs.SubmitRequest, error) {
 	return jobs.SubmitRequest{Kind: k.JobKind(), Params: params}, nil
 }
 
-// fakeJobs records submissions and replays by request id like the engine.
+// fakeJobs records submissions and replays by request id like the engine:
+// the same request id with another plan is a conflict.
 type fakeJobs struct {
 	mu   sync.Mutex
 	byID map[string]*jobs.Job
 	reqs []jobs.SubmitRequest
+	// failNext makes the next Submit fail after its Preview passed.
+	failNext error
+}
+
+func (f *fakeJobs) Preview(_ context.Context, req jobs.SubmitRequest) (*jobs.Preview, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if j, ok := f.byID[req.RequestID]; ok {
+		if j.ChangePlanID != req.ChangePlanID || j.ChangePlanDigest != req.ChangePlanDigest {
+			return nil, jobs.ErrConflict
+		}
+		return &jobs.Preview{Replay: j}, nil
+	}
+	return &jobs.Preview{}, nil
 }
 
 func (f *fakeJobs) Submit(_ context.Context, req jobs.SubmitRequest) (*jobs.Job, bool, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	if f.failNext != nil {
+		err := f.failNext
+		f.failNext = nil
+		return nil, false, err
+	}
 	if f.byID == nil {
 		f.byID = map[string]*jobs.Job{}
 	}
 	if j, ok := f.byID[req.RequestID]; ok {
+		if j.ChangePlanID != req.ChangePlanID || j.ChangePlanDigest != req.ChangePlanDigest {
+			return nil, false, jobs.ErrConflict
+		}
 		return j, true, nil
 	}
 	f.reqs = append(f.reqs, req)

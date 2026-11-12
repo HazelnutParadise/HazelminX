@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/HazelnutParadise/hazelminx/core/internal/paging"
+	"log/slog"
 	"regexp"
 	"strings"
 	"sync"
@@ -856,7 +857,9 @@ func (s *Service) RecordDenied(ctx context.Context, p *Principal, a Action, on S
 	if p != nil {
 		ev.ActorID, ev.ActorName = p.User.ID, p.User.Username
 	}
-	_ = s.record(ctx, s.db, ev)
+	if err := s.record(ctx, s.db, ev); err != nil {
+		slog.Error("audit row for a refused call could not be written", "action", string(a), "scope", string(on.Kind)+":"+on.ID, "trace", src.TraceID, "error", err)
+	}
 }
 
 func (s *Service) record(ctx context.Context, ex execer, ev AuditEvent) error {

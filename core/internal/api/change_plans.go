@@ -71,7 +71,7 @@ type gateError struct{ e apiError }
 
 func (g gateError) Error() string { return g.e.Code + ": " + g.e.Message }
 
-var changePlansList = ListSpec{Name: "change-plans", Sorts: []string{"createdAt", "expiresAt", "kind", "state"},
+var changePlansList = ListSpec{Name: "change-plans", Sorts: []string{"createdAt", "expiresAt", "kind"},
 	DefaultSort: []SortKey{{Field: "createdAt", Desc: true}}, TieBreaker: "id",
 	Filters: []FilterSpec{
 		{Name: "state", Summary: "only plans in these effective states", Multi: true, Enum: planStates()},

@@ -112,7 +112,9 @@ type Kind interface {
 	JobKind() string
 	// Draft computes the plan for params from the current state. Wrap
 	// ErrInvalid for bad params and ErrNotFound for a target that does not
-	// exist. Params are stored with the plan and shown to approvers, so they
+	// exist. Draft runs before the caller's permissions are known (they come
+	// from the targets it returns), so its error messages must not describe
+	// a target: say "no such setting", not what the setting holds. Params are stored with the plan and shown to approvers, so they
 	// name secrets by reference, never by value; a secret's value enters the
 	// plan only as a Change marked Secret.
 	Draft(ctx context.Context, params json.RawMessage) (*Draft, error)
@@ -236,6 +238,10 @@ type Approval struct {
 	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
 }
 
+// AutoApprover is the approver a job records when its plan was approved on
+// creation (no warning or high-risk check, the kind does not demand it).
+const AutoApprover = "auto-approved"
+
 // Actor names an account.
 type Actor struct {
 	ID   string `json:"id"`
@@ -296,8 +302,6 @@ func (p *Plan) SortValue(field string) string {
 		return stamp(p.ExpiresAt)
 	case "kind":
 		return p.Kind
-	case "state":
-		return string(p.State)
 	default:
 		return stamp(p.CreatedAt)
 	}

@@ -59,12 +59,14 @@ func requireIfMatch(c *gin.Context) (version int64, ok bool) {
 // versionConflict is the 412 for a stale If-Match that also shows what the
 // resource holds now next to what the caller sent (T-030), so the second
 // writer sees the difference instead of a bare refusal. conflictingFields
-// are the fields the caller sent whose current value differs from theirs.
+// are the fields the caller sent, present in now, whose current value
+// differs from theirs; an intent such as "assign" only shows next to now.
 func versionConflict(resourceID string, current int64, now, yours map[string]any) apiError {
 	e := versionMismatch(resourceID, current)
 	var fields []string
 	for k, v := range yours {
-		if fmt.Sprint(now[k]) != fmt.Sprint(v) {
+		cur, ok := now[k]
+		if ok && fmt.Sprint(cur) != fmt.Sprint(v) {
 			fields = append(fields, k)
 		}
 	}

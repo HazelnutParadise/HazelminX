@@ -392,8 +392,8 @@ func TestLowRiskPlanIsAutoApproved(t *testing.T) {
 	if err != nil || res.Job == nil {
 		t.Fatalf("execute: %v", err)
 	}
-	if r := e.jobs.submitted()[0]; r.Approver != "" {
-		t.Fatalf("auto approval named an approver: %q", r.Approver)
+	if r := e.jobs.submitted()[0]; r.Approver != AutoApprover {
+		t.Fatalf("auto approval approver: %q", r.Approver)
 	}
 	// A kind that always wants approval does not auto-approve.
 	e.kind.require = true
@@ -528,5 +528,101 @@ func TestUnknownKindAndBadParams(t *testing.T) {
 	}
 	if !e.svc.RequiresPlan("config.apply") || e.svc.RequiresPlan("list.query") {
 		t.Fatal("RequiresPlan")
+	}
+}
+
+// A request id already used by another job is refused before the plan is
+// marked executed, so the plan stays approved and can run with another id.
+func TestExecuteRefusesTakenRequestIDBeforeClaiming(t *testing.T) {
+	e := newEnv(t)
+	other := e.create(e.projA, configParams{Configs: []string{"shop-compose"}, Set: map[string]string{"image": "o"}})
+	e.svc.Approve(bg, e.admin, other.ID, other.Digest, src)
+	if _, err := e.svc.Execute(bg, e.projA, other.ID, other.Digest, "req-shared", src); err != nil {
+		t.Fatal(err)
+	}
+	p := e.create(e.projA, configParams{Configs: []string{"shop-compose"}, Set: map[string]string{"image": "x"}})
+	e.svc.Approve(bg, e.admin, p.ID, p.Digest, src)
+	if _, err := e.svc.Execute(bg, e.projA, p.ID, p.Digest, "req-shared", src); !errors.Is(err, ErrRequestIDTaken) {
+		t.Fatalf("taken request id: %v", err)
+	}
+	if got, _ := e.svc.Get(bg, e.projA, p.ID); got.State != StateApproved {
+		t.Fatalf("plan consumed by a refused execution: %s", got.State)
+	}
+	if res, err := e.svc.Execute(bg, e.projA, p.ID, p.Digest, "req-own", src); err != nil || res.Job == nil {
+		t.Fatalf("execute with a free id: %v", err)
+	}
+}
+
+// When creating the job fails after the plan was claimed, the claim is
+// undone with an audit row and the same request id can be sent again.
+func TestExecuteRestoresApprovalWhenSubmitFails(t *testing.T) {
+	e := newEnv(t)
+	p := e.create(e.projA, configParams{Configs: []string{"shop-compose"}, Set: map[string]string{"image": "x"}})
+	e.svc.Approve(bg, e.admin, p.ID, p.Digest, src)
+	e.jobs.failNext = errors.New("disk full")
+	if _, err := e.svc.Execute(bg, e.projA, p.ID, p.Digest, "req-1", src); err == nil {
+		t.Fatal("submit failure was not reported")
+	}
+	got, _ := e.svc.Get(bg, e.projA, p.ID)
+	if got.State != StateApproved || got.Execution != nil {
+		t.Fatalf("plan after a failed submit: %s %+v", got.State, got.Execution)
+	}
+	if a := e.audit(p.ID); !slices.Contains(a, "change-plans.execute:failed") {
+		t.Fatalf("audit %v", a)
+	}
+	if res, err := e.svc.Execute(bg, e.projA, p.ID, p.Digest, "req-1", src); err != nil || res.Job == nil {
+		t.Fatalf("retry: %v", err)
+	}
+}
+
+// Two executes with the same request id at once both answer the one job.
+func TestConcurrentExecuteWithSameRequestIDReplays(t *testing.T) {
+	e := newEnv(t)
+	p := e.create(e.projA, configParams{Configs: []string{"shop-compose"}, Set: map[string]string{"image": "x"}})
+	e.svc.Approve(bg, e.admin, p.ID, p.Digest, src)
+	var wg sync.WaitGroup
+	res := make([]*ExecuteResult, 6)
+	errs := make([]error, 6)
+	for i := range res {
+		wg.Add(1)
+		go func() { defer wg.Done(); res[i], errs[i] = e.svc.Execute(bg, e.projA, p.ID, p.Digest, "req-same", src) }()
+	}
+	wg.Wait()
+	for i := range res {
+		if errs[i] != nil || res[i].Job == nil || res[i].Job.ID != res[0].Job.ID {
+			t.Fatalf("execute %d: %v", i, errs[i])
+		}
+	}
+	if n := len(e.jobs.submitted()); n != 1 {
+		t.Fatalf("%d jobs", n)
+	}
+}
+
+// A plan whose kind is no longer registered still answers 404 to someone
+// who cannot see it, not an error that reveals it exists.
+func TestUnregisteredKindDoesNotRevealHiddenPlan(t *testing.T) {
+	e := newEnv(t)
+	p := e.create(e.owner, configParams{Configs: []string{"shop-compose"}, Set: map[string]string{"image": "x"}})
+	bare := New(Options{DB: e.db, Audit: e.iam, Jobs: e.jobs, Now: e.clock.now})
+	for name, call := range map[string]func() error{
+		"approve": func() error { _, err := bare.Approve(bg, e.projB, p.ID, p.Digest, src); return err },
+		"reject":  func() error { _, err := bare.Reject(bg, e.projB, p.ID, "x", src); return err },
+		"execute": func() error { _, err := bare.Execute(bg, e.projB, p.ID, p.Digest, "r", src); return err },
+	} {
+		if err := call(); !errors.Is(err, ErrNotFound) {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+}
+
+func TestAutoApprovedJobSaysSo(t *testing.T) {
+	e := newEnv(t)
+	e.kind.require = false
+	p := e.create(e.projA, configParams{Configs: []string{"shop-compose"}, Set: map[string]string{"replicas": "2"}})
+	if _, err := e.svc.Execute(bg, e.projA, p.ID, p.Digest, "req-auto", src); err != nil {
+		t.Fatal(err)
+	}
+	if r := e.jobs.submitted()[0]; r.Approver != AutoApprover {
+		t.Fatalf("approver %q", r.Approver)
 	}
 }

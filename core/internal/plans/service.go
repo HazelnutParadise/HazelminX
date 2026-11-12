@@ -27,8 +27,10 @@ type Auditor interface {
 	RecordDenied(ctx context.Context, p *iam.Principal, a iam.Action, on iam.Scope, src iam.Source)
 }
 
-// Submitter creates jobs; *jobs.Engine implements it.
+// Submitter creates jobs; *jobs.Engine implements it. Preview validates a
+// request the way Submit would without recording anything.
 type Submitter interface {
+	Preview(ctx context.Context, req jobs.SubmitRequest) (*jobs.Preview, error)
 	Submit(ctx context.Context, req jobs.SubmitRequest) (*jobs.Job, bool, error)
 }
 
@@ -368,7 +370,6 @@ var SortColumns = map[string]paging.Column{
 	"createdAt": {Expr: "created_at"},
 	"expiresAt": {Expr: "expires_at"},
 	"kind":      {Expr: "kind"},
-	"state":     {Expr: "state"},
 	"id":        {Expr: "id"},
 }
 
@@ -480,7 +481,7 @@ func (s *Service) Approve(ctx context.Context, p *iam.Principal, id, sentDigest 
 	by := actor(p)
 	pl.State, pl.UpdatedAt = StateApproved, now
 	pl.Approval.ApprovedBy, pl.Approval.ApprovedAt, pl.Approval.Digest, pl.Approval.ExpiresAt = &by, &now, pl.Digest, &exp
-	err = s.transition(ctx, pl, StateAwaitingApproval, `approved_by = ?, approved_at = ?, approved_digest = ?`, []any{by.ID, stamp(now), pl.Digest},
+	err = s.transitionLive(ctx, pl, StateAwaitingApproval, `approved_by = ?, approved_at = ?, approved_digest = ?`, []any{by.ID, stamp(now), pl.Digest},
 		func(ctx context.Context, tx *sql.Tx) error {
 			return s.audit(ctx, tx, p, pl, "change-plans.approve", src, before, map[string]any{"state": pl.State, "digest": pl.Digest, "expiresAt": pl.ExpiresAt})
 		})
@@ -547,26 +548,12 @@ func (s *Service) Execute(ctx context.Context, p *iam.Principal, id, sentDigest,
 	if strings.TrimSpace(requestID) == "" || strings.TrimSpace(sentDigest) == "" {
 		return nil, fmt.Errorf("%w: requestId and digest are required", ErrInvalid)
 	}
-	pl, err := s.load(ctx, id)
+	pl, k, err := s.loadFor(ctx, p, id, src)
 	if err != nil {
 		return nil, err
 	}
-	k, ok := s.kind(pl.Kind)
-	if !ok {
-		return nil, fmt.Errorf("%w: %q is no longer registered", ErrUnknownKind, pl.Kind)
-	}
-	if err := s.authorize(ctx, p, pl, k.Action(), src); err != nil {
-		return nil, err
-	}
 	if pl.State == StateExecuted {
-		if pl.Execution == nil || pl.Execution.RequestID != requestID {
-			return nil, ErrRequestIDTaken
-		}
-		req, err := s.jobRequest(pl, k)
-		if err != nil {
-			return nil, err
-		}
-		return s.submit(ctx, pl, req, true)
+		return s.replay(ctx, pl, k, requestID)
 	}
 	if err := s.liveIn(ctx, p, pl, src, StateApproved); err != nil {
 		return nil, err
@@ -589,8 +576,16 @@ func (s *Service) Execute(ctx context.Context, p *iam.Principal, id, sentDigest,
 			return nil, err
 		}
 	}
+	// The job is checked before the plan is claimed: a request id taken by
+	// another job, or a job kind without a handler, refuses here and leaves
+	// the plan approved.
+	if pv, err := s.o.Jobs.Preview(ctx, req); errors.Is(err, jobs.ErrConflict) || (err == nil && pv.Replay != nil) {
+		return nil, fmt.Errorf("%w: request id %q is used by another job", ErrRequestIDTaken, requestID)
+	} else if err != nil {
+		return nil, err
+	}
 	pl.State, pl.UpdatedAt = StateExecuted, now
-	err = s.transition(ctx, pl, StateApproved, `request_id = ?, executed_by = ?, executed_at = ?`, []any{requestID, by.ID, stamp(now)},
+	err = s.transitionLive(ctx, pl, StateApproved, `request_id = ?, executed_by = ?, executed_at = ?`, []any{requestID, by.ID, stamp(now)},
 		func(ctx context.Context, tx *sql.Tx) error {
 			return s.audit(ctx, tx, p, pl, "change-plans.execute", src, map[string]any{"state": StateApproved},
 				map[string]any{"state": pl.State, "digest": pl.Digest, "requestId": requestID})
@@ -598,10 +593,61 @@ func (s *Service) Execute(ctx context.Context, p *iam.Principal, id, sentDigest,
 	if isUnique(err) {
 		return nil, fmt.Errorf("%w: request id %q is used by another plan", ErrRequestIDTaken, requestID)
 	}
+	if errors.Is(err, ErrState) {
+		// Another call claimed it first; with the same request id that is a
+		// retry of this one and answers the same job.
+		cur, lerr := s.load(ctx, id)
+		if lerr == nil && cur.State == StateExecuted {
+			return s.replay(ctx, cur, k, requestID)
+		}
+		return nil, err
+	}
 	if err != nil {
 		return nil, err
 	}
-	return s.submit(ctx, pl, req, false)
+	res, err := s.submit(ctx, pl, req, false)
+	if err != nil {
+		if rerr := s.unclaim(ctx, p, pl, requestID, err, src); rerr != nil {
+			return nil, errors.Join(err, rerr)
+		}
+		return nil, err
+	}
+	return res, nil
+}
+
+// replay answers an execute of an executed plan: the same request id gets
+// its job again, another one is refused.
+func (s *Service) replay(ctx context.Context, pl *Plan, k Kind, requestID string) (*ExecuteResult, error) {
+	if pl.Execution == nil || pl.Execution.RequestID != requestID {
+		return nil, ErrRequestIDTaken
+	}
+	req, err := s.jobRequest(pl, k)
+	if err != nil {
+		return nil, err
+	}
+	return s.submit(ctx, pl, req, true)
+}
+
+// unclaim puts a plan whose job could not be created back to approved, with
+// an audit row saying the execution failed, so it can be sent again.
+func (s *Service) unclaim(ctx context.Context, p *iam.Principal, pl *Plan, requestID string, cause error, src iam.Source) error {
+	pl.State, pl.UpdatedAt, pl.Execution = StateApproved, s.now(), nil
+	return s.write(ctx, func(ctx context.Context, tx *sql.Tx) error {
+		doc, err := json.Marshal(pl)
+		if err != nil {
+			return err
+		}
+		res, err := tx.ExecContext(ctx, `UPDATE change_plans SET state = 'approved', updated_at = ?, doc = ?, request_id = NULL, executed_by = NULL, executed_at = NULL
+			WHERE id = ? AND state = 'executed' AND request_id = ? AND job_id IS NULL`, stamp(pl.UpdatedAt), string(doc), pl.ID, requestID)
+		if err != nil {
+			return err
+		}
+		if n, _ := res.RowsAffected(); n == 0 {
+			return fmt.Errorf("%w: the plan changed state meanwhile", ErrState)
+		}
+		ev := map[string]any{"requestId": requestID, "error": cause.Error()}
+		return s.auditResult(ctx, tx, p, pl, "change-plans.execute", iam.ResultFailed, src, map[string]any{"state": StateExecuted}, ev)
+	})
 }
 
 // jobRequest is the job an executed plan runs as.
@@ -612,8 +658,11 @@ func (s *Service) jobRequest(pl *Plan, k Kind) (jobs.SubmitRequest, error) {
 	}
 	req.RequestID = pl.Execution.RequestID
 	req.Requester = pl.Execution.By.ID
-	if pl.Approval.ApprovedBy != nil {
+	switch {
+	case pl.Approval.ApprovedBy != nil:
 		req.Approver = pl.Approval.ApprovedBy.ID
+	case pl.Approval.AutoApproved:
+		req.Approver = AutoApprover
 	}
 	req.ChangePlanID, req.ChangePlanDigest = pl.ID, pl.Digest
 	req.RequiredPermissions = []string{string(k.Action())}
@@ -650,8 +699,25 @@ func (s *Service) submit(ctx context.Context, pl *Plan, req jobs.SubmitRequest, 
 // decidable loads a plan for a decision: visible, the kind's action on
 // every target, and live in one of states.
 func (s *Service) decidable(ctx context.Context, p *iam.Principal, id string, src iam.Source, states ...State) (*Plan, Kind, error) {
+	pl, k, err := s.loadFor(ctx, p, id, src)
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := s.liveIn(ctx, p, pl, src, states...); err != nil {
+		return nil, nil, err
+	}
+	return pl, k, nil
+}
+
+// loadFor loads a plan the caller can see (404 first, so a missing kind
+// never tells a stranger the plan exists) and holds its kind's action on
+// every target.
+func (s *Service) loadFor(ctx context.Context, p *iam.Principal, id string, src iam.Source) (*Plan, Kind, error) {
 	pl, err := s.load(ctx, id)
 	if err != nil {
+		return nil, nil, err
+	}
+	if err := s.visible(ctx, p, pl, src); err != nil {
 		return nil, nil, err
 	}
 	k, ok := s.kind(pl.Kind)
@@ -659,9 +725,6 @@ func (s *Service) decidable(ctx context.Context, p *iam.Principal, id string, sr
 		return nil, nil, fmt.Errorf("%w: %q is no longer registered", ErrUnknownKind, pl.Kind)
 	}
 	if err := s.authorize(ctx, p, pl, k.Action(), src); err != nil {
-		return nil, nil, err
-	}
-	if err := s.liveIn(ctx, p, pl, src, states...); err != nil {
 		return nil, nil, err
 	}
 	return pl, k, nil
@@ -853,6 +916,17 @@ func (s *Service) scan(r scanner) (*Plan, error) {
 // still from, together with extra columns and the audit row in one
 // transaction. A lost race answers ErrState.
 func (s *Service) transition(ctx context.Context, pl *Plan, from State, extra string, extraArgs []any, also func(context.Context, *sql.Tx) error) error {
+	return s.transitionIf(ctx, pl, from, false, extra, extraArgs, also)
+}
+
+// transitionLive is transition that also requires the plan to be before its
+// deadline when the row is written, so an approval or execution racing the
+// deadline cannot land after it.
+func (s *Service) transitionLive(ctx context.Context, pl *Plan, from State, extra string, extraArgs []any, also func(context.Context, *sql.Tx) error) error {
+	return s.transitionIf(ctx, pl, from, true, extra, extraArgs, also)
+}
+
+func (s *Service) transitionIf(ctx context.Context, pl *Plan, from State, live bool, extra string, extraArgs []any, also func(context.Context, *sql.Tx) error) error {
 	return s.write(ctx, func(ctx context.Context, tx *sql.Tx) error {
 		doc, err := json.Marshal(pl)
 		if err != nil {
@@ -864,7 +938,12 @@ func (s *Service) transition(ctx context.Context, pl *Plan, from State, extra st
 		}
 		args := append([]any{string(pl.State), stamp(pl.UpdatedAt), string(doc)}, extraArgs...)
 		args = append(args, pl.ID, string(from), pl.Digest)
-		res, err := tx.ExecContext(ctx, `UPDATE change_plans SET `+set+` WHERE id = ? AND state = ? AND digest = ?`, args...)
+		where := `id = ? AND state = ? AND digest = ?`
+		if live {
+			where += ` AND expires_at > ?`
+			args = append(args, stamp(s.now()))
+		}
+		res, err := tx.ExecContext(ctx, `UPDATE change_plans SET `+set+` WHERE `+where, args...)
 		if err != nil {
 			return err
 		}
@@ -898,6 +977,10 @@ func (s *Service) write(ctx context.Context, f func(context.Context, *sql.Tx) er
 }
 
 func (s *Service) audit(ctx context.Context, tx *sql.Tx, p *iam.Principal, pl *Plan, action string, src iam.Source, before, after map[string]any) error {
+	return s.auditResult(ctx, tx, p, pl, action, iam.ResultOK, src, before, after)
+}
+
+func (s *Service) auditResult(ctx context.Context, tx *sql.Tx, p *iam.Principal, pl *Plan, action, result string, src iam.Source, before, after map[string]any) error {
 	if s.o.Audit == nil {
 		return errors.New("plans: no audit ledger configured")
 	}
@@ -906,7 +989,7 @@ func (s *Service) audit(ctx context.Context, tx *sql.Tx, p *iam.Principal, pl *P
 		sc = sco[0]
 	}
 	ev := iam.AuditEvent{Action: action, Scope: sc, ResourceKind: "change-plan", ResourceID: pl.ID, Before: before, After: after,
-		Message: pl.Summary, TraceID: src.TraceID, SourceIP: src.IP}
+		Message: pl.Summary, Result: result, TraceID: src.TraceID, SourceIP: src.IP}
 	if p != nil {
 		ev.ActorID, ev.ActorName = p.User.ID, p.User.Username
 	}

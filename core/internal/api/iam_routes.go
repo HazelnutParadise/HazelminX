@@ -603,11 +603,12 @@ func (s *Server) updateUser(c *gin.Context) {
 		return
 	}
 	u, err := s.iam.UpdateUser(ctx, p, c.Param("id"), ver, in, source(c))
-	var vm *iam.VersionMismatchError
-	if errors.As(err, &vm) && in.DisplayName != nil {
-		// T-030: show what the first writer saved next to this edit.
-		if cur, gerr := s.iam.GetUser(ctx, p, c.Param("id")); gerr == nil {
-			respond(c, versionConflict(c.Param("id"), cur.Version, map[string]any{"displayName": cur.DisplayName}, map[string]any{"displayName": *in.DisplayName}))
+	if errors.Is(err, iam.ErrVersionMismatch) {
+		yours := map[string]any{}
+		if in.DisplayName != nil {
+			yours["displayName"] = strings.TrimSpace(*in.DisplayName)
+		}
+		if s.userConflict(c, yours) {
 			return
 		}
 	}
@@ -617,6 +618,18 @@ func (s *Server) updateUser(c *gin.Context) {
 	}
 	setETag(c, u.Version)
 	c.JSON(http.StatusOK, userDetailResponse{User: u})
+}
+
+// userConflict answers a stale account write with the account as it is now
+// next to what the caller sent (T-030). It reports false when the account
+// could not be read again; the caller then answers the bare 412.
+func (s *Server) userConflict(c *gin.Context, yours map[string]any) bool {
+	cur, err := s.iam.GetUser(c.Request.Context(), Principal(c), c.Param("id"))
+	if err != nil {
+		return false
+	}
+	respond(c, versionConflict(c.Param("id"), cur.Version, map[string]any{"displayName": cur.DisplayName, "assignments": cur.Assignments}, yours))
+	return true
 }
 
 type assignRequest struct {
@@ -646,6 +659,9 @@ func (s *Server) assignRole(c *gin.Context) {
 	}
 	ctx := c.Request.Context()
 	as, newVer, err := s.iam.AssignRoleIf(ctx, Principal(c), c.Param("id"), in.Role, in.Scope, ver, source(c))
+	if errors.Is(err, iam.ErrVersionMismatch) && s.userConflict(c, map[string]any{"assign": map[string]any{"role": in.Role, "scope": in.Scope}}) {
+		return
+	}
 	if err != nil {
 		failErr(c, err)
 		return
@@ -661,6 +677,9 @@ func (s *Server) revokeRole(c *gin.Context) {
 	}
 	ctx := c.Request.Context()
 	newVer, err := s.iam.RevokeRoleIf(ctx, Principal(c), c.Param("assignmentId"), c.Param("id"), ver, source(c))
+	if errors.Is(err, iam.ErrVersionMismatch) && s.userConflict(c, map[string]any{"revoke": c.Param("assignmentId")}) {
+		return
+	}
 	if err != nil {
 		failErr(c, err)
 		return

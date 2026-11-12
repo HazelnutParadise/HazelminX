@@ -378,3 +378,67 @@ func TestUserUpdateConflictShowsCurrentContent(t *testing.T) {
 		t.Fatalf("first save overwritten: %v", u["displayName"])
 	}
 }
+
+// T-030 on the other versioned writes: a stale node edit and a stale role
+// change also answer with what the resource holds now.
+func TestStaleNodeAndRoleWritesShowCurrentContent(t *testing.T) {
+	hs, reg := nodesHarness(t)
+	owner := hs.bootstrap()
+	r := owner.do(http.MethodPost, "/management/v1/node-enrollments", map[string]any{"name": "pi"}, nil)
+	enID := obj(r.Body["enrollment"])["id"].(string)
+	claimAs(t, reg, r.Body["code"].(string), "pi", "m1")
+	nodeID := obj(owner.do(http.MethodPost, "/management/v1/node-enrollments/"+enID+"/approve", map[string]any{}, nil).Body["node"])["id"].(string)
+	etag := owner.do(http.MethodGet, "/management/v1/nodes/"+nodeID, nil, nil).Hdr.Get("ETag")
+	if r := owner.do(http.MethodPatch, "/management/v1/nodes/"+nodeID, map[string]any{"name": "first"}, map[string]string{"If-Match": etag}); r.Code != http.StatusOK {
+		t.Fatalf("first node edit: %+v", r)
+	}
+	r = owner.do(http.MethodPatch, "/management/v1/nodes/"+nodeID, map[string]any{"name": "second", "group": "lab"}, map[string]string{"If-Match": etag})
+	det := obj(r.Body["details"])
+	if r.Code != http.StatusPreconditionFailed || obj(det["current"])["name"] != "first" || obj(det["yours"])["name"] != "second" {
+		t.Fatalf("stale node edit: %+v", r)
+	}
+	if f := det["conflictingFields"].([]any); len(f) != 2 || f[0] != "group" || f[1] != "name" {
+		t.Fatalf("conflicting fields %v", f)
+	}
+
+	hs.createUser(owner, "boa", iam.RoleAuditor, iam.Global, "10.0.0.7")
+	var uid string
+	for _, u := range owner.do(http.MethodGet, "/management/v1/users", nil, nil).Body["items"].([]any) {
+		if m := u.(map[string]any); m["username"] == "boa" {
+			uid = m["id"].(string)
+		}
+	}
+	uetag := owner.do(http.MethodGet, "/management/v1/users/"+uid, nil, nil).Hdr.Get("ETag")
+	owner.do(http.MethodPatch, "/management/v1/users/"+uid, map[string]any{"displayName": "Bo"}, map[string]string{"If-Match": uetag})
+	r = owner.do(http.MethodPost, "/management/v1/users/"+uid+"/roles", map[string]any{"role": "host_operator", "scope": map[string]any{"kind": "node", "id": nodeID}},
+		map[string]string{"If-Match": uetag})
+	det = obj(r.Body["details"])
+	if r.Code != http.StatusPreconditionFailed || obj(det["current"])["displayName"] != "Bo" || len(obj(det["current"])["assignments"].([]any)) != 1 || obj(det["yours"])["assign"] == nil {
+		t.Fatalf("stale role change: %+v", r)
+	}
+}
+
+// Trailing spaces the server trims away do not count as a conflict.
+func TestUserConflictIgnoresTrimmedSpaces(t *testing.T) {
+	ph := newPlansHarness(t)
+	ph.createUser(ph.owner, "cyx", iam.RoleAuditor, iam.Global, "10.0.0.8")
+	var id string
+	for _, u := range ph.owner.do(http.MethodGet, "/management/v1/users", nil, nil).Body["items"].([]any) {
+		if m := u.(map[string]any); m["username"] == "cyx" {
+			id = m["id"].(string)
+		}
+	}
+	etag := ph.owner.do(http.MethodGet, "/management/v1/users/"+id, nil, nil).Hdr.Get("ETag")
+	ph.owner.do(http.MethodPatch, "/management/v1/users/"+id, map[string]any{"displayName": "Cy"}, map[string]string{"If-Match": etag})
+	r := ph.owner.do(http.MethodPatch, "/management/v1/users/"+id, map[string]any{"displayName": "Cy  "}, map[string]string{"If-Match": etag})
+	if f := obj(r.Body["details"])["conflictingFields"].([]any); r.Code != http.StatusPreconditionFailed || len(f) != 0 {
+		t.Fatalf("%+v", r)
+	}
+}
+
+func TestChangePlanListDoesNotSortByState(t *testing.T) {
+	ph := newPlansHarness(t)
+	if r := ph.owner.do(http.MethodGet, "/management/v1/change-plans?sort=state", nil, nil); r.Code != http.StatusBadRequest {
+		t.Fatalf("sort by state: %+v", r)
+	}
+}
