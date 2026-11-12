@@ -32,8 +32,8 @@
 | 014 | 使用者可以設定 TOTP、Passkey、復原碼並檢視與撤銷自己的工作階段 | 身分與存取 | 009 | [#14](https://github.com/HazelnutParadise/hazelminx/issues/14) |
 | 015 | 擁有者可以管理使用者、角色、資源範圍與有期限的 API Token | 身分與存取 | 009, 010 | [#15](https://github.com/HazelnutParadise/hazelminx/issues/15) |
 | 016 | 管理員可以預覽並批准高風險變更計畫，內容改變時原批准失效 | 身分與存取 | 008, 010 | [#16](https://github.com/HazelnutParadise/hazelminx/issues/16) |
-| 016.1 | 管理員可以用 API 產生、批准並執行變更計畫，內容或資源版本改變時原批准失效 | 身分與存取 | 008, 010 | 待建立 |
-| 016.2 | 使用者修改設定前可以在畫面上看差異、受影響服務與預檢，並在工作中心批准或拒絕計畫 | 身分與存取 | 016.1, 017 | 待建立 |
+| 016.1 | 管理員可以用 API 產生、批准並執行變更計畫，內容或資源版本改變時原批准失效 | 身分與存取 | 008, 010 | [#147](https://github.com/HazelnutParadise/hazelminx/issues/147) |
+| 016.2 | 使用者修改設定前可以在畫面上看差異、受影響服務與預檢，並在工作中心批准或拒絕計畫 | 身分與存取 | 016.1, 017 | [#148](https://github.com/HazelnutParadise/hazelminx/issues/148) |
 | 017 | 使用者可以在主導覽、全域搜尋與工作中心之間完成日常操作 | 基礎建設 | 005, 008, 010 | [#17](https://github.com/HazelnutParadise/hazelminx/issues/17) |
 | 018 | 管理員可以設定面板名稱、時區、入口、通知、更新通道與遙測 | 基礎建設 | 017 | [#18](https://github.com/HazelnutParadise/hazelminx/issues/18) |
 | 019 | 管理員可以用一次性註冊碼加入節點，並看到離線、過期、維護與撤銷狀態 | 節點與 Agent | 004, 007, 009 | [#19](https://github.com/HazelnutParadise/hazelminx/issues/19) |
