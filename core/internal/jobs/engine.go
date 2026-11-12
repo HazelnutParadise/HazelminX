@@ -145,13 +145,24 @@ func requestHash(req SubmitRequest) (string, error) {
 			return "", fmt.Errorf("%w: params must be JSON: %v", ErrInvalidRequest, err)
 		}
 	}
+	// The change plan joins the identity only when there is one, so the
+	// hash of every request without a plan stays what it was.
+	type plan struct {
+		ID     string `json:"id"`
+		Digest string `json:"digest"`
+	}
+	var pl *plan
+	if req.ChangePlanID != "" || req.ChangePlanDigest != "" {
+		pl = &plan{req.ChangePlanID, req.ChangePlanDigest}
+	}
 	canon, err := json.Marshal(struct {
 		Kind      string        `json:"kind"`
 		Params    any           `json:"params"`
 		Resources []ResourceRef `json:"resources"`
 		Node      string        `json:"node"`
 		Required  int64         `json:"requiredBytes"`
-	}{req.Kind, params, req.Resources, req.Node, req.RequiredBytes})
+		Plan      *plan         `json:"changePlan,omitempty"`
+	}{req.Kind, params, req.Resources, req.Node, req.RequiredBytes, pl})
 	if err != nil {
 		return "", err
 	}
@@ -203,23 +214,27 @@ func (e *Engine) Submit(ctx context.Context, req SubmitRequest) (job *Job, dedup
 	}
 	now := e.now()
 	j := &Job{
-		ID:            newID(),
-		RequestID:     req.RequestID,
-		RequestHash:   hash,
-		Kind:          req.Kind,
-		Params:        req.Params,
-		Requester:     req.Requester,
-		Node:          req.Node,
-		Resources:     req.Resources,
-		State:         StateCreated,
-		StateReason:   "received; not yet changing anything",
-		CreatedAt:     now,
-		UpdatedAt:     now,
-		Steps:         []Step{},
-		Cancellable:   true,
-		Reversible:    true,
-		Budget:        e.budgetFor(req.Kind),
-		RequiredBytes: req.RequiredBytes,
+		ID:                  newID(),
+		RequestID:           req.RequestID,
+		RequestHash:         hash,
+		Kind:                req.Kind,
+		Params:              req.Params,
+		Requester:           req.Requester,
+		Approver:            req.Approver,
+		Node:                req.Node,
+		ChangePlanID:        req.ChangePlanID,
+		ChangePlanDigest:    req.ChangePlanDigest,
+		RequiredPermissions: req.RequiredPermissions,
+		Resources:           req.Resources,
+		State:               StateCreated,
+		StateReason:         "received; not yet changing anything",
+		CreatedAt:           now,
+		UpdatedAt:           now,
+		Steps:               []Step{},
+		Cancellable:         true,
+		Reversible:          true,
+		Budget:              e.budgetFor(req.Kind),
+		RequiredBytes:       req.RequiredBytes,
 	}
 	if err := e.store.CreateJob(ctx, j); err != nil {
 		return nil, false, err

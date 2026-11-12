@@ -80,7 +80,9 @@ type configParams struct {
 }
 
 // configKind plans "set these keys in these configs". mount=/ is high risk,
-// tag=latest is a warning, fail=yes fails a precheck.
+// tag=latest is a warning, fail=yes fails a precheck. Secrets are given as
+// references ("ref:<name>") and resolved by the kind, as real kinds do: a
+// plan's params never carry a secret value.
 type configKind struct {
 	store   *configs
 	require bool
@@ -126,7 +128,7 @@ func (k *configKind) Draft(_ context.Context, raw json.RawMessage) (*Draft, erro
 			}
 		}
 		for kk, v := range p.Secrets {
-			d.Changes = append(d.Changes, Change{Target: key, Path: kk, Before: doc.Secrets[kk], After: v, Secret: true, Op: "change"})
+			d.Changes = append(d.Changes, Change{Target: key, Path: kk, Before: doc.Secrets[kk], After: "resolved-" + v, Secret: true, Op: "change"})
 		}
 		d.Affected = append(d.Affected, Affected{Kind: "service", ID: id + "-api", Name: doc.Name + "-api", Effect: "recreated", Relation: "direct"})
 	}
@@ -216,7 +218,7 @@ func newEnv(t *testing.T) *env {
 	}
 	e := &env{t: t, db: st.DB, iam: idsvc, cfg: newConfigs(), jobs: &fakeJobs{}, clock: clk}
 	e.svc = New(Options{DB: st.DB, Audit: idsvc, Jobs: e.jobs, Now: clk.now})
-	e.kind = &configKind{store: e.cfg}
+	e.kind = &configKind{store: e.cfg, require: true}
 	if err := e.svc.Register(e.kind); err != nil {
 		t.Fatal(err)
 	}

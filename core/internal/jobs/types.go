@@ -220,7 +220,7 @@ type Job struct {
 	ChangePlanID     string `json:"changePlanId,omitempty"`
 	ChangePlanDigest string `json:"changePlanDigest,omitempty"`
 	PlanVersion      int    `json:"planVersion"`
-	PlanSummary string          `json:"planSummary,omitempty"`
+	PlanSummary      string `json:"planSummary,omitempty"`
 	// RequiredPermissions is what the change plan required on its targets;
 	// recorded, not enforced here.
 	RequiredPermissions []string `json:"requiredPermissions,omitempty"`

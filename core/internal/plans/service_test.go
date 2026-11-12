@@ -383,6 +383,7 @@ func TestAuditInSameTransaction(t *testing.T) {
 
 func TestLowRiskPlanIsAutoApproved(t *testing.T) {
 	e := newEnv(t)
+	e.kind.require = false
 	p := e.create(e.projA, configParams{Configs: []string{"shop-compose"}, Set: map[string]string{"replicas": "2"}})
 	if p.Risk != RiskLow || p.Approval.Required || !p.Approval.AutoApproved || p.State != StateApproved || p.Approval.Digest != p.Digest {
 		t.Fatalf("plan %s risk %s approval %+v", p.State, p.Risk, p.Approval)
@@ -442,8 +443,8 @@ func TestWithdrawOnlyByRequesterAndReject(t *testing.T) {
 
 func TestSecretChangesAreMaskedButDigested(t *testing.T) {
 	e := newEnv(t)
-	a := e.create(e.projA, configParams{Configs: []string{"shop-compose"}, Set: map[string]string{"image": "x"}, Secrets: map[string]string{"STRIPE_KEY": "sk_new_1"}})
-	b := e.create(e.projA, configParams{Configs: []string{"shop-compose"}, Set: map[string]string{"image": "x"}, Secrets: map[string]string{"STRIPE_KEY": "sk_new_2"}})
+	a := e.create(e.projA, configParams{Configs: []string{"shop-compose"}, Set: map[string]string{"image": "x"}, Secrets: map[string]string{"STRIPE_KEY": "ref:new1"}})
+	b := e.create(e.projA, configParams{Configs: []string{"shop-compose"}, Set: map[string]string{"image": "x"}, Secrets: map[string]string{"STRIPE_KEY": "ref:new2"}})
 	var sec *Change
 	for i := range a.Changes {
 		if a.Changes[i].Secret {
@@ -455,7 +456,7 @@ func TestSecretChangesAreMaskedButDigested(t *testing.T) {
 	}
 	var doc string
 	e.db.QueryRow(`SELECT doc FROM change_plans WHERE id = ?`, a.ID).Scan(&doc)
-	if strings.Contains(doc, "sk_new_1") || strings.Contains(doc, "sk_old") {
+	if strings.Contains(doc, "resolved-") || strings.Contains(doc, "sk_old") {
 		t.Fatal("secret value stored in the plan")
 	}
 	if a.Digest == b.Digest {

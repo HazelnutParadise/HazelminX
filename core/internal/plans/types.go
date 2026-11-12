@@ -64,7 +64,7 @@ type ForbiddenError struct {
 	Scope  iam.Scope
 }
 
-func (e *ForbiddenError) Error() string { return "plans: not allowed (" + e.Reason + ")" }
+func (e *ForbiddenError) Error() string   { return "plans: not allowed (" + e.Reason + ")" }
 func (e *ForbiddenError) Is(t error) bool { return t == ErrForbidden }
 
 // ChangedError is the conflict a caller sees when the plan it reviewed is
@@ -112,7 +112,9 @@ type Kind interface {
 	JobKind() string
 	// Draft computes the plan for params from the current state. Wrap
 	// ErrInvalid for bad params and ErrNotFound for a target that does not
-	// exist.
+	// exist. Params are stored with the plan and shown to approvers, so they
+	// name secrets by reference, never by value; a secret's value enters the
+	// plan only as a Change marked Secret.
 	Draft(ctx context.Context, params json.RawMessage) (*Draft, error)
 	// Job is the job that carries the plan out. Its params should include the
 	// target versions of the plan so the handler writes only if they are
@@ -282,6 +284,9 @@ type Plan struct {
 	Invalidation *ChangedError `json:"invalidation,omitempty"`
 
 	salt []byte
+	// storedState is the state column as read; State differs from it when
+	// the plan is past its deadline but not yet written as expired.
+	storedState State
 }
 
 // SortValue returns the value of a list sort field.
