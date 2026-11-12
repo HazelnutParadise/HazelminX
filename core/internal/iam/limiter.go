@@ -104,18 +104,19 @@ func (l *Limiter) Begin(account, source string, trustedSource bool) (*Attempt, t
 	p := l.policy
 	acct := normalizeAccount(account)
 
+	// Blocks first, so a blocked caller always learns the real wait.
 	src := l.sources[source]
 	if src != nil && src.blockedUntil.After(now) {
 		return nil, src.blockedUntil.Sub(now)
+	}
+	st := l.accounts[acct]
+	if !trustedSource && st != nil && st.blockedUntil.After(now) {
+		return nil, st.blockedUntil.Sub(now)
 	}
 	if !admit(l.sourceFailures(src, now), l.pendingSources[source], p.SourceMaxFailures) {
 		return nil, 0
 	}
 	if !trustedSource {
-		st := l.accounts[acct]
-		if st != nil && st.blockedUntil.After(now) {
-			return nil, st.blockedUntil.Sub(now)
-		}
 		if !admit(l.accountFailures(st, now), l.pendingAccounts[acct], p.AccountFreeFailures) {
 			return nil, 0
 		}
