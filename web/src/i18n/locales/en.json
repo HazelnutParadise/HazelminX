@@ -640,7 +640,7 @@
         "same_key": "Same key",
         "same_machine_id": "Same machine-id"
       },
-      "keyRetired": "This key is retired: {{reason}}",
+      "keyRetired": "This key is retired:",
       "blocked": "This key was revoked, in conflict or replaced, so approving will be refused. Run enroll with --new-identity on the host to get a new key, create a new code and enroll again.",
       "sameKey": "This is the key of {{name}}; approving keeps that host and issues a new certificate.",
       "chooseTitle": "This machine has the machine-id of an existing host but a different key. Choose before approving:",
@@ -670,7 +670,11 @@
       "endedDetail": "Lookup ID {{codeId}} · {{time}}",
       "loadFailed": "Could not read this enrollment",
       "retry": "Try again",
-      "coreUrlInvalid": "Enter a full address starting with https://, e.g. https://panel.example.tw:9801"
+      "coreUrlInvalid": "Enter a full address starting with https://, e.g. https://panel.example.tw:9801",
+      "retiredReason": {
+        "revoked": "revoked",
+        "identity_conflict": "identity conflict"
+      }
     },
     "enrollments": {
       "title": "Enrolling · {{count}}",

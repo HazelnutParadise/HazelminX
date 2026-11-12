@@ -431,10 +431,10 @@ function RevokeDialog({ node, onClose }: { node: Node; onClose: () => void }) {
 }
 
 /** Which ticket brings each removal mode Core does not offer yet (POST /remove answers NOT_AVAILABLE). */
-const MODE_TICKET: Record<Exclude<RemovalMode, "unmanage">, string> = {
-  "remove-agent": "037",
-  "remove-cluster-node": "043, 087",
-  "delete-workloads": "040, 044, 052",
+const MODE_TICKET: Record<Exclude<RemovalMode, "unmanage">, string[]> = {
+  "remove-agent": ["037"],
+  "remove-cluster-node": ["043", "087"],
+  "delete-workloads": ["040", "044", "052"],
 };
 
 function RemoveDialog({ node, onClose }: { node: Node; onClose: () => void }) {
@@ -488,7 +488,9 @@ function RemoveDialog({ node, onClose }: { node: Node; onClose: () => void }) {
                 <span id={`${id}-note`} className="hx-sub">
                   {available
                     ? t("nodes.remove.unmanageEffect")
-                    : t("nodes.remove.unavailable", { ticket: MODE_TICKET[m as Exclude<RemovalMode, "unmanage">] })}
+                    : t("nodes.remove.unavailable", {
+                        ticket: MODE_TICKET[m as Exclude<RemovalMode, "unmanage">].join(t("nodes.listSeparator")),
+                      })}
                 </span>
               </span>
             </label>

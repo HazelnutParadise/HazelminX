@@ -623,7 +623,7 @@
         "same_key": "同一把金鑰",
         "same_machine_id": "同一個 machine-id"
       },
-      "keyRetired": "這把金鑰已停用：{{reason}}",
+      "keyRetired": "這把金鑰已停用：",
       "blocked": "這把金鑰曾被撤銷、身分衝突或被取代，核准一定會被拒。請在主機上用 --new-identity 換一把新金鑰，重新產生註冊碼再註冊。",
       "sameKey": "這是 {{name}} 原本的金鑰，核准後沿用這台主機並重新簽發憑證。",
       "chooseTitle": "這台機器的 machine-id 和既有主機相同，但金鑰不同。核准前請選：",
@@ -653,7 +653,11 @@
       "endedDetail": "查詢 ID {{codeId}} · {{time}}",
       "loadFailed": "沒辦法讀取這個註冊",
       "retry": "再試一次",
-      "coreUrlInvalid": "請填 https:// 開頭的完整位址，例如 https://panel.example.tw:9801"
+      "coreUrlInvalid": "請填 https:// 開頭的完整位址，例如 https://panel.example.tw:9801",
+      "retiredReason": {
+        "revoked": "已撤銷",
+        "identity_conflict": "身分衝突"
+      }
     },
     "enrollments": {
       "title": "註冊中 · {{count}}",

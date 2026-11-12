@@ -339,6 +339,7 @@ describe("add host", () => {
     expect(await screen.findByRole("button", { name: "是這台，加入" })).toBeDisabled();
     expect(screen.getByText(/核准一定會被拒/)).toBeInTheDocument();
     expect(screen.getByText(/--new-identity/)).toBeInTheDocument();
+    expect(screen.getByText("已撤銷")).toBeInTheDocument();
   });
 
   it("rejects the host after a confirmation", async () => {
@@ -486,8 +487,8 @@ describe("host actions", () => {
     expect(within(dialog).getByRole("radio", { name: /^不再管理/ })).toBeChecked();
     for (const [mode, ticket] of [
       ["移除 Agent", "037"],
-      ["移除叢集節點", "043, 087"],
-      ["刪除工作負載", "040, 044, 052"],
+      ["移除叢集節點", "043、087"],
+      ["刪除工作負載", "040、044、052"],
     ]) {
       const r = within(dialog).getByRole("radio", { name: new RegExp(`^${mode}`) });
       expect(r).toBeDisabled();

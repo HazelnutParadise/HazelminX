@@ -436,7 +436,14 @@ function CheckPanel({ enrollment: e, canWrite }: { enrollment: Enrollment; canWr
                 </Link>
                 <StatusPill tone={m.keyRetired ? "danger" : "warn"}>{t(`nodes.addFlow.match.${m.reason}`)}</StatusPill>
                 {m.keyRetired && (
-                  <span className="hx-sub">{t("nodes.addFlow.keyRetired", { reason: m.keyRetiredReason || "—" })}</span>
+                  <span className="hx-sub">
+                    {t("nodes.addFlow.keyRetired")}{" "}
+                    <span className="hx-mono" translate="no">
+                      {t(`nodes.addFlow.retiredReason.${m.keyRetiredReason}`, {
+                        defaultValue: m.keyRetiredReason || "—",
+                      })}
+                    </span>
+                  </span>
                 )}
               </li>
             ))}
