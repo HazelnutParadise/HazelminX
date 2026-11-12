@@ -6,6 +6,9 @@ import { LoginPage } from "../auth/LoginPage";
 import { AUTH_PATHS } from "../auth/nextPath";
 import { RequireAuth } from "../auth/RequireAuth";
 import { SetupPage } from "../auth/SetupPage";
+import { AddNodePage } from "../nodes/AddNodePage";
+import { NodePage } from "../nodes/NodePage";
+import { NodesPage } from "../nodes/NodesPage";
 import { AppShell } from "../shell/AppShell";
 import { SessionFallback } from "../shell/SessionFallback";
 import { NotFound } from "../shell/NotFound";
@@ -37,13 +40,16 @@ export const routes: RouteObject[] = [
         errorElement: <RouteError />,
         children: [
           ...Object.values(PAGES)
-            .filter((p) => p.key !== "accountSecurity")
+            .filter((p) => p.key !== "accountSecurity" && p.key !== "nodes")
             .map((p) =>
               p.path === "/"
                 ? { index: true, element: <PageShell page={p.key} /> }
                 : { path: p.path.slice(1) + "/*", element: <PageShell page={p.key} /> },
             ),
           { path: PAGES.accountSecurity.path.slice(1), element: <AccountSecurityPage /> },
+          { path: PAGES.nodes.path.slice(1), element: <NodesPage /> },
+          { path: `${PAGES.nodes.path.slice(1)}/new`, element: <AddNodePage /> },
+          { path: `${PAGES.nodes.path.slice(1)}/:id/*`, element: <NodePage /> },
           ...(import.meta.env.DEV
             ? [
                 {

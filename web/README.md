@@ -89,7 +89,7 @@ const { data, error } = await api.GET("/management/v1/auth/session");
 | 資料庫                         | `/databases`        | `Database`       |
 | AI                             | `/ai`               | `Brain`          |
 | API 代理                       | `/api-proxy`        | `PlugsConnected` |
-| 主機與節點                     | `/nodes`            | `HardDrives`     |
+| 主機                           | `/nodes`            | `HardDrives`     |
 | 容器                           | `/containers`       | `Cube`           |
 | Kubernetes                     | `/kubernetes`       | `SteeringWheel`  |
 | 儲存與備份                     | `/storage`          | `Archive`        |

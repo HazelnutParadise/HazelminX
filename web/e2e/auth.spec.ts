@@ -19,9 +19,9 @@ test.describe("signed out", () => {
   test("any page goes to login, sign-in returns to it, sign-out goes back to login", async ({ page }) => {
     const errors = watchErrors(page, { signedOut: true });
     const user = await createUser("auditor");
-    await page.goto("/nodes/hazel-tw-01/files?path=%2Fetc");
+    await page.goto("/storage/backups/files?path=%2Fetc");
     await expect(h1(page)).toHaveText("登入管理介面");
-    await expect(page).toHaveURL(/\/login\?next=%2Fnodes%2Fhazel-tw-01%2Ffiles%3Fpath%3D%252Fetc$/);
+    await expect(page).toHaveURL(/\/login\?next=%2Fstorage%2Fbackups%2Ffiles%3Fpath%3D%252Fetc$/);
     await expect(page.locator("header.hx-top")).not.toContainText("搜尋或下指令");
     await expect(page.getByRole("button", { name: "語言" })).toBeVisible();
     for (const width of [1440, 360]) {
@@ -31,8 +31,8 @@ test.describe("signed out", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
 
     await typePassword(page, user);
-    await expect(h1(page)).toHaveText("主機與節點");
-    await expect(page).toHaveURL(/\/nodes\/hazel-tw-01\/files\?path=%2Fetc$/);
+    await expect(h1(page)).toHaveText("儲存與備份");
+    await expect(page).toHaveURL(/\/storage\/backups\/files\?path=%2Fetc$/);
     await expect(page.getByRole("button", { name: `${user.username} · 稽核者` })).toBeVisible();
 
     await page.getByRole("button", { name: `${user.username} · 稽核者` }).click();

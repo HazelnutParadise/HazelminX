@@ -1,4 +1,4 @@
-import { createHmac, randomBytes } from "node:crypto";
+import { createHmac, generateKeyPairSync, randomBytes } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -181,4 +181,51 @@ export async function virtualAuthenticator(page: Page) {
       return r.credentials;
     },
   };
+}
+
+// ── A host enrolling through Core's agent listener (contracts/README.md 註冊) ─────────────────────
+
+/** Core's agent listener: e2e/start-core.sh's HAZELMINX_E2E_AGENT_ADDR, or HAZELMINX_E2E_AGENT_URL for an external Core. */
+export const AGENT_URL =
+  process.env.HAZELMINX_E2E_AGENT_URL ?? `https://${process.env.HAZELMINX_E2E_AGENT_ADDR ?? "127.0.0.1:19891"}`;
+
+export interface FakeHost {
+  publicKey: string;
+  hostname: string;
+  machineId: string;
+}
+
+/** A host identity: a new Ed25519 key (raw public key, base64url without padding) and made-up host facts. */
+export function fakeHost(over: Partial<FakeHost> = {}): FakeHost {
+  const { publicKey } = generateKeyPairSync("ed25519");
+  const x = (publicKey.export({ format: "jwk" }) as { x: string }).x;
+  const tag = randomBytes(3).toString("hex");
+  return { publicKey: x, hostname: `e2e-host-${tag}`, machineId: randomBytes(16).toString("hex"), ...over };
+}
+
+/**
+ * Sends POST /agent/v1/enroll as `hazelminx-agent enroll` does after it fetched the CA. The listener's
+ * certificate comes from Core's own CA, which this test does not pin, so TLS verification is off here.
+ */
+export async function enrollAs(
+  host: FakeHost,
+  code: string,
+): Promise<{ status: number; body: Record<string, unknown> }> {
+  const ctx = await request.newContext({ baseURL: AGENT_URL, ignoreHTTPSErrors: true });
+  try {
+    const res = await ctx.post("/agent/v1/enroll", {
+      data: {
+        code,
+        nodePublicKey: host.publicKey,
+        hostname: host.hostname,
+        machineId: host.machineId,
+        os: "Debian 13",
+        arch: "arm64",
+        agentVersion: "0.1.0",
+      },
+    });
+    return { status: res.status(), body: (await res.json()) as Record<string, unknown> };
+  } finally {
+    await ctx.dispose();
+  }
 }

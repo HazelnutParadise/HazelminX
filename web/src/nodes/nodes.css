@@ -1,0 +1,441 @@
+/* Hosts (boards Nodes, AddNode, NodeOffline head). Panels, tables and dialogs reuse the account and auth styles. */
+@import "../account/account.css";
+@import "../auth/auth.css";
+
+.hx-crumbs {
+  font-size: 12px;
+  color: var(--text-color-kumo-subtle);
+  margin-bottom: -10px;
+}
+.hx-crumbs a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  min-width: 24px;
+  color: inherit;
+}
+.hx-crumbs a:hover {
+  color: var(--color-kumo-brand);
+}
+
+/* Link styled as a secondary button (DESIGN.md「操作一看就知道能點」). */
+.hx-btn-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--color-kumo-line);
+  border-radius: 6px;
+  background: var(--color-kumo-elevated);
+  color: var(--text-color-kumo-default);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  box-shadow: 0 1px 1px rgb(0 0 0 / 0.12);
+}
+.hx-btn-link:hover {
+  border-color: var(--color-kumo-brand);
+}
+.hx-btn-link--primary {
+  background: var(--color-kumo-brand);
+  border-color: var(--color-kumo-brand);
+  color: var(--hx-hazel-ink, #1a1410);
+  font-weight: 600;
+}
+
+/* Stat strip: cells in one panel separated by hairlines (DESIGN.md stat strip). */
+.hx-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  margin: 0;
+}
+.hx-strip-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 16px;
+  border-left: 1px solid var(--color-kumo-hairline);
+}
+.hx-strip-cell:first-child {
+  border-left: 0;
+}
+.hx-strip-cell dt {
+  font-size: 12px;
+  color: var(--text-color-kumo-subtle);
+}
+.hx-strip-cell dd {
+  margin: 0;
+}
+.hx-strip-value {
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.hx-strip-detail {
+  font-size: 12px;
+  color: var(--text-color-kumo-subtle);
+}
+
+/* Filter row above the table (DESIGN.md 表格的小功能「篩選列」). */
+.hx-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-kumo-hairline);
+}
+.hx-filter-search {
+  position: relative;
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.hx-filter-search input {
+  padding-left: 30px;
+}
+.hx-filter-search-icon {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  color: var(--text-color-kumo-subtle);
+  pointer-events: none;
+}
+.hx-filter-select {
+  min-width: 140px;
+}
+.hx-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1 1 100%;
+  order: 3;
+}
+.hx-chip {
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--color-kumo-line);
+  border-radius: 999px;
+  background: var(--color-kumo-elevated);
+  color: var(--text-color-kumo-default);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.hx-chip:hover {
+  border-color: var(--color-kumo-brand);
+}
+.hx-chip[aria-pressed="true"] {
+  border-color: var(--color-kumo-brand);
+  background: color-mix(in srgb, var(--color-kumo-brand) 18%, var(--color-kumo-elevated));
+  font-weight: 600;
+}
+.hx-panel-note {
+  margin: 0;
+  padding: 8px 14px;
+  border-top: 1px solid var(--color-kumo-hairline);
+}
+
+.hx-row-link {
+  color: inherit;
+  text-decoration: none;
+}
+.hx-row-link,
+.hx-match-list a,
+.hx-job-list a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+.hx-row-link:hover {
+  color: var(--color-kumo-brand);
+  text-decoration: underline;
+}
+.hx-tags,
+.hx-sync-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.hx-sync-list {
+  margin: 0;
+}
+.hx-tags li {
+  padding: 0 6px;
+  border: 1px solid var(--color-kumo-line);
+  border-radius: 4px;
+  font-size: 11px;
+  line-height: 18px;
+  color: var(--text-color-kumo-subtle);
+}
+.hx-menu-note {
+  max-width: 240px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--text-color-kumo-subtle);
+}
+.hx-muted {
+  color: var(--text-color-kumo-subtle);
+}
+.hx-mono {
+  font-family: var(--font-mono);
+  overflow-wrap: anywhere;
+}
+.hx-lock-wrap {
+  display: inline-flex;
+}
+
+/* Key–value lists (host detail, enrollment check). */
+.hx-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px 20px;
+  width: 100%;
+  margin: 0;
+}
+.hx-field dt {
+  font-size: 12px;
+  color: var(--text-color-kumo-subtle);
+}
+.hx-field dd {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.hx-node-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin-top: -8px;
+}
+.hx-node-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.hx-node-wide {
+  grid-column: 1 / -1;
+}
+
+/* Forms in panels and dialogs. */
+.hx-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+.hx-form--grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+.hx-form-wide {
+  grid-column: 1 / -1;
+}
+.hx-form-actions,
+.hx-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.hx-command {
+  width: 100%;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--color-kumo-line);
+  border-radius: 6px;
+  background: var(--color-kumo-recessed, var(--color-kumo-elevated));
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.hx-waiting {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+}
+/* Running state: solid square in the info color (DESIGN.md Shapes). */
+.hx-waiting-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--text-color-kumo-info);
+}
+
+.hx-match-list,
+.hx-job-list,
+.hx-consequences {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hx-match-list li,
+.hx-job-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+.hx-consequences {
+  padding-left: 18px;
+  list-style: disc;
+  font-size: 13px;
+}
+.hx-consequences--danger li::marker {
+  color: var(--text-color-kumo-danger);
+}
+.hx-dialog-h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.hx-dialog-ask {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-kumo-hairline);
+  font-size: 13px;
+}
+.hx-dialog-conflict,
+.hx-node-error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* Choice cards: radio, then the label with its effect on the next line (DESIGN.md「勾選項的補充說明放在下一行」). */
+.hx-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  width: 100%;
+}
+.hx-choices legend {
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.hx-choice {
+  position: relative;
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 12px;
+  border: 1px solid var(--color-kumo-line);
+  border-radius: 8px;
+}
+/* The radio covers the whole card, so the card is the click and touch target; the mark draws its state. */
+.hx-choice input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.hx-choice-mark {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  border: 1.5px solid var(--hx-faint);
+  border-radius: 50%;
+}
+.hx-choice:has(input:checked) {
+  border-color: var(--color-kumo-brand);
+}
+.hx-choice:has(input:checked) .hx-choice-mark {
+  border-color: var(--color-kumo-brand);
+  background: radial-gradient(circle, var(--color-kumo-brand) 0 4px, transparent 4.5px);
+}
+.hx-choice:has(input:focus-visible) {
+  outline: 2px solid var(--color-kumo-brand);
+  outline-offset: 2px;
+}
+.hx-choice:has(input:hover:not(:disabled)) {
+  background: var(--color-kumo-elevated);
+}
+.hx-choice-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.hx-choice:has(input:disabled) input {
+  cursor: not-allowed;
+}
+.hx-choice:has(input:disabled) strong,
+.hx-choice:has(input:disabled) .hx-choice-mark {
+  opacity: 0.6;
+}
+
+.hx-enrollments .hx-acts {
+  white-space: nowrap;
+}
+
+@media (max-width: 767px) {
+  .hx-enr-deadline {
+    display: none;
+  }
+}
+
+@media (max-width: 1024px) {
+  .hx-hosts .c5 {
+    display: none;
+  }
+}
+@media (max-width: 900px) {
+  .hx-node-grid,
+  .hx-form--grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 767px) {
+  .hx-chip,
+  .hx-btn-link,
+  .hx-choice,
+  .hx-crumbs a,
+  .hx-panel-body button,
+  .hx-panel-body input,
+  .hx-filters button,
+  .hx-filters input,
+  .hx-hosts button,
+  .hx-row-link,
+  .hx-match-list a,
+  .hx-job-list a {
+    min-height: 44px;
+  }
+  .hx-row-link {
+    display: inline-flex;
+    align-items: center;
+  }
+  .hx-crumbs a,
+  .hx-btn-link {
+    min-width: 44px;
+    justify-content: center;
+  }
+  .hx-strip-cell {
+    border-left: 0;
+    border-top: 1px solid var(--color-kumo-hairline);
+  }
+  .hx-strip-cell:first-child {
+    border-top: 0;
+  }
+}

@@ -5,6 +5,8 @@
   flex-direction: column;
   min-height: 100vh;
   background: var(--color-kumo-canvas);
+  /* Keeps the sticky top bar's z-index inside the shell, so dialogs and menus portalled to <body> paint above it. */
+  isolation: isolate;
 }
 
 .hx-skip {
