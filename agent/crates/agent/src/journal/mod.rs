@@ -550,7 +550,8 @@ impl Journal {
     }
 
     /// Rewrites the outcomes file (temp file, fsync, rename) with
-    /// `outcomes`, oldest first. The directory fsync is the caller's.
+    /// `outcomes`, oldest first, and fsyncs the directory so the rename is
+    /// durable before the journal is replaced.
     fn replace_outcomes(&self, outcomes: &HashMap<(String, u32), Outcome>) -> Result<()> {
         let mut sorted: Vec<&Outcome> = outcomes.values().collect();
         sorted.sort_by_key(|o| o.seq);
