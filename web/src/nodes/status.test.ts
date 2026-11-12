@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from "vite-plus/test";
 import { initI18n } from "../i18n";
 import zh from "../i18n/locales/zh-TW.json";
-import { decide, enrollCommand } from "./enroll";
+import { decide, enrollCommand, guessAgentUrl, isAgentUrl } from "./enroll";
 import { node } from "./fixtures";
 import {
   apiState,
@@ -162,6 +162,22 @@ describe("enrollment", () => {
     expect(enrollCommand("https://a:9801", "HZX-1", "home lab")).toContain("--group 'home lab'");
     expect(enrollCommand("https://a:9801", "HZX-1", "it's")).toContain(`--group 'it'\\''s'`);
     expect(enrollCommand("https://a:9801", "HZX-1", "dc-1")).toContain("--group dc-1");
+  });
+
+  it("quotes an address the shell would split and accepts only https addresses", () => {
+    expect(enrollCommand("https://a b:9801", "HZX-1", "")).toContain("--core-url 'https://a b:9801'");
+    expect(isAgentUrl("https://panel.example.tw:9801")).toBe(true);
+    expect(isAgentUrl("https://[::1]:9801")).toBe(true);
+    expect(isAgentUrl("http://panel:9801")).toBe(false);
+    expect(isAgentUrl("https://a b:9801")).toBe(false);
+    expect(isAgentUrl("panel:9801")).toBe(false);
+    expect(isAgentUrl("")).toBe(false);
+  });
+
+  it("guesses the agent address from the page's host, without doubling IPv6 brackets", () => {
+    expect(guessAgentUrl("panel.example.tw", 9801)).toBe("https://panel.example.tw:9801");
+    expect(guessAgentUrl("[::1]", 9801)).toBe("https://[::1]:9801");
+    expect(guessAgentUrl("::1", 9801)).toBe("https://[::1]:9801");
   });
 
   it("decides what approving does with the hosts it resembles", () => {

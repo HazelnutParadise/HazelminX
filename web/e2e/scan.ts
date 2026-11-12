@@ -153,9 +153,21 @@ export async function layoutIssues(page: Page): Promise<string[]> {
       const clips = cs.overflow === "hidden" || cs.overflowX === "hidden" || cs.overflowX === "clip";
       if (clips && el.scrollWidth > el.clientWidth + 2 && el.children.length === 0) out.push(`CLIP: ${label(el)}`);
     }
+    // An open dialog must be the topmost thing along its top edge: the sticky top bar once painted over it on phones.
+    for (const d of document.querySelectorAll("[role=dialog]")) {
+      if (!visible(d)) continue;
+      const r = d.getBoundingClientRect();
+      for (const x of [r.left + 12, r.left + r.width / 2, r.right - 12]) {
+        const hit = document.elementFromPoint(x, Math.max(r.top, 0) + 8);
+        if (hit && !d.contains(hit)) {
+          out.push(`COVERED dialog "${label(d)}" by ${hit.tagName.toLowerCase()}.${[...hit.classList].join(".")}`);
+          break;
+        }
+      }
+    }
     const text = document.body.innerText;
     const key = text.match(
-      /\b(app|nav|navGroup|shell|hostBar|saveBar|componentDown|page|notFound|crash|raw|errors|kumo|auth|account|roles)\.[a-zA-Z_]+\b/,
+      /\b(app|nav|navGroup|shell|hostBar|saveBar|componentDown|page|notFound|crash|raw|errors|kumo|auth|account|roles|nodes)\.[a-zA-Z_]+\b/,
     );
     if (key) out.push(`I18N-KEY: ${key[0]}`);
     return [...new Set(out)];

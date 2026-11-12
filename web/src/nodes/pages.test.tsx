@@ -432,6 +432,7 @@ describe("host actions", () => {
     const done = await screen.findByRole("dialog", { name: "hazel-tw-01 已進入維護" });
     expect(within(done).getByRole("link", { name: "packages.upgrade" })).toHaveAttribute("href", "/jobs/job-7");
     expect(within(done).getByText("執行中")).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/packages\.upgrade.*running/);
     expect(core.callsTo(`PUT ${B}/nodes/tw-01/maintenance`)[0]!.body).toEqual({ enabled: true, reason: "kernel" });
   });
 
