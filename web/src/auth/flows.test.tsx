@@ -243,6 +243,67 @@ describe("sign-in", () => {
   });
 });
 
+describe("sign-in edge cases", () => {
+  const secondStep = (methods: string[], extra: Record<string, unknown> = {}) => ({
+    status: 200,
+    body: { step: "second-factor", challengeToken: "ch-x", methods, secondFactorEnrollmentRequired: false, ...extra },
+  });
+
+  it("a browser clock far ahead of Core does not end the second step early", async () => {
+    const { core, state } = coreWithSession({ signedIn: false });
+    // Core says the challenge expires in 5 minutes of its own time, which is already past for this browser.
+    core.on(
+      "POST /management/v1/auth/login",
+      secondStep(["totp"], { challengeExpiresAt: new Date(Date.now() - 60_000).toISOString() }),
+    );
+    core.on("POST /management/v1/auth/login/second-factor", () => {
+      state.signedIn = true;
+      return signedIn();
+    });
+    renderAt("/login");
+    const u = userEvent.setup();
+    await u.type(await screen.findByLabelText("帳號"), "tim");
+    await u.type(screen.getByLabelText("密碼"), "correct horse battery");
+    await u.click(screen.getByRole("button", { name: "繼續" }));
+    await heading("驗證身分");
+    await new Promise((r) => setTimeout(r, 1200));
+    expect(screen.queryByText("這次登入已逾時 · 請重新輸入密碼")).toBeNull();
+    await u.type(screen.getByRole("textbox", { name: "輸入驗證器上的 6 位數" }), "123456");
+    await heading("總覽");
+  });
+
+  it("explains a passkey that cannot be used on this page, and an account with no usable method", async () => {
+    const { core } = coreWithSession({ signedIn: false });
+    core.on("POST /management/v1/auth/login", secondStep(["passkey", "recovery-code"]));
+    renderAt("/login");
+    const u = userEvent.setup();
+    await u.type(await screen.findByLabelText("帳號"), "tim");
+    await u.type(screen.getByLabelText("密碼"), "correct horse battery");
+    await u.click(screen.getByRole("button", { name: "繼續" }));
+    // jsdom has no PublicKeyCredential: the passkey is there but this browser cannot use it.
+    expect(await screen.findByText("這個瀏覽器不能使用 Passkey")).toBeInTheDocument();
+    expect(screen.getByLabelText("復原碼")).toBeInTheDocument();
+
+    await u.click(screen.getByRole("button", { name: "回上一步" }));
+    core.on("POST /management/v1/auth/login", secondStep([]));
+    await u.type(screen.getByLabelText("密碼"), "correct horse battery");
+    await u.click(screen.getByRole("button", { name: "繼續" }));
+    expect(await screen.findByText("這個帳號在這個網址沒有可用的二次驗證，請找管理員協助")).toBeInTheDocument();
+  });
+
+  it("the throttle wait is announced once, not every second", async () => {
+    const { core } = coreWithSession({ signedIn: false });
+    core.on("POST /management/v1/auth/login", apiError(429, "TOO_MANY_ATTEMPTS", { retryAfterSeconds: 90 }));
+    renderAt("/login");
+    const u = userEvent.setup();
+    await u.type(await screen.findByLabelText("帳號"), "tim");
+    await u.type(screen.getByLabelText("密碼"), "whatever-123456");
+    await u.click(screen.getByRole("button", { name: "繼續" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("錯太多次，1:30 後才能再試");
+    expect(screen.getByText("錯太多次 · 1:30 後再試").closest("[aria-hidden]")).not.toBeNull();
+  });
+});
+
 describe("first run and enrolment", () => {
   it("login opens setup; setup signs in, enrols an authenticator, shows the codes once, then the overview", async () => {
     const state = { needsSetup: true, signedIn: false, enroll: true };
@@ -283,7 +344,8 @@ describe("first run and enrolment", () => {
 
     await heading("綁定二次驗證");
     expect(router.state.location.search).toBe("?setup=1");
-    expect(screen.getByRole("img", { name: "驗證器 App 要掃的 QR 碼" })).toBeInTheDocument();
+    // The QR code appears once Core answered the enrolment request.
+    expect(await screen.findByRole("img", { name: "驗證器 App 要掃的 QR 碼" })).toBeInTheDocument();
     expect(screen.getByText("JBSW Y3DP EHPK 3PXP")).toBeInTheDocument();
     await u.type(screen.getByRole("textbox", { name: "輸入 App 上的 6 位數" }), "482913");
 
@@ -354,6 +416,28 @@ describe("shell", () => {
     const router = renderAt("/account/security");
     await heading("登入管理介面");
     expect(router.state.location.search).toBe("?next=%2Faccount%2Fsecurity");
+  });
+
+  it("a sign-out Core did not confirm says so and can be retried", async () => {
+    const { core, state } = coreWithSession({ signedIn: true });
+    core.on("POST /management/v1/auth/logout", apiError(502, "PLATFORM_DEGRADED"));
+    renderAt("/settings");
+    await heading("平台設定");
+    const u = userEvent.setup();
+    await u.click(screen.getByRole("button", { name: "tim · 擁有者" }));
+    await u.click(await screen.findByRole("menuitem", { name: "登出" }));
+    expect(await screen.findByText("沒有確認登出成功，這台裝置可能還在登入狀態")).toBeInTheDocument();
+    // The session still works, but the login page stays put instead of signing the user back in.
+    await new Promise((r) => setTimeout(r, 300));
+    expect(screen.getByRole("heading", { level: 1, name: "登入管理介面" })).toBeInTheDocument();
+
+    core.on("POST /management/v1/auth/logout", () => {
+      state.signedIn = false;
+      return { status: 204 };
+    });
+    await u.click(screen.getByRole("button", { name: "再登出一次" }));
+    await waitFor(() => expect(screen.queryByText("沒有確認登出成功，這台裝置可能還在登入狀態")).toBeNull());
+    expect(core.callsTo("POST /management/v1/auth/logout")).toHaveLength(2);
   });
 
   it("explains when Core cannot be reached instead of showing a blank page", async () => {
@@ -508,7 +592,7 @@ describe("account security", () => {
     await u.type(within(dialog).getByLabelText("密碼"), "wrong password");
     await u.type(within(dialog).getByRole("textbox", { name: "驗證器 6 位數" }), "111111");
     await u.click(within(dialog).getByRole("button", { name: "確認" }));
-    expect(await within(dialog).findByText("帳號或密碼不對")).toBeInTheDocument();
+    expect(await within(dialog).findByText("密碼不對")).toBeInTheDocument();
 
     await u.clear(within(dialog).getByLabelText("密碼"));
     await u.type(within(dialog).getByLabelText("密碼"), "correct horse battery");
@@ -522,6 +606,30 @@ describe("account security", () => {
       { password: "correct horse battery", method: "totp", code: "222222" },
     ]);
     expect(core.callsTo("POST /management/v1/me/recovery-codes")).toHaveLength(2);
+  });
+
+  it("cancelling a new authenticator leaves Core alone (a removal would sign out other devices)", async () => {
+    const core = accountCore();
+    core.on("GET /management/v1/me/second-factors", factors({ totp: null }));
+    core.on("POST /management/v1/me/second-factors/totp", {
+      status: 201,
+      body: {
+        secret: "JBSWY3DPEHPK3PXP",
+        uri: "otpauth://totp/HazelminX:tim?secret=JBSWY3DPEHPK3PXP&issuer=HazelminX",
+        digits: 6,
+        periodSeconds: 30,
+        serverTime: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 600_000).toISOString(),
+      },
+    });
+    renderAt("/account/security");
+    const u = userEvent.setup();
+    await u.click(await screen.findByRole("button", { name: "新增驗證器" }));
+    const dialog = await screen.findByRole("dialog", { name: "新增驗證器" });
+    expect(await within(dialog).findByText("JBSW Y3DP EHPK 3PXP")).toBeInTheDocument();
+    await u.click(within(dialog).getByRole("button", { name: "取消" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(core.callsTo("DELETE /management/v1/me/second-factors/totp")).toHaveLength(0);
   });
 
   it("closing the confirmation changes nothing", async () => {
