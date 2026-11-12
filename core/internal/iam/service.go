@@ -80,8 +80,7 @@ type Service struct {
 	recoveryMu   sync.Mutex
 	recoveryHMAC []byte // cached recovery-code key
 
-	userMu    sync.Mutex
-	userLocks map[string]*sync.Mutex // see lockUser
+	locks *keyedLocks // one attempt at a time per account; see lockUser and Login
 }
 
 var randRead = rand.Read
@@ -94,7 +93,7 @@ func New(db *sql.DB, cfg Config) (*Service, error) {
 		return nil, err
 	}
 	return &Service{db: db, cfg: cfg, limiter: NewLimiter(cfg.Limiter, cfg.Now), dummyHash: dummy,
-		challenges: newChallengeStore(), ceremonies: newCeremonyStore(), userLocks: map[string]*sync.Mutex{}}, nil
+		challenges: newChallengeStore(), ceremonies: newCeremonyStore(), locks: newKeyedLocks()}, nil
 }
 
 // Limiter exposes the attempt limiter so ticket 014 can throttle recovery codes with the same policy.
@@ -215,6 +214,11 @@ func (s *Service) Login(ctx context.Context, username, password string, src Sour
 	if err != nil {
 		return nil, err
 	}
+	// One attempt per account at a time, so the limiter sees each failure
+	// before the next attempt is checked and a burst gets no extra guesses.
+	// Unknown usernames queue the same way, so waiting reveals nothing.
+	unlock := s.locks.lock(loginLockKey(username))
+	defer unlock()
 	if ok, retry := s.limiter.Check(username, src.IP, trusted); !ok {
 		// Not audited: the failures that led here are already on the ledger,
 		// and a throttled source must not be able to grow it at wire speed.
@@ -268,6 +272,10 @@ func (s *Service) Login(ctx context.Context, username, password string, src Sour
 	s.limiter.Success(username)
 	return &LoginResult{Session: sess, User: u, EnrollmentRequired: RequiresSecondFactor(pr)}, nil
 }
+
+// loginLockKey is the lock key for password attempts on a username. It
+// folds case like the limiter, and its prefix keeps it apart from lockUser.
+func loginLockKey(username string) string { return "login:" + normalizeAccount(username) }
 
 func (s *Service) openSession(ctx context.Context, u *User, src Source) (*Session, error) {
 	tx, err := s.db.BeginTx(ctx, nil)

@@ -461,17 +461,7 @@ func (s *Service) newChallenge(ctx context.Context, u *User, f factorState, src 
 // and the challenge's attempt count then see every answer before the next
 // is checked, so a burst of parallel guesses gets no extra tries and two
 // valid proofs racing on one challenge open one session.
-func (s *Service) lockUser(id string) func() {
-	s.userMu.Lock()
-	m := s.userLocks[id]
-	if m == nil {
-		m = &sync.Mutex{}
-		s.userLocks[id] = m
-	}
-	s.userMu.Unlock()
-	m.Lock()
-	return m.Unlock
-}
+func (s *Service) lockUser(id string) func() { return s.locks.lock("user:" + id) }
 
 // CompleteSecondFactor finishes a login started by Login. An unknown,
 // expired or spent challenge is ErrChallengeInvalid; a wrong answer is
