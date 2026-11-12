@@ -11,11 +11,13 @@ vp install            # 安裝套件
 vp dev                # 開發伺服器 http://localhost:5173，/management 轉給 HAZELMINX_CORE_URL（預設 http://127.0.0.1:9800）
 vp check              # 格式、lint、型別
 vp test               # 單元測試（vitest + Testing Library）
-vpr e2e               # Playwright：外殼流程與版面／無障礙掃描
+vpr e2e               # Playwright：登入、二次驗證、外殼流程與版面／無障礙掃描（自己啟動一個 Core）
 vp build              # 產出 dist/
 ```
 
 第一次跑 Playwright 前要下載瀏覽器：`vp exec playwright install chromium`。
+
+`vpr e2e` 需要 Go：`e2e/start-core.sh` 會建置 `../core`，在空的資料目錄（`web/.e2e/`，每次重建）啟動 Core（`127.0.0.1:19890`），再啟動開發伺服器轉發過去。`first-run` 專案先從設定畫面建立擁有者（`owner`）並綁定驗證器，其他測試沿用這個工作階段；需要其他帳號的測試由擁有者經 API 建立。Passkey 用 Chromium 的虛擬驗證器（CDP `WebAuthn`），不是實體驗證器。
 
 ## 嵌入 Core
 
@@ -25,7 +27,7 @@ vp build              # 產出 dist/
 - 其他靜態檔（`boot.js`、`favicon.svg`）回 `no-cache`。
 - 其他路徑一律回 `index.html`（`no-store`），交給前端路由；`/management/`、`/integrations/` 不在此列。
 
-掃描已嵌入的建置：啟動 Core 後 `HAZELMINX_E2E_URL=http://127.0.0.1:9800 vpr e2e`（開發用的元件展示頁不在正式建置裡，會自動略過）。
+掃描已嵌入的建置：用空的資料目錄啟動 Core 後 `HAZELMINX_E2E_URL=http://localhost:9800 HAZELMINX_E2E_SETUP_CODE=<Core 印出的設定碼> vpr e2e`（開發用的元件展示頁不在正式建置裡，會自動略過；用 `localhost` 而不是 IP，Passkey 才能用）。
 
 ## 目錄
 
@@ -33,15 +35,17 @@ vp build              # 產出 dist/
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `src/app/navigation.ts`          | 所有頁面的路徑、圖示、側欄分組（唯一來源）                                                                                                                         |
 | `src/app/routes.tsx`             | 路由；各頁目前是空殼，由各自的票填入                                                                                                                               |
-| `src/app/shellStatus.ts`         | 外殼顯示的狀態（觀測時間、告警數、工作數、沒有回應的主機、使用者）；沒有值就不顯示，不補 0                                                                         |
+| `src/app/shellStatus.ts`         | 外殼顯示的狀態（觀測時間、告警數、工作數、沒有回應的主機、使用者）；沒有值就不顯示，不補 0。使用者由 `src/auth/RequireAuth.tsx` 從 `GET /auth/session` 填入        |
 | `src/shell/`                     | 頂列、側欄、手機 chip 導覽、頁首、空頁、404、載入失敗頁、首次載入骨架（畫板 `ShellStates`）                                                                        |
 | `src/components/`                | 全系統共用元件：儲存列 `SaveBar`、主機狀態列 `HostBar`、元件停止橫條 `ComponentDownBanner`、原文＋白話摘要 `RawMessage`／`ApiErrorMessage`、狀態 pill `StatusPill` |
-| `src/styles/theme-hazelminx.css` | 用 DESIGN.md 色票覆蓋 Kumo 語意 token（對映表在 `design/component-mapping.md`）                                                                               |
+| `src/styles/theme-hazelminx.css` | 用 DESIGN.md 色票覆蓋 Kumo 語意 token（對映表在 `design/component-mapping.md`）                                                                                    |
 | `src/i18n/`                      | i18next；`locales/zh-TW.json` 是預設與鍵的基準                                                                                                                     |
 | `src/lib/time.ts`                | RFC 3339 解析、UTC 序列化、依使用者時區顯示                                                                                                                        |
 | `src/api/`                       | `client.ts`（Cookie 工作階段＋CSRF、錯誤轉 `ApiError`）、`typed.ts`（openapi-fetch 型別化 client）                                                                 |
 | `tools/openapi/`                 | API 型別產生器（獨立小套件，見下）                                                                                                                                 |
 | `public/boot.js`                 | 首次繪製前套用已存的深淺色與語言，避免閃爍                                                                                                                         |
+| `src/auth/`                      | 登入、首次設定、二次驗證綁定（`/login`、`/setup`、`/enroll`）、路由守衛、重新驗證對話框、WebAuthn 轉換（畫板 Login、Setup、MfaDialogs）                            |
+| `src/account/`                   | `/account/security`：第二驗證、復原碼、登入中的裝置、閒置登出（畫板 AccountSecurity）                                                                              |
 | `e2e/`                           | Playwright 測試                                                                                                                                                    |
 
 ## 深淺色與語言

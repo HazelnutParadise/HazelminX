@@ -111,7 +111,7 @@ scripts/   CI 與發布腳本（簽署清單、依賴檢查）
 | Compose／Docker | 真實 Docker（CI service）；Podman rootless 另一 job | 無 | T-051、T-052 需原生解析結果比對。 |
 | Zentinel | 固定版本二進位 + 真實請求（curl） | 上游以測試容器 | WEB-014 要求實際請求驗證。 |
 | Token API 相容 | 從 infra-manager 的 `middlewares/auth_test.go` 等移植為 Core 的契約測試 | 上游 httptest | 20.1 的 403／404／優先順序不得改。 |
-| 前端 | vitest + Testing Library；關鍵流程 Playwright（360px 與桌面、鍵盤） | MSW 回放 OpenAPI 樣本 | UI-005、T-117、T-118。 |
+| 前端 | vitest + Testing Library；關鍵流程 Playwright（360px 與桌面、鍵盤）對真的 Core：`web/e2e/start-core.sh` 每次建置 `core/` 並以空資料目錄啟動，`first-run` 專案從設定畫面建立擁有者 | 單元測試以替換 `fetch` 的假 Core（`web/src/test/fakeCore.ts`）；Passkey 用 Chromium 虛擬驗證器（CDP `WebAuthn`） | UI-005、T-117、T-118；登入、Cookie、CSRF 與 WebAuthn 只有真的 Core 才驗得到。 |
 | GitHub | 模擬 GitHub API（httptest 回放分頁、限流、撤銷）+ 真實 GitHub 測試組織（GH-T34） | 模擬層只覆蓋極端狀態 | 41.3。 |
 
 ## Test matrix

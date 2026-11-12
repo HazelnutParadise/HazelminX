@@ -138,6 +138,9 @@ export async function layoutIssues(page: Page): Promise<string[]> {
       "a[href], button, input, select, textarea, summary, [role=button], [role=tab], [role=menuitem]",
     )) {
       if (!visible(el) || el.closest("[inert]")) continue;
+      // Base UI's mirror inputs (checkbox, select) are hidden from assistive tech and the tab order;
+      // the control people press is the element next to them.
+      if (el.getAttribute("aria-hidden") === "true" && el.getAttribute("tabindex") === "-1") continue;
       const r = el.getBoundingClientRect();
       if (r.width < min - 0.5 || r.height < min - 0.5)
         out.push(`TARGET ${Math.round(r.width)}×${Math.round(r.height)} <${min}: ${label(el)}`);
@@ -152,9 +155,32 @@ export async function layoutIssues(page: Page): Promise<string[]> {
     }
     const text = document.body.innerText;
     const key = text.match(
-      /\b(app|nav|navGroup|shell|hostBar|saveBar|componentDown|page|notFound|crash|raw|errors|kumo)\.[a-zA-Z_]+\b/,
+      /\b(app|nav|navGroup|shell|hostBar|saveBar|componentDown|page|notFound|crash|raw|errors|kumo|auth|account|roles)\.[a-zA-Z_]+\b/,
     );
     if (key) out.push(`I18N-KEY: ${key[0]}`);
     return [...new Set(out)];
   });
+}
+
+/**
+ * Page errors and console errors seen while the test runs. Signed-out screens ask Core who is signed in
+ * and get the expected 401, which Chromium logs as a failed resource; `signedOut` ignores exactly that.
+ */
+export function watchErrors(page: Page, { signedOut = false }: { signedOut?: boolean } = {}): string[] {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  page.on("console", (m) => {
+    if (m.type() !== "error") return;
+    if (signedOut && m.text().includes("status of 401")) return;
+    errors.push(m.text());
+  });
+  return errors;
+}
+
+/** The three scans every screen must pass. */
+export async function scanIssues(page: Page): Promise<string[]> {
+  await page.evaluate(() => document.fonts.ready);
+  // A theme switch animates colours; measuring mid-transition reads in-between values.
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
+  return [...(await axeViolations(page)), ...(await contrastIssues(page)), ...(await layoutIssues(page))];
 }

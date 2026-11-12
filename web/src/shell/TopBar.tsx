@@ -11,8 +11,8 @@ import {
 } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router";
-import { apiFetch } from "../api/client";
 import { PAGES } from "../app/navigation";
+import { useSignOut } from "../auth/session";
 import { useShellStatus } from "../app/shellStatus";
 import { StatusPill } from "../components/StatusPill";
 import { activeLocale, LANGUAGES, setLanguage, type LanguageCode } from "../i18n";
@@ -122,13 +122,7 @@ function UserMenu() {
   const { user } = useShellStatus();
   const label = user ? `${user.name} · ${user.role}` : t("shell.account");
   const languageLabel = LANGUAGES.find((l) => l.code === i18n.language)?.label ?? "";
-  const signOut = async () => {
-    try {
-      await apiFetch("/management/v1/auth/logout", { method: "POST" });
-    } finally {
-      window.location.assign("/");
-    }
-  };
+  const signOut = useSignOut();
   return (
     <DropdownMenu>
       <DropdownMenu.Trigger
