@@ -116,6 +116,8 @@ enum CrashPoint {
     AfterRename,
     /// A full archive was rotated; nothing new is archived yet.
     AfterRotate,
+    /// The directory fsync that `append` redoes after a failed one.
+    PendingDirSync,
 }
 
 /// First line of a compacted journal: what the moved records leave behind.
@@ -236,6 +238,8 @@ pub struct Journal {
     /// False until a compaction succeeds in this process: an earlier one
     /// may have stopped after copying records to the archive.
     archive_clean: bool,
+    /// A compaction renamed a file but could not fsync the directory.
+    dir_unsynced: bool,
     #[cfg(test)]
     crash_at: Option<CrashPoint>,
 }
@@ -358,6 +362,7 @@ impl Journal {
             outcomes,
             compact_due: Instant::now() + COMPACT_INTERVAL,
             archive_clean: false,
+            dir_unsynced: false,
             #[cfg(test)]
             crash_at: None,
         })

@@ -906,3 +906,37 @@ fn a_failed_compaction_does_not_fail_the_ack() {
     let j = Journal::load(d.path()).unwrap();
     assert_eq!(j.acked(), last);
 }
+
+#[test]
+fn a_failed_directory_sync_after_the_rename_is_redone_before_the_next_append() {
+    let d = tempdir().unwrap();
+    let (mut j, _) = mixed(d.path());
+    // The rename is done but its directory fsync fails: until a later one
+    // succeeds, a power loss may bring back the old journal, so nothing may
+    // be appended to the new one.
+    j.crash_at = Some(CrashPoint::AfterRename);
+    assert!(j.compact(TEST_NOW).is_err());
+    assert!(j.dir_unsynced, "the missing directory fsync is remembered");
+
+    j.crash_at = Some(CrashPoint::PendingDirSync);
+    let last = j.last_seq();
+    let bytes = fs::read(d.path().join(JOURNAL_FILE)).unwrap();
+    assert!(
+        j.append(rec(EventKind::Started, "job-new", 1, recent(), 2))
+            .is_err(),
+        "no append while the directory fsync keeps failing"
+    );
+    assert_eq!(j.last_seq(), last);
+    assert_eq!(fs::read(d.path().join(JOURNAL_FILE)).unwrap(), bytes);
+    assert!(j.dir_unsynced);
+
+    j.crash_at = None;
+    let r = j
+        .append(rec(EventKind::Started, "job-new", 1, recent(), 2))
+        .unwrap();
+    assert_eq!(r.seq, last + 1);
+    assert!(!j.dir_unsynced, "the directory fsync was redone");
+    drop(j);
+    let j = Journal::open(d.path()).unwrap();
+    assert_eq!(j.last_seq(), last + 1);
+}
