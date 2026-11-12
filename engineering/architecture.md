@@ -94,7 +94,7 @@ scripts/   CI 與發布腳本（簽署清單、依賴檢查）
 
 **加入節點（NOD-001，決策 0031）**：管理員 `POST /management/v1/node-enrollments` 取得一次性註冊碼（只顯示一次，預設 10 分鐘）→ 主機上執行 `hazelminx-agent enroll --core-url <Agent 入口> --code <碼>` → Agent 先從 Agent 入口取 Core CA，以註冊碼導出的金鑰驗 HMAC，驗過才用這張 CA 驗 TLS 送出註冊碼與節點公鑰 → Core 把碼標成已使用並記下主機名稱、machine-id、來源位址、金鑰指紋，等管理員核對 → 管理員核准（同一把金鑰沿用原節點；新金鑰但 machine-id 相同要選取代或新建）→ Core 簽發節點憑證 → Agent 寫入 `identity/node.crt`、`core-ca.crt`、`privileged-issuer.pub` 與 `enrollment.json`，之後 `run` 依 `enrollment.json` 的網址連回。節點的身分是 `nodes.id`，指紋只是目前用的金鑰；之後的連線都要經 `nodereg.Registry.AuthorizeNode`（狀態、目前或輪替中的憑證序號），步驟都要經 `GateJob`（撤銷、身分衝突、維護）。
 
-**一般操作（33 章）**：UI 送 `POST /management/v1/change-plans`（或直接 `POST /tasks` 對低風險操作）→ Core 驗權、預檢、產生計畫 → 批准 → 建立 job → 取得資源鎖 → 指派給 Agent（含 controlGeneration、expiresAt）→ Agent 持久化步驟、執行、回報證據事件 → Core 驗證完成條件 → 成功／失敗／狀態不明。步驟帶著工作在這個節點保留的資源（`step_execute.resources`），Agent 比對動作宣告會碰的資源，超出就拒絕（SEC-004）；資源該不該給這個工作，由 Core 的資源擁有者決定（票 090）。
+**一般操作（33 章）**：UI 送 `POST /management/v1/change-plans`（或直接 `POST /management/v1/jobs` 對不需計畫的工作種類）→ Core 驗權、由資源票註冊的 `plans.Kind` 算出目標（含版本與實際名稱）、差異、受影響服務與預檢，存成帶 SHA-256 摘要的計畫 → 以審查時的摘要批准（高風險只有擁有者）→ `POST /change-plans/{id}/execute`；批准與執行前都重算計畫，摘要不同就讓計畫失效並回差異（決策 0033）→ 建立 job（帶批准者、計畫 ID 與摘要；計畫種類的工作不能直接 `POST /jobs`） → 取得資源鎖 → 指派給 Agent（含 controlGeneration、expiresAt）→ Agent 持久化步驟、執行、回報證據事件 → Core 驗證完成條件 → 成功／失敗／狀態不明。步驟帶著工作在這個節點保留的資源（`step_execute.resources`），Agent 比對動作宣告會碰的資源，超出就拒絕（SEC-004）；資源該不該給這個工作，由 Core 的資源擁有者決定（票 090）。
 
 **GitHub 部署（39.3）**：來源選擇器讀 `source-connections/{id}/repositories` → 綁定 Repo ID + ref → Core 核對授權與平台權限 → 固定 commit → 合併四份設定（來源、覆寫、變數、固定結果）→ 預檢 → job：受控抓取 → 隔離建置 → compose up（只動受影響服務）→ 健康檢查 → 記錄 digest 與設定版本。
 
@@ -191,3 +191,4 @@ CI 必跑：`go test ./... && go vet`、`cargo test --workspace && cargo clippy 
 - [0030 — 握手訊息寬鬆解碼，之後嚴格解碼](decisions/0030-lenient-handshake-strict-after.md)
 - [0031 — 節點註冊用一次性碼換憑證，Core CA 由註冊碼驗證，管理員核對後才簽發](decisions/0031-node-enrollment-code-and-ca-discovery.md)
 - [0032 — Agent 壓縮已結束的步驟紀錄，被壓縮的步驟仍留下結果](decisions/0032-agent-journal-compaction.md)
+- [0033 — 變更計畫的批准綁定內容摘要，批准與執行前都重算計畫](decisions/0033-change-plan-approval-binding.md)

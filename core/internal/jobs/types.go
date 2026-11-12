@@ -72,6 +72,13 @@ type SubmitRequest struct {
 	Requester string          `json:"requester,omitempty"`
 	// RequiredBytes the job will write under the data directory (0 = unknown).
 	RequiredBytes int64 `json:"requiredBytes,omitempty"`
+	// Approver, ChangePlanID, ChangePlanDigest and RequiredPermissions are set
+	// by the change-plan service when an approved plan runs (ticket 016.1);
+	// a request through POST /jobs cannot set them.
+	Approver            string   `json:"-"`
+	ChangePlanID        string   `json:"-"`
+	ChangePlanDigest    string   `json:"-"`
+	RequiredPermissions []string `json:"-"`
 }
 
 // StepStatus is the state of a single step.
@@ -208,9 +215,14 @@ type Job struct {
 	Approver    string          `json:"approver,omitempty"`
 	Node        string          `json:"node,omitempty"`
 	Resources   []ResourceRef   `json:"resources,omitempty"`
-	PlanVersion int             `json:"planVersion"`
-	PlanSummary string          `json:"planSummary,omitempty"`
-	// RequiredPermissions is recorded for ticket 009/016; not enforced here.
+	// ChangePlanID and ChangePlanDigest name the approved change plan the
+	// job carries out, when it came from one (ticket 016.1).
+	ChangePlanID     string `json:"changePlanId,omitempty"`
+	ChangePlanDigest string `json:"changePlanDigest,omitempty"`
+	PlanVersion      int    `json:"planVersion"`
+	PlanSummary      string `json:"planSummary,omitempty"`
+	// RequiredPermissions is what the change plan required on its targets;
+	// recorded, not enforced here.
 	RequiredPermissions []string `json:"requiredPermissions,omitempty"`
 
 	State State `json:"state"`

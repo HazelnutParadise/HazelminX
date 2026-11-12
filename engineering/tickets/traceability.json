@@ -295,15 +295,46 @@
         "008",
         "010"
       ],
+      "requirements": [],
+      "acceptance_tests": [],
+      "issue": 16
+    },
+    {
+      "id": "016.1",
+      "file": "016.1-change-plans-api.md",
+      "title": "管理員可以用 API 產生、批准並執行變更計畫，內容或資源版本改變時原批准失效",
+      "epic": "iam",
+      "milestone": "M1",
+      "blocked_by": [
+        "008",
+        "010"
+      ],
       "requirements": [
         "IAM-005",
-        "ENG-005",
-        "UI-006"
+        "ENG-005"
       ],
       "acceptance_tests": [
         "T-030"
       ],
-      "issue": 16
+      "issue": 147,
+      "parent": "016"
+    },
+    {
+      "id": "016.2",
+      "file": "016.2-change-plan-screens.md",
+      "title": "使用者修改設定前可以在畫面上看差異、受影響服務與預檢，並在工作中心批准或拒絕計畫",
+      "epic": "iam",
+      "milestone": "M1",
+      "blocked_by": [
+        "016.1",
+        "017"
+      ],
+      "requirements": [
+        "UI-006"
+      ],
+      "acceptance_tests": [],
+      "issue": 148,
+      "parent": "016"
     },
     {
       "id": "017",

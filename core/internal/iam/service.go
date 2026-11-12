@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/HazelnutParadise/hazelminx/core/internal/paging"
+	"log/slog"
 	"regexp"
 	"strings"
 	"sync"
@@ -856,13 +857,21 @@ func (s *Service) Record(ctx context.Context, ev AuditEvent) error {
 	return s.record(ctx, s.db, ev)
 }
 
+// RecordTx appends an event inside the caller's transaction, so a change and
+// its audit row commit or roll back together.
+func (s *Service) RecordTx(ctx context.Context, tx *sql.Tx, ev AuditEvent) error {
+	return s.record(ctx, tx, ev)
+}
+
 // RecordDenied writes the audit row for a refused call (403/404).
 func (s *Service) RecordDenied(ctx context.Context, p *Principal, a Action, on Scope, src Source) {
 	ev := AuditEvent{Action: "authz.deny", Scope: on, Result: ResultDenied, Message: string(a), TraceID: src.TraceID, SourceIP: src.IP}
 	if p != nil {
 		ev.ActorID, ev.ActorName = p.User.ID, p.User.Username
 	}
-	_ = s.record(ctx, s.db, ev)
+	if err := s.record(ctx, s.db, ev); err != nil {
+		slog.Error("audit row for a refused call could not be written", "action", string(a), "scope", string(on.Kind)+":"+on.ID, "trace", src.TraceID, "error", err)
+	}
 }
 
 func (s *Service) record(ctx context.Context, ex execer, ev AuditEvent) error {

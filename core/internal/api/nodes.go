@@ -337,6 +337,23 @@ func (h *nodeRoutes) update(c *gin.Context) {
 	ctx, done := changeCtx(c)
 	defer done()
 	n, err := h.reg.UpdateNode(ctx, c.Param("id"), ver, in, actor(c))
+	if errors.Is(err, nodereg.ErrVersionMismatch) {
+		// T-030: show what is saved now next to this edit.
+		if cur, gerr := h.reg.GetNode(c.Request.Context(), c.Param("id")); gerr == nil {
+			yours := map[string]any{}
+			if in.Name != nil {
+				yours["name"] = strings.TrimSpace(*in.Name)
+			}
+			if in.Tags != nil {
+				yours["tags"] = *in.Tags
+			}
+			if in.Group != nil {
+				yours["group"] = strings.TrimSpace(*in.Group)
+			}
+			respond(c, versionConflict(c.Param("id"), cur.Version, map[string]any{"name": cur.Name, "tags": cur.Tags, "group": cur.Group}, yours))
+			return
+		}
+	}
 	if !h.changed(c, err) {
 		return
 	}
