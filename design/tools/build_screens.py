@@ -630,7 +630,27 @@ def login() -> str:
         <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px" role="group" aria-label="6 位數驗證碼">{"".join(f'<input class="inp mono" inputmode="numeric" maxlength="1" aria-label="第 {i + 1} 位" value="{d}" style="text-align:center;font-size:18px;min-height:46px;padding:0">' for i, d in enumerate("4829  "))}</div>
         <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><button type="button" class="btn">使用復原碼</button><button type="button" class="btn">回上一步</button></div>
       </section>"""
-    body = (f'<div style="flex:1;display:flex;flex-wrap:wrap;gap:24px;align-items:center;align-content:center;justify-content:center;padding:56px 16px;min-height:100vh">{step1}{step2}</div>')
+    signout = f"""
+      <section style="{card}" aria-labelledby="h-so">
+        {brand}
+        <h1 id="h-so" style="font-size:20px">登入管理介面</h1>
+        <div class="wrap">{U.status("warn", "登出沒有送達控制中心")}</div>
+        <span style="color:var(--muted);font-size:12.5px">這個瀏覽器可能還是登入狀態</span>
+        <button type="button" class="btn" style="min-height:40px">再登出一次</button>
+        {field("帳號", "使用者名稱")}
+        {field("密碼", "密碼", typ="password")}
+        <button type="button" class="btn pri" style="min-height:40px" disabled>繼續</button>
+      </section>"""
+    down = f"""
+      <section style="{card}" aria-labelledby="h-dn">
+        {brand}
+        <h1 id="h-dn" style="font-size:20px">連不上控制中心</h1>
+        <div class="wrap">{U.status("dng", "panel.example.tw 沒有回應")}</div>
+        <div class="term">GET /management/v1/auth/session
+net::ERR_CONNECTION_REFUSED</div>
+        <button type="button" class="btn pri" style="min-height:40px">重新載入</button>
+      </section>"""
+    body = (f'<div style="flex:1;display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;align-content:center;justify-content:center;padding:56px 16px;min-height:100vh">{step1}{step2}{signout}{down}</div>')
     return f'<div class="hb theme-{{{{theme}}}}" style="min-height:100vh;display:flex;flex-direction:column"><main class="main" style="padding:0">{body}</main></div>'
 
 
@@ -1789,39 +1809,72 @@ def mfa_dialogs() -> str:
     card = "background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:12px;min-width:0"
     def box(title, body, foot=""):
         return f'<section style="{card}"><h2 style="font-size:16px">{title}</h2>{body}{foot}</section>'
+    def otp(val=""):
+        """6 位數一律畫成六格（登入、綁定、重新驗證都一樣）。"""
+        cells = "".join(f'<span class="inp mono" style="width:40px;min-height:44px;justify-content:center;font-size:18px;padding:0">{val[i] if i < len(val) else ""}</span>' for i in range(6))
+        return f'<div class="wrap" style="gap:6px;flex-wrap:nowrap" role="group" aria-label="6 位數驗證碼">{cells}</div>'
     qr = '<div aria-label="QR code" style="width:132px;height:132px;background:repeating-conic-gradient(var(--ink) 0 25%,var(--panel) 0 50%) 0 0/16px 16px;border:8px solid #fff;border-radius:6px;flex:none"></div>'
     totp = box("新增驗證器", f"""
       <div class="wrap" style="align-items:flex-start;gap:16px">{qr}<div style="display:flex;flex-direction:column;gap:8px;min-width:0;flex:1">
         <span class="note">掃不了就手動輸入金鑰</span><div class="term" style="overflow-wrap:anywhere">JBSW Y3DP EHPK 3PXP</div>
         <button type="button" class="btn sm">{U.icon("copy", 14)}複製金鑰</button><span class="note">伺服器時間 03:42:06 · 跟手機差太多碼會對不上</span></div></div>
-      {_fld("名稱", _in("1Password"))}{_fld("輸入 6 位數", _in("482 913", mono=True))}
-      <div class="wrap">{U.status("dng", "碼不對 · 確認手機時間與伺服器相同")}</div>""",
+      {_fld("輸入 6 位數", otp("482913"))}
+      <div class="wrap">{U.status("dng", "碼不對 · 確認手機時間與伺服器相同")}</div>
+      <div class="wrap">{U.status("warn", "綁定逾時")}<button type="button" class="btn sm">重新產生 QR code</button></div>""",
       '<div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">取消</button><button type="button" class="btn pri">綁定</button></div>')
     passkey = box("新增 Passkey", f"""
       {_fld("裝置名稱", _in("MacBook Pro Touch ID"))}
       {_chk("ok", "這個網址可以使用 Passkey", "panel.example.tw · HTTPS", "")}
       {_chk("dng", "用 IP 開的面板不能綁定", "203.0.113.22 · Passkey 需要網域", "改用網域開啟")}
-      {_chk("warn", "你取消了", "瀏覽器的視窗被關掉，沒有綁定任何東西", "可以再試一次")}""",
+      {_chk("warn", "你取消了", "瀏覽器的視窗被關掉，沒有綁定任何東西", "可以再試一次")}
+      {_chk("dng", "這個瀏覽器不支援 Passkey", "換一個瀏覽器，或改用驗證器", "")}""",
       '<div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">取消</button><button type="button" class="btn pri">開始</button></div>')
     step2 = box("登入 · 驗證身分", f"""
       <button type="button" class="btn" style="min-height:40px">使用 Passkey</button>
-      {_fld("或輸入驗證器的 6 位數", _in("", ph=True))}
+      {_fld("或輸入驗證器的 6 位數", otp())}
       <div class="wrap">{U.status("dng", "錯太多次 · 4:32 後再試")}</div>
       <div class="wrap">{U.status("warn", "這次登入已逾時 · 請重新輸入密碼")}</div>
-      <a class="note" href="#rc">改用復原碼</a>""")
+      <div class="wrap" style="justify-content:space-between"><button type="button" class="btn">使用復原碼</button><button type="button" class="btn">回上一步</button></div>""")
+    step2rc = box("登入 · 使用復原碼", f"""
+      <button type="button" class="btn" style="min-height:40px">使用 Passkey</button>
+      {_fld("復原碼", _in("7KQ2-9MXD", mono=True))}
+      <button type="button" class="btn pri" style="min-height:40px">確認</button>
+      <div class="wrap">{U.status("dng", "這組復原碼已經用過")}</div>
+      <div class="wrap" style="justify-content:space-between"><button type="button" class="btn">改用驗證器</button><button type="button" class="btn">回上一步</button></div>""")
+    step2pk = box("登入 · 帳號只有 Passkey", f"""
+      <button type="button" class="btn pri" style="min-height:40px">使用 Passkey</button>
+      <div class="wrap">{U.status("warn", "你取消了 · 可以再試一次")}</div>
+      <div class="wrap" style="justify-content:space-between"><button type="button" class="btn">使用復原碼</button><button type="button" class="btn">回上一步</button></div>""")
+    step2ip = box("登入 · 這個網址不能用 Passkey", f"""
+      <div class="wrap">{U.status("warn", "用 IP 開的面板不能用 Passkey")}</div>
+      <span style="color:var(--muted);font-size:12.5px">改用網域開啟面板，或使用復原碼</span>
+      {_fld("復原碼", _in("", ph=True))}
+      <button type="button" class="btn pri" style="min-height:40px">確認</button>
+      <div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">回上一步</button></div>""")
+    step2none = box("登入 · 沒有可用的二次驗證", f"""
+      <div class="wrap">{U.status("dng", "這個帳號沒有能在這裡使用的二次驗證")}</div>
+      <span style="color:var(--muted);font-size:12.5px">請管理員重設，或在主機上執行 <span class="mono">sudo hazelminx recover-login</span></span>
+      <div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">回上一步</button></div>""")
     reauth = box("重新產生復原碼前 · 確認是你", f"""
-      {_fld("密碼", _in("••••••••••••", mono=True))}{_fld("驗證器 6 位數", _in("", ph=True))}""",
+      {_fld("密碼", _in("••••••••••••", mono=True))}
+      <button type="button" class="btn" style="min-height:40px">使用 Passkey</button>
+      {_fld("驗證器 6 位數", otp())}
+      <a class="note" href="#rc">改用復原碼</a>
+      <div class="wrap">{U.status("dng", "讀不到你的二次驗證")}<button type="button" class="btn sm">重試</button></div>""",
       '<div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">取消</button><button type="button" class="btn pri">確認</button></div>')
-    forced = box("先設定二次驗證", f"""
+    forced = box("先設定二次驗證（獨立頁，不在外殼裡）", f"""
       <div class="wrap">{U.status("warn", "主機維運者必須使用二次驗證")}</div>
-      <div class="wrap">{U.status("info", "設定完成前其他頁面都不能開啟")}</div>
+      <div class="wrap">{U.status("info", "設定完成前其他頁面都不能開啟")}<a class="note" href="Setup.dc.html">版面同首次設定第二步</a></div>
       {U.steps([("密碼", "done", ""), ("二次驗證", "cur", ""), ("復原碼", "todo", "")])}
       <div class="wrap"><button type="button" class="btn pri">新增 Passkey</button><button type="button" class="btn">新增驗證器</button></div>""")
     rmlast = box("移除 YubiKey 5C？", f"""
       <span class="note">移除後還有 MacBook Pro Touch ID 與 1Password 可以用</span>
       {_chk("ok", "移除後還能登入", "最後一個二次驗證不能移除，按鈕會停用", "")}""",
       '<div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">取消</button><button type="button" class="btn dng">移除</button></div>')
-    grid = f'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr));gap:16px;align-items:start">{totp}{passkey}{step2}{reauth}{forced}{rmlast}</div>'
+    rmonly = box("移除 1Password？（最後一個，角色不強制）", f"""
+      {_chk("warn", "移除後只靠密碼登入", "這個帳號的角色不強制二次驗證，所以可以移除", "")}""",
+      '<div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">取消</button><button type="button" class="btn dng">移除</button></div>')
+    grid = f'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr));gap:16px;align-items:start">{step2}{step2rc}{step2pk}{step2ip}{step2none}{totp}{passkey}{reauth}{forced}{rmlast}{rmonly}</div>'
     return U.shell("iam", U.page_head("二次驗證的對話框", OBS, "") + grid)
 
 
@@ -3880,13 +3933,13 @@ def setup() -> str:
       {field("設定碼（安裝結束時印在終端機）", "HZX-SETUP-4KQ2-9MXD")}<span class="note">找不到或過期：在主機上執行 <span class="mono">sudo hazelminx setup-code</span> 重新印一組，舊的作廢</span>{field("帳號", "tim")}{field("密碼", "••••••••••••", "password")}<button type="button" class="btn pri" style="min-height:40px">繼續</button></section>"""
     qr = '<div aria-label="QR code" style="width:148px;height:148px;align-self:center;background:repeating-conic-gradient(var(--ink) 0 25%,var(--panel) 0 50%) 0 0/18px 18px;border:8px solid #fff;border-radius:6px"></div>'
     s2 = f"""<section style="{card}" aria-labelledby="h-s2">{brand}<h1 id="h-s2" style="font-size:20px">綁定二次驗證</h1>{U.steps([("帳號", "done", ""), ("二次驗證", "cur", ""), ("復原碼", "todo", "")])}
-      <button type="button" class="btn pri" style="min-height:40px">{U.icon("lock", 14)}用這台裝置建立 Passkey</button><span class="note" style="text-align:center">或用驗證器 App 掃描</span>{qr}<details><summary class="note">無法掃描？顯示金鑰</summary><span class="mono">JBSW Y3DP EHPK 3PXP</span> <button type="button" class="btn sm">{U.icon("copy", 14)}複製</button></details>{field("輸入 App 上的 6 位數", "")}<button type="button" class="btn pri" style="min-height:40px">確認並繼續</button></section>"""
-    codes = "".join(f'<span class="mono">{c}</span>' for c in ["7KQ2-9MXD", "P4WN-3RCH", "B8TL-6YFE", "Q2ZV-5HJS", "M9DC-1XKP", "R6FA-8NLU"])
+      <button type="button" class="btn pri" style="min-height:40px">{U.icon("lock", 14)}用這台裝置建立 Passkey</button><span class="note" style="text-align:center">或用驗證器 App 掃描</span>{qr}<details><summary class="note">無法掃描？顯示金鑰</summary><span class="mono">JBSW Y3DP EHPK 3PXP</span> <button type="button" class="btn sm">{U.icon("copy", 14)}複製</button></details><div style="display:flex;flex-direction:column;gap:6px;font-size:13px"><span>輸入 App 上的 6 位數</span><div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px" role="group" aria-label="6 位數驗證碼"><span class="inp mono" style="min-height:46px;padding:0"></span><span class="inp mono" style="min-height:46px;padding:0"></span><span class="inp mono" style="min-height:46px;padding:0"></span><span class="inp mono" style="min-height:46px;padding:0"></span><span class="inp mono" style="min-height:46px;padding:0"></span><span class="inp mono" style="min-height:46px;padding:0"></span></div></div><button type="button" class="btn pri" style="min-height:40px">確認並繼續</button></section>"""
+    codes = "".join(f'<span class="mono">{c}</span>' for c in ["7KQ2-9MXD", "P4WN-3RCH", "B8TL-6YFE", "Q2ZV-5HJS", "M9DC-1XKP", "R6FA-8NLU", "T3HG-7WQA", "N5XE-2BKC", "V8JD-4RMS", "C1YP-6ZTF"])
     s3 = f"""<section style="{card}" aria-labelledby="h-s3">{brand}<h1 id="h-s3" style="font-size:20px">存好復原碼</h1>{U.steps([("帳號", "done", ""), ("二次驗證", "done", ""), ("復原碼", "cur", "")])}
       <span>手機不見時，用其中一組登入。每組只能用一次。</span><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;padding:12px;border:1px solid var(--line);border-radius:8px">{codes}</div>
       <div class="wrap"><button type="button" class="btn sm">{U.icon("download", 14)}下載</button><button type="button" class="btn sm">{U.icon("copy", 14)}複製</button></div>{_cb("我已經存在安全的地方", False)}<span tabindex="0" data-tip="勾選「我已經存在安全的地方」後才能繼續"><button type="button" class="btn pri" disabled style="min-height:40px;width:100%">繼續</button></span></section>"""
     s4 = f"""<section style="{card}" aria-labelledby="h-s4">{brand}<h1 id="h-s4" style="font-size:20px">開始使用</h1>
-      <span style="font-weight:500">hazel-tw-01 已經是第一台主機 · 接著可以</span>
+      <span style="font-weight:500">接著可以</span>
       <a class="btn" href="Settings.dc.html" style="justify-content:flex-start">1 · 設定面板網址與 HTTPS</a>
       <a class="btn" href="GitHubSource.dc.html" style="justify-content:flex-start">2 · 連接 GitHub，部署第一個專案</a>
       <a class="btn" href="AddNode.dc.html" style="justify-content:flex-start">3 · 加入其他主機</a>

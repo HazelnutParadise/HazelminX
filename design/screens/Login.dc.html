@@ -460,7 +460,7 @@ body{margin:0}
 .hb .hostbar .more{border:1px solid color-mix(in srgb,var(--ink) 18%,transparent);border-radius:4px;padding:0 10px;min-height:28px;display:inline-flex;align-items:center;background:var(--raised)}
 </style>
 </helmet>
-<div class="hb theme-{{theme}}" style="min-height:100vh;display:flex;flex-direction:column"><main class="main" style="padding:0"><div style="flex:1;display:flex;flex-wrap:wrap;gap:24px;align-items:center;align-content:center;justify-content:center;padding:56px 16px;min-height:100vh">
+<div class="hb theme-{{theme}}" style="min-height:100vh;display:flex;flex-direction:column"><main class="main" style="padding:0"><div style="flex:1;display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;align-content:center;justify-content:center;padding:56px 16px;min-height:100vh">
       <section style="background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:28px;display:flex;flex-direction:column;gap:16px;width:100%;max-width:380px" aria-labelledby="h-login">
         <div style="display:flex;align-items:center;gap:10px;font-weight:600;font-size:16px"><span class="logo" aria-hidden="true"></span>HazelminX</div>
         <h1 id="h-login" style="font-size:20px">登入管理介面</h1>
@@ -481,6 +481,24 @@ body{margin:0}
         <div style="display:flex;align-items:center;gap:10px" class="note"><span style="flex:1;border-top:1px solid var(--line)"></span>或輸入驗證器上的 6 位數<span style="flex:1;border-top:1px solid var(--line)"></span></div>
         <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px" role="group" aria-label="6 位數驗證碼"><input class="inp mono" inputmode="numeric" maxlength="1" aria-label="第 1 位" value="4" style="text-align:center;font-size:18px;min-height:46px;padding:0"><input class="inp mono" inputmode="numeric" maxlength="1" aria-label="第 2 位" value="8" style="text-align:center;font-size:18px;min-height:46px;padding:0"><input class="inp mono" inputmode="numeric" maxlength="1" aria-label="第 3 位" value="2" style="text-align:center;font-size:18px;min-height:46px;padding:0"><input class="inp mono" inputmode="numeric" maxlength="1" aria-label="第 4 位" value="9" style="text-align:center;font-size:18px;min-height:46px;padding:0"><input class="inp mono" inputmode="numeric" maxlength="1" aria-label="第 5 位" value=" " style="text-align:center;font-size:18px;min-height:46px;padding:0"><input class="inp mono" inputmode="numeric" maxlength="1" aria-label="第 6 位" value=" " style="text-align:center;font-size:18px;min-height:46px;padding:0"></div>
         <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><button type="button" class="btn">使用復原碼</button><button type="button" class="btn">回上一步</button></div>
+      </section>
+      <section style="background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:28px;display:flex;flex-direction:column;gap:16px;width:100%;max-width:380px" aria-labelledby="h-so">
+        <div style="display:flex;align-items:center;gap:10px;font-weight:600;font-size:16px"><span class="logo" aria-hidden="true"></span>HazelminX</div>
+        <h1 id="h-so" style="font-size:20px">登入管理介面</h1>
+        <div class="wrap"><span class="st warn"><i aria-hidden="true"></i>登出沒有送達控制中心</span></div>
+        <span style="color:var(--muted);font-size:12.5px">這個瀏覽器可能還是登入狀態</span>
+        <button type="button" class="btn" style="min-height:40px">再登出一次</button>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px"><span>帳號</span><span class="inp"><input type="text" placeholder="使用者名稱" value="" style="background:transparent;border:0;flex:1;min-width:0"></span></label>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px"><span>密碼</span><span class="inp"><input type="password" placeholder="密碼" value="" style="background:transparent;border:0;flex:1;min-width:0"></span></label>
+        <button type="button" class="btn pri" style="min-height:40px" disabled>繼續</button>
+      </section>
+      <section style="background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:28px;display:flex;flex-direction:column;gap:16px;width:100%;max-width:380px" aria-labelledby="h-dn">
+        <div style="display:flex;align-items:center;gap:10px;font-weight:600;font-size:16px"><span class="logo" aria-hidden="true"></span>HazelminX</div>
+        <h1 id="h-dn" style="font-size:20px">連不上控制中心</h1>
+        <div class="wrap"><span class="st dng"><i aria-hidden="true"></i>panel.example.tw 沒有回應</span></div>
+        <div class="term">GET /management/v1/auth/session
+net::ERR_CONNECTION_REFUSED</div>
+        <button type="button" class="btn pri" style="min-height:40px">重新載入</button>
       </section></div></main></div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"light":{"editor":"boolean","default":false,"section":"主題"},"$preview":{"width":1440,"height":900}}'>
