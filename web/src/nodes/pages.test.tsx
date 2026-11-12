@@ -610,3 +610,141 @@ describe("host page", () => {
     expect(core.callsTo(`GET ${B}/nodes/tw-01`).length).toBeGreaterThan(before);
   });
 });
+
+describe("review regressions", () => {
+  it("keeps the search text with its trailing space and writes the URL once", async () => {
+    coreWith();
+    const router = renderAt("/nodes");
+    await screen.findByRole("table");
+    const u = userEvent.setup();
+    const box = screen.getByLabelText("搜尋");
+    await u.type(box, "hazel ");
+    await waitFor(() => expect(router.state.location.search).toBe("?q=hazel"));
+    let writes = 0;
+    const stop = router.subscribe(() => writes++);
+    await new Promise((r) => setTimeout(r, 1000));
+    stop();
+    expect(box).toHaveValue("hazel ");
+    expect(writes).toBe(0);
+  });
+
+  it("takes the search text from the URL when it changes from outside", async () => {
+    coreWith();
+    const router = renderAt("/nodes?q=lab");
+    await screen.findByRole("table");
+    expect(screen.getByLabelText("搜尋")).toHaveValue("lab");
+    await act(() => router.navigate("/nodes?q=tw"));
+    await waitFor(() => expect(screen.getByLabelText("搜尋")).toHaveValue("tw"));
+  });
+
+  it("keeps the maintenance result when the host leaves the filtered list", async () => {
+    const core = coreWith();
+    core.on(`PUT ${B}/nodes/jp-02/maintenance`, () => {
+      const after = { ...jp, maintenance: { enabled: true, reason: "", since: NOW } };
+      core.on(`GET ${B}/nodes`, { status: 200, body: list([tw, after, mini]) });
+      return {
+        status: 200,
+        body: { node: after, affectedJobs: [{ id: "job-7", kind: "packages.upgrade", state: "running" }] },
+      };
+    });
+    renderAt("/nodes?status=unreachable");
+    const u = userEvent.setup();
+    await u.click(await screen.findByRole("button", { name: "hazel-jp-02 的更多操作" }));
+    await u.click(await screen.findByRole("menuitem", { name: "進入維護" }));
+    await u.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "進入維護 hazel-jp-02" }));
+    const done = await screen.findByRole("dialog", { name: "hazel-jp-02 已進入維護" });
+    await waitFor(() => expect(screen.queryByRole("link", { name: "hazel-jp-02" })).toBeNull());
+    expect(done).toBeInTheDocument();
+    expect(within(done).getByRole("link", { name: "packages.upgrade" })).toBeInTheDocument();
+  });
+
+  it("keeps a half-typed revocation when the host reconnects and leaves the filtered list", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const core = coreWith();
+    renderAt("/nodes?status=unreachable");
+    const u = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    await u.click(await screen.findByRole("button", { name: "hazel-jp-02 的更多操作" }));
+    await u.click(await screen.findByRole("menuitem", { name: "撤銷" }));
+    const dialog = await screen.findByRole("dialog");
+    await u.type(within(dialog).getByLabelText("輸入 hazel-jp-02 確認"), "hazel");
+    core.on(`GET ${B}/nodes`, {
+      status: 200,
+      body: list([tw, { ...jp, connection: { ...jp.connection, state: "online" } }, mini]),
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_500);
+    });
+    await waitFor(() => expect(screen.queryByRole("link", { name: "hazel-jp-02" })).toBeNull());
+    expect(within(screen.getByRole("dialog")).getByLabelText("輸入 hazel-jp-02 確認")).toHaveValue("hazel");
+  });
+
+  it("lets an account with nodes:write on one host change that host from the list", async () => {
+    const core = coreWith();
+    core.on(`GET ${B}/auth/session`, {
+      status: 200,
+      body: {
+        kind: "session",
+        user,
+        assignments: [
+          { id: "a1", userId: "u1", role: "auditor", scope: { kind: "global", id: "*" }, createdAt: NOW },
+          { id: "a2", userId: "u1", role: "platform_admin", scope: { kind: "node", id: "tw-01" }, createdAt: NOW },
+        ],
+        secondFactorEnrollmentRequired: false,
+      },
+    });
+    renderAt("/nodes");
+    const u = userEvent.setup();
+    await u.click(await screen.findByRole("button", { name: "hazel-tw-01 的更多操作" }));
+    await waitFor(() =>
+      expect(screen.getByRole("menuitem", { name: "改名與標籤" })).not.toHaveAttribute("aria-disabled", "true"),
+    );
+    await u.keyboard("{Escape}");
+    await u.click(screen.getByRole("button", { name: "hazel-jp-02 的更多操作" }));
+    expect(await screen.findByRole("menuitem", { name: /改名與標籤/ })).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByRole("button", { name: /新增主機/ })).toBeDisabled();
+  });
+
+  it("lists codes and hosts still enrolling, even before the first host joined", async () => {
+    const pendingOne = enrollment({ id: "enr-2", codeId: "AB12", state: "pending_approval", host: claimedHost });
+    const waitingOne = enrollment({ id: "enr-3", codeId: "CD34", name: "edge-1" });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.startsWith(`${B}/node-enrollments?state=pending_approval`))
+          return Response.json(list([pendingOne] as never));
+        if (url.startsWith(`${B}/node-enrollments?state=waiting`)) return Response.json(list([waitingOne] as never));
+        if (url.startsWith(`${B}/nodes`)) return Response.json(list([]));
+        if (url.startsWith(`${B}/roles`)) return Response.json(ROLES);
+        if (url.startsWith(`${B}/auth/session`)) return Response.json(session().body);
+        return Response.json({ code: "NOT_FOUND", message: "x" }, { status: 404 });
+      }),
+    );
+    renderAt("/nodes");
+    expect(await screen.findByText("還沒有主機")).toBeInTheDocument();
+    const panel = await screen.findByRole("region", { name: "註冊中 · 2" });
+    expect(within(panel).getByText("等你核對")).toBeInTheDocument();
+    expect(within(panel).getByRole("link", { name: "核對 lab-pi-02" })).toHaveAttribute(
+      "href",
+      "/nodes/new?enrollment=enr-2",
+    );
+    expect(within(panel).getByRole("link", { name: "開啟註冊碼 edge-1" })).toHaveAttribute(
+      "href",
+      "/nodes/new?enrollment=enr-3",
+    );
+  });
+
+  it("keeps the enrollment and offers to try again when reading it fails", async () => {
+    const core = coreWith([tw]);
+    let fail = true;
+    core.on(`GET ${B}/node-enrollments/enr-1`, () =>
+      fail ? apiError(503, "PLATFORM_DEGRADED") : { status: 200, body: { enrollment: enrollment() } },
+    );
+    const router = renderAt("/nodes/new?enrollment=enr-1");
+    expect(await screen.findByText("沒辦法讀取這個註冊")).toBeInTheDocument();
+    fail = false;
+    await userEvent.setup().click(screen.getByRole("button", { name: "再試一次" }));
+    expect(await screen.findByText("等待主機使用這個註冊碼…")).toBeInTheDocument();
+    expect(router.state.location.search).toBe("?enrollment=enr-1");
+  });
+});
