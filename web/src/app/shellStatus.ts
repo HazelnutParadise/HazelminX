@@ -16,7 +16,7 @@ export interface ShellStatus {
   jobs?: number;
   /** Hosts that stopped responding (maintenance excluded), newest first. */
   unreachableHosts?: { id: string; name: string }[];
-  /** Signed-in user. */
+  /** Signed-in user (set by the route guard from GET /auth/session; Core has no e-mail field yet). */
   user?: { name: string; role: string; email?: string };
   /** True when nobody is signed in: the top bar shows only the brand, theme and language. */
   signedOut?: boolean;

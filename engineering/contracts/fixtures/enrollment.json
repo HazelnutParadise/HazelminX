@@ -1,0 +1,27 @@
+{
+  "_comment": "Enrollment code normalization and CA discovery MAC (engineering/contracts/README.md, 註冊). Test data only.",
+  "code": "HZX-7Q4M-2KD9-PX81-C3VB",
+  "normalized": "HZX7Q4M2KD9PX81C3VB",
+  "codeId": "7Q4M",
+  "key": "0d9b3e98d11dfe3e46c54699307f6eba259e86e1fa4490daf2edd931cf8c8752",
+  "caCertificate": "-----BEGIN CERTIFICATE-----\nMIIBNjCB6aADAgECAgEBMAUGAytlcDAiMSAwHgYDVQQDExdIYXplbG1pblggZml4\ndHVyZSBDQSBjYTAgFw0yNjAxMDEwMDAwMDBaGA8yMTI2MDEwMTAwMDAwMFowIjEg\nMB4GA1UEAxMXSGF6ZWxtaW5YIGZpeHR1cmUgQ0EgY2EwKjAFBgMrZXADIQBHk4zf\nOoH8f7CnoXrq45hpenVT3fpSZB9bemZofCkgU6NCMEAwDgYDVR0PAQH/BAQDAgEG\nMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFBG/3nxCMlra3Lu5z5ZadPnyjtbj\nMAUGAytlcANBABucENNchkVzic5Unqi9ucmmIXRa81P5ld8/cUF5pr59wnLuAatm\nQsDRMrM2YdLIGGVjwlyMSPwaWE44Eo0qQws=\n-----END CERTIFICATE-----\n",
+  "mac": "75UatVb/eNtwhSyGdS/nXRVxwddmbpcFX66XZwWMSSg=",
+  "equivalent": [
+    "hzx-7q4m-2kd9-px81-c3vb",
+    "HZX 7Q4M 2KD9 PX81 C3VB",
+    "HZX7Q4M2KD9PX81C3VB"
+  ],
+  "aliases": {
+    "input": "HZX-OIL0-2KD9-PX81-C3VB",
+    "normalized": "HZX01102KD9PX81C3VB"
+  },
+  "invalid": [
+    "",
+    "HZX-7Q4M-2KD9-PX81",
+    "HZX-7Q4M-2KD9-PX81-C3VB-AAAA",
+    "ABC-7Q4M-2KD9-PX81-C3VB",
+    "HZX-7Q4M-2KD9-PX81-C3VU",
+    "HZX-7Q4M-2KD9-PX81-C3V!",
+    "HZX-７Q4M-2KD9-PX81-C3VB"
+  ]
+}

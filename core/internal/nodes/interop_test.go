@@ -29,6 +29,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"syscall"
@@ -91,6 +92,9 @@ type interopEnv struct {
 	stateDir string
 	fp       string
 	logs     *syncBuffer
+	// rechecks holds what node.recheck jobs recorded.
+	recMu    sync.Mutex
+	rechecks []RecheckResult
 }
 
 type syncBuffer struct {
@@ -121,7 +125,12 @@ func newInteropEnv(t *testing.T, hub HubOptions) *interopEnv {
 	runner.ReconcileTimeout = 500 * time.Millisecond
 	reconciler = &Reconciler{Engine: e.engine, Runner: runner, Logger: hub.Logger, Interval: 500 * time.Millisecond}
 	e.sleep = &sleepHandler{runner: runner, millis: 1500, counterFile: filepath.Join(t.TempDir(), "runs")}
-	for _, h := range []jobs.Handler{&InspectHandler{Runner: runner}, e.sleep} {
+	recheck := &RecheckHandler{Runner: runner, Record: func(_ context.Context, _, _ string, r RecheckResult) {
+		e.recMu.Lock()
+		e.rechecks = append(e.rechecks, r)
+		e.recMu.Unlock()
+	}}
+	for _, h := range []jobs.Handler{&InspectHandler{Runner: runner}, e.sleep, recheck} {
 		if err := e.engine.Register(h); err != nil {
 			t.Fatal(err)
 		}
@@ -231,7 +240,13 @@ func (e *interopEnv) waitSession(within time.Duration) *Session {
 
 func (e *interopEnv) submit(kind, reqID string) *jobs.Job {
 	e.t.Helper()
-	j, _, err := e.engine.Submit(context.Background(), jobs.SubmitRequest{RequestID: reqID, Kind: kind, Node: e.fp})
+	req := jobs.SubmitRequest{RequestID: reqID, Kind: kind, Node: e.fp}
+	if kind == kindTestSleep {
+		// test.sleep writes its counter file; the agent refuses it unless the
+		// job reserves that path (SEC-004).
+		req.Resources = []jobs.ResourceRef{{Kind: "path", Path: e.sleep.counterFile, Node: e.fp}}
+	}
+	j, _, err := e.engine.Submit(context.Background(), req)
 	if err != nil {
 		e.t.Fatal(err)
 	}
@@ -522,4 +537,50 @@ func TestInteropJournalFailingMidStepEndsSessionForReconcile(t *testing.T) {
 
 func tlsToCore(t *testing.T, core *testCore) *tls.Config {
 	return &tls.Config{RootCAs: coreCAPool(t, core.pki), ServerName: protocol.CoreServerName}
+}
+
+// SEC-004 with the real agent: a step whose action writes a file the job
+// did not reserve is refused and never runs.
+func TestInteropStepOutsideItsResourcesIsRefused(t *testing.T) {
+	e := newInteropEnv(t, HubOptions{})
+	e.start(e.url("127.0.0.1"), "")
+	e.waitSession(10 * time.Second)
+	j, _, err := e.engine.Submit(context.Background(), jobs.SubmitRequest{RequestID: "sleep-unreserved", Kind: kindTestSleep, Node: e.fp,
+		Resources: []jobs.ResourceRef{{Kind: "path", Path: "/somewhere/else", Node: e.fp}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	j = e.waitJob(j.ID, 15*time.Second, jobs.StateFailed, jobs.StateSucceeded, jobs.StateNeedsAttention)
+	if j.State == jobs.StateSucceeded || !strings.Contains(j.ErrorCode+j.StateReason, protocol.StepRejectWrongResourceScope) {
+		t.Fatalf("job %s %s %s %s", j.State, j.ErrorCode, j.StateReason, e.logs.String())
+	}
+	if e.sleep.runs(t) != 0 {
+		t.Fatal("the refused step ran")
+	}
+}
+
+// NOD-008 with the real agent: the re-check confirms the agent's identity
+// and reads the host's basic values; a value the host cannot give makes it
+// inconclusive, never invented (macOS has no /proc; Linux must pass).
+func TestInteropRecheckReadsHostBasics(t *testing.T) {
+	e := newInteropEnv(t, HubOptions{})
+	e.start(e.url("127.0.0.1"), "")
+	e.waitSession(10 * time.Second)
+	j := e.waitJob(e.submit(KindNodeRecheck, "recheck-1").ID, 15*time.Second, jobs.StateSucceeded, jobs.StateFailed, jobs.StateNeedsAttention)
+	e.recMu.Lock()
+	defer e.recMu.Unlock()
+	if j.State != jobs.StateSucceeded || len(e.rechecks) != 1 {
+		t.Fatalf("job %s (%s), %d results; agent log:\n%s", j.State, j.StateReason, len(e.rechecks), e.logs.String())
+	}
+	r := e.rechecks[0]
+	if !r.IdentityMatches || !strings.Contains(string(r.Health), "rootFilesystem") {
+		t.Fatalf("result %+v", r)
+	}
+	want := RecheckInconclusive
+	if runtime.GOOS == "linux" {
+		want = RecheckPassed
+	}
+	if r.State != want {
+		t.Fatalf("state %s (%s), want %s on %s: %s", r.State, r.Detail, want, runtime.GOOS, r.Health)
+	}
 }

@@ -134,6 +134,198 @@
     "INVALID_RESPONSE": "Core returned a response in an unexpected format.",
     "unknown": "Core returned an error (HTTP {{status}})."
   },
+  "roles": {
+    "owner": "Owner",
+    "platform_admin": "Platform admin",
+    "host_operator": "Host operator",
+    "project_admin": "Project admin",
+    "db_operator": "Database operator",
+    "auditor": "Auditor",
+    "none": "No role"
+  },
+  "auth": {
+    "username": "Username",
+    "password": "Password",
+    "continue": "Continue",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "back": "Back",
+    "retry": "Try again",
+    "copy": "Copy",
+    "copied": "Copied",
+    "recoveryCode": "Recovery code",
+    "usePasskey": "Use a passkey",
+    "useRecoveryCode": "Use a recovery code",
+    "useAuthenticator": "Use the authenticator",
+    "progress": "Progress",
+    "stepDone": " (done)",
+    "sessionFailed": "Could not check whether you are signed in",
+    "steps": {
+      "account": "Account",
+      "password": "Password",
+      "factor": "Second factor",
+      "codes": "Recovery codes"
+    },
+    "errors": {
+      "wrongPassword": "Wrong username or password",
+      "wrongCode": "Wrong code",
+      "tooManyAttempts": "Too many attempts · try again in {{wait}}",
+      "required": "Required",
+      "passwordRequired": "Enter your password first",
+      "wrongPasswordOnly": "Wrong password",
+      "tooManyAttemptsSr": "Too many attempts. You can try again in {{wait}}"
+    },
+    "login": {
+      "title": "Sign in to the panel",
+      "challengeExpired": "This sign-in timed out · enter your password again",
+      "cannotSignIn": "Can't sign in?",
+      "lostFactor": "Lost your second factor: choose \"Use a recovery code\" in the second step",
+      "lostPassword": "Forgot your password: ask an admin to reset it, or run this on the host",
+      "signOutFailed": "Sign-out was not confirmed; this device may still be signed in",
+      "signOutRetry": "Sign out again"
+    },
+    "second": {
+      "title": "Verify it's you",
+      "subtitle": "{{username}} · step 2",
+      "orCode": "or enter the 6 digits from your authenticator",
+      "code": "Enter the 6 digits from your authenticator",
+      "noMethods": "This account has no second factor that works at this address; ask an admin for help"
+    },
+    "setup": {
+      "title": "Create the owner account",
+      "code": "Setup code (printed in the terminal when installation finished)",
+      "codeHelp": "Lost or expired: run",
+      "codeHelpAfter": "on the host to print a new one; the old one stops working",
+      "codeInvalid": "The setup code is wrong or has expired",
+      "passwordRule_one": "At least {{count}} character",
+      "passwordRule_other": "At least {{count}} characters",
+      "passwordShort_one": "The password needs at least {{count}} character",
+      "passwordShort_other": "The password needs at least {{count}} characters"
+    },
+    "enroll": {
+      "title": "Set up a second factor first",
+      "titleSetup": "Add a second factor",
+      "required": "{{role}} accounts must use a second factor",
+      "locked": "Other pages stay closed until this is done",
+      "orApp": "or scan with an authenticator app",
+      "confirm": "Confirm and continue",
+      "signedInAs": "Signed in as {{name}}"
+    },
+    "codes": {
+      "title": "Save your recovery codes",
+      "lead": "If you lose your phone, sign in with one of these. Each works once.",
+      "download": "Download",
+      "saved": "I have stored them somewhere safe",
+      "fileHeader": "HazelminX recovery codes · {{account}} · {{host}} (each works once)"
+    },
+    "done": {
+      "title": "Get started",
+      "lead": "Next you can",
+      "domain": "Set the panel address and HTTPS",
+      "github": "Connect GitHub and deploy a first project",
+      "hosts": "Add more hosts",
+      "overview": "Go to the overview for now"
+    },
+    "totp": {
+      "qrLabel": "QR code for your authenticator app",
+      "showKey": "Can't scan? Show the key",
+      "manual": "Can't scan? Type the key",
+      "copyKey": "Copy key",
+      "serverTime": "Server time {{time}} · codes fail if your phone's clock is far off",
+      "enterCode": "Enter the 6 digits",
+      "enterCodeApp": "Enter the 6 digits from the app",
+      "wrongCode": "Wrong code · check that your phone's time matches the server",
+      "expired": "This setup has expired",
+      "restart": "Start again",
+      "reauthAction": "Add an authenticator"
+    },
+    "passkey": {
+      "createHere": "Create a passkey on this device",
+      "deviceName": "Device name",
+      "start": "Start",
+      "available": "Passkeys work at this address",
+      "ipAddress": "A panel opened by IP address can't add passkeys",
+      "ipAddressDetail": "{{host}} · passkeys need a domain",
+      "useDomain": "Open it by domain",
+      "unsupported": "This browser can't use passkeys",
+      "cancelled": "You cancelled",
+      "cancelledDetail": "The browser prompt was closed; nothing was added",
+      "cancelledRetry": "The passkey didn't finish · you can try again",
+      "tryAgain": "You can try again",
+      "alreadyRegistered": "This passkey is already registered",
+      "rejected": "The passkey the browser returned did not verify",
+      "reauthAction": "Add a passkey"
+    },
+    "reauth": {
+      "title": "{{action}} · confirm it's you",
+      "totp": "6 digits from your authenticator",
+      "cancelled": "Reauthentication didn't finish; nothing changed"
+    }
+  },
+  "account": {
+    "title": "Account security · {{username}}",
+    "actions": "Actions",
+    "justNow": "Just now",
+    "done": "Done",
+    "listSeparator": " and ",
+    "factors": {
+      "title": "Second factors",
+      "titleCount": "Second factors · {{count}}",
+      "name": "Name",
+      "type": "Type",
+      "lastUsed": "Last used",
+      "typeApp": "Authenticator",
+      "app": "Authenticator app",
+      "added": "Added {{date}}",
+      "passkeyDetail": "{{rpId}} · added {{date}}",
+      "neverUsed": "Never used",
+      "none": "No second factor yet",
+      "addPasskey": "Add passkey",
+      "addApp": "Add authenticator",
+      "bind": "Add",
+      "remove": "Remove",
+      "removeNamed": "Remove {{name}}",
+      "removeTitle": "Remove {{name}}?",
+      "removeAction": "Remove {{name}}",
+      "stillCanSignIn": "You can still sign in afterwards",
+      "remaining": "{{names}} will still work",
+      "lastRequired": "The last second factor can't be removed",
+      "lastRequiredDetail": "Your role requires a second factor; add another one first",
+      "lastOptional": "Sign-in will need only your password",
+      "lastOptionalDetail": "This is your last second factor"
+    },
+    "codes": {
+      "title": "Recovery codes",
+      "left": "{{left}} / {{total}} left",
+      "used_one": "{{count}} used",
+      "used_other": "{{count}} used",
+      "regenerate": "Generate new codes",
+      "regenerateAction": "Generate new recovery codes",
+      "needFactor": "Recovery codes are created when you add a second factor"
+    },
+    "sessions": {
+      "title": "Signed-in devices",
+      "titleCount": "Signed-in devices · {{count}}",
+      "device": "Device · IP",
+      "status": "Status",
+      "lastActive": "Last active",
+      "current": "This device",
+      "revoke": "Sign out",
+      "revokeNamed": "Sign out {{name}} ({{ip}})",
+      "revokeOthers": "Sign out all other devices",
+      "unknownDevice": "Unknown device"
+    },
+    "idle": {
+      "title": "Idle sign-out",
+      "label": "Sign out after being idle for",
+      "default": "Platform default",
+      "defaultIs": "{{duration}} (default)",
+      "minutes_one": "{{count}} minute",
+      "minutes_other": "{{count}} minutes",
+      "hours_one": "{{count}} hour",
+      "hours_other": "{{count}} hours"
+    }
+  },
   "kumo": {
     "label": {
       "optional": "optional",

@@ -28,3 +28,9 @@
 ## Delivery record
 
 需求 ID → 變更 → 測試環境 → 正常與失敗案例 → 證據 → 未驗證部分，依規格第 46.4 節填寫於 PR。
+
+## Notes
+
+### 票 019 交過來的項目
+
+- NOD-008「節點進入維護時列出受影響服務」等本票有服務的資料模型後補上（使用者 2026-11-12 決定）。目前 `PUT /management/v1/nodes/{id}/maintenance` 的 `affectedJobs` 只列節點上未完成的工作，產生的地方是 `core/internal/nodereg/nodes.go` 的 `SetMaintenance`。補上後要回到票 019 勾 NOD-008，019 才能移到 `done/`。

@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { beforeAll, describe, expect, it } from "vite-plus/test";
@@ -11,11 +12,13 @@ beforeAll(() => {
 
 const topBar = (status: ShellStatus) =>
   render(
-    <MemoryRouter>
-      <ShellStatusContext.Provider value={status}>
-        <TopBar />
-      </ShellStatusContext.Provider>
-    </MemoryRouter>,
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter>
+        <ShellStatusContext.Provider value={status}>
+          <TopBar />
+        </ShellStatusContext.Provider>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 
 describe("TopBar", () => {
@@ -34,6 +37,11 @@ describe("TopBar", () => {
     topBar({});
     expect(screen.getByText("—")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /進行中的工作|工作中心/ })).toBeNull();
+  });
+
+  it("names the signed-in user on the account button", () => {
+    topBar({ user: { name: "tim", role: "擁有者" } });
+    expect(screen.getByRole("button", { name: "tim · 擁有者" })).toHaveTextContent("tim");
   });
 
   it("warns when the observation is older than 40 seconds", () => {

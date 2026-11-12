@@ -6,6 +6,7 @@
 mod actions;
 mod config;
 mod connection;
+mod enroll;
 mod identity;
 mod journal;
 mod ledger;
@@ -45,6 +46,27 @@ enum Command {
     Identity,
     /// Load and print the effective configuration, then exit.
     CheckConfig,
+    /// Join a Core with a one-time enrollment code: fetch and check the Core
+    /// CA, send this node's public key, wait for an administrator to approve
+    /// the host, then store the certificate. Run it as the agent's user.
+    Enroll {
+        /// Agent listener of the Core, e.g. https://core.example:9801.
+        #[arg(long = "core-url", env = "HAZELMINX_ENROLL_CORE_URL")]
+        enroll_core_url: String,
+        /// The code shown when the enrollment was created (HZX-...).
+        #[arg(long, env = "HAZELMINX_ENROLL_CODE", hide_env_values = true)]
+        code: String,
+        /// Group the code was issued for, when the code has one.
+        #[arg(long, default_value = "")]
+        group: String,
+        /// Move the current key aside and enroll with a new one (a cloned
+        /// host, or a key the Core revoked or replaced).
+        #[arg(long)]
+        new_identity: bool,
+        /// Seconds to wait for an administrator's decision.
+        #[arg(long, default_value_t = 1800)]
+        wait_seconds: u64,
+    },
 }
 
 fn main() {
@@ -82,7 +104,58 @@ fn real_main() -> Result<()> {
             Ok(())
         }
         Command::Run => run(cfg),
+        Command::Enroll {
+            enroll_core_url,
+            code,
+            group,
+            new_identity,
+            wait_seconds,
+        } => enroll_command(
+            cfg,
+            enroll_core_url,
+            code,
+            group,
+            new_identity,
+            wait_seconds,
+        ),
     }
+}
+
+#[tokio::main]
+async fn enroll_command(
+    cfg: Config,
+    core_url: String,
+    code: String,
+    group: String,
+    new_identity: bool,
+    wait_seconds: u64,
+) -> Result<()> {
+    let code = hazelminx_protocol::enroll::EnrollmentCode::parse(&code)?;
+    let id = if new_identity {
+        let (id, moved) = Identity::replace(&cfg.state_dir)?;
+        if let Some(p) = moved {
+            println!("previous identity moved to {}", p.display());
+        }
+        id
+    } else {
+        Identity::load_or_create(&cfg.state_dir)?
+    };
+    let opts = enroll::Options {
+        core_url,
+        code,
+        group,
+        transport: cfg.core_transport,
+        proxy_ca_file: cfg.proxy_ca_file.clone(),
+        state_dir: cfg.state_dir.clone(),
+        agent_version: env!("CARGO_PKG_VERSION").to_string(),
+        wait: std::time::Duration::from_secs(wait_seconds),
+    };
+    let done = enroll::run(&opts, &id, &enroll::HostFacts::read()).await?;
+    println!(
+        "enrolled as node {} (key SHA256:{}); start the agent service to connect",
+        done.node_id, done.fingerprint
+    );
+    Ok(())
 }
 
 #[tokio::main]
@@ -90,8 +163,12 @@ async fn run(cfg: Config) -> Result<()> {
     let id = Identity::load_or_create(&cfg.state_dir)?;
     info!(fingerprint = %id.fingerprint(), state_dir = %cfg.state_dir.display(), "agent identity ready");
 
-    let Some(url) = cfg.core_url.clone() else {
-        info!("no core_url configured; waiting for enrollment (ticket 019)");
+    // The configuration file wins; otherwise the URL used at enrollment.
+    let enrolled_url = enroll::load_record(&cfg.state_dir)?.map(|r| r.core_url);
+    let Some(url) = cfg.core_url.clone().or(enrolled_url) else {
+        info!(
+            "not enrolled with a core; run hazelminx-agent enroll --core-url <url> --code <code>"
+        );
         shutdown_signal().await;
         info!("shutting down");
         return Ok(());

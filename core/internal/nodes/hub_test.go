@@ -205,7 +205,7 @@ func TestUnreadableSessionMessageIsNotActedOn(t *testing.T) {
 	for _, raw := range []string{
 		`{"type":"step_teleport","jobId":"x"}`,
 		`{"type":"event","seq":1,"kind":"completed","jobId":"j","step":0,"requestId":"r","at":"2026-11-08T00:00:00Z","runAsRoot":true}`,
-		`{"type":"step_execute","requestId":"r","jobId":"j","step":0,"stepName":"x","action":"agent.info","actionVersion":1,"params":{},"targetNode":"n","controlGeneration":0,"expiresAt":"2026-11-08T00:00:00Z","retryable":true,"irreversible":false}`,
+		`{"type":"step_execute","requestId":"r","jobId":"j","step":0,"stepName":"x","action":"agent.info","actionVersion":1,"params":{},"targetNode":"n","resources":[],"controlGeneration":0,"expiresAt":"2026-11-08T00:00:00Z","retryable":true,"irreversible":false}`,
 	} {
 		a.writeRaw(t, []byte(raw))
 		m, ok := a.next(t, 2*time.Second).(*protocol.ProtocolError)

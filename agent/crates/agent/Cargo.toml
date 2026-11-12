@@ -37,6 +37,10 @@ futures-util.workspace = true
 rustls-native-certs.workspace = true
 url.workspace = true
 
+[target.'cfg(unix)'.dependencies]
+# statvfs for the root filesystem in host.health.
+libc = "0.2"
+
 [features]
 # Test-only actions (test.sleep) for the Core<->Agent interop test. Never in a release build.
 test-actions = []

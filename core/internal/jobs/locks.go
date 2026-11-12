@@ -178,3 +178,43 @@ func (t *lockTable) holders(res []ResourceRef) []string {
 	sort.Strings(out)
 	return out
 }
+
+// WireResource is how a reserved resource is named to the agent in a step
+// (engineering/contracts/README.md, step_execute resources): path refs by
+// their resolved (or given) absolute path, cleaned; disk refs by device;
+// mount refs by mount point; other kinds by ID. ok is false when the ref
+// has no usable name: a step must not run with a resource the agent cannot
+// check, and an empty name must never stand for "everything".
+func WireResource(r ResourceRef) (kind, id string, ok bool) {
+	clean := func(p string) (string, bool) {
+		if !path.IsAbs(p) {
+			return "", false
+		}
+		return path.Clean(p), true
+	}
+	switch r.Kind {
+	case "":
+		return "", "", false
+	case "path":
+		p := r.ResolvedPath
+		if p == "" {
+			p = r.Path
+		}
+		c, ok := clean(p)
+		return pick(r.Kind, c, ok)
+	case "mount":
+		c, ok := clean(r.Mount)
+		return pick(r.Kind, c, ok)
+	case "disk":
+		return pick(r.Kind, r.Device, r.Device != "")
+	default:
+		return pick(r.Kind, r.ID, r.ID != "")
+	}
+}
+
+func pick(kind, id string, ok bool) (string, string, bool) {
+	if !ok {
+		return "", "", false
+	}
+	return kind, id, true
+}

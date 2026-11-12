@@ -11,6 +11,8 @@
 //! The JSON shapes are pinned by `engineering/contracts/fixtures`; the Go mirror in
 //! `core/internal/protocol` is tested against the same files.
 
+pub mod enroll;
+
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use time::OffsetDateTime;
@@ -35,6 +37,15 @@ pub const CAP_AGENT_INFO: &str = "agent.info";
 /// `ledger_pull` / `ledger_page` / `ledger_unavailable`: Core keeps a copy of
 /// the host change ledger (spec 55.1).
 pub const CAP_HOST_LEDGER: &str = "host.ledger";
+/// `certificate_renew` / `certificate_installed` / `certificate_refused`:
+/// node certificate rotation (ticket 019).
+pub const CAP_NODE_CERTIFICATE: &str = "node.certificate";
+
+/// `certificate_refused` codes.
+pub mod certificate_refused_code {
+    pub const CERTIFICATE_INVALID: &str = "CERTIFICATE_INVALID";
+    pub const WRITE_FAILED: &str = "WRITE_FAILED";
+}
 
 /// `reject` codes.
 pub mod reject_code {
@@ -44,6 +55,8 @@ pub mod reject_code {
     pub const PROOF_INVALID: &str = "PROOF_INVALID";
     pub const NODE_REVOKED: &str = "NODE_REVOKED";
     pub const DUPLICATE_SESSION: &str = "DUPLICATE_SESSION";
+    /// The node key is live in two places (for example a cloned VM).
+    pub const IDENTITY_CONFLICT: &str = "IDENTITY_CONFLICT";
 }
 
 /// `step_rejected` codes.
@@ -55,7 +68,12 @@ pub mod step_reject_code {
     pub const STALE_CONTROL_GENERATION: &str = "STALE_CONTROL_GENERATION";
     pub const OUTCOME_UNKNOWN: &str = "OUTCOME_UNKNOWN";
     pub const JOURNAL_UNAVAILABLE: &str = "JOURNAL_UNAVAILABLE";
+    /// The action would act on a resource the step's `resources` do not list.
+    pub const WRONG_RESOURCE_SCOPE: &str = "WRONG_RESOURCE_SCOPE";
 }
+
+/// Version of the `jobs` capability: 2 carries `resources` in `step_execute`.
+pub const JOBS_VERSION: u32 = 2;
 
 /// `protocol_error` codes.
 pub mod protocol_error_code {
@@ -87,6 +105,16 @@ pub struct ExecutorGrant {
     pub expires_at: String,
     /// Hex Ed25519 signature over the executor's canonical grant bytes.
     pub signature: String,
+}
+
+/// One resource a job reserved, as named in `step_execute`: paths by their
+/// absolute clean path, disks by device, mounts by mount point, other kinds
+/// by id.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Resource {
+    pub kind: String,
+    pub id: String,
 }
 
 /// Last line of a host ledger: its sequence number and hash.
@@ -199,6 +227,9 @@ pub enum Message {
         action_version: u32,
         params: Map<String, Value>,
         target_node: String,
+        /// The job's reserved resources on this node; the action may act
+        /// only on these.
+        resources: Vec<Resource>,
         control_generation: u64,
         #[serde(with = "time::serde::rfc3339")]
         expires_at: OffsetDateTime,
@@ -282,6 +313,21 @@ pub enum Message {
     },
     /// The agent could not produce a page.
     LedgerUnavailable {
+        request_id: String,
+        code: String,
+        message: String,
+    },
+    /// Core hands the agent a new certificate for its existing key.
+    CertificateRenew {
+        request_id: String,
+        certificate: String,
+    },
+    /// The new certificate is verified and stored; the next connection uses it.
+    CertificateInstalled {
+        request_id: String,
+    },
+    /// The agent kept its current certificate.
+    CertificateRefused {
         request_id: String,
         code: String,
         message: String,
@@ -385,6 +431,9 @@ const SESSION_TYPES: &[&str] = &[
     "ledger_pull",
     "ledger_page",
     "ledger_unavailable",
+    "certificate_renew",
+    "certificate_installed",
+    "certificate_refused",
 ];
 
 /// The string `type` of a JSON object, or `Malformed`.

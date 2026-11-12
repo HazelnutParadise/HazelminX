@@ -14,7 +14,8 @@ hazelminx-core（Go，systemd；單一執行檔，嵌入 web/dist）
    ├─ iam/        使用者、角色、資源範圍、工作階段、API Token、稽核
    ├─ jobs/       工作引擎：狀態機、去重、資源鎖、事件序號、控制世代
    ├─ plans/      變更計畫（change-plans）與批准
-   ├─ nodes/      節點註冊、憑證、心跳、能力、Agent 通道（mTLS WebSocket 伺服端）
+   ├─ nodes/      Node PKI、心跳、能力、Agent 通道（mTLS WebSocket 伺服端）、步驟執行器
+   ├─ nodereg/    節點名冊：註冊碼與核准、節點 ID／名稱／標籤／群組、憑證輪替、撤銷、維護、移除、連線狀態
    ├─ domain/     專案、服務、設定版本、部署來源、儲存綁定、網站、備份、排程…
    │              （從 1Panel v2.4.1 core/agent 移植的業務規則落在這裡）
    ├─ secrets/    機密參照、主金鑰、輪替
@@ -91,7 +92,9 @@ scripts/   CI 與發布腳本（簽署清單、依賴檢查）
 
 **安裝（39.1）**：`hazelminx install` → 預檢報告 → 取得簽署清單並下載驗證 → 建立使用者／目錄／systemd → 啟動 Core → 產生一次性啟用碼（stdout，不入共享日誌）→ 瀏覽器完成擁有者設定 → Agent 以本機通道註冊第一個節點。
 
-**一般操作（33 章）**：UI 送 `POST /management/v1/change-plans`（或直接 `POST /tasks` 對低風險操作）→ Core 驗權、預檢、產生計畫 → 批准 → 建立 job → 取得資源鎖 → 指派給 Agent（含 controlGeneration、expiresAt）→ Agent 持久化步驟、執行、回報證據事件 → Core 驗證完成條件 → 成功／失敗／狀態不明。
+**加入節點（NOD-001，決策 0031）**：管理員 `POST /management/v1/node-enrollments` 取得一次性註冊碼（只顯示一次，預設 10 分鐘）→ 主機上執行 `hazelminx-agent enroll --core-url <Agent 入口> --code <碼>` → Agent 先從 Agent 入口取 Core CA，以註冊碼導出的金鑰驗 HMAC，驗過才用這張 CA 驗 TLS 送出註冊碼與節點公鑰 → Core 把碼標成已使用並記下主機名稱、machine-id、來源位址、金鑰指紋，等管理員核對 → 管理員核准（同一把金鑰沿用原節點；新金鑰但 machine-id 相同要選取代或新建）→ Core 簽發節點憑證 → Agent 寫入 `identity/node.crt`、`core-ca.crt`、`privileged-issuer.pub` 與 `enrollment.json`，之後 `run` 依 `enrollment.json` 的網址連回。節點的身分是 `nodes.id`，指紋只是目前用的金鑰；之後的連線都要經 `nodereg.Registry.AuthorizeNode`（狀態、目前或輪替中的憑證序號），步驟都要經 `GateJob`（撤銷、身分衝突、維護）。
+
+**一般操作（33 章）**：UI 送 `POST /management/v1/change-plans`（或直接 `POST /tasks` 對低風險操作）→ Core 驗權、預檢、產生計畫 → 批准 → 建立 job → 取得資源鎖 → 指派給 Agent（含 controlGeneration、expiresAt）→ Agent 持久化步驟、執行、回報證據事件 → Core 驗證完成條件 → 成功／失敗／狀態不明。步驟帶著工作在這個節點保留的資源（`step_execute.resources`），Agent 比對動作宣告會碰的資源，超出就拒絕（SEC-004）；資源該不該給這個工作，由 Core 的資源擁有者決定（票 090）。
 
 **GitHub 部署（39.3）**：來源選擇器讀 `source-connections/{id}/repositories` → 綁定 Repo ID + ref → Core 核對授權與平台權限 → 固定 commit → 合併四份設定（來源、覆寫、變數、固定結果）→ 預檢 → job：受控抓取 → 隔離建置 → compose up（只動受影響服務）→ 健康檢查 → 記錄 digest 與設定版本。
 
@@ -106,12 +109,13 @@ scripts/   CI 與發布腳本（簽署清單、依賴檢查）
 | 管理 API 與權限 | `POST/GET /management/v1/*`（httptest） | Agent 通道以 in-process fake（實作同一協定，回放黃金樣本） | 存活於內部重構；T-013、T-014 直接在此驗。 |
 | 工作引擎 | jobs 套件的 `Engine` 介面 + fake Agent | 注入斷線、磁碟滿、重複請求 | ENG-001～012 的失敗注入必須可程式化。 |
 | Core↔Agent 協定 | 黃金 JSON 樣本（Rust serde round-trip 測試 + Go 解碼測試，含固定種子的簽章樣本）；互通測試以真的 `hazelminx-agent`（`--features test-actions`）連 Go hub（`HAZELMINX_AGENT_BIN`） | Core 端單元測試用 Go 寫的假 Agent；會終止 TLS 的代理用 `httputil.ReverseProxy` | 兩語言共用同一組樣本，版本變更時同時失敗；互通測試證明兩個實作真的接得起來（斷線、重開機、代理）。 |
+| 節點名冊 | `nodereg.Registry` 的方法（真的 SQLite 與 PKI）；管理 API 用 `httptest` 的 `/management/v1/nodes*`；註冊與輪替的端到端以真的 `hazelminx-agent`（`HAZELMINX_AGENT_BIN`）連真的 hub 與 `AgentHandler` | Agent 通道以 `Channel` 介面的假物（連線清單、斷線、送憑證）；時鐘可注入 | 碼的期限、核對等待、憑證到期都靠時間，假時鐘才能測；真 Agent 測試證明 CA 發現、HMAC、憑證輪替與複製 VM 偵測兩邊真的接得起來。 |
 | 高權限執行器 | socket 層：測試客戶端送具名動作 | 動作處理器以 trait 替換（記錄而不執行） | 參數逃逸測試（T-039）在這層。 |
 | 宿主機操作 | 真實 Linux VM（CI 的 ubuntu-24.04 / debian-12 runner 或 KVM） | 無；只在標記可丟棄的 VM 執行破壞性測試 | 41.1 要求真實引擎整合。 |
 | Compose／Docker | 真實 Docker（CI service）；Podman rootless 另一 job | 無 | T-051、T-052 需原生解析結果比對。 |
 | Zentinel | 固定版本二進位 + 真實請求（curl） | 上游以測試容器 | WEB-014 要求實際請求驗證。 |
 | Token API 相容 | 從 infra-manager 的 `middlewares/auth_test.go` 等移植為 Core 的契約測試 | 上游 httptest | 20.1 的 403／404／優先順序不得改。 |
-| 前端 | vitest + Testing Library；關鍵流程 Playwright（360px 與桌面、鍵盤） | MSW 回放 OpenAPI 樣本 | UI-005、T-117、T-118。 |
+| 前端 | vitest + Testing Library；關鍵流程 Playwright（360px 與桌面、鍵盤）對真的 Core：`web/e2e/start-core.sh` 每次建置 `core/` 並以空資料目錄啟動，`first-run` 專案從設定畫面建立擁有者 | 單元測試以替換 `fetch` 的假 Core（`web/src/test/fakeCore.ts`）；Passkey 用 Chromium 虛擬驗證器（CDP `WebAuthn`） | UI-005、T-117、T-118；登入、Cookie、CSRF 與 WebAuthn 只有真的 Core 才驗得到。 |
 | GitHub | 模擬 GitHub API（httptest 回放分頁、限流、撤銷）+ 真實 GitHub 測試組織（GH-T34） | 模擬層只覆蓋極端狀態 | 41.3。 |
 
 ## Test matrix
@@ -149,6 +153,9 @@ CI 必跑：`go test ./... && go vet`、`cargo test --workspace && cargo clippy 
 - 登入第二步的挑戰與 Passkey 儀式狀態只放記憶體 — Core 重啟後要重新輸入密碼；多 Core 不共用（35.1）。
 - 未設定可信代理（票 065）前，經反向代理進來的請求來源 IP 都相同 — 密碼登入的「曾成功登入的來源」豁免會失真；第二驗證與再次驗證因此不套用這個豁免，改以每帳號計數限制。
 - Passkey 綁定網域；未設定 `--public-origin` 時以請求的 Host 推導，用 IP 開面板時 Passkey 不可用，只能用 TOTP。
+- 註冊端點依來源位址計算錯誤的註冊碼（10 分鐘 20 次）；經會終止 TLS 的代理時所有 Agent 來源相同，一個人猜錯太多次會讓同一代理後面的主機 10 分鐘內都不能註冊。
+- 複製 VM 的判斷靠「舊連線還回不回 WebSocket ping」：舊連線 3 秒內沒回應就當成同一台重連而換掉。兩份複本若剛好一份斷線時另一份連上，這一輪看不出衝突，要等兩份同時在線才會被發現。
+- 經會終止 TLS 的代理時，Core 看到的「舊連線」是代理到 Core 的那一段。代理若自己回 ping，或 Agent 那一段斷了卻還留著往 Core 的連線，正常重連會被誤判為身分衝突，節點要重新註冊才能用。目前還沒有用實際的代理驗證過。
 
 ## Decisions
 
@@ -182,3 +189,4 @@ CI 必跑：`go test ./... && go vet`、`cargo test --workspace && cargo clippy 
 - [0028 — Core↔Agent 通道的握手與訊息驗證](decisions/0028-core-agent-channel-handshake.md)
 - [0029 — Agent 每個步驟前後先寫 journal 才回報](decisions/0029-agent-step-journal.md)
 - [0030 — 握手訊息寬鬆解碼，之後嚴格解碼](decisions/0030-lenient-handshake-strict-after.md)
+- [0031 — 節點註冊用一次性碼換憑證，Core CA 由註冊碼驗證，管理員核對後才簽發](decisions/0031-node-enrollment-code-and-ca-discovery.md)
