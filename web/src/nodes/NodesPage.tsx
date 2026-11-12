@@ -15,7 +15,8 @@ import { PageHead } from "../shell/PageShell";
 import { PageSkeleton, StateBlock } from "../shell/PageStates";
 import { useDocumentTitle } from "../shell/useDocumentTitle";
 import type { Node } from "./api";
-import { useCanWriteNodes, useNodeList } from "./hooks";
+import { useNodeList, useWritePermission } from "./hooks";
+import { Enrollments } from "./Enrollments";
 import { NodeActionDialog } from "./NodeActions";
 import { CertificatePill, HostStatusPill, LastContact, PendingSync } from "./parts";
 import {
@@ -42,7 +43,7 @@ export function NodesPage() {
   useDocumentTitle(t("nodes.title"));
   const [params, setParams] = useSearchParams();
   const filters = readFilters(params);
-  const canWrite = useCanWriteNodes();
+  const canWrite = useWritePermission();
   const all = useNodeList();
   const filtered = useNodeList(
     {
@@ -59,12 +60,16 @@ export function NodesPage() {
     [source.data, filters.status],
   );
   const setFilters = (f: HostFilters) => setParams(writeFilters(f), { replace: true });
+  // Kept here, not in the table: a host can leave the filtered rows (maintenance started, it reconnected)
+  // while its dialog is open, and the dialog must stay with its input and its result.
+  const [open, setOpen] = useState<{ node: Node; action: NodeAction } | null>(null);
 
-  const addButton = <AddButton allowed={canWrite} label={t("nodes.add")} />;
+  const addButton = <AddButton allowed={canWrite()} label={t("nodes.add")} />;
 
   return (
     <>
       <PageHead title={t("nodes.title")} actions={addButton} />
+      <Enrollments />
       {all.isError && !all.data ? (
         <ApiErrorMessage error={all.error as ApiError} />
       ) : !all.data ? (
@@ -104,7 +109,7 @@ export function NodesPage() {
                 />
               </div>
             ) : (
-              <HostTable rows={rows} canWrite={canWrite} />
+              <HostTable rows={rows} canWrite={canWrite} onAction={(node, action) => setOpen({ node, action })} />
             )}
             {source.data && !source.data.complete && (
               <p className="hx-note hx-panel-note">
@@ -114,6 +119,7 @@ export function NodesPage() {
           </section>
         </>
       )}
+      {open && <NodeActionDialog node={open.node} action={open.action} onClose={() => setOpen(null)} />}
     </>
   );
 }
@@ -188,12 +194,13 @@ function Filters({
   const [q, setQ] = useState(filters.q);
   const [urlQ, setUrlQ] = useState(filters.q);
   if (urlQ !== filters.q) {
-    // The URL changed from outside (clear filters, back button): show what it says now.
     setUrlQ(filters.q);
-    setQ(filters.q);
+    // The URL changed from outside (clear filters, back button): show what it says now. Our own write
+    // stores the trimmed text, so a box that only differs by spaces keeps what the user typed.
+    if (filters.q.trim() !== q.trim()) setQ(filters.q);
   }
   useEffect(() => {
-    if (q === filters.q) return;
+    if (q.trim() === filters.q.trim()) return;
     const id = window.setTimeout(() => onChange({ ...filters, q }), 300);
     return () => window.clearTimeout(id);
   }, [q, filters, onChange]);
@@ -245,9 +252,16 @@ function osLine(n: Node): string {
   return [n.hostname, [n.os, n.arch].filter(Boolean).join(" "), n.group].filter(Boolean).join(" · ");
 }
 
-function HostTable({ rows, canWrite }: { rows: Node[]; canWrite: boolean | undefined }) {
+function HostTable({
+  rows,
+  canWrite,
+  onAction,
+}: {
+  rows: Node[];
+  canWrite: (nodeId?: string) => boolean | undefined;
+  onAction: (node: Node, action: NodeAction) => void;
+}) {
   const { t } = useTranslation();
-  const [open, setOpen] = useState<{ node: Node; action: NodeAction } | null>(null);
   return (
     <div className="hx-table-wrap">
       <Table className="hx-table hx-hosts">
@@ -268,6 +282,7 @@ function HostTable({ rows, canWrite }: { rows: Node[]; canWrite: boolean | undef
             const note = hostStatusNote(n, t);
             const name = n.name || n.hostname || n.id;
             const actions = availableActions(n);
+            const allowed = canWrite(n.id);
             return (
               <Table.Row key={n.id}>
                 <Table.Cell>
@@ -313,16 +328,12 @@ function HostTable({ rows, canWrite }: { rows: Node[]; canWrite: boolean | undef
                       />
                       <DropdownMenu.Content align="end">
                         {actions.map((a) => (
-                          <DropdownMenu.Item
-                            key={a}
-                            disabled={canWrite !== true}
-                            onClick={() => setOpen({ node: n, action: a })}
-                          >
-                            {canWrite === false && <LockIcon size={14} aria-hidden="true" />}
+                          <DropdownMenu.Item key={a} disabled={allowed !== true} onClick={() => onAction(n, a)}>
+                            {allowed === false && <LockIcon size={14} aria-hidden="true" />}
                             {t(`nodes.action.${a}`)}
                           </DropdownMenu.Item>
                         ))}
-                        {canWrite === false && (
+                        {allowed === false && (
                           <div className="hx-menu-note" role="note">
                             {t("nodes.needWrite")}
                           </div>
@@ -336,7 +347,6 @@ function HostTable({ rows, canWrite }: { rows: Node[]; canWrite: boolean | undef
           })}
         </Table.Body>
       </Table>
-      {open && <NodeActionDialog node={open.node} action={open.action} onClose={() => setOpen(null)} />}
     </div>
   );
 }

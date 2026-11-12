@@ -30,12 +30,18 @@ export function useUnreachableHosts(): { id: string; name: string }[] | undefine
 }
 
 /**
- * Whether the signed-in user may change hosts (nodes:write), globally or on one host. Undefined while the
- * session or the role table is loading.
+ * Whether the signed-in user may change hosts (nodes:write): call it without an id for the global scope (creating
+ * enrollment codes), with a host's id for that host. Undefined while the session or the role table is loading.
  */
-export function useCanWriteNodes(nodeId?: string): boolean | undefined {
+export function useWritePermission(): (nodeId?: string) => boolean | undefined {
   const session = useSession();
   const roles = useQuery({ queryKey: nodeKeys.roles, queryFn: nodesApi.roles, staleTime: 5 * 60_000 });
-  if (session.status !== "signed-in" || !roles.data) return undefined;
-  return canDo(NODES_WRITE, session.session.assignments, roles.data.roles, nodeId);
+  return (nodeId?: string) => {
+    if (session.status !== "signed-in" || !roles.data) return undefined;
+    return canDo(NODES_WRITE, session.session.assignments, roles.data.roles, nodeId);
+  };
+}
+
+export function useCanWriteNodes(nodeId?: string): boolean | undefined {
+  return useWritePermission()(nodeId);
 }

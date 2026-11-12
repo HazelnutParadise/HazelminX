@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router";
+import { isApiError } from "../auth/api";
 import { Notice, StepBar, type StepState } from "../auth/parts";
 import { StatusPill } from "../components/StatusPill";
 import { parseRfc3339 } from "../lib/time";
@@ -230,14 +231,22 @@ function EnrollmentFlow({
     },
   });
   if (q.isError && !q.data) {
+    // Only a missing enrollment means starting over; any other failure keeps the id so the page can try again.
+    const missing = isApiError(q.error, "NOT_FOUND");
     return (
       <StateBlock
-        title={t("nodes.addFlow.notFound")}
-        detail={<NodeError error={q.error} />}
+        title={missing ? t("nodes.addFlow.notFound") : t("nodes.addFlow.loadFailed")}
+        detail={missing ? undefined : <NodeError error={q.error} />}
         actions={
-          <Button variant="primary" onClick={onRestart}>
-            {t("nodes.addFlow.again")}
-          </Button>
+          missing ? (
+            <Button variant="primary" onClick={onRestart}>
+              {t("nodes.addFlow.again")}
+            </Button>
+          ) : (
+            <Button variant="primary" onClick={() => void q.refetch()} disabled={q.isFetching}>
+              {t("nodes.addFlow.retry")}
+            </Button>
+          )
         }
       />
     );

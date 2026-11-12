@@ -644,7 +644,21 @@
         "rejected": "已拒絕這台主機",
         "approval_expired": "24 小時內沒有人核對，這次註冊已失效"
       },
-      "endedDetail": "查詢 ID {{codeId}} · {{time}}"
+      "endedDetail": "查詢 ID {{codeId}} · {{time}}",
+      "loadFailed": "沒辦法讀取這個註冊",
+      "retry": "再試一次"
+    },
+    "enrollments": {
+      "title": "註冊中 · {{count}}",
+      "host": "主機",
+      "deadline": "期限",
+      "codeId": "查詢 ID {{codeId}}",
+      "pending": "等你核對",
+      "waiting": "等待主機使用",
+      "check": "核對",
+      "open": "開啟",
+      "checkNamed": "核對 {{name}}",
+      "openNamed": "開啟註冊碼 {{name}}"
     }
   }
 }

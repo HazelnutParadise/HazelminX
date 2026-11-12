@@ -661,7 +661,21 @@
         "rejected": "The host was rejected",
         "approval_expired": "Nobody checked the host within 24 hours; this enrollment lapsed"
       },
-      "endedDetail": "Lookup ID {{codeId}} · {{time}}"
+      "endedDetail": "Lookup ID {{codeId}} · {{time}}",
+      "loadFailed": "Could not read this enrollment",
+      "retry": "Try again"
+    },
+    "enrollments": {
+      "title": "Enrolling · {{count}}",
+      "host": "Host",
+      "deadline": "Deadline",
+      "codeId": "Lookup ID {{codeId}}",
+      "pending": "Waiting for your check",
+      "waiting": "Waiting for a host",
+      "check": "Check",
+      "open": "Open",
+      "checkNamed": "Check {{name}}",
+      "openNamed": "Open code {{name}}"
     }
   }
 }

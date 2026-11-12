@@ -121,6 +121,11 @@ export const nodesApi = {
   createEnrollment: (body: Partial<S["createEnrollmentRequest"]>) =>
     apiFetch<S["enrollmentCreatedResponse"]>(`${BASE}/node-enrollments`, { method: "POST", body }),
   enrollment: (id: string) => apiFetch<S["enrollmentResponse"]>(`${BASE}/node-enrollments/${enc(id)}`),
+  /** Enrollments in one state, newest first (one page of the API's maximum size). */
+  enrollments: (state: string, signal?: AbortSignal) =>
+    apiFetch<S["ListResponse_nodereg.Enrollment"]>(`${BASE}/node-enrollments${query({ state, limit: String(PAGE) })}`, {
+      signal,
+    }),
   withdrawEnrollment: (id: string) =>
     apiFetch<S["enrollmentResponse"]>(`${BASE}/node-enrollments/${enc(id)}`, { method: "DELETE" }),
   approve: (id: string, body: Partial<S["approveEnrollmentRequest"]>) =>
@@ -136,5 +141,6 @@ export const nodeKeys = {
   list: (q: NodeQuery) => ["nodes", "list", q] as const,
   one: (id: string) => ["nodes", "one", id] as const,
   enrollment: (id: string) => ["node-enrollments", id] as const,
+  enrollments: (state: string) => ["node-enrollments", "list", state] as const,
   roles: ["roles"] as const,
 };
