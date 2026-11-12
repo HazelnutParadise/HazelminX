@@ -144,15 +144,24 @@ fn compact_moves_only_acked_finished_jobs_past_retention_to_the_archive() {
     assert_eq!(j.step_state("job-old", 1), StepState::NotStarted);
     assert_eq!(j.step_state("job-old", 2), StepState::NotStarted);
     assert_eq!(j.step_state("job-failed", 1), StepState::NotStarted);
-    assert_eq!(jobs_of(&j.records), ["job-recent", "job-open", "job-unacked"]);
+    assert_eq!(
+        jobs_of(&j.records),
+        ["job-recent", "job-open", "job-unacked"]
+    );
 
     // Kept: recent completed, interrupted, and unacked.
-    assert!(matches!(j.step_state("job-recent", 1), StepState::Completed(_)));
+    assert!(matches!(
+        j.step_state("job-recent", 1),
+        StepState::Completed(_)
+    ));
     assert!(matches!(
         j.step_state("job-open", 1),
         StepState::Interrupted { .. }
     ));
-    assert!(matches!(j.step_state("job-unacked", 1), StepState::Completed(_)));
+    assert!(matches!(
+        j.step_state("job-unacked", 1),
+        StepState::Completed(_)
+    ));
 
     // Counters survive even though the highest generation left with job-old.
     assert_eq!(j.last_seq(), before_last);
@@ -245,12 +254,21 @@ fn retention_boundary_is_exactly_retain_age() {
     let d = tempdir().unwrap();
     let mut j = Journal::open(d.path()).unwrap();
     run_step(&mut j, "job-edge", 1, TEST_NOW - RETAIN_AGE, 1);
-    run_step(&mut j, "job-inside", 1, TEST_NOW - RETAIN_AGE + time::Duration::seconds(1), 1);
+    run_step(
+        &mut j,
+        "job-inside",
+        1,
+        TEST_NOW - RETAIN_AGE + time::Duration::seconds(1),
+        1,
+    );
     j.ack(j.last_seq()).unwrap();
 
     assert_eq!(j.compact(TEST_NOW).unwrap(), 2);
     assert_eq!(j.step_state("job-edge", 1), StepState::NotStarted);
-    assert!(matches!(j.step_state("job-inside", 1), StepState::Completed(_)));
+    assert!(matches!(
+        j.step_state("job-inside", 1),
+        StepState::Completed(_)
+    ));
 }
 
 #[test]
@@ -304,7 +322,11 @@ fn after_compaction_and_restart_unacked_records_are_resent_and_recent_ones_answe
     let j = Journal::open(d.path()).expect("reopen compacted journal");
     let got = observe(&j);
     assert_eq!(got, expected);
-    assert_eq!(seqs_of(&got.unacked), vec![10, 11], "job-unacked is re-sent");
+    assert_eq!(
+        seqs_of(&got.unacked),
+        vec![10, 11],
+        "job-unacked is re-sent"
+    );
     assert!(matches!(got.recent, StepState::Completed(_)));
     assert!(matches!(got.open, StepState::Interrupted { .. }));
     assert_eq!(got.max_generation, 7);
@@ -372,7 +394,10 @@ fn compacting_twice_appends_to_the_archive_without_duplicates() {
     j.compact(TEST_NOW).unwrap();
     j.ack(j.last_seq()).unwrap(); // job-unacked is now acked and old
     assert_eq!(j.compact(TEST_NOW).unwrap(), 2);
-    assert_eq!(archived_seqs_sorted(d.path()), vec![1, 2, 3, 4, 5, 6, 10, 11]);
+    assert_eq!(
+        archived_seqs_sorted(d.path()),
+        vec![1, 2, 3, 4, 5, 6, 10, 11]
+    );
     assert_eq!(jobs_of(&j.records), ["job-recent", "job-open"]);
 
     // Kept records now lie below the compacted floor (11); they still load.
@@ -465,7 +490,7 @@ fn a_crash_at_any_point_of_compaction_loses_no_unacked_or_kept_record() {
         assert!(j.compact(TEST_NOW).is_err(), "{point:?}: simulated crash");
         drop(j); // the process is gone
 
-        let mut j = Journal::open_without_compaction(d.path())
+        let mut j = Journal::load(d.path())
             .unwrap_or_else(|e| panic!("{point:?}: reopen after crash: {e:#}"));
         assert_eq!(observe(&j), before, "{point:?}");
         assert!(
@@ -474,7 +499,10 @@ fn a_crash_at_any_point_of_compaction_loses_no_unacked_or_kept_record() {
         );
         let compacted = point == CrashPoint::AfterRename;
         if compacted {
-            assert_eq!(jobs_of(&j.records), ["job-recent", "job-open", "job-unacked"]);
+            assert_eq!(
+                jobs_of(&j.records),
+                ["job-recent", "job-open", "job-unacked"]
+            );
         } else {
             assert_eq!(j.records, hot_before, "{point:?}: journal unchanged");
         }
@@ -504,7 +532,7 @@ fn a_torn_archive_tail_is_cut_before_the_next_append() {
     let raw = fs::read(d.path().join(ARCHIVE_FILE)).unwrap();
     assert!(!raw.ends_with(b"\n"), "the crash left half a line");
 
-    let mut j = Journal::open_without_compaction(d.path()).unwrap();
+    let mut j = Journal::load(d.path()).unwrap();
     j.compact(TEST_NOW).unwrap();
     let text = fs::read_to_string(d.path().join(ARCHIVE_FILE)).unwrap();
     assert!(text.ends_with('\n'));
@@ -523,7 +551,10 @@ fn a_corrupt_archive_line_stops_compaction_and_leaves_the_journal_alone() {
     j.archive_clean = false; // as after a restart
     assert!(j.compact(TEST_NOW).is_err());
     assert_eq!(j.records, hot);
-    assert_eq!(fs::read(d.path().join(JOURNAL_FILE)).unwrap(), journal_bytes);
+    assert_eq!(
+        fs::read(d.path().join(JOURNAL_FILE)).unwrap(),
+        journal_bytes
+    );
 }
 
 // ---------- archive size cap ----------
@@ -555,7 +586,10 @@ fn a_full_archive_is_rotated_and_the_older_generation_is_dropped() {
         "the new batch starts a fresh archive"
     );
     let prev_text = fs::read_to_string(d.path().join(ARCHIVE_PREV_FILE)).unwrap();
-    assert!(!prev_text.contains("oldest generation"), "the older .1 is gone");
+    assert!(
+        !prev_text.contains("oldest generation"),
+        "the older .1 is gone"
+    );
 }
 
 #[test]
@@ -590,14 +624,20 @@ fn ack_compacts_when_the_interval_has_passed() {
     let (mut j, _) = mixed(d.path());
     // Not due yet: ack only moves the watermark.
     j.ack(j.last_seq() - 1).unwrap();
-    assert!(matches!(j.step_state("job-old", 1), StepState::Completed(_)));
+    assert!(matches!(
+        j.step_state("job-old", 1),
+        StepState::Completed(_)
+    ));
 
     j.compact_due = std::time::Instant::now();
     let last = j.last_seq();
     j.ack(last).unwrap();
     assert_eq!(j.step_state("job-old", 1), StepState::NotStarted);
     assert_eq!(j.step_state("job-unacked", 1), StepState::NotStarted);
-    assert!(j.compact_due > std::time::Instant::now(), "next run is scheduled");
+    assert!(
+        j.compact_due > std::time::Instant::now(),
+        "next run is scheduled"
+    );
 }
 
 #[test]
@@ -607,9 +647,10 @@ fn a_failed_compaction_does_not_fail_the_ack() {
     j.compact_due = std::time::Instant::now();
     j.crash_at = Some(CrashPoint::AfterArchive);
     let last = j.last_seq();
-    j.ack(last).expect("the watermark is stored even if compaction fails");
+    j.ack(last)
+        .expect("the watermark is stored even if compaction fails");
     assert_eq!(j.acked(), last);
     drop(j);
-    let j = Journal::open_without_compaction(d.path()).unwrap();
+    let j = Journal::load(d.path()).unwrap();
     assert_eq!(j.acked(), last);
 }
