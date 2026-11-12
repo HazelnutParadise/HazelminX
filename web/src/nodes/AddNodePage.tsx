@@ -17,7 +17,7 @@ import { useDocumentTitle } from "../shell/useDocumentTitle";
 import { useNow } from "../shell/useNow";
 import { CODE_TTL, DEFAULT_AGENT_PORT, ENROLLMENT, nodeKeys, nodesApi, type Enrollment } from "./api";
 import { useCanWriteNodes } from "./hooks";
-import { decide, enrollCommand } from "./enroll";
+import { decide, enrollCommand, guessAgentUrl, isAgentUrl } from "./enroll";
 import { nodeHref, NODES_PATH } from "./paths";
 import { Field, NodeError, WriteButton } from "./parts";
 import { at, parseTags } from "./status";
@@ -36,13 +36,6 @@ interface Settings {
   coreUrl: string;
 }
 
-/** Where agents reach Core, guessed from this page's address and the default agent port (see 設計缺口). */
-function guessAgentUrl(): string {
-  const host = typeof window === "undefined" ? "localhost" : window.location.hostname;
-  const h = host.includes(":") ? `[${host}]` : host;
-  return `https://${h}:${DEFAULT_AGENT_PORT}`;
-}
-
 /**
  * Add a host (board AddNode): settings → one-time code and the command to run on the host → check what the
  * host reported and approve or reject → done. The code lives only in this component: after a reload the
@@ -59,7 +52,7 @@ export function AddNodePage() {
     tags: "",
     group: "",
     ttl: CODE_TTL.default,
-    coreUrl: guessAgentUrl(),
+    coreUrl: guessAgentUrl(window.location.hostname, DEFAULT_AGENT_PORT),
   });
   const [code, setCode] = useState<string | null>(null);
   const client = useQueryClient();
@@ -194,12 +187,20 @@ function SettingsForm({
           spellCheck={false}
           inputMode="url"
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => set("coreUrl", e.target.value)}
+          error={
+            settings.coreUrl.trim() && !isAgentUrl(settings.coreUrl) ? t("nodes.addFlow.coreUrlInvalid") : undefined
+          }
         />
         <div className="hx-form-wide">
           <NodeError error={error} />
         </div>
         <div className="hx-form-actions hx-form-wide">
-          <WriteButton allowed={canWrite} type="submit" variant="primary" disabled={busy || !settings.coreUrl.trim()}>
+          <WriteButton
+            allowed={canWrite}
+            type="submit"
+            variant="primary"
+            disabled={busy || !isAgentUrl(settings.coreUrl)}
+          >
             {t("nodes.addFlow.create")}
           </WriteButton>
         </div>

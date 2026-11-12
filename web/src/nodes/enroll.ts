@@ -2,9 +2,25 @@ import type { NodeMatch } from "./api";
 
 /** The command shown under 「在主機上執行」(agent/crates/agent/src/main.rs `enroll`). */
 export function enrollCommand(coreUrl: string, code: string, group: string): string {
-  const parts = ["hazelminx-agent enroll", `--core-url ${coreUrl.trim()}`, `--code ${code}`];
+  const parts = ["hazelminx-agent enroll", `--core-url ${shellQuote(coreUrl.trim())}`, `--code ${code}`];
   if (group.trim()) parts.push(`--group ${shellQuote(group.trim())}`);
   return parts.join(" \\\n  ");
+}
+
+/** The agent only dials https (agent/crates/agent enroll); anything else would fail on the host. */
+export function isAgentUrl(text: string): boolean {
+  try {
+    const u = new URL(text.trim());
+    return u.protocol === "https:" && u.hostname !== "" && !/\s/.test(text.trim());
+  } catch {
+    return false;
+  }
+}
+
+/** The agent's address guessed from the page's host and the default agent port; IPv6 hosts already carry brackets. */
+export function guessAgentUrl(hostname: string, port: number): string {
+  const h = hostname.includes(":") && !hostname.startsWith("[") ? `[${hostname}]` : hostname;
+  return `https://${h}:${port}`;
 }
 
 function shellQuote(s: string): string {

@@ -18,7 +18,7 @@ import type { Node } from "./api";
 import { useNodeList, useWritePermission } from "./hooks";
 import { Enrollments } from "./Enrollments";
 import { NodeActionDialog } from "./NodeActions";
-import { CertificatePill, HostStatusPill, LastContact, PendingSync } from "./parts";
+import { CertificatePill, HostStatusPill, LastContact, PendingSync, WriteButton } from "./parts";
 import {
   availableActions,
   apiState,
@@ -125,13 +125,11 @@ export function NodesPage() {
 }
 
 function AddButton({ allowed, label }: { allowed: boolean | undefined; label: string }) {
-  const { t } = useTranslation();
   if (allowed === false) {
     return (
-      <Button variant="primary" disabled icon={<LockIcon aria-hidden="true" />} title={t("nodes.needWrite")}>
+      <WriteButton allowed={false} variant="primary">
         {label}
-        <span className="hx-visually-hidden">{t("nodes.needWrite")}</span>
-      </Button>
+      </WriteButton>
     );
   }
   return (

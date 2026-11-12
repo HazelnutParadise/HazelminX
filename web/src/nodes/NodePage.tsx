@@ -369,14 +369,14 @@ function ComponentsPanel({ node: n }: { node: Node }) {
               {list.map((c) => (
                 <Table.Row key={`${c.kind}:${c.name}`}>
                   <Table.Cell>
-                    <div className="hx-name">{c.name}</div>
-                    <div className="hx-sub">{t(`nodes.component.${c.kind}`, { defaultValue: c.kind })}</div>
+                    <div className="hx-name">{t(`nodes.component.${c.kind}`, { defaultValue: c.name })}</div>
+                    <div className="hx-sub hx-mono">{c.name}</div>
                   </Table.Cell>
                   <Table.Cell className="hx-mono">{c.version || "—"}</Table.Cell>
-                  <Table.Cell>
-                    <span className="hx-mono">{c.state}</span>
+                  <Table.Cell>{t(`nodes.componentState.${c.state}`, { defaultValue: c.state })}</Table.Cell>
+                  <Table.Cell className="hx-sub">
+                    {t(`nodes.componentSource.${c.source}`, { defaultValue: c.source })}
                   </Table.Cell>
-                  <Table.Cell className="hx-sub">{c.source}</Table.Cell>
                 </Table.Row>
               ))}
             </Table.Body>

@@ -536,7 +536,7 @@
       "notFound": "No host {{id}}",
       "loadFailed": "Could not read this host",
       "backToList": "Back to hosts",
-      "removed": "Removed with “{{mode}}”: {{time}}, {{by}}",
+      "removed": "Removed with “{{mode}}”: {{time}}, account ID {{by}}",
       "conflict": "At {{time}} two machines connected with the same identity; both were disconnected. Enroll one of them again with a new key to recover.",
       "identity": "Identity",
       "connection": "Connection",
@@ -570,7 +570,7 @@
       "healthValues": "Values the agent reported",
       "revocation": "Revocation",
       "revokedAt": "Revoked at",
-      "revokedBy": "By",
+      "revokedBy": "By (account ID)",
       "sessionClosed": "Connection closed",
       "noSession": "Not connected when revoked",
       "agentNotified": "Host received it",
@@ -589,9 +589,15 @@
       "node-certificate": "Host certificate"
     },
     "jobState": {
+      "created": "Created",
+      "prechecking": "Prechecking",
+      "awaiting_approval": "Awaiting approval",
       "queued": "Queued",
       "running": "Running",
-      "waiting": "Waiting",
+      "verifying": "Verifying",
+      "rolling_back": "Rolling back",
+      "cancel_requested": "Cancel requested",
+      "unknown": "Unknown",
       "needs_attention": "Needs attention"
     },
     "addFlow": {
@@ -663,7 +669,8 @@
       },
       "endedDetail": "Lookup ID {{codeId}} · {{time}}",
       "loadFailed": "Could not read this enrollment",
-      "retry": "Try again"
+      "retry": "Try again",
+      "coreUrlInvalid": "Enter a full address starting with https://, e.g. https://panel.example.tw:9801"
     },
     "enrollments": {
       "title": "Enrolling · {{count}}",
@@ -676,6 +683,19 @@
       "open": "Open",
       "checkNamed": "Check {{name}}",
       "openNamed": "Open code {{name}}"
+    },
+    "componentState": {
+      "online": "Connected",
+      "stale": "Data out of date",
+      "offline": "Not responding",
+      "never_connected": "Never connected",
+      "valid": "Valid",
+      "expiring": "Expiring",
+      "expired": "Expired"
+    },
+    "componentSource": {
+      "handshake": "Reported by the agent at its latest connection",
+      "registry": "The control center's host registry"
     }
   }
 }

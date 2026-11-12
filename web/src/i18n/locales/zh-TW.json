@@ -523,7 +523,7 @@
       "notFound": "找不到主機 {{id}}",
       "loadFailed": "沒辦法讀取這台主機",
       "backToList": "回到主機清單",
-      "removed": "已用「{{mode}}」移除：{{time}}，{{by}}",
+      "removed": "已用「{{mode}}」移除：{{time}}，帳號 ID {{by}}",
       "conflict": "{{time}} 發現兩台機器用同一個身分連線，兩邊都已斷線。在其中一台換新金鑰重新註冊後才能恢復。",
       "identity": "身分",
       "connection": "連線",
@@ -555,7 +555,7 @@
       "healthValues": "Agent 回報的數值",
       "revocation": "撤銷",
       "revokedAt": "撤銷時間",
-      "revokedBy": "執行者",
+      "revokedBy": "執行者（帳號 ID）",
       "sessionClosed": "連線中斷",
       "noSession": "撤銷時沒有連線",
       "agentNotified": "主機收到",
@@ -573,9 +573,15 @@
       "node-certificate": "主機憑證"
     },
     "jobState": {
+      "created": "已建立",
+      "prechecking": "預檢中",
+      "awaiting_approval": "等待批准",
       "queued": "排隊中",
       "running": "執行中",
-      "waiting": "等待中",
+      "verifying": "驗證中",
+      "rolling_back": "復原中",
+      "cancel_requested": "要求取消",
+      "unknown": "狀態不明",
       "needs_attention": "需要處理"
     },
     "addFlow": {
@@ -646,7 +652,8 @@
       },
       "endedDetail": "查詢 ID {{codeId}} · {{time}}",
       "loadFailed": "沒辦法讀取這個註冊",
-      "retry": "再試一次"
+      "retry": "再試一次",
+      "coreUrlInvalid": "請填 https:// 開頭的完整位址，例如 https://panel.example.tw:9801"
     },
     "enrollments": {
       "title": "註冊中 · {{count}}",
@@ -659,6 +666,19 @@
       "open": "開啟",
       "checkNamed": "核對 {{name}}",
       "openNamed": "開啟註冊碼 {{name}}"
+    },
+    "componentState": {
+      "online": "連線中",
+      "stale": "資料過期",
+      "offline": "沒有回應",
+      "never_connected": "從未連線",
+      "valid": "有效",
+      "expiring": "即將到期",
+      "expired": "已過期"
+    },
+    "componentSource": {
+      "handshake": "最近一次連線時 Agent 回報",
+      "registry": "控制中心的主機名冊"
     }
   }
 }
