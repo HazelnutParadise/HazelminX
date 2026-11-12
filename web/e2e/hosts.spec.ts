@@ -180,6 +180,17 @@ test("rename, maintenance, certificate rotation and revocation", async ({ page }
   await expect(dialog).toBeHidden();
   await expect(row(page, name)).toContainText("從未連線");
 
+  // On a phone, a dialog opened at the top of the page stays above the sticky top bar.
+  await page.getByRole("link", { name, exact: true }).click();
+  await expect(h1(page)).toHaveText(name);
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.getByRole("button", { name: "輪替憑證" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  expect(await scanIssues(page), "rotate dialog @360 from the top of the host page").toEqual([]);
+  await page.getByRole("dialog").getByRole("button", { name: "取消" }).click();
+  await page.setViewportSize({ width: 1440, height: 900 });
+
   // Rotation: the host is not connected, so the new certificate waits.
   dialog = await rowAction(page, name, "輪替憑證");
   await expect(dialog).toContainText("主機不在線，新憑證會在它下次連線時送出。");

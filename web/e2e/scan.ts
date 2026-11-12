@@ -194,5 +194,11 @@ export async function scanIssues(page: Page): Promise<string[]> {
   await page.evaluate(() => document.fonts.ready);
   // A theme switch animates colours; measuring mid-transition reads in-between values.
   await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
-  return [...(await axeViolations(page)), ...(await contrastIssues(page)), ...(await layoutIssues(page))];
+  // A viewport change re-renders the shell (phone navigation) on the next frames; measure after it settled.
+  await page.evaluate(
+    () => new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(done, 50)))),
+  );
+  // Layout first: axe and the contrast probe scroll elements into view, which moves sticky bars out of the way.
+  const layout = await layoutIssues(page);
+  return [...(await axeViolations(page)), ...(await contrastIssues(page)), ...layout];
 }
