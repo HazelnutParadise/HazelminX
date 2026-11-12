@@ -162,7 +162,7 @@ describe("sign-in", () => {
     expect(code).toHaveValue("");
 
     await u.type(code, "222222");
-    await heading("主機與節點");
+    await heading("主機");
     expect(router.state.location.pathname).toBe("/nodes");
     expect(core.callsTo("POST /management/v1/auth/login/second-factor").map((c) => c.body)).toEqual([
       { challengeToken: "ch-1", method: "totp", code: "111111" },

@@ -31,7 +31,7 @@ test.describe("signed out", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
 
     await typePassword(page, user);
-    await expect(h1(page)).toHaveText("主機與節點");
+    await expect(h1(page)).toHaveText("找不到主機 hazel-tw-01");
     await expect(page).toHaveURL(/\/nodes\/hazel-tw-01\/files\?path=%2Fetc$/);
     await expect(page.getByRole("button", { name: `${user.username} · 稽核者` })).toBeVisible();
 
