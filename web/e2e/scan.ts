@@ -153,6 +153,18 @@ export async function layoutIssues(page: Page): Promise<string[]> {
       const clips = cs.overflow === "hidden" || cs.overflowX === "hidden" || cs.overflowX === "clip";
       if (clips && el.scrollWidth > el.clientWidth + 2 && el.children.length === 0) out.push(`CLIP: ${label(el)}`);
     }
+    // Tables scroll sideways only below 1024 px (DESIGN.md 表格), and no row action may sit outside its panel.
+    for (const wrap of document.querySelectorAll(".hx-table-wrap")) {
+      if (!visible(wrap)) continue;
+      if (w >= 1024 && wrap.scrollWidth > wrap.clientWidth + 1)
+        out.push(`HSCROLL table +${wrap.scrollWidth - wrap.clientWidth}`);
+      const box = wrap.getBoundingClientRect();
+      for (const el of wrap.querySelectorAll("a[href], button")) {
+        if (!visible(el)) continue;
+        const r = el.getBoundingClientRect();
+        if (r.right > box.right + 1 || r.left < box.left - 1) out.push(`OFFSCREEN action: ${label(el)}`);
+      }
+    }
     // An open dialog must be the topmost thing along its top edge: the sticky top bar once painted over it on phones.
     for (const d of document.querySelectorAll("[role=dialog]")) {
       if (!visible(d)) continue;

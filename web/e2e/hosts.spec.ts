@@ -250,7 +250,15 @@ test("a new key on a known machine-id replaces that host; stop managing leaves o
 
 test("an unused code can be withdrawn; a rejected host stays refused", async ({ page }) => {
   const errors = watchErrors(page);
-  await createCode(page);
+  const name = uniq("e2e-wait");
+  await createCode(page, { name });
+  // Leaving the page keeps the code findable from the host list.
+  await page.goto("/nodes");
+  const enrolling = page.getByRole("region", { name: /^註冊中 · / });
+  await expect(enrolling).toContainText(name);
+  await scanScreen(page, errors, "host list · enrolling");
+  await enrolling.getByRole("link", { name: `開啟註冊碼 ${name}` }).click();
+  await expect(page.getByText(/註冊碼只在產生時顯示一次/)).toBeVisible();
   await page.getByRole("button", { name: "收回這個註冊碼" }).click();
   await expect(page.getByText("註冊碼已收回")).toBeVisible();
   await scanScreen(page, errors, "add host · withdrawn");

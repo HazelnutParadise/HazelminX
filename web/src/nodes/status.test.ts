@@ -14,6 +14,7 @@ import {
   matchesStatus,
   parseTags,
   pendingSync,
+  retiredReasonParts,
   readFilters,
   tagsAndGroups,
   writeFilters,
@@ -132,6 +133,22 @@ describe("list filters", () => {
   it("splits typed tags on half- and full-width commas", () => {
     expect(parseTags(" lab, arm64，lab、 edge\n")).toEqual(["lab", "arm64", "edge"]);
     expect(parseTags(" , ")).toEqual([]);
+  });
+});
+
+describe("retired key reasons", () => {
+  it("splits Core's reason into the parts the screen translates", () => {
+    expect(retiredReasonParts("revoked")).toEqual(["revoked"]);
+    expect(retiredReasonParts("identity_conflict")).toEqual(["identity_conflict"]);
+    expect(retiredReasonParts("seen on two hosts, revoked, then replaced at re-enrollment")).toEqual([
+      "seen_on_two_hosts",
+      "revoked",
+      "replaced_at_re_enrollment",
+    ]);
+    expect(retiredReasonParts("removed")).toEqual(["removed"]);
+    expect(retiredReasonParts("")).toEqual([]);
+    for (const k of ["revoked", "identity_conflict", "seen_on_two_hosts", "replaced_at_re_enrollment", "removed"])
+      expect(Object.keys(zh.nodes.addFlow.retiredReason)).toContain(k);
   });
 });
 

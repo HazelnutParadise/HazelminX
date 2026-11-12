@@ -736,6 +736,26 @@ describe("review regressions", () => {
     );
   });
 
+  it("does not read enrollments for an account without nodes:read on every host", async () => {
+    const core = coreWith();
+    core.on(`GET ${B}/auth/session`, {
+      status: 200,
+      body: {
+        kind: "session",
+        user,
+        assignments: [
+          { id: "a2", userId: "u1", role: "platform_admin", scope: { kind: "node", id: "tw-01" }, createdAt: NOW },
+        ],
+        secondFactorEnrollmentRequired: false,
+      },
+    });
+    renderAt("/nodes");
+    await screen.findByRole("table");
+    await waitFor(() => expect(core.callsTo(`GET ${B}/roles`).length).toBeGreaterThan(0));
+    await new Promise((r) => setTimeout(r, 200));
+    expect(core.callsTo(`GET ${B}/node-enrollments`)).toEqual([]);
+  });
+
   it("keeps the enrollment and offers to try again when reading it fails", async () => {
     const core = coreWith([tw]);
     let fail = true;
