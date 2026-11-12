@@ -49,6 +49,9 @@ var (
 	ErrState       = errors.New("plans: the plan is not in a state that allows this")
 	ErrExpired     = errors.New("plans: the plan expired")
 	ErrPrecheck    = errors.New("plans: a precheck failed")
+	// ErrUnavailable: the job the plan runs as cannot be created here (no
+	// handler for its kind on this Core).
+	ErrUnavailable = errors.New("plans: the plan's job cannot run on this core")
 	// ErrChanged comes wrapped in a *ChangedError.
 	ErrChanged = errors.New("plans: the plan's content or a target's version changed")
 	// ErrRequestIDTaken: execute was called again with a different request

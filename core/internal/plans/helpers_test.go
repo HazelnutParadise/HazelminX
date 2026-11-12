@@ -157,11 +157,16 @@ type fakeJobs struct {
 	reqs []jobs.SubmitRequest
 	// failNext makes the next Submit fail after its Preview passed.
 	failNext error
+	// previewErr is returned by every Preview.
+	previewErr error
 }
 
 func (f *fakeJobs) Preview(_ context.Context, req jobs.SubmitRequest) (*jobs.Preview, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	if f.previewErr != nil {
+		return nil, f.previewErr
+	}
 	if j, ok := f.byID[req.RequestID]; ok {
 		if j.ChangePlanID != req.ChangePlanID || j.ChangePlanDigest != req.ChangePlanDigest {
 			return nil, jobs.ErrConflict

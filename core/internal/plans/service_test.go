@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/HazelnutParadise/hazelminx/core/internal/iam"
+	"github.com/HazelnutParadise/hazelminx/core/internal/jobs"
 )
 
 var bg = context.Background()
@@ -624,5 +625,67 @@ func TestAutoApprovedJobSaysSo(t *testing.T) {
 	}
 	if r := e.jobs.submitted()[0]; r.Approver != AutoApprover {
 		t.Fatalf("approver %q", r.Approver)
+	}
+}
+
+// The job was created but recording its id on the plan failed: the plan
+// stays executed (its job exists and will run), and the same request id
+// later answers that job and records it.
+func TestJobCreatedButNotRecordedStaysExecuted(t *testing.T) {
+	e := newEnv(t)
+	p := e.create(e.projA, configParams{Configs: []string{"shop-compose"}, Set: map[string]string{"image": "x"}})
+	e.svc.Approve(bg, e.admin, p.ID, p.Digest, src)
+	if _, err := e.db.Exec(`CREATE TRIGGER no_job_id BEFORE UPDATE OF job_id ON change_plans WHEN NEW.job_id IS NOT NULL BEGIN SELECT RAISE(ABORT, 'busy'); END`); err != nil {
+		t.Fatal(err)
+	}
+	res, err := e.svc.Execute(bg, e.projA, p.ID, p.Digest, "req-1", src)
+	if err != nil || res.Job == nil {
+		t.Fatalf("the job exists, so execute answers it: %v", err)
+	}
+	if got, _ := e.svc.Get(bg, e.projA, p.ID); got.State != StateExecuted {
+		t.Fatalf("plan returned to %s while its job exists", got.State)
+	}
+	if _, err := e.svc.Execute(bg, e.projA, p.ID, p.Digest, "req-2", src); !errors.Is(err, ErrRequestIDTaken) {
+		t.Fatalf("a second request id would run the approval twice: %v", err)
+	}
+	e.db.Exec(`DROP TRIGGER no_job_id`)
+	again, err := e.svc.Execute(bg, e.projA, p.ID, p.Digest, "req-1", src)
+	if err != nil || again.Job.ID != res.Job.ID || len(e.jobs.submitted()) != 1 {
+		t.Fatalf("replay: %v", err)
+	}
+	if got, _ := e.svc.Get(bg, e.projA, p.ID); got.Execution.JobID != res.Job.ID {
+		t.Fatalf("job id not recorded on replay: %+v", got.Execution)
+	}
+}
+
+// An approval or execution that loses the race against the deadline is
+// answered as expired and the plan is written so.
+func TestDeadlineRaceAnswersExpired(t *testing.T) {
+	e := newEnv(t)
+	p := e.create(e.projA, configParams{Configs: []string{"shop-compose"}, Set: map[string]string{"image": "x"}})
+	// The row reaches its deadline between the read and the write.
+	if _, err := e.db.Exec(`UPDATE change_plans SET expires_at = ? WHERE id = ?`, stamp(e.clock.now().Add(-time.Second)), p.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.svc.Approve(bg, e.admin, p.ID, p.Digest, src); !errors.Is(err, ErrExpired) {
+		t.Fatalf("approve at the deadline: %v", err)
+	}
+	if a := e.audit(p.ID); !slices.Contains(a, "change-plans.expire:ok") {
+		t.Fatalf("audit %v", a)
+	}
+}
+
+// A job kind the engine does not run makes execute unavailable, not an
+// internal error, and the plan stays approved.
+func TestExecuteWithoutJobHandlerIsUnavailable(t *testing.T) {
+	e := newEnv(t)
+	p := e.create(e.projA, configParams{Configs: []string{"shop-compose"}, Set: map[string]string{"image": "x"}})
+	e.svc.Approve(bg, e.admin, p.ID, p.Digest, src)
+	e.jobs.previewErr = jobs.ErrUnknownKind
+	if _, err := e.svc.Execute(bg, e.projA, p.ID, p.Digest, "req-1", src); !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("got %v", err)
+	}
+	if got, _ := e.svc.Get(bg, e.projA, p.ID); got.State != StateApproved {
+		t.Fatalf("state %s", got.State)
 	}
 }

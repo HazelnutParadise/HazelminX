@@ -61,7 +61,7 @@ func (s *Server) MountChangePlans(p *plans.Service) {
 		Summary:    "run an approved plan as a job; the same requestId answers the same job, another is REQUEST_ID_CONFLICT; a target changed since approval stops the run (CHANGE_PLAN_CHANGED)",
 		Permission: perm, Request: executeRequest{}, LongRunning: true,
 		Responses: []Response{{Status: 202, Body: JobAccepted{}, Headers: []string{"Location"}}},
-		Errors: append([]string{CodeChangePlanChanged, CodeRequestIDConflict, CodePlatformDegraded, CodeConfirmRequired, CodeScopeDegraded,
+		Errors: append([]string{CodeChangePlanChanged, CodeRequestIDConflict, CodeNotAvailable, CodePlatformDegraded, CodeConfirmRequired, CodeScopeDegraded,
 			CodeControllerConflict, CodeResourceReadOnly}, common...)}, h.execute)
 	s.extras = append(s.extras, func(o *overviewResponse) { o.ChangePlanKinds = p.Kinds() })
 }
@@ -161,6 +161,8 @@ func planError(c *gin.Context, err error) {
 		respond(c, e)
 	case errors.Is(err, plans.ErrState):
 		respond(c, newError(CodeChangePlanState, err.Error()))
+	case errors.Is(err, plans.ErrUnavailable):
+		respond(c, newError(CodeNotAvailable, err.Error()))
 	case errors.Is(err, plans.ErrPrecheck):
 		respond(c, newError(CodePrecheckFailed, err.Error()))
 	case errors.Is(err, plans.ErrRequestIDTaken):

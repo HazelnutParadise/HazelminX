@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"slices"
 	"sort"
 	"strings"
@@ -485,6 +486,11 @@ func (s *Service) Approve(ctx context.Context, p *iam.Principal, id, sentDigest 
 		func(ctx context.Context, tx *sql.Tx) error {
 			return s.audit(ctx, tx, p, pl, "change-plans.approve", src, before, map[string]any{"state": pl.State, "digest": pl.Digest, "expiresAt": pl.ExpiresAt})
 		})
+	if errors.Is(err, ErrState) {
+		if cur, lerr := s.load(ctx, id); lerr == nil && cur.State == StateExpired {
+			return nil, s.liveIn(ctx, p, cur, src, StateAwaitingApproval)
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -579,9 +585,13 @@ func (s *Service) Execute(ctx context.Context, p *iam.Principal, id, sentDigest,
 	// The job is checked before the plan is claimed: a request id taken by
 	// another job, or a job kind without a handler, refuses here and leaves
 	// the plan approved.
-	if pv, err := s.o.Jobs.Preview(ctx, req); errors.Is(err, jobs.ErrConflict) || (err == nil && pv.Replay != nil) {
+	pv, err := s.o.Jobs.Preview(ctx, req)
+	switch {
+	case errors.Is(err, jobs.ErrConflict), err == nil && pv.Replay != nil && pv.Replay.ChangePlanID != pl.ID:
 		return nil, fmt.Errorf("%w: request id %q is used by another job", ErrRequestIDTaken, requestID)
-	} else if err != nil {
+	case errors.Is(err, jobs.ErrUnknownKind), errors.Is(err, jobs.ErrInvalidRequest):
+		return nil, fmt.Errorf("%w: %v", ErrUnavailable, err)
+	case err != nil:
 		return nil, err
 	}
 	pl.State, pl.UpdatedAt = StateExecuted, now
@@ -595,24 +605,29 @@ func (s *Service) Execute(ctx context.Context, p *iam.Principal, id, sentDigest,
 	}
 	if errors.Is(err, ErrState) {
 		// Another call claimed it first; with the same request id that is a
-		// retry of this one and answers the same job.
+		// retry of this one and answers the same job. A plan that reached
+		// its deadline meanwhile answers expired.
 		cur, lerr := s.load(ctx, id)
-		if lerr == nil && cur.State == StateExecuted {
+		switch {
+		case lerr == nil && cur.State == StateExecuted:
 			return s.replay(ctx, cur, k, requestID)
+		case lerr == nil && cur.State == StateExpired:
+			return nil, s.liveIn(ctx, p, cur, src, StateApproved)
 		}
 		return nil, err
 	}
 	if err != nil {
 		return nil, err
 	}
-	res, err := s.submit(ctx, pl, req, false)
-	if err != nil {
+	res, created, err := s.submitJob(ctx, pl, req, false)
+	if err != nil && !created {
+		// No job exists, so the approval is still unused.
 		if rerr := s.unclaim(ctx, p, pl, requestID, err, src); rerr != nil {
 			return nil, errors.Join(err, rerr)
 		}
 		return nil, err
 	}
-	return res, nil
+	return res, err
 }
 
 // replay answers an execute of an executed plan: the same request id gets
@@ -677,23 +692,36 @@ func (s *Service) jobRequest(pl *Plan, k Kind) (jobs.SubmitRequest, error) {
 
 // submit creates (or finds again) the job of an executed plan.
 func (s *Service) submit(ctx context.Context, pl *Plan, req jobs.SubmitRequest, replay bool) (*ExecuteResult, error) {
+	res, created, err := s.submitJob(ctx, pl, req, replay)
+	if created {
+		return res, nil
+	}
+	return nil, err
+}
+
+// submitJob creates the job and records its id on the plan. created reports
+// whether the job exists; once it does, the plan stays executed even when
+// recording the id failed: the job will run, and replaying the same
+// request id records it later.
+func (s *Service) submitJob(ctx context.Context, pl *Plan, req jobs.SubmitRequest, replay bool) (res *ExecuteResult, created bool, err error) {
 	wctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), writeTimeout)
 	defer cancel()
 	job, dedup, err := s.o.Jobs.Submit(wctx, req)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
+	res = &ExecuteResult{Plan: pl, Job: job, Replayed: replay || dedup}
 	if pl.Execution.JobID != job.ID {
 		pl.Execution.JobID = job.ID
 		doc, err := json.Marshal(pl)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			_, err = s.o.DB.ExecContext(wctx, `UPDATE change_plans SET job_id = ?, doc = ? WHERE id = ?`, job.ID, string(doc), pl.ID)
 		}
-		if _, err := s.o.DB.ExecContext(wctx, `UPDATE change_plans SET job_id = ?, doc = ? WHERE id = ?`, job.ID, string(doc), pl.ID); err != nil {
-			return nil, err
+		if err != nil {
+			slog.Error("change plan: job created but its id could not be recorded; replaying the request id records it", "plan", pl.ID, "job", job.ID, "error", err)
 		}
 	}
-	return &ExecuteResult{Plan: pl, Job: job, Replayed: replay || dedup}, nil
+	return res, true, nil
 }
 
 // decidable loads a plan for a decision: visible, the kind's action on
@@ -904,6 +932,10 @@ func (s *Service) scan(r scanner) (*Plan, error) {
 		return nil, fmt.Errorf("plans: plan %s is unreadable: %w", id, err)
 	}
 	pl.salt = salt
+	// The column is what conditional writes compare against; it decides.
+	if exp, err := time.Parse(time.RFC3339Nano, expires); err == nil {
+		pl.ExpiresAt = exp
+	}
 	pl.State = State(state)
 	pl.storedState = pl.State
 	if (pl.State == StateAwaitingApproval || pl.State == StateApproved) && !s.now().Before(pl.ExpiresAt) {
