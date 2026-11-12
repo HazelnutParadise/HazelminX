@@ -465,9 +465,11 @@ describe("host actions", () => {
     const core = coreWith();
     core.on(`POST ${B}/nodes/jp-02/revoke`, { status: 200, body: { node: { ...jp, state: "revoked" } } });
     const { u, dialog } = await openAction("hazel-jp-02", "撤銷");
-    for (const s of ["這台主機的連線立刻中斷。", "之後它再也連不回來。", "送給它的新工作一律被擋下。"])
+    for (const s of ["之後它再也連不回來。", "送給它的新工作一律被擋下。"])
       expect(within(dialog).getByText(s)).toBeInTheDocument();
-    expect(within(dialog).getByText(/待送達/)).toBeInTheDocument();
+    // Not connected: nothing is cut off now, the revocation waits for its next connection.
+    expect(within(dialog).getByText(/下次連線時送達/)).toBeInTheDocument();
+    expect(within(dialog).queryByText("這台主機的連線立刻中斷。")).toBeNull();
     const confirm = within(dialog).getByRole("button", { name: "撤銷 hazel-jp-02" });
     expect(confirm).toBeDisabled();
     await u.type(within(dialog).getByLabelText("輸入 hazel-jp-02 確認"), "hazel-jp-0");
@@ -478,6 +480,13 @@ describe("host actions", () => {
     await waitFor(() =>
       expect(core.callsTo(`POST ${B}/nodes/jp-02/revoke`)[0]!.body).toEqual({ reason: "key leaked" }),
     );
+  });
+
+  it("tells a connected host's revocation cuts it off now, without the not-connected line", async () => {
+    coreWith();
+    const { dialog } = await openAction("hazel-tw-01", "撤銷");
+    expect(within(dialog).getByText("這台主機的連線立刻中斷。")).toBeInTheDocument();
+    expect(within(dialog).queryByText(/下次連線時送達/)).toBeNull();
   });
 
   it("keeps the four removal modes apart and only offers the one Core can do", async () => {

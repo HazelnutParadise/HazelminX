@@ -33,7 +33,7 @@ test.describe("preferences", () => {
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Platform settings");
     await expect(
-      page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Hosts & nodes" }),
+      page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Hosts" }),
     ).toBeVisible();
     await expect(page).toHaveTitle("Platform settings · HazelminX");
     await page.reload();
@@ -67,7 +67,7 @@ test.describe("navigation", () => {
       "資料庫",
       "AI",
       "API 代理",
-      "主機與節點",
+      "主機",
       "容器",
       "Kubernetes",
       "儲存與備份",
@@ -87,7 +87,7 @@ test.describe("navigation", () => {
     await page.goto("/nodes/hazel-tw-01/files");
     const current = page.getByRole("navigation", { name: "主導覽" }).locator('[aria-current="page"]');
     await expect(current).toHaveCount(1);
-    await expect(current).toContainText("主機與節點");
+    await expect(current).toHaveText("主機");
   });
 
   test("sidebar collapses to icons with names and remembers it", async ({ page }) => {
