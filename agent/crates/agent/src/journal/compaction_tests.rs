@@ -144,10 +144,19 @@ fn compact_moves_only_acked_finished_jobs_past_retention_to_the_archive() {
     let moved = j.compact(TEST_NOW).expect("compact");
     assert_eq!(moved, 6, "job-old (4 records) and job-failed (2) move");
 
-    // Gone from memory.
-    assert_eq!(j.step_state("job-old", 1), StepState::NotStarted);
-    assert_eq!(j.step_state("job-old", 2), StepState::NotStarted);
-    assert_eq!(j.step_state("job-failed", 1), StepState::NotStarted);
+    // Gone from memory; only the outcome is left.
+    assert!(matches!(
+        j.step_state("job-old", 1),
+        StepState::Compacted(_)
+    ));
+    assert!(matches!(
+        j.step_state("job-old", 2),
+        StepState::Compacted(_)
+    ));
+    assert!(matches!(
+        j.step_state("job-failed", 1),
+        StepState::Compacted(_)
+    ));
     assert_eq!(
         jobs_of(&j.records),
         ["job-recent", "job-open", "job-unacked"]
@@ -268,7 +277,10 @@ fn retention_boundary_is_exactly_retain_age() {
     j.ack(j.last_seq()).unwrap();
 
     assert_eq!(j.compact(TEST_NOW).unwrap(), 2);
-    assert_eq!(j.step_state("job-edge", 1), StepState::NotStarted);
+    assert!(matches!(
+        j.step_state("job-edge", 1),
+        StepState::Compacted(_)
+    ));
     assert!(matches!(
         j.step_state("job-inside", 1),
         StepState::Completed(_)
@@ -307,7 +319,7 @@ fn recent_finished_records_beyond_the_count_cap_move_oldest_job_first() {
     // Opening compacts.
     let j = Journal::open(d.path()).unwrap();
     assert_eq!(j.records.len(), RETAIN_MAX_RECORDS);
-    assert_eq!(j.step_state("job-0", 1), StepState::NotStarted);
+    assert!(matches!(j.step_state("job-0", 1), StepState::Compacted(_)));
     assert!(matches!(j.step_state("job-1", 1), StepState::Completed(_)));
     assert_eq!(archived_seqs_sorted(d.path()), vec![1, 2]);
     assert_eq!(j.last_seq(), seq);
@@ -798,7 +810,10 @@ fn open_compacts() {
     let (j, _) = mixed(d.path());
     drop(j);
     let j = Journal::open(d.path()).unwrap();
-    assert_eq!(j.step_state("job-old", 1), StepState::NotStarted);
+    assert!(matches!(
+        j.step_state("job-old", 1),
+        StepState::Compacted(_)
+    ));
     assert_eq!(archived_seqs_sorted(d.path()), vec![1, 2, 3, 4, 5, 6]);
 }
 
@@ -816,8 +831,14 @@ fn ack_compacts_when_the_interval_has_passed() {
     j.compact_due = std::time::Instant::now();
     let last = j.last_seq();
     j.ack(last).unwrap();
-    assert_eq!(j.step_state("job-old", 1), StepState::NotStarted);
-    assert_eq!(j.step_state("job-unacked", 1), StepState::NotStarted);
+    assert!(matches!(
+        j.step_state("job-old", 1),
+        StepState::Compacted(_)
+    ));
+    assert!(matches!(
+        j.step_state("job-unacked", 1),
+        StepState::Compacted(_)
+    ));
     assert!(
         j.compact_due > std::time::Instant::now(),
         "next run is scheduled"

@@ -6,7 +6,8 @@
 //! 1. `targetNode` is not this node → reject `WRONG_NODE`;
 //! 2. the journal has a terminal record for (jobId, step) → `Resend` that
 //!    record (never run again, even if the request is expired or stale:
-//!    re-sending a record executes nothing);
+//!    re-sending a record executes nothing); when only the compacted
+//!    outcome is left → reject `OUTCOME_UNKNOWN`, so the Core reconciles;
 //! 3. the journal shows the step started and it is still running in this
 //!    process → `AlreadyRunning` (its outcome event will follow);
 //! 4. the journal shows the step started but it is not running (the agent
@@ -160,7 +161,15 @@ impl Steps {
                     ));
                 }
             }
-            StepState::NotStarted | StepState::Compacted(_) => {}
+            StepState::Compacted(_) => {
+                return Ok(reject(
+                    step_reject_code::OUTCOME_UNKNOWN,
+                    "this step finished earlier and only its outcome is kept; reconcile to read it"
+                        .to_string(),
+                    None,
+                ));
+            }
+            StepState::NotStarted => {}
         }
 
         if *expires_at <= now {
@@ -285,6 +294,7 @@ impl Steps {
     /// - completed → started=true, completed=true, evidence of the record;
     /// - failed → started=true, failed=true, the record's evidence and
     ///   error;
+    /// - compacted → the same as completed or failed, from the outcome;
     /// - every report carries the reconcile's requestId, jobId and step.
     pub fn reconcile(&self, msg: &Message) -> Result<ReconcileAnswer> {
         let Message::StepReconcile {
@@ -326,9 +336,7 @@ impl Steps {
         };
 
         match self.journal.step_state(job_id, *step) {
-            StepState::NotStarted | StepState::Compacted(_) => {
-                Ok(report(false, false, false, Vec::new(), None))
-            }
+            StepState::NotStarted => Ok(report(false, false, false, Vec::new(), None)),
             StepState::Interrupted { started } => {
                 if self.running.contains(&(job_id.clone(), *step)) {
                     Ok(ReconcileAnswer::WhenFinished)
@@ -346,6 +354,13 @@ impl Steps {
             StepState::Failed(record) => {
                 Ok(report(true, false, true, record.evidence, record.error))
             }
+            StepState::Compacted(outcome) => Ok(report(
+                true,
+                outcome.kind == EventKind::Completed,
+                outcome.kind == EventKind::Failed,
+                outcome.evidence,
+                outcome.error,
+            )),
         }
     }
 

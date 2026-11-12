@@ -20,9 +20,24 @@
 //! moved records leave behind: the highest seq and control generation. A
 //! crash at any point leaves either the old or the new journal, never a
 //! mix; records copied to the archive by an unfinished compaction are not
-//! copied twice. The archive is an audit copy the agent never reads to
-//! answer the Core; it is rotated to `journal.archive.1.jsonl` when it
-//! reaches [`ARCHIVE_MAX_BYTES`], and the older generation is dropped.
+//! copied twice.
+//!
+//! The Core acknowledges an event as soon as it arrives, before its job
+//! state is saved, so an acknowledged step may still be reconciled later.
+//! A compacted step therefore keeps its outcome (kind, evidence, error) in
+//! `dir/journal.outcomes.jsonl`, written before the journal drops the
+//! records: a reconcile reports that outcome, a repeated `step_execute` is
+//! refused as outcome unknown, and the step never starts again. Only the
+//! newest [`OUTCOMES_MAX_STEPS`] outcomes are kept.
+//!
+//! The archive is an audit copy the agent never reads to answer the Core;
+//! it is rotated to `journal.archive.1.jsonl` when it reaches
+//! [`ARCHIVE_MAX_BYTES`], and the older generation is dropped.
+//!
+//! Compaction runs inside `open` and `ack`, so it holds whatever lock the
+//! caller holds on the journal; one run rewrites at most the hot journal
+//! (about `RETAIN_MAX_RECORDS` records plus unsettled ones) and the
+//! outcomes file.
 
 use anyhow::{Context, Result, bail};
 use hazelminx_protocol::{EventKind, Message, StepFailure};
@@ -51,14 +66,17 @@ pub const ARCHIVE_PREV_FILE: &str = "journal.archive.1.jsonl";
 pub const RETAIN_AGE: time::Duration = time::Duration::days(7);
 /// At most this many settled records stay in the journal, newest jobs first.
 pub const RETAIN_MAX_RECORDS: usize = 10_000;
-/// The archive is rotated once it reaches this size; with the previous
-/// generation, the archive takes at most about twice this on disk.
+/// The archive is rotated once it reaches this size, checked before each
+/// batch; with the previous generation it takes about twice this on disk,
+/// plus one batch (a soft cap: the first compaction of a long-grown journal
+/// can write a larger batch, which the next rotation then drops).
 pub const ARCHIVE_MAX_BYTES: u64 = 16 * 1024 * 1024;
 /// Outcomes of compacted steps, rewritten (temp file, fsync, rename) by
 /// each compaction.
 pub const OUTCOMES_FILE: &str = "journal.outcomes.jsonl";
 const OUTCOMES_TMP_FILE: &str = "journal.outcomes.jsonl.tmp";
-/// At most this many compacted steps keep their outcome, newest first.
+/// At most this many compacted steps keep their outcome, newest first
+/// (about 120 bytes each in memory and on disk).
 pub const OUTCOMES_MAX_STEPS: usize = 50_000;
 /// How often `ack` tries to compact.
 const COMPACT_INTERVAL: std::time::Duration = std::time::Duration::from_secs(3600);
@@ -259,12 +277,15 @@ impl Journal {
             sync_dir(parent_of(dir))?;
         }
 
-        let tmp = dir.join(JOURNAL_TMP_FILE);
-        match fs::remove_file(&tmp) {
-            Ok(()) => sync_dir(dir)?,
-            Err(e) if e.kind() == ErrorKind::NotFound => {}
-            Err(e) => return Err(e).with_context(|| format!("remove {}", tmp.display())),
+        for name in [JOURNAL_TMP_FILE, OUTCOMES_TMP_FILE] {
+            let tmp = dir.join(name);
+            match fs::remove_file(&tmp) {
+                Ok(()) => sync_dir(dir)?,
+                Err(e) if e.kind() == ErrorKind::NotFound => {}
+                Err(e) => return Err(e).with_context(|| format!("remove {}", tmp.display())),
+            }
         }
+        let outcomes = read_outcomes(&dir.join(OUTCOMES_FILE))?;
 
         let path = dir.join(JOURNAL_FILE);
         let existed = path.exists();
@@ -309,7 +330,7 @@ impl Journal {
             records,
             acked,
             floor,
-            outcomes: HashMap::new(),
+            outcomes,
             compact_due: Instant::now() + COMPACT_INTERVAL,
             archive_clean: false,
             #[cfg(test)]
@@ -332,6 +353,9 @@ impl Journal {
     /// - moved records leave memory and `journal.jsonl`, and are appended to
     ///   the archive (mode 0600) with every field intact; `last_seq`,
     ///   `acked` and `max_control_generation` do not change;
+    /// - each moved step's last record is kept as its outcome
+    ///   (`step_state` → `Compacted`, across restarts); a new `started` for
+    ///   it is refused; beyond `OUTCOMES_MAX_STEPS` the lowest seqs go;
     /// - the archive is rotated before appending once it is at least
     ///   `ARCHIVE_MAX_BYTES`;
     /// - after an earlier compaction was cut off, records already in the
@@ -361,18 +385,24 @@ impl Journal {
                 .fold(self.floor.max_control_generation, u64::max),
         };
 
-        if let Err(e) = self.archive(&moved) {
+        let outcomes = merge_outcomes(&self.outcomes, &moved);
+
+        // Outcomes are written before the journal drops the records: a crash
+        // in between leaves a step both in the journal and in the outcomes,
+        // and the journal's records win.
+        if let Err(e) = self
+            .archive(&moved)
+            .and_then(|()| self.replace_outcomes(&outcomes))
+            .and_then(|()| self.replace_journal(floor, &kept))
+        {
             self.archive_clean = false;
             return Err(e);
         }
-        if let Err(e) = self.replace_journal(floor, &kept) {
-            self.archive_clean = false;
-            return Err(e);
-        }
-        // The new file is in place: memory follows it even if the directory
-        // fsync below fails.
+        // The new files are in place: memory follows them even if the
+        // directory fsync below fails.
         self.records = kept;
         self.floor = floor;
+        self.outcomes = outcomes;
         #[cfg(test)]
         self.crash(CrashPoint::AfterRename)?;
         sync_dir(&self.dir)?;
@@ -493,6 +523,31 @@ impl Journal {
         Ok(())
     }
 
+    /// Rewrites the outcomes file (temp file, fsync, rename) with
+    /// `outcomes`, oldest first. The directory fsync is the caller's.
+    fn replace_outcomes(&self, outcomes: &HashMap<(String, u32), Outcome>) -> Result<()> {
+        let mut sorted: Vec<&Outcome> = outcomes.values().collect();
+        sorted.sort_by_key(|o| o.seq);
+        let mut text = String::new();
+        for o in sorted {
+            text.push_str(&serde_json::to_string(o).context("serialize step outcome")?);
+            text.push('\n');
+        }
+        let tmp = self.dir.join(OUTCOMES_TMP_FILE);
+        let dst = self.dir.join(OUTCOMES_FILE);
+        let renamed = stage_file(&tmp, text.as_bytes()).and_then(|()| {
+            fs::rename(&tmp, &dst)
+                .with_context(|| format!("rename {} to {}", tmp.display(), dst.display()))
+        });
+        if renamed.is_err() {
+            let _ = fs::remove_file(&tmp);
+        }
+        renamed?;
+        #[cfg(test)]
+        self.crash(CrashPoint::AfterOutcomes)?;
+        Ok(())
+    }
+
     /// Writes `floor` and `kept` to the temporary journal, fsyncs it and
     /// renames it over `journal.jsonl`. The directory fsync is the caller's.
     fn replace_journal(&self, floor: Floor, kept: &[Record]) -> Result<()> {
@@ -606,7 +661,10 @@ impl Journal {
             .rev()
             .find(|r| r.job_id == job_id && r.step == step)
         {
-            None => StepState::NotStarted,
+            None => match self.outcomes.get(&(job_id.to_string(), step)) {
+                Some(o) => StepState::Compacted(o.clone()),
+                None => StepState::NotStarted,
+            },
             Some(r) => match r.kind {
                 EventKind::Started => StepState::Interrupted { started: r.clone() },
                 EventKind::Completed => StepState::Completed(r.clone()),
@@ -615,13 +673,18 @@ impl Journal {
         }
     }
 
-    /// Kind of the step's most recent record, if it has any.
+    /// Kind of the step's most recent record, or of its compacted outcome.
     fn last_kind(&self, job_id: &str, step: u32) -> Option<EventKind> {
         self.records
             .iter()
             .rev()
             .find(|r| r.job_id == job_id && r.step == step)
             .map(|r| r.kind)
+            .or_else(|| {
+                self.outcomes
+                    .get(&(job_id.to_string(), step))
+                    .map(|o| o.kind)
+            })
     }
 
     /// Records with `seq > acked()`, oldest first.
@@ -795,6 +858,60 @@ fn parse_journal(path: &Path, bytes: &[u8]) -> Result<(Floor, Vec<Record>, usize
         start = end;
     }
     Ok((floor, records, valid_len))
+}
+
+/// `kept` plus the last record of every step in `moved` (all terminal),
+/// trimmed to the `OUTCOMES_MAX_STEPS` with the highest seqs.
+fn merge_outcomes(
+    kept: &HashMap<(String, u32), Outcome>,
+    moved: &[Record],
+) -> HashMap<(String, u32), Outcome> {
+    let mut all = kept.clone();
+    for r in moved {
+        all.insert(
+            (r.job_id.clone(), r.step),
+            Outcome {
+                seq: r.seq,
+                kind: r.kind,
+                job_id: r.job_id.clone(),
+                step: r.step,
+                evidence: r.evidence.clone(),
+                error: r.error.clone(),
+            },
+        );
+    }
+    if all.len() > OUTCOMES_MAX_STEPS {
+        let mut newest: Vec<((String, u32), Outcome)> = all.into_iter().collect();
+        newest.sort_unstable_by_key(|(_, o)| std::cmp::Reverse(o.seq));
+        newest.truncate(OUTCOMES_MAX_STEPS);
+        return newest.into_iter().collect();
+    }
+    all
+}
+
+/// Reads the outcomes of compacted steps. A missing file is empty; any
+/// invalid line → error (the file is only ever replaced whole).
+fn read_outcomes(path: &Path) -> Result<HashMap<(String, u32), Outcome>> {
+    let text = match fs::read_to_string(path) {
+        Ok(t) => t,
+        Err(e) if e.kind() == ErrorKind::NotFound => return Ok(HashMap::new()),
+        Err(e) => return Err(e).with_context(|| format!("read {}", path.display())),
+    };
+    let mut outcomes = HashMap::new();
+    for (i, line) in text.lines().enumerate() {
+        let o: Outcome = serde_json::from_str(line).with_context(|| {
+            format!(
+                "{}: line {} is not a valid step outcome",
+                path.display(),
+                i + 1
+            )
+        })?;
+        outcomes.insert((o.job_id.clone(), o.step), o);
+    }
+    if !text.is_empty() && !text.ends_with('\n') {
+        bail!("{}: last line is incomplete", path.display());
+    }
+    Ok(outcomes)
 }
 
 /// Adds the seqs in an archive file to `present`. A missing file adds
