@@ -20,7 +20,7 @@ import { useCanWriteNodes } from "./hooks";
 import { decide, enrollCommand, guessAgentUrl, isAgentUrl } from "./enroll";
 import { nodeHref, NODES_PATH } from "./paths";
 import { Field, NodeError, WriteButton } from "./parts";
-import { at, parseTags } from "./status";
+import { at, parseTags, retiredReasonParts } from "./status";
 import "./nodes.css";
 
 /** Validity choices offered, in seconds (Core accepts 1 to 60 minutes). */
@@ -438,10 +438,12 @@ function CheckPanel({ enrollment: e, canWrite }: { enrollment: Enrollment; canWr
                 {m.keyRetired && (
                   <span className="hx-sub">
                     {t("nodes.addFlow.keyRetired")}{" "}
-                    <span className="hx-mono" translate="no">
-                      {t(`nodes.addFlow.retiredReason.${m.keyRetiredReason}`, {
-                        defaultValue: m.keyRetiredReason || "—",
-                      })}
+                    <span>
+                      {m.keyRetiredReason
+                        ? retiredReasonParts(m.keyRetiredReason)
+                            .map((k) => t(`nodes.addFlow.retiredReason.${k}`, { defaultValue: k.replace(/_/g, " ") }))
+                            .join(t("nodes.listSeparator"))
+                        : "—"}
                     </span>
                   </span>
                 )}

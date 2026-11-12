@@ -656,7 +656,10 @@
       "coreUrlInvalid": "請填 https:// 開頭的完整位址，例如 https://panel.example.tw:9801",
       "retiredReason": {
         "revoked": "已撤銷",
-        "identity_conflict": "身分衝突"
+        "identity_conflict": "身分衝突",
+        "seen_on_two_hosts": "曾在兩台機器同時出現",
+        "replaced_at_re_enrollment": "重新註冊時被取代",
+        "removed": "已移除"
       }
     },
     "enrollments": {

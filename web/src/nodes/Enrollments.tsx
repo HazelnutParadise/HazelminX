@@ -4,15 +4,16 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { StatusPill } from "../components/StatusPill";
 import { ENROLLMENT, nodeKeys, nodesApi, type Enrollment } from "./api";
-import { REFRESH_MS } from "./hooks";
+import { REFRESH_MS, usePermission } from "./hooks";
 import { ADD_NODE_PATH } from "./paths";
 import { at } from "./status";
 
-function useEnrollments(state: string) {
+function useEnrollments(state: string, enabled: boolean) {
   return useQuery({
     queryKey: nodeKeys.enrollments(state),
     queryFn: ({ signal }) => nodesApi.enrollments(state, signal),
     refetchInterval: REFRESH_MS,
+    enabled,
   });
 }
 
@@ -22,8 +23,10 @@ function useEnrollments(state: string) {
  */
 export function Enrollments() {
   const { t } = useTranslation();
-  const pending = useEnrollments(ENROLLMENT.pending);
-  const waiting = useEnrollments(ENROLLMENT.waiting);
+  // The list needs nodes:read on the global scope; an account scoped to some hosts does not ask for it.
+  const canRead = usePermission("nodes:read")() === true;
+  const pending = useEnrollments(ENROLLMENT.pending, canRead);
+  const waiting = useEnrollments(ENROLLMENT.waiting, canRead);
   const rows: Enrollment[] = [...(pending.data?.items ?? []), ...(waiting.data?.items ?? [])];
   if (rows.length === 0) return null;
   return (
@@ -32,12 +35,12 @@ export function Enrollments() {
         <h2 id="hx-enrollments-title">{t("nodes.enrollments.title", { count: rows.length })}</h2>
       </div>
       <div className="hx-table-wrap">
-        <Table className="hx-table">
+        <Table className="hx-table hx-enrollments">
           <Table.Header>
             <Table.Row>
               <Table.Head>{t("nodes.enrollments.host")}</Table.Head>
               <Table.Head>{t("nodes.col.status")}</Table.Head>
-              <Table.Head>{t("nodes.enrollments.deadline")}</Table.Head>
+              <Table.Head className="hx-enr-deadline">{t("nodes.enrollments.deadline")}</Table.Head>
               <Table.Head>
                 <span className="hx-visually-hidden">{t("nodes.col.actions")}</span>
               </Table.Head>
@@ -58,7 +61,7 @@ export function Enrollments() {
                       {isPending ? t("nodes.enrollments.pending") : t("nodes.enrollments.waiting")}
                     </StatusPill>
                   </Table.Cell>
-                  <Table.Cell className="hx-nowrap">
+                  <Table.Cell className="hx-nowrap hx-enr-deadline">
                     {at(isPending ? e.host?.claimExpiresAt : e.expiresAt) ?? "—"}
                   </Table.Cell>
                   <Table.Cell className="hx-acts">

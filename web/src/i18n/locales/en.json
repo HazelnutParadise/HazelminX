@@ -673,7 +673,10 @@
       "coreUrlInvalid": "Enter a full address starting with https://, e.g. https://panel.example.tw:9801",
       "retiredReason": {
         "revoked": "revoked",
-        "identity_conflict": "identity conflict"
+        "identity_conflict": "identity conflict",
+        "seen_on_two_hosts": "seen on two hosts",
+        "replaced_at_re_enrollment": "replaced at re-enrollment",
+        "removed": "removed"
       }
     },
     "enrollments": {

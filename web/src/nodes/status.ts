@@ -235,3 +235,16 @@ export function availableActions(n: Node): NodeAction[] {
   out.push("remove");
   return out;
 }
+
+/**
+ * Core's retired-key reason as i18n keys under `nodes.addFlow.retiredReason`, in order. Core writes a node state
+ * ("revoked") or past events and the last step ("seen on two hosts, revoked, then replaced at re-enrollment",
+ * nodereg retireReason); each part becomes a key, and a part Core adds later stays readable as its own text.
+ */
+export function retiredReasonParts(reason: string): string[] {
+  return reason
+    .split(/, then |, /)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => p.toLowerCase().replace(/[^a-z0-9]+/g, "_"));
+}

@@ -386,6 +386,16 @@
   opacity: 0.6;
 }
 
+.hx-enrollments .hx-acts {
+  white-space: nowrap;
+}
+
+@media (max-width: 767px) {
+  .hx-enr-deadline {
+    display: none;
+  }
+}
+
 @media (max-width: 1024px) {
   .hx-hosts .c5 {
     display: none;
