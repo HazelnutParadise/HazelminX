@@ -175,6 +175,10 @@ pub struct Outcome {
     pub kind: EventKind,
     pub job_id: String,
     pub step: u32,
+    pub request_id: String,
+    #[serde(with = "time::serde::rfc3339")]
+    pub at: OffsetDateTime,
+    pub control_generation: u64,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub evidence: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -875,6 +879,9 @@ fn merge_outcomes(
                 kind: r.kind,
                 job_id: r.job_id.clone(),
                 step: r.step,
+                request_id: r.request_id.clone(),
+                at: r.at,
+                control_generation: r.control_generation,
                 evidence: r.evidence.clone(),
                 error: r.error.clone(),
             },

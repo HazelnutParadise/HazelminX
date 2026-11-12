@@ -418,15 +418,17 @@ fn assert_outcomes_known(j: &Journal, context: &str) {
 fn compacted_steps_keep_their_outcome_in_memory_and_across_restart() {
     let d = tempdir().unwrap();
     let (mut j, _) = mixed(d.path());
+    let failed_record = match j.step_state("job-failed", 1) {
+        StepState::Failed(r) => r,
+        other => panic!("expected Failed, got {other:?}"),
+    };
     j.compact(TEST_NOW).unwrap();
-    match j.step_state("job-failed", 1) {
-        StepState::Compacted(t) => {
-            assert_eq!(t.kind, EventKind::Failed);
-            assert_eq!(t.seq, 6);
-            assert_eq!(t.error.as_ref().unwrap().summary, "磁碟已滿");
-        }
-        other => panic!("expected Compacted, got {other:?}"),
-    }
+    // A failed step has no result, so its record is kept whole and still
+    // answers as Failed (a re-send of it stays possible).
+    assert_eq!(
+        j.step_state("job-failed", 1),
+        StepState::Failed(failed_record.clone())
+    );
     assert!(matches!(
         j.step_state("job-old", 2),
         StepState::Compacted(_)
@@ -440,6 +442,10 @@ fn compacted_steps_keep_their_outcome_in_memory_and_across_restart() {
         StepState::Compacted(_)
     ));
     assert_outcomes_known(&j, "after restart");
+    assert_eq!(
+        j.step_state("job-failed", 1),
+        StepState::Failed(failed_record)
+    );
     assert_eq!(j.step_state("job-never", 1), StepState::NotStarted);
     let mode = fs::metadata(d.path().join(OUTCOMES_FILE))
         .unwrap()
@@ -460,6 +466,9 @@ fn outcomes_beyond_the_cap_drop_the_oldest_first() {
             kind: EventKind::Completed,
             job_id: format!("job-pre-{n}"),
             step: 1,
+            request_id: format!("req-pre-{n}"),
+            at: old(),
+            control_generation: 1,
             evidence: Vec::new(),
             error: None,
         };
@@ -565,6 +574,42 @@ fn a_repeated_execute_of_a_compacted_step_is_refused_as_outcome_unknown() {
         }
         other => panic!("a compacted step must not run again: {other:?}"),
     }
+    assert_eq!(steps.journal().last_seq(), last, "nothing journaled");
+}
+
+#[test]
+fn a_repeated_execute_of_a_compacted_failed_step_resends_its_failure() {
+    let d = tempdir().unwrap();
+    let (mut j, _) = mixed(d.path());
+    let original = match j.step_state("job-failed", 1) {
+        StepState::Failed(r) => r,
+        other => panic!("expected Failed, got {other:?}"),
+    };
+    j.compact(TEST_NOW).unwrap();
+    let last = j.last_seq();
+    drop(j);
+    let mut steps = steps_for(d.path());
+    // A retryable step the Core reconciled as failed comes back as a new
+    // request; answering OUTCOME_UNKNOWN would send it round the reconcile
+    // loop forever. It gets the recorded failure, as before compaction.
+    let msg = Message::StepExecute {
+        request_id: "req-retry".to_string(),
+        job_id: "job-failed".to_string(),
+        step: 1,
+        step_name: "retry".to_string(),
+        action: "agent.info".to_string(),
+        action_version: 1,
+        params: serde_json::Map::new(),
+        target_node: "node-fp".to_string(),
+        control_generation: 9,
+        expires_at: TEST_NOW + time::Duration::minutes(5),
+        retryable: true,
+        irreversible: false,
+    };
+    assert_eq!(
+        steps.decide(&msg, TEST_NOW).unwrap(),
+        crate::steps::Decision::Resend(original)
+    );
     assert_eq!(steps.journal().last_seq(), last, "nothing journaled");
 }
 
