@@ -30,9 +30,12 @@ import (
 
 // Errors. API handlers map them to the management error codes.
 var (
-	ErrNotFound        = errors.New("nodereg: not found")
-	ErrValidation      = errors.New("nodereg: validation failed")
-	ErrState           = errors.New("nodereg: not allowed in the current state")
+	ErrNotFound   = errors.New("nodereg: not found")
+	ErrValidation = errors.New("nodereg: validation failed")
+	ErrState      = errors.New("nodereg: not allowed in the current state")
+	// ErrAfterCommit: the change was made, but reading its result back
+	// failed. The caller must treat the change as done (audit it).
+	ErrAfterCommit     = errors.New("nodereg: the change was made but its result could not be read back")
 	ErrVersionMismatch = errors.New("nodereg: version mismatch")
 	// ErrRemovalUnavailable: the removal mode exists but this platform
 	// cannot carry it out yet.
@@ -340,4 +343,31 @@ func capsJSON(caps []protocol.Capability) string {
 	}
 	b, _ := json.Marshal(caps)
 	return string(b)
+}
+
+// afterCommit marks an error that came after the change was committed.
+func afterCommit(err error) error {
+	if err == nil {
+		return nil
+	}
+	return fmt.Errorf("%w: %w", ErrAfterCommit, err)
+}
+
+// readBack returns a changed node; on failure the node carries its ID.
+func (r *Registry) readBack(ctx context.Context, id string) (Node, error) {
+	n, err := r.GetNode(ctx, id)
+	if err != nil {
+		return Node{ID: id}, afterCommit(err)
+	}
+	return n, nil
+}
+
+// readBackEnrollment returns a changed enrollment; on failure it carries
+// its ID.
+func (r *Registry) readBackEnrollment(ctx context.Context, id string) (Enrollment, error) {
+	e, err := r.GetEnrollment(ctx, id)
+	if err != nil {
+		return Enrollment{ID: id}, afterCommit(err)
+	}
+	return e, nil
 }

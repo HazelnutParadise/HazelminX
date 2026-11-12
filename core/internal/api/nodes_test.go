@@ -52,6 +52,12 @@ func (m *pkiSecrets) Reveal(_ context.Context, r secrets.RevealRequest) ([]byte,
 
 func nodesHarness(t *testing.T) (*harness, *nodereg.Registry) {
 	t.Helper()
+	return nodesHarnessWith(t, nil)
+}
+
+// nodesHarnessWith lets a test give the registry its jobs source.
+func nodesHarnessWith(t *testing.T, jobsSrc nodereg.Jobs) (*harness, *nodereg.Registry) {
+	t.Helper()
 	hs := newHarness(t)
 	pki, err := nodes.LoadOrCreatePKI(context.Background(), &pkiSecrets{vals: map[string][]byte{}}, nil)
 	if err != nil {
@@ -62,7 +68,7 @@ func nodesHarness(t *testing.T) (*harness, *nodereg.Registry) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { st.Close() })
-	reg, err := nodereg.New(nodereg.Options{DB: st.DB, PKI: pki, IssuerKeyPEM: []byte("pub"), Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
+	reg, err := nodereg.New(nodereg.Options{DB: st.DB, PKI: pki, IssuerKeyPEM: []byte("pub"), Jobs: jobsSrc, Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
 	if err != nil {
 		t.Fatal(err)
 	}

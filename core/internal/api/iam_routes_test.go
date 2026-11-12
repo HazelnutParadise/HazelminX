@@ -81,6 +81,8 @@ type client struct {
 	ip      string
 	cookies []*http.Cookie
 	csrf    string
+	// ctx, when set, is the context of every request (to cancel one).
+	ctx context.Context
 }
 
 func (hs *harness) client(ip string) *client { return &client{hs: hs, ip: ip} }
@@ -99,6 +101,9 @@ func (c *client) do(method, path string, body any, hdr map[string]string) resp {
 		json.NewEncoder(&buf).Encode(body)
 	}
 	req := httptest.NewRequest(method, path, &buf)
+	if c.ctx != nil {
+		req = req.WithContext(c.ctx)
+	}
 	req.RemoteAddr = c.ip + ":4321"
 	req.Host = "panel.example.test"
 	if body != nil {

@@ -202,6 +202,27 @@ func (h *nodeRoutes) fail(c *gin.Context, err error) {
 	}
 }
 
+// changed reports whether a change was made: it succeeded, or it was
+// committed and only reading its result back failed (then the handler
+// audits it and answers with failedAfter). Otherwise it answers the error.
+func (h *nodeRoutes) changed(c *gin.Context, err error) bool {
+	if err == nil || errors.Is(err, nodereg.ErrAfterCommit) {
+		return true
+	}
+	h.fail(c, err)
+	return false
+}
+
+// failedAfter answers the read-back error of a change that was made.
+func (h *nodeRoutes) failedAfter(c *gin.Context, err error) bool {
+	if err == nil {
+		return false
+	}
+	slog.Error("node change was made but its result could not be read back", "path", c.FullPath(), "error", err)
+	fail(c, CodeInternal, "the change was made, but its result could not be read back; reload to see it")
+	return true
+}
+
 // auditTimeout bounds the audit write of a change that already happened.
 const auditTimeout = 10 * time.Second
 
@@ -305,12 +326,14 @@ func (h *nodeRoutes) update(c *gin.Context) {
 	ctx, done := changeCtx(c)
 	defer done()
 	n, err := h.reg.UpdateNode(ctx, c.Param("id"), ver, in, actor(c))
-	if err != nil {
-		h.fail(c, err)
+	if !h.changed(c, err) {
 		return
 	}
 	h.audit(c, "nodes.update", "node", n.ID, nodeScopeOf(n.ID), map[string]any{"name": n.Name, "tags": n.Tags, "group": n.Group})
 	setETag(c, n.Version)
+	if h.failedAfter(c, err) {
+		return
+	}
 	c.JSON(http.StatusOK, nodeResponse{Node: n})
 }
 
@@ -322,8 +345,7 @@ func (h *nodeRoutes) revoke(c *gin.Context) {
 	ctx, done := changeCtx(c)
 	defer done()
 	n, err := h.reg.RevokeNode(ctx, c.Param("id"), in.Reason, actor(c))
-	if err != nil {
-		h.fail(c, err)
+	if !h.changed(c, err) {
 		return
 	}
 	after := map[string]any{"state": n.State, "reason": in.Reason}
@@ -331,6 +353,9 @@ func (h *nodeRoutes) revoke(c *gin.Context) {
 		after["sessionClosedAt"], after["pending"] = n.Revocation.SessionClosedAt, n.Revocation.Pending
 	}
 	h.audit(c, "nodes.revoke", "node", n.ID, nodeScopeOf(n.ID), after)
+	if h.failedAfter(c, err) {
+		return
+	}
 	c.JSON(http.StatusOK, nodeResponse{Node: n})
 }
 
@@ -338,8 +363,7 @@ func (h *nodeRoutes) rotate(c *gin.Context) {
 	ctx, done := changeCtx(c)
 	defer done()
 	n, err := h.reg.RotateCertificate(ctx, c.Param("id"), actor(c))
-	if err != nil {
-		h.fail(c, err)
+	if !h.changed(c, err) {
 		return
 	}
 	after := map[string]any{}
@@ -347,6 +371,9 @@ func (h *nodeRoutes) rotate(c *gin.Context) {
 		after["newSerial"], after["deliveredAt"], after["error"] = r.NewSerial, r.DeliveredAt, r.Error
 	}
 	h.audit(c, "nodes.rotate-certificate", "node", n.ID, nodeScopeOf(n.ID), after)
+	if h.failedAfter(c, err) {
+		return
+	}
 	c.JSON(http.StatusOK, nodeResponse{Node: n})
 }
 
@@ -358,8 +385,7 @@ func (h *nodeRoutes) maintenance(c *gin.Context) {
 	ctx, done := changeCtx(c)
 	defer done()
 	n, affected, err := h.reg.SetMaintenance(ctx, c.Param("id"), in.Enabled, in.Reason, actor(c))
-	if err != nil {
-		h.fail(c, err)
+	if !h.changed(c, err) {
 		return
 	}
 	out := maintenanceResponse{Node: n, AffectedJobs: []affectedJob{}}
@@ -367,6 +393,9 @@ func (h *nodeRoutes) maintenance(c *gin.Context) {
 		out.AffectedJobs = append(out.AffectedJobs, affectedJob{ID: j.ID, Kind: j.Kind, State: j.State})
 	}
 	h.audit(c, "nodes.maintenance", "node", n.ID, nodeScopeOf(n.ID), map[string]any{"enabled": in.Enabled, "reason": in.Reason, "affectedJobs": len(out.AffectedJobs)})
+	if h.failedAfter(c, err) {
+		return
+	}
 	c.JSON(http.StatusOK, out)
 }
 
@@ -374,11 +403,13 @@ func (h *nodeRoutes) recheck(c *gin.Context) {
 	ctx, done := changeCtx(c)
 	defer done()
 	n, err := h.reg.RunRecheck(ctx, c.Param("id"), actor(c))
-	if err != nil {
-		h.fail(c, err)
+	if !h.changed(c, err) {
 		return
 	}
 	h.audit(c, "nodes.recheck", "node", n.ID, nodeScopeOf(n.ID), nil)
+	if h.failedAfter(c, err) {
+		return
+	}
 	c.JSON(http.StatusOK, nodeResponse{Node: n})
 }
 
@@ -390,11 +421,13 @@ func (h *nodeRoutes) remove(c *gin.Context) {
 	ctx, done := changeCtx(c)
 	defer done()
 	n, err := h.reg.Remove(ctx, c.Param("id"), in.Mode, actor(c))
-	if err != nil {
-		h.fail(c, err)
+	if !h.changed(c, err) {
 		return
 	}
 	h.audit(c, "nodes.remove", "node", n.ID, nodeScopeOf(n.ID), map[string]any{"mode": in.Mode})
+	if h.failedAfter(c, err) {
+		return
+	}
 	c.JSON(http.StatusOK, nodeResponse{Node: n})
 }
 
@@ -411,12 +444,14 @@ func (h *nodeRoutes) createEnrollment(c *gin.Context) {
 	defer done()
 	e, code, err := h.reg.CreateEnrollment(ctx, nodereg.CreateInput{Name: in.Name, Tags: in.Tags, Group: in.Group,
 		TTL: time.Duration(in.TTLSeconds) * time.Second, Actor: actor(c)})
-	if err != nil {
-		h.fail(c, err)
+	if !h.changed(c, err) {
 		return
 	}
 	// The audit row names the code by its public id only.
 	h.audit(c, "nodes.enrollment.create", "node-enrollment", e.ID, iam.Global, map[string]any{"codeId": e.CodeID, "expiresAt": e.ExpiresAt, "name": e.Name, "group": e.Group})
+	if h.failedAfter(c, err) {
+		return
+	}
 	c.JSON(http.StatusCreated, enrollmentCreatedResponse{Enrollment: e, Code: code.String()})
 }
 
@@ -456,11 +491,13 @@ func (h *nodeRoutes) withdrawEnrollment(c *gin.Context) {
 	ctx, done := changeCtx(c)
 	defer done()
 	e, err := h.reg.RevokeEnrollment(ctx, c.Param("id"), actor(c))
-	if err != nil {
-		h.fail(c, err)
+	if !h.changed(c, err) {
 		return
 	}
 	h.audit(c, "nodes.enrollment.withdraw", "node-enrollment", e.ID, iam.Global, map[string]any{"codeId": e.CodeID})
+	if h.failedAfter(c, err) {
+		return
+	}
 	c.JSON(http.StatusOK, enrollmentResponse{Enrollment: e})
 }
 
@@ -476,12 +513,14 @@ func (h *nodeRoutes) approve(c *gin.Context) {
 	ctx, done := changeCtx(c)
 	defer done()
 	n, err := h.reg.Approve(ctx, c.Param("id"), nodereg.ApproveInput{Actor: actor(c), ReplaceNodeID: in.ReplaceNodeID, AsNewNode: in.AsNewNode})
-	if err != nil {
-		h.fail(c, err)
+	if !h.changed(c, err) {
 		return
 	}
 	h.audit(c, "nodes.enrollment.approve", "node-enrollment", c.Param("id"), iam.Global,
 		map[string]any{"nodeId": n.ID, "fingerprint": n.Fingerprint, "replaceNodeId": in.ReplaceNodeID, "asNewNode": in.AsNewNode})
+	if h.failedAfter(c, err) {
+		return
+	}
 	c.JSON(http.StatusOK, nodeResponse{Node: n})
 }
 
@@ -489,11 +528,13 @@ func (h *nodeRoutes) reject(c *gin.Context) {
 	ctx, done := changeCtx(c)
 	defer done()
 	e, err := h.reg.Reject(ctx, c.Param("id"), actor(c))
-	if err != nil {
-		h.fail(c, err)
+	if !h.changed(c, err) {
 		return
 	}
 	h.audit(c, "nodes.enrollment.reject", "node-enrollment", e.ID, iam.Global, nil)
+	if h.failedAfter(c, err) {
+		return
+	}
 	c.JSON(http.StatusOK, enrollmentResponse{Enrollment: e})
 }
 

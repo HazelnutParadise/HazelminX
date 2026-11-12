@@ -21,6 +21,10 @@ func (r *Registry) AuthorizeNode(ctx context.Context, id nodes.NodeIdentity) err
 	var nodeID, reason string
 	switch e := r.db.QueryRowContext(ctx, `SELECT node_id, reason FROM node_retired_keys WHERE fingerprint = ?`, id.Fingerprint).Scan(&nodeID, &reason); {
 	case e == nil:
+		// If the node still holds this key (it was revoked or conflicted and
+		// then removed), the refusal is how the removal reaches the host.
+		_, _ = r.db.ExecContext(ctx, `UPDATE nodes SET revocation_notified_at = COALESCE(revocation_notified_at, ?) WHERE id = ? AND fingerprint = ? AND state IN ('revoked', 'removed')`,
+			stamp(r.now()), nodeID, id.Fingerprint)
 		return fmt.Errorf("%w: this key of node %s is retired (%s)", nodes.ErrNodeRevoked, nodeID, reason)
 	case !errors.Is(e, sql.ErrNoRows):
 		return e

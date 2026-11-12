@@ -459,7 +459,7 @@ func (r *Registry) UpdateNode(ctx context.Context, id string, version int64, p N
 	if k, _ := res.RowsAffected(); k == 0 {
 		return n, fmt.Errorf("%w: changed meanwhile", ErrVersionMismatch)
 	}
-	return r.GetNode(ctx, id)
+	return r.readBack(ctx, id)
 }
 
 // RevokeNode stops trusting a node (SEC-003): new connections are refused,
@@ -487,7 +487,7 @@ func (r *Registry) RevokeNode(ctx context.Context, id, reason, actor string) (No
 		return n, statef("node changed meanwhile")
 	}
 	r.closeAndRecord(ctx, n.Fingerprint, "node revoked")
-	return r.GetNode(ctx, id)
+	return r.readBack(ctx, id)
 }
 
 // closeAndRecord closes a live session of fp and records that the agent was
@@ -536,7 +536,7 @@ func (r *Registry) SetMaintenance(ctx context.Context, id string, on bool, reaso
 		affected, err = r.opts.Jobs.List(ctx, jobs.ListOptions{Node: n.Fingerprint,
 			States: []jobs.State{jobs.StatePrechecking, jobs.StateQueued, jobs.StateRunning, jobs.StateVerifying, jobs.StateRollingBack, jobs.StateCancelRequested, jobs.StateUnknown}})
 		if err != nil {
-			return n, nil, err
+			return Node{ID: id}, nil, afterCommit(err)
 		}
 	}
 	if !on {
@@ -544,7 +544,7 @@ func (r *Registry) SetMaintenance(ctx context.Context, id string, on bool, reaso
 			ch.Disconnect(n.Fingerprint, "maintenance ended; reconnect to re-check capabilities and health")
 		}
 	}
-	got, err := r.GetNode(ctx, id)
+	got, err := r.readBack(ctx, id)
 	return got, affected, err
 }
 
@@ -580,10 +580,7 @@ func (r *Registry) Remove(ctx context.Context, id, mode, actor string) (Node, er
 	// node is forgotten: removal must not be a way to clear a revocation.
 	switch n.State {
 	case StateRevoked, StateIdentityConflict:
-		reason := "revoked, then removed"
-		if n.State == StateIdentityConflict {
-			reason = "seen on two hosts, then removed"
-		}
+		reason := retireReason(n, "removed")
 		if _, err := tx.ExecContext(ctx, `INSERT INTO node_retired_keys (fingerprint, node_id, retired_at, reason) VALUES (?, ?, ?, ?) ON CONFLICT (fingerprint) DO NOTHING`,
 			n.Fingerprint, n.ID, now, reason); err != nil {
 			return n, err
@@ -603,7 +600,7 @@ func (r *Registry) Remove(ctx context.Context, id, mode, actor string) (Node, er
 		return n, err
 	}
 	r.closeAndRecord(ctx, n.Fingerprint, "node removed from management")
-	return r.GetNode(ctx, id)
+	return r.readBack(ctx, id)
 }
 
 // RotateCertificate issues a new certificate for the node's key and hands
@@ -620,7 +617,7 @@ func (r *Registry) RotateCertificate(ctx context.Context, id, actor string) (Nod
 		return n, err
 	}
 	r.deliver(ctx, n.Fingerprint)
-	return r.GetNode(ctx, id)
+	return r.readBack(ctx, id)
 }
 
 func (r *Registry) issueNext(ctx context.Context, n Node) error {
@@ -740,7 +737,7 @@ func (r *Registry) RunRecheck(ctx context.Context, id, actor string) (Node, erro
 	if _, online := r.liveMap()[n.Fingerprint]; online {
 		r.startRecheck(ctx, n.Fingerprint)
 	}
-	return r.GetNode(ctx, id)
+	return r.readBack(ctx, id)
 }
 
 // startRecheck submits the node.recheck job of the current request once.
@@ -770,4 +767,20 @@ func (r *Registry) startRecheck(ctx context.Context, fp string) {
 		return
 	}
 	_, _ = r.db.ExecContext(ctx, `UPDATE nodes SET recheck_job_id = ? WHERE id = ? AND recheck_request_id = ?`, jobID, n.ID, reqID)
+}
+
+// retireReason says why a node's key is retired: what happened to the key
+// (seen on two hosts, revoked) and then the step that retired it.
+func retireReason(n Node, step string) string {
+	var past []string
+	if n.ConflictAt != nil {
+		past = append(past, "seen on two hosts")
+	}
+	if n.State == StateRevoked || n.Revocation != nil {
+		past = append(past, "revoked")
+	}
+	if len(past) == 0 {
+		return step
+	}
+	return strings.Join(past, ", ") + ", then " + step
 }

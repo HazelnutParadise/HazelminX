@@ -230,7 +230,7 @@ func (r *Registry) CreateEnrollment(ctx context.Context, in CreateInput) (Enroll
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, id, code.ID(), code.Key(), name, encodeTags(tags), group, in.Actor, stamp(now), stamp(now.Add(ttl))); err != nil {
 			return Enrollment{}, zero, err
 		}
-		e, err := r.GetEnrollment(ctx, id)
+		e, err := r.readBackEnrollment(ctx, id)
 		return e, code, err
 	}
 	return Enrollment{}, zero, errors.New("nodereg: could not draw an unused code id")
@@ -299,7 +299,7 @@ func (r *Registry) RevokeEnrollment(ctx context.Context, id, actor string) (Enro
 	if k, _ := res.RowsAffected(); k == 0 {
 		return e, statef("code was used meanwhile")
 	}
-	return r.GetEnrollment(ctx, id)
+	return r.readBackEnrollment(ctx, id)
 }
 
 // Reject refuses the host that used a code; the code is spent.
@@ -319,7 +319,7 @@ func (r *Registry) Reject(ctx context.Context, id, actor string) (Enrollment, er
 	if k, _ := res.RowsAffected(); k == 0 {
 		return e, statef("enrollment was decided meanwhile")
 	}
-	return r.GetEnrollment(ctx, id)
+	return r.readBackEnrollment(ctx, id)
 }
 
 // Approve accepts the host that used a code and issues its certificate.
@@ -341,6 +341,14 @@ func (r *Registry) Approve(ctx context.Context, id string, in ApproveInput) (Nod
 	}
 	if sameKey && (existing.State == StateRevoked || existing.State == StateIdentityConflict) {
 		return Node{}, statef("this key belongs to node %s, which is %s; the host must enroll with a new key", existing.ID, existing.State)
+	}
+	// A retired key (revoked, conflicted or replaced, also on a node removed
+	// since) is refused outright rather than offered a choice that would be
+	// refused too.
+	if blocked, err := r.keyBlocked(ctx, h.Fingerprint); err != nil {
+		return Node{}, err
+	} else if blocked {
+		return Node{}, statef("this key was revoked, replaced or seen on two hosts; the host must enroll with a new key")
 	}
 	var target *Node
 	switch {
@@ -426,8 +434,8 @@ func (r *Registry) Approve(ctx context.Context, id string, in ApproveInput) (Nod
 		}
 	default:
 		// Replace: the old key is retired for good, the node keeps its ID.
-		if _, err = tx.ExecContext(ctx, `INSERT INTO node_retired_keys (fingerprint, node_id, retired_at, reason) VALUES (?, ?, ?, 'replaced at re-enrollment') ON CONFLICT (fingerprint) DO NOTHING`,
-			target.Fingerprint, nodeID, now); err != nil {
+		if _, err = tx.ExecContext(ctx, `INSERT INTO node_retired_keys (fingerprint, node_id, retired_at, reason) VALUES (?, ?, ?, ?) ON CONFLICT (fingerprint) DO NOTHING`,
+			target.Fingerprint, nodeID, now, retireReason(*target, "replaced at re-enrollment")); err != nil {
 			return Node{}, err
 		}
 		_, err = tx.ExecContext(ctx, `UPDATE nodes SET fingerprint = ?, public_key = ?, `+reset+` WHERE id = ?`,
@@ -469,7 +477,7 @@ func (r *Registry) Approve(ctx context.Context, id string, in ApproveInput) (Nod
 	if ch := r.channel(); ch != nil && target != nil {
 		ch.Disconnect(target.Fingerprint, "node enrolled again")
 	}
-	return r.GetNode(ctx, nodeID)
+	return r.readBack(ctx, nodeID)
 }
 
 // ---- agent listener -----------------------------------------------------------

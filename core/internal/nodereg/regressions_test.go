@@ -173,3 +173,72 @@ func TestKeyOfARevokedOrConflictedNodeStaysRefusedAfterRemoval(t *testing.T) {
 		})
 	}
 }
+
+// Third review of PR #143: an offline node that is revoked and then removed
+// shows the removal as synced once its agent calls and is refused.
+func TestRemovalOfARevokedNodeIsSyncedWhenItsAgentIsRefused(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	h := newHost("vm", "")
+	n := e.enroll(h, CreateInput{}, ApproveInput{})
+	if _, err := e.reg.RevokeNode(ctx, n.ID, "", "usr_owner"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.reg.Remove(ctx, n.ID, Unmanage, "usr_owner"); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := e.reg.GetNode(ctx, n.ID); !slices.Contains(got.PendingSync, SyncRemoval) {
+		t.Fatalf("removal of an offline node not pending: %v", got.PendingSync)
+	}
+	if err := e.reg.AuthorizeNode(ctx, identity(h.fp, n.Certificate.Serial)); !errors.Is(err, nodes.ErrNodeRevoked) {
+		t.Fatalf("refused: %v", err)
+	}
+	if got, _ := e.reg.GetNode(ctx, n.ID); len(got.PendingSync) != 0 {
+		t.Fatalf("removal still pending after the agent was refused: %v", got.PendingSync)
+	}
+}
+
+// A key that no node holds any more because it was replaced is refused
+// outright on approval, not answered with a choice whose options would all
+// be refused.
+func TestApprovingARetiredKeyIsRefusedWithoutOfferingAChoice(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	old := newHost("vm", "m1")
+	n := e.enroll(old, CreateInput{}, ApproveInput{})
+	waiting, code := e.newCode(CreateInput{})
+	e.claim(old, code)
+	fresh := newHost("vm", "m1")
+	en, code2 := e.newCode(CreateInput{})
+	e.claim(fresh, code2)
+	if _, err := e.reg.Approve(ctx, en.ID, ApproveInput{Actor: "usr_owner", ReplaceNodeID: n.ID}); err != nil {
+		t.Fatal(err)
+	}
+	_, err := e.reg.Approve(ctx, waiting.ID, ApproveInput{Actor: "usr_owner"})
+	var choice *ChoiceRequiredError
+	if errors.As(err, &choice) || !errors.Is(err, ErrState) {
+		t.Fatalf("retired key: want a plain refusal, got %v", err)
+	}
+}
+
+// The retired key keeps the whole history: seen on two hosts, revoked,
+// then removed.
+func TestRetiredKeyReasonKeepsTheHistory(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	h := newHost("vm", "m1")
+	n := e.enroll(h, CreateInput{}, ApproveInput{})
+	waiting, code := e.newCode(CreateInput{})
+	e.claim(h, code)
+	e.reg.OnConflict(h.fp)
+	if _, err := e.reg.RevokeNode(ctx, n.ID, "", "usr_owner"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.reg.Remove(ctx, n.ID, Unmanage, "usr_owner"); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := e.reg.GetEnrollment(ctx, waiting.ID)
+	if len(got.MatchingNodes) != 1 || got.MatchingNodes[0].KeyRetiredReason != "seen on two hosts, revoked, then removed" {
+		t.Fatalf("reason: %+v", got.MatchingNodes)
+	}
+}
