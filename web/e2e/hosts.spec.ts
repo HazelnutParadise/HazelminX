@@ -101,7 +101,8 @@ test("add a host: the code is shown once, the host's report is checked, then it 
   expect(claimed.status).toBe(202);
   expect(claimed.body.status).toBe("pending");
   await expect(page.getByText(host.hostname, { exact: true })).toBeVisible({ timeout: 10_000 });
-  for (const v of [host.machineId, "Debian 13 · arm64", "0.1.0"]) await expect(page.getByText(v, { exact: true })).toBeVisible();
+  for (const v of [host.machineId, "Debian 13 · arm64", "0.1.0"])
+    await expect(page.getByText(v, { exact: true })).toBeVisible();
   await expect(page.getByText("沒有相同金鑰或相同 machine-id 的既有主機。")).toBeVisible();
   await scanScreen(page, errors, "add host · check");
 
@@ -169,7 +170,9 @@ test("rename, maintenance, certificate rotation and revocation", async ({ page }
   dialog = await rowAction(page, name, "進入維護");
   await dialog.getByLabel("原因").fill("e2e");
   await dialog.getByRole("button", { name: `進入維護 ${name}` }).click();
-  await expect(page.getByRole("dialog", { name: `${name} 已進入維護` })).toContainText("這台主機上沒有還沒完成的工作。");
+  await expect(page.getByRole("dialog", { name: `${name} 已進入維護` })).toContainText(
+    "這台主機上沒有還沒完成的工作。",
+  );
   await page.getByRole("button", { name: "完成" }).click();
   await expect(row(page, name)).toContainText("維護中");
   dialog = await rowAction(page, name, "結束維護");
@@ -245,7 +248,10 @@ test("an unused code can be withdrawn; a rejected host stays refused", async ({ 
   const host = fakeHost();
   expect((await enrollAs(host, code)).status).toBe(202);
   await page.getByRole("button", { name: "不是，拒絕" }).click();
-  await page.getByRole("dialog").getByRole("button", { name: `拒絕 ${host.hostname}` }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: `拒絕 ${host.hostname}` })
+    .click();
   await expect(page.getByText("已拒絕這台主機")).toBeVisible();
   const again = await enrollAs(host, code);
   expect(again.status).toBe(403);

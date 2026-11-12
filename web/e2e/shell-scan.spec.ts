@@ -5,7 +5,15 @@ const WIDTHS = [360, 768, 1024, 1280, 1440, 1920];
 const DEV = !process.env.HAZELMINX_E2E_URL;
 
 /** Shell pages: an ordinary page, a nested path, the host list and add-host form, the 404 page and (dev server only) the shared component gallery. */
-const PAGES = ["/", "/settings", "/storage/backups/files", "/nodes", "/nodes/new", "/no-such-page", ...(DEV ? ["/__dev/components"] : [])];
+const PAGES = [
+  "/",
+  "/settings",
+  "/storage/backups/files",
+  "/nodes",
+  "/nodes/new",
+  "/no-such-page",
+  ...(DEV ? ["/__dev/components"] : []),
+];
 
 interface Case {
   path: string;

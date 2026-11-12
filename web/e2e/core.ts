@@ -207,7 +207,10 @@ export function fakeHost(over: Partial<FakeHost> = {}): FakeHost {
  * Sends POST /agent/v1/enroll as `hazelminx-agent enroll` does after it fetched the CA. The listener's
  * certificate comes from Core's own CA, which this test does not pin, so TLS verification is off here.
  */
-export async function enrollAs(host: FakeHost, code: string): Promise<{ status: number; body: Record<string, unknown> }> {
+export async function enrollAs(
+  host: FakeHost,
+  code: string,
+): Promise<{ status: number; body: Record<string, unknown> }> {
   const ctx = await request.newContext({ baseURL: AGENT_URL, ignoreHTTPSErrors: true });
   try {
     const res = await ctx.post("/agent/v1/enroll", {
