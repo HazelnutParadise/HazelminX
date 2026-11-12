@@ -18,6 +18,7 @@ import (
 	"github.com/HazelnutParadise/hazelminx/core/internal/confirm"
 	"github.com/HazelnutParadise/hazelminx/core/internal/iam"
 	"github.com/HazelnutParadise/hazelminx/core/internal/jobs"
+	"github.com/HazelnutParadise/hazelminx/core/internal/plans"
 	"github.com/gin-gonic/gin"
 )
 
@@ -46,6 +47,7 @@ type Server struct {
 	origin    string           // configured public origin for passkeys; "" derives it per request
 	jobs      *jobs.Engine     // set by RegisterJobs
 	confirm   *confirm.Service // set by MountConfirmations
+	plans     *plans.Service   // set by MountChangePlans
 	// platform reports platform-level degradation (addendum 03 機制四);
 	// ticket 017 wires the detectors. Nil means not degraded.
 	platform func() *PlatformDegradation
@@ -118,6 +120,8 @@ type overviewResponse struct {
 	// JobKinds lists the registered job kinds (when the job engine is
 	// mounted).
 	JobKinds []string `json:"jobKinds,omitempty"`
+	// ChangePlanKinds lists the registered change-plan kinds.
+	ChangePlanKinds []string `json:"changePlanKinds,omitempty"`
 }
 
 type overviewOperation struct {

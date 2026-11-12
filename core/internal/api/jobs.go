@@ -36,7 +36,7 @@ func (s *Server) RegisterJobs(e *jobs.Engine) {
 		Summary:    "submit a job; the same requestId replays the same job, changed content is REQUEST_ID_CONFLICT",
 		Permission: "platform:write on the global scope", Request: jobs.SubmitRequest{}, LongRunning: true, DryRun: true,
 		Responses: []Response{{Status: 202, Body: JobAccepted{}, Headers: []string{"Location"}}, {Status: 200, Body: DryRunResult{}, Description: "dryRun=true preview; preview is a jobs.Preview"}},
-		Errors:    []string{CodeRequestIDConflict, CodePayloadTooLarge, CodePlatformDegraded, CodeConfirmRequired}}, write, h.submit)
+		Errors:    []string{CodeRequestIDConflict, CodePayloadTooLarge, CodePlatformDegraded, CodeConfirmRequired, CodeChangePlanRequired}}, write, h.submit)
 	s.handle(g, base, Operation{Method: "GET", Path: base + "/jobs/{id}", ID: "getJob", Tag: "jobs", Auth: true,
 		Summary: "job record: state, steps, progress, diagnostics, completion checks, cancellable", Permission: "platform:read on the global scope",
 		Responses: []Response{{Status: 200, Body: jobResponse{}}}}, read, h.get)
@@ -155,6 +155,14 @@ func (h *jobsHandler) submit(c *gin.Context) {
 		return
 	}
 	ctx := c.Request.Context()
+	// Kinds owned by a change plan run only from an approved plan.
+	if h.srv.plans != nil && h.srv.plans.RequiresPlan(req.Kind) {
+		e := newError(CodeChangePlanRequired, "jobs of kind "+req.Kind+" run only from an approved change plan; create one with POST /management/v1/change-plans")
+		e.RequestID = req.RequestID
+		e.SuggestedActions = []string{"create-change-plan"}
+		respond(c, e)
+		return
+	}
 	// The requester is always the signed-in account; a body cannot file a
 	// job under someone else's name.
 	if p := Principal(c); p != nil {

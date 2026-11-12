@@ -58,6 +58,11 @@ const (
 	CodeListQueryExpired   = "LIST_QUERY_EXPIRED"
 	CodeListQueryLimit     = "LIST_QUERY_LIMIT_REACHED"
 	CodeTooManyAttempts    = "TOO_MANY_ATTEMPTS"
+	// Change plans (ticket 016.1).
+	CodeChangePlanChanged  = "CHANGE_PLAN_CHANGED"
+	CodeChangePlanExpired  = "CHANGE_PLAN_EXPIRED"
+	CodeChangePlanState    = "CHANGE_PLAN_STATE"
+	CodeChangePlanRequired = "CHANGE_PLAN_REQUIRED"
 	// Second factors and sessions (ticket 014).
 	CodeLoginChallengeInvalid = "LOGIN_CHALLENGE_INVALID"
 	CodeSecondFactorInvalid   = "SECOND_FACTOR_INVALID"
@@ -100,6 +105,10 @@ var errorTable = []ErrorCode{
 	{CodeListQueryNotReady, http.StatusConflict, true, "背景查詢還沒成功完成；依 jobId 追蹤工作。"},
 	{CodeListQueryExpired, http.StatusGone, false, "背景查詢的結果已過 7 天保存期限並已刪除；請重新提交查詢。"},
 	{CodeListQueryLimit, http.StatusConflict, false, "這個帳號保存的背景查詢已達上限；結果在提交 7 天後刪除。"},
+	{CodeChangePlanChanged, http.StatusConflict, false, "計畫的內容或目標版本和你審查的不同；原批准不能用。details.targets 寫出哪個目標從哪一版變成哪一版，details.planned 與 details.current 是審查時與現在的差異；請重新產生計畫。"},
+	{CodeChangePlanExpired, http.StatusConflict, false, "計畫已過有效期限，不能再批准或執行；請重新產生計畫。"},
+	{CodeChangePlanState, http.StatusConflict, false, "計畫目前的狀態不允許這個操作，例如已拒絕、已撤回、已失效、已執行或還沒批准。"},
+	{CodeChangePlanRequired, http.StatusConflict, false, "這類工作要先產生變更計畫並經批准，不能直接建立；請改用 POST /management/v1/change-plans。"},
 	{CodeTooManyAttempts, http.StatusTooManyRequests, true, "嘗試太多次，請稍後再試；retryAfterSeconds 寫出要等多久。"},
 	{CodeLoginChallengeInvalid, http.StatusUnauthorized, false, "登入第二步的挑戰已過期、已用過或答錯太多次，請重新輸入密碼。"},
 	{CodeSecondFactorInvalid, http.StatusUnauthorized, false, "驗證碼、復原碼或 Passkey 沒有通過。"},

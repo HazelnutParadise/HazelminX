@@ -45,6 +45,7 @@ type Options struct {
 // principal and decides permissions itself, so no route can forget a check.
 type Service struct {
 	o     Options
+	gate  func(ctx context.Context, req jobs.SubmitRequest) error
 	mu    sync.RWMutex
 	kinds map[string]Kind
 	// byJob maps a job kind to the plan kind that owns it.
@@ -65,6 +66,11 @@ func New(o Options) *Service {
 const writeTimeout = 10 * time.Second
 
 func (s *Service) now() time.Time { return s.o.Now().UTC() }
+
+// SetGate installs the write gate an execution passes before it is claimed
+// (platform degraded, a pending confirmation on the same resources…). It is
+// set once while the server is assembled.
+func (s *Service) SetGate(g func(ctx context.Context, req jobs.SubmitRequest) error) { s.gate = g }
 
 // Register adds a plan kind. Names and job kinds must be unique.
 func (s *Service) Register(k Kind) error {
@@ -556,7 +562,11 @@ func (s *Service) Execute(ctx context.Context, p *iam.Principal, id, sentDigest,
 		if pl.Execution == nil || pl.Execution.RequestID != requestID {
 			return nil, ErrRequestIDTaken
 		}
-		return s.submit(ctx, pl, k, true)
+		req, err := s.jobRequest(pl, k)
+		if err != nil {
+			return nil, err
+		}
+		return s.submit(ctx, pl, req, true)
 	}
 	if err := s.liveIn(ctx, p, pl, src, StateApproved); err != nil {
 		return nil, err
@@ -569,8 +579,17 @@ func (s *Service) Execute(ctx context.Context, p *iam.Principal, id, sentDigest,
 	}
 	now := s.now()
 	by := actor(p)
-	pl.State, pl.UpdatedAt = StateExecuted, now
 	pl.Execution = &Execution{RequestID: requestID, By: by, At: now}
+	req, err := s.jobRequest(pl, k)
+	if err != nil {
+		return nil, err
+	}
+	if s.gate != nil {
+		if err := s.gate(ctx, req); err != nil {
+			return nil, err
+		}
+	}
+	pl.State, pl.UpdatedAt = StateExecuted, now
 	err = s.transition(ctx, pl, StateApproved, `request_id = ?, executed_by = ?, executed_at = ?`, []any{requestID, by.ID, stamp(now)},
 		func(ctx context.Context, tx *sql.Tx) error {
 			return s.audit(ctx, tx, p, pl, "change-plans.execute", src, map[string]any{"state": StateApproved},
@@ -582,14 +601,14 @@ func (s *Service) Execute(ctx context.Context, p *iam.Principal, id, sentDigest,
 	if err != nil {
 		return nil, err
 	}
-	return s.submit(ctx, pl, k, false)
+	return s.submit(ctx, pl, req, false)
 }
 
-// submit creates (or finds again) the job of an executed plan.
-func (s *Service) submit(ctx context.Context, pl *Plan, k Kind, replay bool) (*ExecuteResult, error) {
+// jobRequest is the job an executed plan runs as.
+func (s *Service) jobRequest(pl *Plan, k Kind) (jobs.SubmitRequest, error) {
 	req, err := k.Job(pl)
 	if err != nil {
-		return nil, err
+		return jobs.SubmitRequest{}, err
 	}
 	req.RequestID = pl.Execution.RequestID
 	req.Requester = pl.Execution.By.ID
@@ -602,8 +621,13 @@ func (s *Service) submit(ctx context.Context, pl *Plan, k Kind, replay bool) (*E
 		req.Kind = k.JobKind()
 	}
 	if req.Kind != k.JobKind() {
-		return nil, fmt.Errorf("plans: kind %s built a %s job, not its own %s", k.Name(), req.Kind, k.JobKind())
+		return jobs.SubmitRequest{}, fmt.Errorf("plans: kind %s built a %s job, not its own %s", k.Name(), req.Kind, k.JobKind())
 	}
+	return req, nil
+}
+
+// submit creates (or finds again) the job of an executed plan.
+func (s *Service) submit(ctx context.Context, pl *Plan, req jobs.SubmitRequest, replay bool) (*ExecuteResult, error) {
 	wctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), writeTimeout)
 	defer cancel()
 	job, dedup, err := s.o.Jobs.Submit(wctx, req)

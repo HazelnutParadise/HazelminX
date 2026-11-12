@@ -26,6 +26,7 @@ import (
 	"github.com/HazelnutParadise/hazelminx/core/internal/jobs"
 	"github.com/HazelnutParadise/hazelminx/core/internal/nodereg"
 	"github.com/HazelnutParadise/hazelminx/core/internal/nodes"
+	"github.com/HazelnutParadise/hazelminx/core/internal/plans"
 	"github.com/HazelnutParadise/hazelminx/core/internal/secrets"
 	"github.com/HazelnutParadise/hazelminx/core/internal/store"
 	"github.com/HazelnutParadise/hazelminx/core/web"
@@ -156,6 +157,9 @@ func run(args []string) error {
 	router.MountListQueries(listQueries)
 	go listQueries.RunPurger(ctx, time.Hour)
 	router.MountConfirmations(confirm.New(st.DB, nil))
+	// Change plans (ticket 016.1). Resource tickets register their plan
+	// kinds on this service; until then it has none.
+	router.MountChangePlans(plans.New(plans.Options{DB: st.DB, Audit: identity, Jobs: engine}))
 	if err := announceSetup(ctx, identity, os.Stdout); err != nil {
 		return err
 	}

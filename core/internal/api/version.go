@@ -1,6 +1,8 @@
 package api
 
 import (
+	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -52,6 +54,27 @@ func requireIfMatch(c *gin.Context) (version int64, ok bool) {
 		return 0, false
 	}
 	return v, true
+}
+
+// versionConflict is the 412 for a stale If-Match that also shows what the
+// resource holds now next to what the caller sent (T-030), so the second
+// writer sees the difference instead of a bare refusal. conflictingFields
+// are the fields the caller sent whose current value differs from theirs.
+func versionConflict(resourceID string, current int64, now, yours map[string]any) apiError {
+	e := versionMismatch(resourceID, current)
+	var fields []string
+	for k, v := range yours {
+		if fmt.Sprint(now[k]) != fmt.Sprint(v) {
+			fields = append(fields, k)
+		}
+	}
+	sort.Strings(fields)
+	if fields == nil {
+		fields = []string{}
+	}
+	e.Details["current"], e.Details["yours"], e.Details["conflictingFields"] = now, yours, fields
+	e.SuggestedActions = []string{"discard-mine", "reload-and-edit"}
+	return e
 }
 
 // versionMismatch is the 412 for a stale If-Match.

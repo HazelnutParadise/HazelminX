@@ -603,6 +603,14 @@ func (s *Server) updateUser(c *gin.Context) {
 		return
 	}
 	u, err := s.iam.UpdateUser(ctx, p, c.Param("id"), ver, in, source(c))
+	var vm *iam.VersionMismatchError
+	if errors.As(err, &vm) && in.DisplayName != nil {
+		// T-030: show what the first writer saved next to this edit.
+		if cur, gerr := s.iam.GetUser(ctx, p, c.Param("id")); gerr == nil {
+			respond(c, versionConflict(c.Param("id"), cur.Version, map[string]any{"displayName": cur.DisplayName}, map[string]any{"displayName": *in.DisplayName}))
+			return
+		}
+	}
 	if err != nil {
 		failErr(c, err)
 		return
