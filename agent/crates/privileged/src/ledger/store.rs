@@ -864,9 +864,14 @@ pub(crate) mod tests {
         let one = l.export(0, 10, Some(10)).unwrap();
         assert_eq!(one.lines.len(), 1);
         assert!(one.more);
-        let line = one.lines[0].len();
-        let two = l.export(0, 10, Some(line * 2 + 1)).unwrap();
+        // Lines differ in length (RFC 3339 drops trailing zeros of the
+        // fractional seconds), so size the cap from the first two lines
+        // themselves: exactly their total fits, the third does not.
+        let cap = b.lines[0].len() + b.lines[1].len();
+        let two = l.export(0, 10, Some(cap)).unwrap();
         assert_eq!(two.lines.len(), 2);
+        assert!(two.more);
+        assert_eq!(l.export(0, 10, Some(cap - 1)).unwrap().lines.len(), 1);
         assert_eq!(two.verify(None).unwrap().seq, 2);
     }
 }
