@@ -640,7 +640,7 @@ describe("review regressions", () => {
   it("keeps the maintenance result when the host leaves the filtered list", async () => {
     const core = coreWith();
     core.on(`PUT ${B}/nodes/jp-02/maintenance`, () => {
-      const after = { ...jp, maintenance: { enabled: true, reason: "", since: NOW } };
+      const after = node({ ...jp, maintenance: { enabled: true, reason: "", since: NOW } as never });
       core.on(`GET ${B}/nodes`, { status: 200, body: list([tw, after, mini]) });
       return {
         status: 200,
@@ -710,7 +710,7 @@ describe("review regressions", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: RequestInfo | URL) => {
-        const url = String(input);
+        const url = input instanceof Request ? input.url : input.toString();
         if (url.startsWith(`${B}/node-enrollments?state=pending_approval`))
           return Response.json(list([pendingOne] as never));
         if (url.startsWith(`${B}/node-enrollments?state=waiting`)) return Response.json(list([waitingOne] as never));
