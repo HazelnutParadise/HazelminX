@@ -163,6 +163,11 @@ type NodeMatch struct {
 	State  string `json:"state"`
 	// Reason is MatchSameKey or MatchMachineID.
 	Reason string `json:"reason"`
+	// KeyRetired: the enrolling key was revoked, seen on two hosts or
+	// replaced while it belonged to this node, and can never be approved
+	// again (only a new key can take the node over).
+	KeyRetired       bool   `json:"keyRetired"`
+	KeyRetiredReason string `json:"keyRetiredReason,omitempty"`
 }
 
 const (
@@ -558,7 +563,12 @@ func (r *Registry) Remove(ctx context.Context, id, mode, actor string) (Node, er
 	default:
 		return Node{}, validationf("mode must be one of %s, %s, %s, %s", Unmanage, RemoveAgent, RemoveClusterNode, RemoveWorkloads)
 	}
-	n, err := r.loadNode(ctx, r.db, "id = ?", id)
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return Node{}, err
+	}
+	defer tx.Rollback()
+	n, err := r.loadNode(ctx, tx, "id = ?", id)
 	if err != nil {
 		return n, err
 	}
@@ -566,10 +576,30 @@ func (r *Registry) Remove(ctx context.Context, id, mode, actor string) (Node, er
 		return n, statef("node is already removed")
 	}
 	now := stamp(r.now())
-	if _, err := r.db.ExecContext(ctx, `UPDATE nodes SET state = 'removed', removed_at = ?, removed_by = ?, removal_mode = ?, maintenance = 0,
+	// A key that was revoked or seen on two hosts stays refused after the
+	// node is forgotten: removal must not be a way to clear a revocation.
+	switch n.State {
+	case StateRevoked, StateIdentityConflict:
+		reason := "revoked, then removed"
+		if n.State == StateIdentityConflict {
+			reason = "seen on two hosts, then removed"
+		}
+		if _, err := tx.ExecContext(ctx, `INSERT INTO node_retired_keys (fingerprint, node_id, retired_at, reason) VALUES (?, ?, ?, ?) ON CONFLICT (fingerprint) DO NOTHING`,
+			n.Fingerprint, n.ID, now, reason); err != nil {
+			return n, err
+		}
+	}
+	res, err := tx.ExecContext(ctx, `UPDATE nodes SET state = 'removed', removed_at = ?, removed_by = ?, removal_mode = ?, maintenance = 0,
 		revocation_closed_at = NULL, revocation_notified_at = NULL,
 		next_cert_serial = NULL, next_cert_not_after = NULL, next_cert_pem = NULL, rotation_requested_at = NULL, rotation_delivered_at = NULL, rotation_error = '',
-		updated_at = ?, version = version + 1 WHERE id = ?`, now, actor, mode, now, id); err != nil {
+		updated_at = ?, version = version + 1 WHERE id = ? AND version = ?`, now, actor, mode, now, id, n.Version)
+	if err != nil {
+		return n, err
+	}
+	if k, _ := res.RowsAffected(); k == 0 {
+		return n, statef("node %s changed meanwhile", id)
+	}
+	if err := tx.Commit(); err != nil {
 		return n, err
 	}
 	r.closeAndRecord(ctx, n.Fingerprint, "node removed from management")

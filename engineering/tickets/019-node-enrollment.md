@@ -68,6 +68,6 @@
 
 - **NOD-008 未完成的部分**：「列出受影響服務」目前回的是節點上未完成的工作，因為平台還沒有服務的資料模型。使用者 2026-11-12 決定等票 044 有服務後再補（交接寫在 044 的 Notes）；那之前本票留在最上層，不移到 `done/`。主機的長期監控仍是票 020。
 - **SEC-004 的範圍**：Agent 只比對名字，不追 symlink；不同種類的資源不互相涵蓋（保留磁碟不等於保留磁碟上的路徑）。之後新增會改主機的動作（票 021 起），要在 `ActionSpec.touches` 宣告它碰的資源，Core 的工作要保留同一種資源。
-- 前端（另一張票）要用的 API：`GET/PATCH /management/v1/nodes{/id}`、`POST /management/v1/nodes/{id}/revoke`、`POST .../rotate-certificate`、`PUT .../maintenance`、`POST .../remove`、`POST .../recheck`、`POST/GET /management/v1/node-enrollments`、`GET/DELETE /management/v1/node-enrollments/{id}`、`POST .../approve`（`replaceNodeId`／`asNewNode`）、`POST .../reject`。畫板「等待主機連線」可以輪詢 `GET /management/v1/node-enrollments/{id}`，`state` 從 `waiting` 變 `pending_approval` 時顯示主機資料與 `matchingNodes`。
+- 前端（另一張票）要用的 API：`GET/PATCH /management/v1/nodes{/id}`、`POST /management/v1/nodes/{id}/revoke`、`POST .../rotate-certificate`、`PUT .../maintenance`、`POST .../remove`、`POST .../recheck`、`POST/GET /management/v1/node-enrollments`、`GET/DELETE /management/v1/node-enrollments/{id}`、`POST .../approve`（`replaceNodeId`／`asNewNode`）、`POST .../reject`。畫板「等待主機連線」可以輪詢 `GET /management/v1/node-enrollments/{id}`，`state` 從 `waiting` 變 `pending_approval` 時顯示主機資料與 `matchingNodes`。`matchingNodes` 的 `keyRetired` 為 true 時，這把金鑰曾被撤銷、身分衝突或被取代（原因在 `keyRetiredReason`），核准一定會被拒，畫面要提示主機換新金鑰重新註冊。
 - 設計缺口：畫板的註冊碼是三組（`HZX-7Q4M-2KD9-PX81`），實際是四組（`HZX-XXXX-XXXX-XXXX-XXXX`，決策 0031）；畫板沒有「同一台機器已有節點，要取代還是新建」的選擇、身分衝突狀態、撤銷待同步、憑證輪替中與失敗的樣子。
 - 已知風險（寫在 `engineering/architecture.md` 的前提假設）：經代理時同一來源猜錯碼太多次會擋住其他主機 10 分鐘；經代理時複製偵測可能誤判。

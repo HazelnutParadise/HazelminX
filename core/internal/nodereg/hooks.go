@@ -18,10 +18,10 @@ import (
 // was told (the revocation has then propagated).
 func (r *Registry) AuthorizeNode(ctx context.Context, id nodes.NodeIdentity) error {
 	// A retired key stays refused whatever else happens to it.
-	var nodeID string
-	switch e := r.db.QueryRowContext(ctx, `SELECT node_id FROM node_retired_keys WHERE fingerprint = ?`, id.Fingerprint).Scan(&nodeID); {
+	var nodeID, reason string
+	switch e := r.db.QueryRowContext(ctx, `SELECT node_id, reason FROM node_retired_keys WHERE fingerprint = ?`, id.Fingerprint).Scan(&nodeID, &reason); {
 	case e == nil:
-		return fmt.Errorf("%w: this key was replaced when node %s enrolled again", nodes.ErrNodeRevoked, nodeID)
+		return fmt.Errorf("%w: this key of node %s is retired (%s)", nodes.ErrNodeRevoked, nodeID, reason)
 	case !errors.Is(e, sql.ErrNoRows):
 		return e
 	}

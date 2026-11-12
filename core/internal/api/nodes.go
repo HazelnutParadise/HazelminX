@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"sort"
 	"strings"
@@ -201,7 +202,26 @@ func (h *nodeRoutes) fail(c *gin.Context, err error) {
 	}
 }
 
-// audit records a change to a node or an enrollment.
+// auditTimeout bounds the audit write of a change that already happened.
+const auditTimeout = 10 * time.Second
+
+// changeTimeout bounds a change to a node or an enrollment.
+const changeTimeout = 30 * time.Second
+
+// changeCtx is the context a change runs in. It does not follow the
+// request's cancellation: once the registry has committed, a caller that
+// went away must not turn the rest (reading the result back, the audit row)
+// into an error that skips the audit.
+func changeCtx(c *gin.Context) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.WithoutCancel(c.Request.Context()), changeTimeout)
+}
+
+// audit records a change to a node or an enrollment. The change has already
+// been made, so the row is written even when the caller has gone away: the
+// write does not follow the request's cancellation, and a failure is logged
+// as an error instead of being dropped. (The registry commits its change on its
+// own, often with side effects on live sessions, so the row is written
+// right after it rather than in the same transaction.)
 func (h *nodeRoutes) audit(c *gin.Context, action, kind, id string, scope iam.Scope, after map[string]any) {
 	p := Principal(c)
 	src := source(c)
@@ -212,7 +232,11 @@ func (h *nodeRoutes) audit(c *gin.Context, action, kind, id string, scope iam.Sc
 	if p != nil {
 		ev.ActorID, ev.ActorName = p.User.ID, p.User.Username
 	}
-	_ = h.s.iam.Record(c.Request.Context(), ev)
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(c.Request.Context()), auditTimeout)
+	defer cancel()
+	if err := h.s.iam.Record(ctx, ev); err != nil {
+		slog.Error("audit row for a node change could not be written", "action", action, "resource", kind, "id", id, "trace", src.TraceID, "error", err)
+	}
 }
 
 func actor(c *gin.Context) string {
@@ -278,7 +302,9 @@ func (h *nodeRoutes) update(c *gin.Context) {
 	if !ok {
 		return
 	}
-	n, err := h.reg.UpdateNode(c.Request.Context(), c.Param("id"), ver, in, actor(c))
+	ctx, done := changeCtx(c)
+	defer done()
+	n, err := h.reg.UpdateNode(ctx, c.Param("id"), ver, in, actor(c))
 	if err != nil {
 		h.fail(c, err)
 		return
@@ -293,7 +319,9 @@ func (h *nodeRoutes) revoke(c *gin.Context) {
 	if !bindJSON(c, &in, "body must be JSON, optionally with reason") {
 		return
 	}
-	n, err := h.reg.RevokeNode(c.Request.Context(), c.Param("id"), in.Reason, actor(c))
+	ctx, done := changeCtx(c)
+	defer done()
+	n, err := h.reg.RevokeNode(ctx, c.Param("id"), in.Reason, actor(c))
 	if err != nil {
 		h.fail(c, err)
 		return
@@ -307,7 +335,9 @@ func (h *nodeRoutes) revoke(c *gin.Context) {
 }
 
 func (h *nodeRoutes) rotate(c *gin.Context) {
-	n, err := h.reg.RotateCertificate(c.Request.Context(), c.Param("id"), actor(c))
+	ctx, done := changeCtx(c)
+	defer done()
+	n, err := h.reg.RotateCertificate(ctx, c.Param("id"), actor(c))
 	if err != nil {
 		h.fail(c, err)
 		return
@@ -325,7 +355,9 @@ func (h *nodeRoutes) maintenance(c *gin.Context) {
 	if !bindJSON(c, &in, "body must be JSON with enabled and optionally reason") {
 		return
 	}
-	n, affected, err := h.reg.SetMaintenance(c.Request.Context(), c.Param("id"), in.Enabled, in.Reason, actor(c))
+	ctx, done := changeCtx(c)
+	defer done()
+	n, affected, err := h.reg.SetMaintenance(ctx, c.Param("id"), in.Enabled, in.Reason, actor(c))
 	if err != nil {
 		h.fail(c, err)
 		return
@@ -339,7 +371,9 @@ func (h *nodeRoutes) maintenance(c *gin.Context) {
 }
 
 func (h *nodeRoutes) recheck(c *gin.Context) {
-	n, err := h.reg.RunRecheck(c.Request.Context(), c.Param("id"), actor(c))
+	ctx, done := changeCtx(c)
+	defer done()
+	n, err := h.reg.RunRecheck(ctx, c.Param("id"), actor(c))
 	if err != nil {
 		h.fail(c, err)
 		return
@@ -353,7 +387,9 @@ func (h *nodeRoutes) remove(c *gin.Context) {
 	if !bindJSON(c, &in, "body must be JSON with mode") {
 		return
 	}
-	n, err := h.reg.Remove(c.Request.Context(), c.Param("id"), in.Mode, actor(c))
+	ctx, done := changeCtx(c)
+	defer done()
+	n, err := h.reg.Remove(ctx, c.Param("id"), in.Mode, actor(c))
 	if err != nil {
 		h.fail(c, err)
 		return
@@ -371,7 +407,9 @@ func (h *nodeRoutes) createEnrollment(c *gin.Context) {
 		fail(c, CodeValidationFailed, "ttlSeconds must not be negative")
 		return
 	}
-	e, code, err := h.reg.CreateEnrollment(c.Request.Context(), nodereg.CreateInput{Name: in.Name, Tags: in.Tags, Group: in.Group,
+	ctx, done := changeCtx(c)
+	defer done()
+	e, code, err := h.reg.CreateEnrollment(ctx, nodereg.CreateInput{Name: in.Name, Tags: in.Tags, Group: in.Group,
 		TTL: time.Duration(in.TTLSeconds) * time.Second, Actor: actor(c)})
 	if err != nil {
 		h.fail(c, err)
@@ -415,7 +453,9 @@ func (h *nodeRoutes) getEnrollment(c *gin.Context) {
 }
 
 func (h *nodeRoutes) withdrawEnrollment(c *gin.Context) {
-	e, err := h.reg.RevokeEnrollment(c.Request.Context(), c.Param("id"), actor(c))
+	ctx, done := changeCtx(c)
+	defer done()
+	e, err := h.reg.RevokeEnrollment(ctx, c.Param("id"), actor(c))
 	if err != nil {
 		h.fail(c, err)
 		return
@@ -433,7 +473,9 @@ func (h *nodeRoutes) approve(c *gin.Context) {
 		fail(c, CodeValidationFailed, "replaceNodeId and asNewNode exclude each other")
 		return
 	}
-	n, err := h.reg.Approve(c.Request.Context(), c.Param("id"), nodereg.ApproveInput{Actor: actor(c), ReplaceNodeID: in.ReplaceNodeID, AsNewNode: in.AsNewNode})
+	ctx, done := changeCtx(c)
+	defer done()
+	n, err := h.reg.Approve(ctx, c.Param("id"), nodereg.ApproveInput{Actor: actor(c), ReplaceNodeID: in.ReplaceNodeID, AsNewNode: in.AsNewNode})
 	if err != nil {
 		h.fail(c, err)
 		return
@@ -444,7 +486,9 @@ func (h *nodeRoutes) approve(c *gin.Context) {
 }
 
 func (h *nodeRoutes) reject(c *gin.Context) {
-	e, err := h.reg.Reject(c.Request.Context(), c.Param("id"), actor(c))
+	ctx, done := changeCtx(c)
+	defer done()
+	e, err := h.reg.Reject(ctx, c.Param("id"), actor(c))
 	if err != nil {
 		h.fail(c, err)
 		return

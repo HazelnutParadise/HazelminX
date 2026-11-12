@@ -147,10 +147,16 @@ func (r *Registry) withMatches(ctx context.Context, e Enrollment) (Enrollment, e
 	return e, err
 }
 
-// matches lists nodes an enrolling host resembles: same key first.
+// matches lists nodes an enrolling host resembles: same key first. A node
+// that once held this key and retired it (revoked, conflicted or replaced)
+// counts as the same key and says so, so the approval screen shows why
+// approving is refused.
 func (r *Registry) matches(ctx context.Context, fp, machineID string) ([]NodeMatch, error) {
-	rows, err := r.db.QueryContext(ctx, `SELECT id, name, state, fingerprint FROM nodes WHERE fingerprint = ? OR (machine_id <> '' AND machine_id = ? AND state <> 'removed') ORDER BY fingerprint = ? DESC, name`,
-		fp, machineID, fp)
+	rows, err := r.db.QueryContext(ctx, `SELECT n.id, n.name, n.state, n.fingerprint, k.reason FROM nodes n
+		LEFT JOIN node_retired_keys k ON k.node_id = n.id AND k.fingerprint = ?
+		WHERE n.fingerprint = ? OR k.fingerprint IS NOT NULL OR (n.machine_id <> '' AND n.machine_id = ? AND n.state <> 'removed')
+		ORDER BY (n.fingerprint = ? OR k.fingerprint IS NOT NULL) DESC, n.name`,
+		fp, fp, machineID, fp)
 	if err != nil {
 		return nil, err
 	}
@@ -159,12 +165,19 @@ func (r *Registry) matches(ctx context.Context, fp, machineID string) ([]NodeMat
 	for rows.Next() {
 		var m NodeMatch
 		var f string
-		if err := rows.Scan(&m.NodeID, &m.Name, &m.State, &f); err != nil {
+		var retired sql.NullString
+		if err := rows.Scan(&m.NodeID, &m.Name, &m.State, &f, &retired); err != nil {
 			return nil, err
 		}
 		m.Reason = MatchMachineID
-		if f == fp {
+		if f == fp || retired.Valid {
 			m.Reason = MatchSameKey
+		}
+		switch {
+		case retired.Valid:
+			m.KeyRetired, m.KeyRetiredReason = true, retired.String
+		case f == fp && (m.State == StateRevoked || m.State == StateIdentityConflict):
+			m.KeyRetired, m.KeyRetiredReason = true, m.State
 		}
 		out = append(out, m)
 	}
@@ -413,7 +426,7 @@ func (r *Registry) Approve(ctx context.Context, id string, in ApproveInput) (Nod
 		}
 	default:
 		// Replace: the old key is retired for good, the node keeps its ID.
-		if _, err = tx.ExecContext(ctx, `INSERT INTO node_retired_keys (fingerprint, node_id, retired_at, reason) VALUES (?, ?, ?, 'replaced at re-enrollment')`,
+		if _, err = tx.ExecContext(ctx, `INSERT INTO node_retired_keys (fingerprint, node_id, retired_at, reason) VALUES (?, ?, ?, 'replaced at re-enrollment') ON CONFLICT (fingerprint) DO NOTHING`,
 			target.Fingerprint, nodeID, now); err != nil {
 			return Node{}, err
 		}

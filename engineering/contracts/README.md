@@ -49,7 +49,7 @@ Agent 主動連到 Core 的 Agent 入口（預設 `:9801`，路徑 `/agent/v1/co
 | 403 | `ENROLLMENT_GROUP_MISMATCH` | `group` 和碼的群組不同 |
 | 403 | `ENROLLMENT_REJECTED` | 管理員拒絕了這台主機 |
 | 403 | `ENROLLMENT_EXPIRED` | 24 小時內沒有人核對 |
-| 403 | `NODE_KEY_REVOKED` | 這把公鑰屬於已撤銷、已被取代或身分衝突的節點；要用 `--new-identity` 換一把金鑰再註冊 |
+| 403 | `NODE_KEY_REVOKED` | 這把公鑰屬於已撤銷、已被取代或身分衝突的節點（節點之後被移除也一樣）；要用 `--new-identity` 換一把金鑰再註冊 |
 | 429 | `TOO_MANY_ATTEMPTS` | 同一來源 10 分鐘內送了 20 次不存在或不對的碼（取 CA 與送出註冊碼合計） |
 
 被拒絕的請求不會改變碼的狀態，也不會延長有效期。
