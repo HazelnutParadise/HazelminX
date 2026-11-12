@@ -153,14 +153,12 @@ def overview() -> str:
         <div style="display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; background: var(--panel)">
           <div class="ncard">
             <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span class="mono" style="font-weight: 500">hazel-tw-01</span></div>
-            {U.tall_bar(DISK_USE["hazel-tw-01"]["data"], 931)}
-            <span class="note">資料碟 /mnt/data · 412 / 931 GiB · 30 天 +38 GiB · 預估 410 天後滿</span>
+            <span class="note">資料碟 /mnt/data · 412 / 931 GiB · 30 天 +38 GiB · 預估 410 天後滿</span>{U.tall_bar(DISK_USE["hazel-tw-01"]["data"], 931)}
             <span class="note">系統碟 / · 36 / 94 GiB</span>{U.tall_bar(DISK_USE["hazel-tw-01"]["sys"], 94)}
           </div>
           <div class="ncard">
             <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="mono" style="font-weight: 500">hazel-jp-02</span>{U.attr("attention", "沒用 UUID 掛載，目前用裝置名稱 sdb1。換插槽或重開機可能掛到別顆磁碟", "", "dng")}</div>
-            {U.tall_bar(DISK_USE["hazel-jp-02"]["data"], 931)}
-            <span class="note" style="color: var(--danger)">資料碟 /mnt/data · 870 / 931 GiB · 30 天 +121 GiB · 預估 15 天後滿</span>
+            <span class="note" style="color: var(--danger)">資料碟 /mnt/data · 870 / 931 GiB · 30 天 +121 GiB · 預估 15 天後滿</span>{U.tall_bar(DISK_USE["hazel-jp-02"]["data"], 931)}
             <span class="note">系統碟 / · 22 / 48 GiB</span>{U.tall_bar(DISK_USE["hazel-jp-02"]["sys"], 48)}
           </div>
         </div>
