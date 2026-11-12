@@ -40,14 +40,14 @@ func runRecheck(t *testing.T, fp func(testNode) string, health map[string]any) (
 	var mu sync.Mutex
 	var got []RecheckResult
 	h := &RecheckHandler{Runner: NewStepRunner(core.hub), Record: func(_ context.Context, jobID, node string, r RecheckResult) {
-		if jobID != "job_recheck" || node != n.fp {
+		if jobID != "req_recheck" || node != n.fp {
 			t.Errorf("recorded for %s %s", jobID, node)
 		}
 		mu.Lock()
 		got = append(got, r)
 		mu.Unlock()
 	}}
-	job := &jobs.Job{ID: "job_recheck", Kind: KindNodeRecheck, Node: n.fp, ControlGeneration: 1}
+	job := &jobs.Job{ID: "job_recheck", RequestID: "req_recheck", Kind: KindNodeRecheck, Node: n.fp, ControlGeneration: 1}
 	specs, err := h.Plan(context.Background(), job)
 	if err != nil {
 		t.Fatal(err)
@@ -99,5 +99,22 @@ func TestRecheckIsInconclusiveWithoutAllHostBasics(t *testing.T) {
 	r, err = runRecheck(t, func(n testNode) string { return n.fp }, nil)
 	if err != nil || r.State != RecheckInconclusive || r.Detail == "" {
 		t.Fatalf("agent without host.health: %+v %v", r, err)
+	}
+}
+
+// An agent too old for jobs v2 cannot be checked; that is inconclusive
+// (upgrade the agent), not a failed identity.
+func TestRecheckOfAnOldAgentIsInconclusive(t *testing.T) {
+	core := startCore(t, HubOptions{})
+	a, n := connect(t, core, agentOpts{caps: []protocol.Capability{{Name: protocol.CapJobs, Version: 1}, {Name: protocol.CapAgentInfo, Version: 1}}})
+	a.serve(t, func(any) []any { return nil })
+	var got []RecheckResult
+	h := &RecheckHandler{Runner: NewStepRunner(core.hub), Record: func(_ context.Context, _, _ string, r RecheckResult) { got = append(got, r) }}
+	job := &jobs.Job{ID: "job_old", RequestID: "req_old", Kind: KindNodeRecheck, Node: n.fp, Steps: []jobs.Step{{Index: 0}, {Index: 1}}}
+	if err := h.Execute(context.Background(), job, &job.Steps[0], &recorder{}); err != nil {
+		t.Fatalf("step 0: %v", err)
+	}
+	if len(got) != 1 || got[0].State != RecheckInconclusive {
+		t.Fatalf("%+v", got)
 	}
 }

@@ -83,9 +83,9 @@ func (r *Registry) onSession(ctx context.Context, f sessionFacts) {
 		r.opts.Logger.Warn("record node session", "node", n.ID, "error", err)
 		return
 	}
-	// The re-check after maintenance (or one asked for while offline) starts
-	// with the first session after it was asked for.
-	if rc := n.Maintenance.Recheck; rc != nil && rc.JobID == "" && !f.at.Before(rc.RequestedAt) {
+	// A re-check asked for after maintenance (or while the node was
+	// offline) starts on this session; startRecheck submits each request once.
+	if rc := n.Maintenance.Recheck; rc != nil && rc.requestID == "" {
 		r.startRecheck(ctx, f.fp)
 	}
 	rot := n.Certificate.Rotation

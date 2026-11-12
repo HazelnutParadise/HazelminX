@@ -39,11 +39,11 @@ type RecheckResult struct {
 	Detail string          `json:"detail,omitempty"`
 }
 
-// RecheckHandler implements node.recheck. Record receives the result once,
-// from the step that decides it.
+// RecheckHandler implements node.recheck. Record receives the result, with
+// the job's request id, from the step that decides it.
 type RecheckHandler struct {
 	Runner *StepRunner
-	Record func(ctx context.Context, jobID, node string, r RecheckResult)
+	Record func(ctx context.Context, requestID, node string, r RecheckResult)
 }
 
 func (h *RecheckHandler) Kind() string { return KindNodeRecheck }
@@ -59,7 +59,7 @@ func (h *RecheckHandler) Recheck(context.Context, *jobs.Job, *jobs.Step) error {
 
 func (h *RecheckHandler) record(ctx context.Context, job *jobs.Job, r RecheckResult) {
 	if h.Record != nil {
-		h.Record(ctx, job.ID, job.Node, r)
+		h.Record(ctx, job.RequestID, job.Node, r)
 	}
 }
 
@@ -67,6 +67,12 @@ func (h *RecheckHandler) Execute(ctx context.Context, job *jobs.Job, step *jobs.
 	switch step.Index {
 	case 0:
 		res, err := h.Runner.Execute(ctx, job, step, rep, Action{Name: protocol.CapAgentInfo, Version: 1})
+		var unsupported *jobs.StepError
+		if errors.As(err, &unsupported) && unsupported.Code == CodeCapabilityUnsupported {
+			// An agent too old to be checked: nothing is known either way.
+			h.record(ctx, job, RecheckResult{State: RecheckInconclusive, Detail: "the agent is too old to be checked (" + unsupported.Summary + "); upgrade the agent"})
+			return nil
+		}
 		if err != nil {
 			if !errors.Is(err, jobs.ErrDisconnected) {
 				h.record(ctx, job, RecheckResult{State: RecheckFailed, Detail: "agent.info: " + err.Error()})

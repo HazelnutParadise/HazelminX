@@ -123,6 +123,7 @@ type Recheck struct {
 	// IdentityMatches: the agent that answered is this node's.
 	IdentityMatches bool `json:"identityMatches"`
 	attempt         int
+	requestID       string
 }
 
 // Revocation records when it was asked for and when it reached the agent.
@@ -188,7 +189,7 @@ const nodeColumns = `id, name, tags, node_group, fingerprint, public_key, hostna
 	agent_version, agent_protocol_min, agent_protocol_max, protocol_version, capabilities, state,
 	cert_serial, cert_not_after, next_cert_serial, next_cert_not_after, next_cert_pem, rotation_requested_at, rotation_delivered_at, rotation_error,
 	maintenance, maintenance_reason, maintenance_since, maintenance_ended_at, recheck_requested_at,
-	recheck_attempt, recheck_job_id, recheck_state, recheck_result, recheck_finished_at,
+	recheck_attempt, recheck_request_id, recheck_job_id, recheck_state, recheck_result, recheck_finished_at,
 	revoked_at, revoke_reason, revoked_by, revocation_closed_at, revocation_notified_at, conflict_at,
 	removed_at, removed_by, removal_mode, last_contact_at, last_connected_at, last_remote_addr, created_at, updated_at, version`
 
@@ -199,7 +200,7 @@ func scanNode(sc scanner) (Node, error) {
 	var tags, caps, notAfter, created, updated string
 	var nextSerial, nextNotAfter, nextPEM, rotReq, rotDel sql.NullString
 	var mSince, mEnded, recheck, revAt, revClosed, revNotified, conflict, remAt, lastContact, lastConn sql.NullString
-	var rcJob, rcResult, rcFinished sql.NullString
+	var rcReq, rcJob, rcResult, rcFinished sql.NullString
 	var rcState string
 	var rcAttempt int
 	var maint int
@@ -209,7 +210,7 @@ func scanNode(sc scanner) (Node, error) {
 		&n.agent.version, &n.agent.protocolMin, &n.agent.protoMx, &n.agent.protocolVersion, &caps, &n.State,
 		&n.Certificate.Serial, &notAfter, &nextSerial, &nextNotAfter, &nextPEM, &rotReq, &rotDel, &rotErr,
 		&maint, &n.Maintenance.Reason, &mSince, &mEnded, &recheck,
-		&rcAttempt, &rcJob, &rcState, &rcResult, &rcFinished,
+		&rcAttempt, &rcReq, &rcJob, &rcState, &rcResult, &rcFinished,
 		&revAt, &revReason, &revBy, &revClosed, &revNotified, &conflict,
 		&remAt, &remBy, &remMode, &lastContact, &lastConn, &lastRemote, &created, &updated, &n.Version)
 	if err != nil {
@@ -230,7 +231,7 @@ func scanNode(sc scanner) (Node, error) {
 	n.Maintenance.Enabled = maint == 1
 	n.Maintenance.Since, n.Maintenance.EndedAt, n.Maintenance.RecheckRequestedAt = parseNull(mSince), parseNull(mEnded), parseNull(recheck)
 	if t := n.Maintenance.RecheckRequestedAt; t != nil {
-		rc := &Recheck{State: rcState, RequestedAt: *t, JobID: rcJob.String, FinishedAt: parseNull(rcFinished), attempt: rcAttempt}
+		rc := &Recheck{State: rcState, RequestedAt: *t, JobID: rcJob.String, FinishedAt: parseNull(rcFinished), attempt: rcAttempt, requestID: rcReq.String}
 		if rcResult.Valid {
 			var res nodes.RecheckResult
 			if json.Unmarshal([]byte(rcResult.String), &res) == nil {
@@ -262,7 +263,7 @@ func scanNode(sc scanner) (Node, error) {
 }
 
 // view adds what comes from the live channel and the clock.
-func (r *Registry) view(n Node, live map[string]nodes.ConnectionInfo) Node {
+func (r *Registry) view(ctx context.Context, n Node, live map[string]nodes.ConnectionInfo) Node {
 	now := r.now()
 	if c, ok := live[n.Fingerprint]; ok && (n.State == StateActive) {
 		seen := c.LastSeenAt.UTC()
@@ -315,7 +316,7 @@ func (r *Registry) view(n Node, live map[string]nodes.ConnectionInfo) Node {
 		}
 		if rec := n.Maintenance.Recheck; rec != nil {
 			if rec.State == "" {
-				rec.State = r.liveRecheckState(rec.JobID)
+				rec.State = r.liveRecheckState(ctx, rec)
 			}
 			if n.State == StateActive && (rec.State == RecheckPending || rec.State == RecheckChecking) {
 				n.PendingSync = append(n.PendingSync, SyncRecheck)
@@ -371,7 +372,7 @@ func (r *Registry) GetNode(ctx context.Context, id string) (Node, error) {
 	if err != nil {
 		return n, err
 	}
-	return r.view(n, r.liveMap()), nil
+	return r.view(ctx, n, r.liveMap()), nil
 }
 
 // ListNodes returns the nodes matching f, by name.
@@ -410,7 +411,7 @@ func (r *Registry) ListNodes(ctx context.Context, f NodeFilter) ([]Node, error) 
 			!strings.Contains(strings.ToLower(n.Group), q) && !strings.HasPrefix(n.ID, q) && !strings.HasPrefix(n.Fingerprint, q) {
 			continue
 		}
-		out = append(out, r.view(n, live))
+		out = append(out, r.view(ctx, n, live))
 	}
 	return out, nil
 }
@@ -519,7 +520,7 @@ func (r *Registry) SetMaintenance(ctx context.Context, id string, on bool, reaso
 			recheck_requested_at = NULL, updated_at = ?, version = version + 1 WHERE id = ?`, reason, now, now, id)
 	} else {
 		_, err = r.db.ExecContext(ctx, `UPDATE nodes SET maintenance = 0, maintenance_ended_at = ?, recheck_requested_at = ?, recheck_attempt = recheck_attempt + 1,
-			recheck_job_id = NULL, recheck_state = '', recheck_result = NULL, recheck_finished_at = NULL, updated_at = ?, version = version + 1 WHERE id = ?`,
+			recheck_request_id = NULL, recheck_job_id = NULL, recheck_state = '', recheck_result = NULL, recheck_finished_at = NULL, updated_at = ?, version = version + 1 WHERE id = ?`,
 			now, now, now, id)
 	}
 	if err != nil {
@@ -654,14 +655,17 @@ func (r *Registry) recordContact(ctx context.Context, fp string, at time.Time, r
 // yet, read from its job. A job that ended without a result is reported
 // for what it is: failed when it failed, inconclusive when it was cancelled
 // or its outcome is unknown.
-func (r *Registry) liveRecheckState(jobID string) string {
-	if jobID == "" {
+func (r *Registry) liveRecheckState(ctx context.Context, rc *Recheck) string {
+	switch {
+	case rc.requestID == "":
 		return RecheckPending
-	}
-	if r.opts.Jobs == nil {
+	case rc.JobID == "" || r.opts.Jobs == nil:
 		return RecheckChecking
 	}
-	j, err := r.opts.Jobs.Get(context.Background(), jobID)
+	j, err := r.opts.Jobs.Get(ctx, rc.JobID)
+	if errors.Is(err, jobs.ErrNotFound) {
+		return RecheckInconclusive
+	}
 	if err != nil {
 		return RecheckChecking
 	}
@@ -674,14 +678,14 @@ func (r *Registry) liveRecheckState(jobID string) string {
 	return RecheckChecking
 }
 
-// RecordRecheck stores a node.recheck result; results of an older job are
-// ignored.
-func (r *Registry) RecordRecheck(ctx context.Context, jobID, fp string, res nodes.RecheckResult) {
+// RecordRecheck stores a node.recheck result by the job's request id;
+// results of an older request are ignored.
+func (r *Registry) RecordRecheck(ctx context.Context, requestID, fp string, res nodes.RecheckResult) {
 	b, _ := json.Marshal(res)
-	_, err := r.db.ExecContext(ctx, `UPDATE nodes SET recheck_state = ?, recheck_result = ?, recheck_finished_at = ? WHERE fingerprint = ? AND recheck_job_id = ?`,
-		res.State, string(b), stamp(r.now()), fp, jobID)
+	_, err := r.db.ExecContext(ctx, `UPDATE nodes SET recheck_state = ?, recheck_result = ?, recheck_finished_at = ? WHERE fingerprint = ? AND recheck_request_id = ?`,
+		res.State, string(b), stamp(r.now()), fp, requestID)
 	if err != nil {
-		r.opts.Logger.Warn("record node re-check", "job", jobID, "error", err)
+		r.opts.Logger.Warn("record node re-check", "request", requestID, "error", err)
 	}
 }
 
@@ -699,7 +703,7 @@ func (r *Registry) RunRecheck(ctx context.Context, id, actor string) (Node, erro
 		return n, statef("node is in maintenance; the check runs when maintenance ends")
 	}
 	now := stamp(r.now())
-	if _, err := r.db.ExecContext(ctx, `UPDATE nodes SET recheck_requested_at = ?, recheck_attempt = recheck_attempt + 1, recheck_job_id = NULL,
+	if _, err := r.db.ExecContext(ctx, `UPDATE nodes SET recheck_requested_at = ?, recheck_attempt = recheck_attempt + 1, recheck_request_id = NULL, recheck_job_id = NULL,
 		recheck_state = '', recheck_result = NULL, recheck_finished_at = NULL, updated_at = ?, version = version + 1 WHERE id = ?`, now, now, id); err != nil {
 		return n, err
 	}
@@ -715,15 +719,25 @@ func (r *Registry) startRecheck(ctx context.Context, fp string) {
 		return
 	}
 	n, err := r.loadNode(ctx, r.db, "fingerprint = ?", fp)
-	if err != nil || n.State != StateActive || n.Maintenance.Enabled || n.Maintenance.Recheck == nil || n.Maintenance.Recheck.JobID != "" {
+	if err != nil || n.State != StateActive || n.Maintenance.Enabled || n.Maintenance.Recheck == nil || n.Maintenance.Recheck.requestID != "" {
 		return
 	}
 	rc := n.Maintenance.Recheck
 	reqID := fmt.Sprintf("recheck_%s_%d_%d", n.ID, rc.RequestedAt.UnixNano(), rc.attempt)
+	// Reserve the request first: only one caller submits it, and a job that
+	// finishes before its id is stored still finds where its result goes.
+	res, err := r.db.ExecContext(ctx, `UPDATE nodes SET recheck_request_id = ? WHERE id = ? AND recheck_attempt = ? AND recheck_request_id IS NULL`, reqID, n.ID, rc.attempt)
+	if err != nil {
+		return
+	}
+	if k, _ := res.RowsAffected(); k == 0 {
+		return
+	}
 	jobID, err := r.opts.SubmitRecheck(ctx, fp, reqID)
 	if err != nil {
 		r.opts.Logger.Warn("start node re-check", "node", n.ID, "error", err)
+		_, _ = r.db.ExecContext(ctx, `UPDATE nodes SET recheck_request_id = NULL WHERE id = ? AND recheck_request_id = ?`, n.ID, reqID)
 		return
 	}
-	_, _ = r.db.ExecContext(ctx, `UPDATE nodes SET recheck_job_id = ? WHERE id = ? AND recheck_job_id IS NULL`, jobID, n.ID)
+	_, _ = r.db.ExecContext(ctx, `UPDATE nodes SET recheck_job_id = ? WHERE id = ? AND recheck_request_id = ?`, jobID, n.ID, reqID)
 }

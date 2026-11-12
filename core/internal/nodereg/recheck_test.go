@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"slices"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -55,7 +56,9 @@ func TestMaintenanceEndRunsARecheck(t *testing.T) {
 		t.Fatalf("while checking: %+v %v", rc, got.PendingSync)
 	}
 	health := json.RawMessage(`{"uptimeSeconds":5}`)
-	e.reg.RecordRecheck(ctx, rc.JobID, h.fp, nodes.RecheckResult{State: nodes.RecheckPassed, IdentityMatches: true, Health: health})
+	// The result is matched by the job's request id (the fake job id is
+	// "job_" + request id).
+	e.reg.RecordRecheck(ctx, strings.TrimPrefix(rc.JobID, "job_"), h.fp, nodes.RecheckResult{State: nodes.RecheckPassed, IdentityMatches: true, Health: health})
 	got, _ = e.reg.GetNode(ctx, n.ID)
 	rc = got.Maintenance.Recheck
 	if rc.State != RecheckPassed || string(rc.Health) != string(health) || rc.FinishedAt == nil || slices.Contains(got.PendingSync, SyncRecheck) {
@@ -143,3 +146,63 @@ func (s *stateJobs) Get(_ context.Context, id string) (*jobs.Job, error) {
 	}
 	return &jobs.Job{ID: id, State: st}, nil
 }
+
+// A check job can finish before its id is written back: its result must
+// still be kept (review finding).
+func TestRecheckResultOfAFastJobIsKept(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	h := newHost("a", "")
+	n := e.enroll(h, CreateInput{}, ApproveInput{})
+	e.reg.opts.SubmitRecheck = func(ctx context.Context, fp, requestID string) (string, error) {
+		e.reg.RecordRecheck(ctx, requestID, fp, nodes.RecheckResult{State: nodes.RecheckPassed, IdentityMatches: true, Health: json.RawMessage(`{"uptimeSeconds":1}`)})
+		return "job_fast", nil
+	}
+	e.ch.connect(h.fp, e.now(), n.Certificate.Serial)
+	if _, err := e.reg.RunRecheck(ctx, n.ID, "usr_owner"); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := e.reg.GetNode(ctx, n.ID)
+	if rc := got.Maintenance.Recheck; rc.State != RecheckPassed || rc.JobID != "job_fast" || len(rc.Health) == 0 {
+		t.Fatalf("fast result lost: %+v", rc)
+	}
+}
+
+// A session that started just before the re-check was asked for (its
+// handshake was still running) still gets the check.
+func TestRecheckStartsOnASessionThatBeganJustBefore(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	sub := &fakeSubmitter{}
+	e.reg.opts.SubmitRecheck = sub.submit
+	h := newHost("a", "")
+	n := e.enroll(h, CreateInput{}, ApproveInput{})
+	started := e.now()
+	e.advance(time.Second)
+	e.reg.RunRecheck(ctx, n.ID, "usr_owner") // offline: waits for a session
+	e.reg.onSession(ctx, sessionFacts{fp: h.fp, serial: n.Certificate.Serial, at: started})
+	if sub.count() != 1 {
+		t.Fatalf("submitted %d", sub.count())
+	}
+}
+
+// A check job that no longer exists is not shown as running forever.
+func TestRecheckWhoseJobIsGoneIsInconclusive(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	sub := &fakeSubmitter{}
+	e.reg.opts.SubmitRecheck, e.reg.opts.Jobs = sub.submit, goneJobs{}
+	h := newHost("a", "")
+	n := e.enroll(h, CreateInput{}, ApproveInput{})
+	e.ch.connect(h.fp, e.now(), n.Certificate.Serial)
+	e.reg.RunRecheck(ctx, n.ID, "usr_owner")
+	got, _ := e.reg.GetNode(ctx, n.ID)
+	if got.Maintenance.Recheck.State != RecheckInconclusive || slices.Contains(got.PendingSync, SyncRecheck) {
+		t.Fatalf("%+v %v", got.Maintenance.Recheck, got.PendingSync)
+	}
+}
+
+type goneJobs struct{}
+
+func (goneJobs) List(context.Context, jobs.ListOptions) ([]*jobs.Job, error) { return nil, nil }
+func (goneJobs) Get(context.Context, string) (*jobs.Job, error)              { return nil, jobs.ErrNotFound }

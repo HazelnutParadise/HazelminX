@@ -41,6 +41,9 @@ CREATE TABLE IF NOT EXISTS nodes (
     -- The node.recheck job run after maintenance (or on request), and its
     -- recorded outcome: passed, failed or inconclusive, with the host values.
     recheck_attempt        INTEGER NOT NULL DEFAULT 0,
+    -- recheck_request_id is reserved before the job is submitted, so a job
+    -- that finishes before recheck_job_id is written still records its result.
+    recheck_request_id     TEXT,
     recheck_job_id         TEXT,
     recheck_state          TEXT NOT NULL DEFAULT '',
     recheck_result         TEXT,
