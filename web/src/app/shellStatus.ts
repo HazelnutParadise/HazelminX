@@ -14,7 +14,7 @@ export interface ShellStatus {
   attention?: number;
   /** Jobs currently running. */
   jobs?: number;
-  /** Hosts that stopped responding (maintenance excluded), newest first. */
+  /** Hosts that stopped responding (maintenance excluded); filled by src/nodes/hooks.ts useUnreachableHosts. */
   unreachableHosts?: { id: string; name: string }[];
   /** Signed-in user (set by the route guard from GET /auth/session; Core has no e-mail field yet). */
   user?: { name: string; role: string; email?: string };
