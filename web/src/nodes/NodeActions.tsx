@@ -471,7 +471,7 @@ function RemoveDialog({ node, onClose }: { node: Node; onClose: () => void }) {
           const available = m === "unmanage";
           const id = `hx-remove-${m}`;
           return (
-            <label key={m} htmlFor={id} className={`hx-choice${available ? "" : " hx-choice--off"}`}>
+            <label key={m} htmlFor={id} className="hx-choice">
               <input
                 id={id}
                 type="radio"
@@ -482,6 +482,7 @@ function RemoveDialog({ node, onClose }: { node: Node; onClose: () => void }) {
                 aria-describedby={`${id}-note`}
                 onChange={() => setMode(m)}
               />
+              <span className="hx-choice-mark" aria-hidden="true" />
               <span className="hx-choice-text">
                 <strong>{t(`nodes.remove.mode.${m}`)}</strong>
                 <span id={`${id}-note`} className="hx-sub">

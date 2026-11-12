@@ -195,7 +195,7 @@ describe("add host", () => {
     core.on(`GET ${B}/node-enrollments/enr-1`, () => ({ status: 200, body: { enrollment: state } }));
     return {
       core,
-      set(next: Partial<typeof state>) {
+      set: (next: Partial<typeof state>) => {
         state = { ...state, ...next };
       },
     };

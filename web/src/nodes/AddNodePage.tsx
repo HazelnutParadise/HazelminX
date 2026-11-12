@@ -449,6 +449,7 @@ function CheckPanel({ enrollment: e, canWrite }: { enrollment: Enrollment; canWr
                     checked={choice === m.nodeId}
                     onChange={() => setChoice(m.nodeId)}
                   />
+                  <span className="hx-choice-mark" aria-hidden="true" />
                   <span className="hx-choice-text">
                     <strong>{t("nodes.addFlow.replace", { name: m.name || m.nodeId })}</strong>
                     <span className="hx-sub">{t("nodes.addFlow.replaceEffect")}</span>
@@ -462,6 +463,7 @@ function CheckPanel({ enrollment: e, canWrite }: { enrollment: Enrollment; canWr
                   checked={choice === "new"}
                   onChange={() => setChoice("new")}
                 />
+                <span className="hx-choice-mark" aria-hidden="true" />
                 <span className="hx-choice-text">
                   <strong>{t("nodes.addFlow.asNew")}</strong>
                   <span className="hx-sub">{t("nodes.addFlow.asNewEffect")}</span>

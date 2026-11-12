@@ -35,7 +35,7 @@
 - [ ] （設計審查 2026-11-08）工作中心可以依主機、專案、工作類型、結果篩選，並以 commit 或分支搜尋。
 - [ ] （設計審查 2026-11-08）術語第一次出現時有說明提示，例如 Zentinel、漂移、覆寫層；說明文字集中在一份術語表。
 - [ ] （後續事項 2026-11-11）外殼的觀測時間與更新頻率（UI-007）、進行中工作數（UI-003）接上資料來源；目前 `web/src/app/shellStatus.ts` 沒有來源，畫面顯示「觀測 —」。
-- [ ] （後續事項 2026-11-11）外殼的「沒有回應的主機」狀態列（ROB-004）配合票 019、020 接上資料來源。
+- [x] （後續事項 2026-11-11）外殼的「沒有回應的主機」狀態列（ROB-004）配合票 019、020 接上資料來源。 — 證據：票 125 交付。`web/src/nodes/hooks.ts` `useUnreachableHosts` 每 10 秒讀 `GET /management/v1/nodes`，資料過期或沒有回應、而且不在維護中的主機進狀態列（`src/nodes/status.test.ts`「counts a host as unreachable…」、`src/nodes/pages.test.tsx`「feeds the shell's host bar…」「has no host bar when every host answers」）。對真 Core 的 e2e 做不出斷線的主機（模擬的主機不會開 Agent 通道），所以這一條只有單元測試。
 - [ ] （後續事項 2026-11-11）IAM 的寫入端點（建帳號、改帳號、指派與撤銷角色）與主機的寫入端點（`/management/v1/nodes*` 的改名、撤銷、輪替憑證、維護、重新檢查、移除，`/management/v1/node-enrollments*` 的建立、收回、核准、拒絕，票 019 加入）經過 `Server.writeBlockers`：平台資料庫唯讀時回 `PLATFORM_DEGRADED`，不是 `INTERNAL`。
 
 ## Acceptance tests（第 42 章）
