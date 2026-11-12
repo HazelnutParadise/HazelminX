@@ -80,8 +80,7 @@ type Service struct {
 	recoveryMu   sync.Mutex
 	recoveryHMAC []byte // cached recovery-code key
 
-	userMu    sync.Mutex
-	userLocks map[string]*sync.Mutex // see lockUser
+	locks *keyedLocks // one attempt at a time per account; see lockUser and Login
 }
 
 var randRead = rand.Read
@@ -94,7 +93,7 @@ func New(db *sql.DB, cfg Config) (*Service, error) {
 		return nil, err
 	}
 	return &Service{db: db, cfg: cfg, limiter: NewLimiter(cfg.Limiter, cfg.Now), dummyHash: dummy,
-		challenges: newChallengeStore(), ceremonies: newCeremonyStore(), userLocks: map[string]*sync.Mutex{}}, nil
+		challenges: newChallengeStore(), ceremonies: newCeremonyStore(), locks: newKeyedLocks()}, nil
 }
 
 // Limiter exposes the attempt limiter so ticket 014 can throttle recovery codes with the same policy.
@@ -140,9 +139,11 @@ func (s *Service) SetupCode(ctx context.Context) (string, time.Time, error) {
 // leaves a role-less owner behind (which would lock everyone out). The
 // session is held to second-factor enrolment until the owner adds one.
 func (s *Service) CompleteSetup(ctx context.Context, code, username, password string, src Source) (*LoginResult, error) {
-	if ok, retry := s.limiter.Check(setupKey, src.IP, false); !ok {
+	attempt, retry := s.limiter.Begin(setupKey, src.IP, false)
+	if attempt == nil {
 		return &LoginResult{RetryAfter: retry}, ErrThrottled
 	}
+	defer attempt.Done()
 	need, err := s.NeedsSetup(ctx)
 	if err != nil {
 		return nil, err
@@ -160,7 +161,7 @@ func (s *Service) CompleteSetup(ctx context.Context, code, username, password st
 	}
 	s.setupMu.Unlock()
 	if !validCode {
-		s.limiter.Failure(setupKey, src.IP)
+		attempt.Failure()
 		s.record(ctx, s.db, AuditEvent{Action: "setup.owner", Scope: Global, Result: ResultFailed, Message: "invalid or expired setup code", TraceID: src.TraceID, SourceIP: src.IP})
 		return nil, ErrSetupCode
 	}
@@ -215,11 +216,18 @@ func (s *Service) Login(ctx context.Context, username, password string, src Sour
 	if err != nil {
 		return nil, err
 	}
-	if ok, retry := s.limiter.Check(username, src.IP, trusted); !ok {
+	// One attempt per account at a time, so the limiter sees each failure
+	// before the next attempt is checked and a burst gets no extra guesses.
+	// Unknown usernames queue the same way, so waiting reveals nothing.
+	unlock := s.locks.lock(loginLockKey(username))
+	defer unlock()
+	attempt, retry := s.limiter.Begin(username, src.IP, trusted)
+	if attempt == nil {
 		// Not audited: the failures that led here are already on the ledger,
 		// and a throttled source must not be able to grow it at wire speed.
 		return &LoginResult{RetryAfter: retry}, ErrThrottled
 	}
+	defer attempt.Done()
 
 	u, hash, err := s.userByUsername(ctx, username)
 	if err != nil && !errors.Is(err, ErrNotFound) {
@@ -233,7 +241,7 @@ func (s *Service) Login(ctx context.Context, username, password string, src Sour
 		return nil, verr
 	}
 	if u == nil || !match || u.Status != StatusActive {
-		s.limiter.Failure(username, src.IP)
+		attempt.Failure()
 		s.record(ctx, s.db, AuditEvent{Action: "login", Scope: Global, Result: ResultFailed, Message: "invalid credentials",
 			After: map[string]any{"username": username}, TraceID: src.TraceID, SourceIP: src.IP})
 		return nil, ErrInvalidCredentials
@@ -248,7 +256,7 @@ func (s *Service) Login(ctx context.Context, username, password string, src Sour
 		if err != nil {
 			return nil, err
 		}
-		s.limiter.Success(username)
+		attempt.Success()
 		if err := s.record(ctx, s.db, AuditEvent{ActorID: u.ID, ActorName: u.Username, Action: "login.password", Scope: Global,
 			ResourceKind: "user", ResourceID: u.ID, Result: ResultOK, Message: "second factor required",
 			After: map[string]any{"methods": ch.Methods}, TraceID: src.TraceID, SourceIP: src.IP}); err != nil {
@@ -265,9 +273,13 @@ func (s *Service) Login(ctx context.Context, username, password string, src Sour
 	if err != nil {
 		return nil, err
 	}
-	s.limiter.Success(username)
+	attempt.Success()
 	return &LoginResult{Session: sess, User: u, EnrollmentRequired: RequiresSecondFactor(pr)}, nil
 }
+
+// loginLockKey is the lock key for password attempts on a username. It
+// folds case like the limiter, and its prefix keeps it apart from lockUser.
+func loginLockKey(username string) string { return "login:" + normalizeAccount(username) }
 
 func (s *Service) openSession(ctx context.Context, u *User, src Source) (*Session, error) {
 	tx, err := s.db.BeginTx(ctx, nil)

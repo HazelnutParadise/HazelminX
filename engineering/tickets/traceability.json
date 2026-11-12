@@ -2789,6 +2789,17 @@
       "requirements": [],
       "acceptance_tests": [],
       "issue": 145
+    },
+    {
+      "id": "126",
+      "file": "126-login-limits-count-attempts-in-flight.md",
+      "title": "同一來源同時猜很多帳號時，被驗證的次數仍然受來源上限限制",
+      "epic": "iam",
+      "milestone": "M1",
+      "blocked_by": [],
+      "requirements": [],
+      "acceptance_tests": [],
+      "issue": 149
     }
   ]
 }

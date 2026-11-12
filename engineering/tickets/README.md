@@ -65,6 +65,7 @@
 | 123 | 節點憑證第一次建立到一半失敗時，Core 下次啟動可以自己恢復 | 節點與 Agent | — | [#141](https://github.com/HazelnutParadise/hazelminx/issues/141) |
 | 124 | 一個步驟在對帳時反覆重跑超過上限後會停下來，轉成需要處理 | 基礎建設 | — | [#142](https://github.com/HazelnutParadise/hazelminx/issues/142) |
 | 125 | 管理員可以在畫面上看主機清單、加入新主機，並改名、維護、輪替憑證、撤銷或不再管理主機 | 節點與 Agent | 005, 019 | [#145](https://github.com/HazelnutParadise/hazelminx/issues/145) |
+| 126 | 同一來源同時猜很多帳號時，被驗證的次數仍然受來源上限限制 | 身分與存取 | — | [#149](https://github.com/HazelnutParadise/hazelminx/issues/149) |
 
 ## M2 容器、Compose 與 GitHub
 
