@@ -152,7 +152,7 @@ def overview() -> str:
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 1px; background: var(--line)">
         <div style="display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; background: var(--panel)">
           <div class="ncard">
-            <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span class="mono" style="font-weight: 500">hazel-tw-01</span>{U.status("ok", "已綁定 UUID")}</div>
+            <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span class="mono" style="font-weight: 500">hazel-tw-01</span></div>
             {U.tall_bar(DISK_USE["hazel-tw-01"]["data"], 931)}
             <span class="note">資料碟 /mnt/data · 412 / 931 GiB · 30 天 +38 GiB · 預估 410 天後滿</span>
             <span class="note">系統碟 / · 36 / 94 GiB</span>{U.tall_bar(DISK_USE["hazel-tw-01"]["sys"], 94)}
@@ -297,8 +297,8 @@ def node_detail() -> str:
     <section class="panel" aria-labelledby="h-disk">
       <div class="ph"><h2 id="h-disk">磁碟使用</h2><span class="sub">路徑保存原值與解析結果</span></div>
       <div class="row hd drow"><span>掛載點</span><span>裝置</span><span class="c5">檔案系統</span><span>使用</span><span class="c4">裝置身分</span></div>
-      <div class="row drow"><span class="mono">/</span><span class="mono">nvme0n1p2</span><span class="c5">ext4</span>{U.meter(31, "29 / 94 GiB", warn=80, danger=90)}<span class="c4">{U.status("ok", "已綁定")}</span></div>
-      <div class="row drow"><span class="mono">/mnt/data</span><span class="mono">sdb1 → /dev/disk/by-uuid/5a7c…e2</span><span class="c5">xfs</span>{U.meter(44, "412 / 931 GiB", warn=80, danger=90)}<span class="c4">{U.status("ok", "已綁定")}</span></div>
+      <div class="row drow"><span class="mono">/</span><span class="mono">nvme0n1p2</span><span class="c5">ext4</span>{U.meter(38, "36 / 94 GiB", warn=80, danger=90)}<span class="c4">{U.status("ok", "已綁定")}</span></div>
+      <div class="row drow"><span class="mono">/mnt/data</span><span class="mono">sdb1 → /dev/disk/by-uuid/5a7c…e2</span><span class="c5">ext4</span>{U.meter(44, "412 / 931 GiB", warn=80, danger=90)}<span class="c4">{U.status("ok", "已綁定")}</span></div>
       <div class="row drow"><span class="mono">/boot/efi</span><span class="mono">nvme0n1p1</span><span class="c5">vfat</span>{U.meter(12, "61 / 511 MiB", warn=80, danger=90)}<span class="c4"><span class="note">不適用</span></span></div>
     </section>"""
     hot = f"""
@@ -1015,12 +1015,12 @@ def storage() -> str:
     <section class="panel" aria-labelledby="h-disks">
       <div class="ph"><h2 id="h-disks">磁碟用量</h2><span class="sub">段條＝誰吃掉了空間，各類加起來等於已用；未綁定裝置身分的磁碟，重開機掛錯時不會被擋下</span></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:1px;background:var(--line)">
-        {disk("hazel-tw-01", "/mnt/data", "sdb1 → by-uuid/5a7c…e2 · ext4", U.status("ok", "已綁定 UUID"), DISK_USE["hazel-tw-01"]["data"], 931, walk(12, 390, 8, 370, 412), "412 / 931 GiB · +38 GiB · 預估 410 天後滿")}
+        {disk("hazel-tw-01", "/mnt/data", "sdb1 → by-uuid/5a7c…e2 · ext4", "", DISK_USE["hazel-tw-01"]["data"], 931, walk(12, 390, 8, 370, 412), "412 / 931 GiB · +38 GiB · 預估 410 天後滿")}
         {disk("hazel-jp-02", "/mnt/data", "sdb1（未綁定）· ext4", U.attr("attention", "沒用 UUID 掛載，目前用裝置名稱 sdb1。換插槽或重開機可能掛到別顆磁碟", "", "dng"), DISK_USE["hazel-jp-02"]["data"], 931, walk(12, 760, 15, 740, 870), "870 / 931 GiB · +121 GiB · 預估 15 天後滿", warn=True)}
-        {disk("lab-mini", "/mnt/data", "nvme0n1p3 → by-uuid/91b0…77 · ext4", U.status("ok", "已綁定 UUID"), DISK_USE["lab-mini"]["data"], 118, walk(12, 36, 2, 30, 38), "38 / 118 GiB · +2 GiB")}
-        {disk("hazel-tw-01", "/", "nvme0n1p2 → by-uuid/0b7e…41c9 · ext4 · 系統碟", U.status("ok", "已綁定 UUID"), DISK_USE["hazel-tw-01"]["sys"], 94, walk(12, 34, 1, 33, 36), "36 / 94 GiB · +2 GiB")}
-        {disk("hazel-jp-02", "/", "sda2 → by-uuid/c4d1…08 · ext4 · 系統碟", U.status("ok", "已綁定 UUID"), DISK_USE["hazel-jp-02"]["sys"], 48, walk(12, 21, 1, 20, 22), "22 / 48 GiB · +1 GiB")}
-        {disk("lab-mini", "/", "nvme0n1p2 → by-uuid/2f6a…c3 · ext4 · 系統碟", U.status("ok", "已綁定 UUID"), DISK_USE["lab-mini"]["sys"], 40, walk(12, 17, 1, 16, 18), "18 / 40 GiB · +1 GiB")}
+        {disk("lab-mini", "/mnt/data", "nvme0n1p3 → by-uuid/91b0…77 · ext4", "", DISK_USE["lab-mini"]["data"], 118, walk(12, 36, 2, 30, 38), "38 / 118 GiB · +2 GiB")}
+        {disk("hazel-tw-01", "/", "nvme0n1p2 → by-uuid/0b7e…41c9 · ext4 · 系統碟", "", DISK_USE["hazel-tw-01"]["sys"], 94, walk(12, 34, 1, 33, 36), "36 / 94 GiB · +2 GiB")}
+        {disk("hazel-jp-02", "/", "sda2 → by-uuid/c4d1…08 · ext4 · 系統碟", "", DISK_USE["hazel-jp-02"]["sys"], 48, walk(12, 21, 1, 20, 22), "22 / 48 GiB · +1 GiB")}
+        {disk("lab-mini", "/", "nvme0n1p2 → by-uuid/2f6a…c3 · ext4 · 系統碟", "", DISK_USE["lab-mini"]["sys"], 40, walk(12, 17, 1, 16, 18), "18 / 40 GiB · +1 GiB")}
       </div>
     </section>"""
     vols = f"""
