@@ -133,12 +133,16 @@ def overview() -> str:
       <div class="ph"><h2 id="h-sto">儲存與備份</h2><span class="sub">段條＝資料碟怎麼被用掉；日曆＝每日備份結果</span><a class="more" href="Storage.dc.html">儲存與備份 →</a></div>
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 1px; background: var(--line)">
         <div style="display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; background: var(--panel)">
-          <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span class="mono" style="font-weight: 500">hazel-tw-01 /mnt/data</span>{U.status("ok", "已綁定 UUID")}</div>
-          {U.tall_bar([(290, "容器資料", "var(--q5)"), (84, "資料庫", "var(--q4)"), (38, "備份暫存", "var(--q3)")], 931)}
-          <span class="note">412 / 931 GiB · 30 天 +38 GiB · 預估 410 天後滿</span>
-          <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span class="mono" style="font-weight: 500">hazel-jp-02 /mnt/data</span>{U.status("dng", "沒用 UUID 掛載 · 用裝置名稱 sdb1 掛載")}</div>
-          {U.tall_bar([(610, "容器資料", "var(--q5)"), (190, "媒體", "var(--q4)"), (70, "備份暫存", "var(--q3)")], 931)}
-          <span class="note" style="color: var(--danger)">870 / 931 GiB · 30 天 +121 GiB · 預估 15 天後滿</span>
+          <div class="ncard">
+            <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span class="mono" style="font-weight: 500">hazel-tw-01 /mnt/data</span>{U.status("ok", "已綁定 UUID")}</div>
+            {U.tall_bar([(290, "應用資料", "var(--q5)"), (84, "資料庫", "var(--q4)"), (38, "備份暫存", "var(--q3)")], 931)}
+            <span class="note">412 / 931 GiB · 30 天 +38 GiB · 預估 410 天後滿</span>
+          </div>
+          <div class="ncard">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="mono" style="font-weight: 500">hazel-jp-02 /mnt/data</span>{U.attr("attention", "沒用 UUID 掛載，目前用裝置名稱 sdb1。換插槽或重開機可能掛到別顆磁碟", "", "dng")}</div>
+            {U.tall_bar([(610, "應用資料", "var(--q5)"), (190, "媒體", "var(--q4)"), (70, "備份暫存", "var(--q3)")], 931)}
+            <span class="note" style="color: var(--danger)">870 / 931 GiB · 30 天 +121 GiB · 預估 15 天後滿</span>
+          </div>
         </div>
         <div style="display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; background: var(--panel)">
           <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span style="font-weight: 500">每日備份 · wiki-db → S3 tokyo</span><span class="note">近 98 天</span></div>
@@ -378,7 +382,7 @@ def projects() -> str:
       <span class="note mono">github.com/hazelnut/shop</span>
       <div class="wrap" style="margin-left: auto"><a class="btn pri" href="DeployCheck.dc.html">檢視待批准 · 計畫 #418</a><button type="button" class="btn">重新部署目前版本</button><a class="btn" href="ProjectEnv.dc.html">環境變數</a><a class="btn" href="ProjectTriggers.dc.html">自動部署設定</a></div>
     </div>"""
-    tabs = ('<div class="panel"><div class="tabs" role="tablist"><button type="button" class="tab on" role="tab" aria-selected="true">production</button>'
+    tabs = ('<div class="panel"><div class="tabs" role="tablist"><span class="lbl">環境</span><button type="button" class="tab on" role="tab" aria-selected="true">production</button>'
             '<button type="button" class="tab" role="tab" aria-selected="false">staging</button><button type="button" class="tab" aria-label="新增環境">＋ 環境</button></div>'
             f'<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr)); gap: 10px 16px; padding: 12px 14px; font-size: 13px">'
             f'{kv("來源", "github.com/hazelnut/shop · main")}{kv("最近部署", "a3f9c1e · 02:57 · 成功 · Webhook")}{kv("部署單元", "3 個 · 2 台主機 · 1 個叢集")}{kv("web 單元", "hazel-tw-01")}{kv("入口", "shop.example.tw · 憑證 11 天後到期")}{kv("自動部署", PAUSE_LINK)}</div>' + U.res_strip("HazelminX", "正式", "03:42:06", drift="shop-redis 映像 redis:7.2 → redis:7.4（主機上手動改）") + '</div>')
@@ -971,9 +975,9 @@ def storage() -> str:
     <section class="panel" aria-labelledby="h-disks">
       <div class="ph"><h2 id="h-disks">資料碟</h2><span class="sub">段條＝誰吃掉了空間；未綁定裝置身分的磁碟，重開機掛錯時不會被擋下</span></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:1px;background:var(--line)">
-        {disk("hazel-tw-01", "/mnt/data", "sdb1 → by-uuid/5a7c…e2 · xfs", U.status("ok", "已綁定 UUID"), [(290, "容器資料", "var(--q5)"), (84, "資料庫", "var(--q4)"), (38, "備份暫存", "var(--q3)"), (12, "可回收映像", "var(--q2)")], 931, walk(12, 390, 8, 370, 412), "412 / 931 GiB · +38 GiB · 預估 410 天後滿")}
-        {disk("hazel-jp-02", "/mnt/data", "sdb1（未綁定）· ext4", U.status("dng", "沒用 UUID 掛載 · 用裝置名稱 sdb1 掛載"), [(610, "容器資料", "var(--q5)"), (190, "媒體", "var(--q4)"), (70, "備份暫存", "var(--q3)"), (31, "可回收映像", "var(--q2)")], 931, walk(12, 760, 15, 740, 870), "870 / 931 GiB · +121 GiB · 預估 15 天後滿", warn=True)}
-        {disk("lab-mini", "/mnt/data", "nvme0n1p3 → by-uuid/91b0…77 · ext4", U.status("ok", "已綁定 UUID"), [(28, "容器資料", "var(--q5)"), (6, "資料庫", "var(--q4)"), (4, "可回收映像", "var(--q2)")], 118, walk(12, 36, 2, 30, 38), "38 / 118 GiB · +2 GiB")}
+        {disk("hazel-tw-01", "/mnt/data", "sdb1 → by-uuid/5a7c…e2 · xfs", U.status("ok", "已綁定 UUID"), [(290, "應用資料", "var(--q5)"), (84, "資料庫", "var(--q4)"), (38, "備份暫存", "var(--q3)"), (12, "可回收映像", "var(--q2)")], 931, walk(12, 390, 8, 370, 412), "412 / 931 GiB · +38 GiB · 預估 410 天後滿")}
+        {disk("hazel-jp-02", "/mnt/data", "sdb1（未綁定）· ext4", U.attr("attention", "沒用 UUID 掛載，目前用裝置名稱 sdb1。換插槽或重開機可能掛到別顆磁碟", "", "dng"), [(610, "應用資料", "var(--q5)"), (190, "媒體", "var(--q4)"), (70, "備份暫存", "var(--q3)"), (31, "可回收映像", "var(--q2)")], 931, walk(12, 760, 15, 740, 870), "870 / 931 GiB · +121 GiB · 預估 15 天後滿", warn=True)}
+        {disk("lab-mini", "/mnt/data", "nvme0n1p3 → by-uuid/91b0…77 · ext4", U.status("ok", "已綁定 UUID"), [(28, "應用資料", "var(--q5)"), (6, "資料庫", "var(--q4)"), (4, "可回收映像", "var(--q2)")], 118, walk(12, 36, 2, 30, 38), "38 / 118 GiB · +2 GiB")}
       </div>
     </section>"""
     vols = f"""
@@ -4779,6 +4783,49 @@ def _adopt_hints(html: str) -> str:
         pos = m.end()
 
 
+def nest_levels(html: str) -> str:
+    """上層的切換（分頁、範圍列）要把它管的內容包在裡面：切換列變成外框的頁首，下面的區塊都放進外框。
+    相鄰的範圍列和分頁併成同一個頁首，只畫一層框。只處理直接放在頁面主體最上面的切換列。"""
+    ms = html.find('<main class="main"')
+    if ms == -1:
+        return html
+    me = html.rfind("</main>")
+    body = html[ms:me]
+
+    def end_of(start):
+        depth, i = 0, start
+        pat = re.compile(r"<(/?)div\b")
+        while True:
+            m = pat.search(body, i)
+            depth += 1 if m.group(1) == "" else -1
+            i = m.end()
+            if depth == 0:
+                return body.index(">", m.start()) + 1
+    heads = []
+    for m in re.finditer(r'<div class="panel"><div class="tabs" role="tablist">|<div class="scope" role="group"', body):
+        before = body[:m.start()]
+        if '<section' in before or 'class="tiles"' in before or 'class="cg"' in before or 'class="subtabs"' in before:
+            break
+        if heads and m.start() < heads[-1][1]:
+            continue
+        heads.append((m.start(), end_of(m.start())))
+    if not heads:
+        return html
+    groups = [[heads[0]]]
+    for h in heads[1:]:
+        if body[groups[-1][-1][1]:h[0]].strip() == "":
+            groups[-1].append(h)
+        else:
+            groups.append([h])
+    out, pos = [], 0
+    for g in groups:
+        out.append(body[pos:g[0][0]])
+        out.append('<div class="lvl"><div class="lvl-h">' + "".join(body[a:b] for a, b in g) + '</div><div class="lvl-b">')
+        pos = g[-1][1]
+    out.append(body[pos:])
+    return html[:ms] + "".join(out) + "</div></div>" * len(groups) + html[me:]
+
+
 def declutter(html: str) -> str:
     """UI 不寫文章：拿掉說明句、保留短標籤、連結與圖例。"""
     def sub_ok(m):
@@ -4807,7 +4854,7 @@ def main():
         os.makedirs(args.render_dir, exist_ok=True)
     for name, (title, fn, w, h) in SCREENS.items():
         raw = fn().replace('class="row"', 'class="row r0"').replace('class="row hd"', 'class="row hd r0"')
-        body = auto_tables(table_affordances(trim_columns(iconize(declutter(raw)))))
+        body = nest_levels(auto_tables(table_affordances(trim_columns(iconize(declutter(raw))))))
         for bad in BANNED:
             for m in re.finditer(bad, re.sub(r"<[^>]+>", " ", body)):
                 print(f"  ! {name}: 「{bad}」 … {re.sub(r'<[^>]+>', ' ', body)[max(0, m.start() - 20):m.end() + 20].strip()}")

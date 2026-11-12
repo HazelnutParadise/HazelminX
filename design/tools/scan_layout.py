@@ -41,7 +41,13 @@ async def main(src: Path) -> int:
                     pg = await b.new_page(viewport={"width": w, "height": 900})
                     errs = []
                     pg.on("pageerror", lambda e: errs.append(str(e)))
-                    await pg.goto(f"file://{src}/{name}-{theme}.html")
+                    for attempt in range(3):  # 字型從網路載入，偶爾卡住：重試，不讓整次掃描中斷
+                        try:
+                            await pg.goto(f"file://{src}/{name}-{theme}.html", timeout=20000)
+                            break
+                        except Exception:
+                            if attempt == 2:
+                                raise
                     await pg.wait_for_timeout(80)
                     r = await pg.evaluate(JS)
                     sw = await pg.evaluate("document.documentElement.scrollWidth")

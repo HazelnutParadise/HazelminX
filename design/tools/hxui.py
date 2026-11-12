@@ -303,7 +303,7 @@ body{{margin:0}}
 .hb .note{{font-size:12px;color:var(--faint)}}
 .hb .wrap{{display:flex;flex-wrap:wrap;gap:8px;align-items:center}}
 .hb .scroll{{overflow-x:auto}}
-.hb .mtitle{{display:none}}.hb .aside{{width:340px;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:18px;padding:18px 16px 24px}}
+.hb .mtitle{{display:none}}.hb .lvl{{display:flex;flex-direction:column;min-width:0;border:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--ink) 3%,transparent)}}.hb .lvl-h{{display:flex;flex-direction:column;min-width:0}}.hb .lvl-h>.panel,.hb .lvl-h>.scope{{border:0;border-bottom:1px solid var(--line);border-radius:0}}.hb .lvl-h>:first-child{{border-radius:9px 9px 0 0}}.hb .lvl-b{{display:flex;flex-direction:column;gap:16px;padding:16px;min-width:0}}.hb .tabs .lbl{{align-self:center;font-size:12px;color:var(--muted);margin-right:8px}}@media (max-width:1280px){{.hb .lvl-b{{padding:14px 0}}.hb .lvl-b>.panel,.hb .lvl-b>.tiles,.hb .lvl-b>.cg>.panel,.hb .lvl-b>.chart{{border-left:0;border-right:0;border-radius:0}}.hb .lvl-b>.subtabs,.hb .lvl-b>.grp,.hb .lvl-b>.phead{{padding-left:12px;padding-right:12px}}}}.hb .aside{{width:340px;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:18px;padding:18px 16px 24px}}
 .hb .main{{flex:999 1 560px;min-width:0;display:flex;flex-direction:column;gap:16px;padding:16px 24px 40px}}
 .hb .layout{{display:flex;flex-wrap:wrap;align-items:stretch;flex:1}}
 .hb .side{{width:220px;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:10px;padding:12px 10px 16px}}
