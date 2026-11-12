@@ -153,9 +153,33 @@ export async function layoutIssues(page: Page): Promise<string[]> {
       const clips = cs.overflow === "hidden" || cs.overflowX === "hidden" || cs.overflowX === "clip";
       if (clips && el.scrollWidth > el.clientWidth + 2 && el.children.length === 0) out.push(`CLIP: ${label(el)}`);
     }
+    // Tables scroll sideways only below 1024 px (DESIGN.md 表格), and no row action may sit outside its panel.
+    for (const wrap of document.querySelectorAll(".hx-table-wrap")) {
+      if (!visible(wrap)) continue;
+      if (w >= 1024 && wrap.scrollWidth > wrap.clientWidth + 1)
+        out.push(`HSCROLL table +${wrap.scrollWidth - wrap.clientWidth}`);
+      const box = wrap.getBoundingClientRect();
+      for (const el of wrap.querySelectorAll("a[href], button")) {
+        if (!visible(el)) continue;
+        const r = el.getBoundingClientRect();
+        if (r.right > box.right + 1 || r.left < box.left - 1) out.push(`OFFSCREEN action: ${label(el)}`);
+      }
+    }
+    // An open dialog must be the topmost thing along its top edge: the sticky top bar once painted over it on phones.
+    for (const d of document.querySelectorAll("[role=dialog]")) {
+      if (!visible(d)) continue;
+      const r = d.getBoundingClientRect();
+      for (const x of [r.left + 12, r.left + r.width / 2, r.right - 12]) {
+        const hit = document.elementFromPoint(x, Math.max(r.top, 0) + 8);
+        if (hit && !d.contains(hit)) {
+          out.push(`COVERED dialog "${label(d)}" by ${hit.tagName.toLowerCase()}.${[...hit.classList].join(".")}`);
+          break;
+        }
+      }
+    }
     const text = document.body.innerText;
     const key = text.match(
-      /\b(app|nav|navGroup|shell|hostBar|saveBar|componentDown|page|notFound|crash|raw|errors|kumo|auth|account|roles)\.[a-zA-Z_]+\b/,
+      /\b(app|nav|navGroup|shell|hostBar|saveBar|componentDown|page|notFound|crash|raw|errors|kumo|auth|account|roles|nodes)\.[a-zA-Z_]+\b/,
     );
     if (key) out.push(`I18N-KEY: ${key[0]}`);
     return [...new Set(out)];
@@ -182,5 +206,11 @@ export async function scanIssues(page: Page): Promise<string[]> {
   await page.evaluate(() => document.fonts.ready);
   // A theme switch animates colours; measuring mid-transition reads in-between values.
   await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
-  return [...(await axeViolations(page)), ...(await contrastIssues(page)), ...(await layoutIssues(page))];
+  // A viewport change re-renders the shell (phone navigation) on the next frames; measure after it settled.
+  await page.evaluate(
+    () => new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(done, 50)))),
+  );
+  // Layout first: axe and the contrast probe scroll elements into view, which moves sticky bars out of the way.
+  const layout = await layoutIssues(page);
+  return [...(await axeViolations(page)), ...(await contrastIssues(page)), ...layout];
 }

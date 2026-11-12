@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from "react-router";
 import { ShellStatusContext, useShellStatus } from "../app/shellStatus";
+import { useUnreachableHosts } from "../nodes/hooks";
 import type { SessionResponse } from "./api";
 import { AUTH_PATHS, withNext } from "./nextPath";
 import { useSession, useShellUser, type SessionState } from "./session";
@@ -27,7 +28,10 @@ export function RequireAuth({
 function SignedInStatus({ session, children }: { session: SessionResponse; children: React.ReactNode }) {
   const outer = useShellStatus();
   const user = useShellUser(session);
+  const unreachableHosts = useUnreachableHosts() ?? outer.unreachableHosts;
   return (
-    <ShellStatusContext.Provider value={{ ...outer, user, signedOut: false }}>{children}</ShellStatusContext.Provider>
+    <ShellStatusContext.Provider value={{ ...outer, user, unreachableHosts, signedOut: false }}>
+      {children}
+    </ShellStatusContext.Provider>
   );
 }

@@ -1,6 +1,6 @@
 # 0029 — Agent 每個步驟前後先寫 journal 才回報
 
-**Status:** accepted
+**Status:** superseded by 0032
 **Date:** 2026-11-08
 
 ## Context

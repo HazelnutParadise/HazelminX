@@ -531,6 +531,196 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/management/v1/node-enrollments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** enrollment codes and the hosts that used them, newest first */
+        get: operations["listNodeEnrollments"];
+        put?: never;
+        /** create a single-use enrollment code (shown only in this answer) for hazelminx-agent enroll; name, tags and group are applied to the node when approved */
+        post: operations["createNodeEnrollment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/node-enrollments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** one enrollment: whether the code was used, what the host reported (host name, machine-id, OS, source address, key fingerprint) and which existing nodes it matches */
+        get: operations["getNodeEnrollment"];
+        put?: never;
+        post?: never;
+        /** withdraw a code nobody has used yet */
+        delete: operations["withdrawNodeEnrollment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/node-enrollments/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** accept the host that used the code and issue its certificate; the same key keeps its node; a new key on a machine-id that already has a node needs replaceNodeId or asNewNode (PRECHECK_FAILED with details.matches otherwise) */
+        post: operations["approveNodeEnrollment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/node-enrollments/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** refuse the host that used the code; the code stays spent */
+        post: operations["rejectNodeEnrollment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/nodes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** nodes the account can see, with connection status (online, stale, offline, never_connected; offline only means the channel is down), certificate, maintenance, revocation and what has not reached the agent yet */
+        get: operations["listNodes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/nodes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** one node with its component list; ETag carries its version */
+        get: operations["getNode"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** rename, re-tag or regroup a node (identity stays the node id and key); requires If-Match */
+        patch: operations["updateNode"];
+        trace?: never;
+    };
+    "/management/v1/nodes/{id}/maintenance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** turn maintenance on (jobs created from now on are refused; unfinished ones are listed and continue) or off (the agent reconnects and declares its capabilities again, then a node.recheck job checks its identity and reads the host's basic values; see maintenance.recheck) */
+        put: operations["setNodeMaintenance"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/nodes/{id}/recheck": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** check the node again now (or at its next connection): the agent answering is this node's, and the host's uptime, load, memory and root filesystem are read; the same check runs by itself when maintenance ends; the result is maintenance.recheck */
+        post: operations["recheckNode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/nodes/{id}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** remove a node in one of four separate ways; unmanage stops trusting it and leaves the host, the agent and every application untouched; remove-agent, remove-cluster-node and delete-workloads answer NOT_AVAILABLE until the platform can do them */
+        post: operations["removeNode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/nodes/{id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** stop trusting a node: its session is closed now, reconnects are refused, job steps are refused; an offline node shows the revocation as pending until it calls */
+        post: operations["revokeNode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/nodes/{id}/rotate-certificate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** issue a new certificate for the node's key; both are accepted until the node connects with the new one (offline nodes get it on their next connection) */
+        post: operations["rotateNodeCertificate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/management/v1/openapi.json": {
         parameters: {
             query?: never;
@@ -657,6 +847,11 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        affectedJob: {
+            id: string;
+            kind: string;
+            state: string;
+        };
         agentConnectionsResponse: {
             connections: components["schemas"]["ConnectionInfo"][];
             coreProtocol: components["schemas"]["Range"];
@@ -677,6 +872,10 @@ export interface components {
             retryAfterSeconds?: number;
             suggestedActions?: string[];
             traceId?: string;
+        };
+        approveEnrollmentRequest: {
+            asNewNode: boolean;
+            replaceNodeId: string;
         };
         Assignment: {
             /** Format: date-time */
@@ -731,6 +930,14 @@ export interface components {
             name: string;
             version: number;
         };
+        Certificate: {
+            expiresInDays: number;
+            /** Format: date-time */
+            notAfter: string;
+            rotation: components["schemas"]["Rotation"];
+            serial: string;
+            state: string;
+        };
         challengeRequest: {
             challengeToken: string;
         };
@@ -741,8 +948,29 @@ export interface components {
             passed: boolean;
             required: boolean;
         };
+        ClaimedHost: {
+            agentVersion: string;
+            arch: string;
+            /** Format: date-time */
+            claimedAt: string;
+            /** Format: date-time */
+            claimExpiresAt: string;
+            fingerprint: string;
+            hostname: string;
+            machineId: string;
+            os: string;
+            sourceAddr: string;
+        };
         CompletionReport: {
             checks: components["schemas"]["Check"][];
+        };
+        Component: {
+            detail?: Record<string, never>;
+            kind: string;
+            name: string;
+            source: string;
+            state: string;
+            version: string;
         };
         Confirmation: {
             /** Format: date-time */
@@ -767,10 +995,24 @@ export interface components {
         confirmationResponse: {
             confirmation: components["schemas"]["Confirmation"];
         };
+        Connection: {
+            clockSkewSeconds: number;
+            clockSkewWarning: boolean;
+            /** Format: date-time */
+            connectedAt: string;
+            /** Format: date-time */
+            lastContactAt: string;
+            remoteAddr?: string;
+            sessionId?: string;
+            state: string;
+            transport?: string;
+        };
         ConnectionInfo: {
             agentProtocol: components["schemas"]["Range"];
             agentVersion: string;
             capabilities: components["schemas"]["Capability"][];
+            certificateSerial: string;
+            clockSkewSeconds: number;
             /** Format: date-time */
             connectedAt: string;
             /** Format: date-time */
@@ -780,6 +1022,12 @@ export interface components {
             remoteAddr: string;
             sessionId: string;
             transport: string;
+        };
+        createEnrollmentRequest: {
+            group: string;
+            name: string;
+            tags: string[];
+            ttlSeconds: number;
         };
         CreateUserInput: {
             displayName: string;
@@ -815,6 +1063,37 @@ export interface components {
             impact: components["schemas"]["Impact"];
             ok: boolean;
             preview?: unknown;
+        };
+        Enrollment: {
+            codeId: string;
+            /** Format: date-time */
+            createdAt: string;
+            createdBy: string;
+            /** Format: date-time */
+            decidedAt: string;
+            decidedBy?: string;
+            /** Format: date-time */
+            expiresAt: string;
+            group: string;
+            host: components["schemas"]["ClaimedHost"];
+            id: string;
+            matchingNodes: components["schemas"]["NodeMatch"][];
+            name: string;
+            nodeId?: string;
+            /** Format: date-time */
+            revokedAt: string;
+            revokedBy?: string;
+            state: string;
+            tags: string[];
+            /** Format: int64 */
+            version: number;
+        };
+        enrollmentCreatedResponse: {
+            code: string;
+            enrollment: components["schemas"]["Enrollment"];
+        };
+        enrollmentResponse: {
+            enrollment: components["schemas"]["Enrollment"];
         };
         EnrollmentResult: {
             passkey?: components["schemas"]["PasskeyInfo"];
@@ -965,6 +1244,14 @@ export interface components {
             items: unknown[];
             page: components["schemas"]["PageMeta"];
         };
+        "ListResponse_nodereg.Enrollment": {
+            items: components["schemas"]["Enrollment"][];
+            page: components["schemas"]["PageMeta"];
+        };
+        "ListResponse_nodereg.Node": {
+            items: components["schemas"]["Node"][];
+            page: components["schemas"]["PageMeta"];
+        };
         loginRequest: {
             password: string;
             username: string;
@@ -987,6 +1274,70 @@ export interface components {
             rpId: string;
             userId: string;
             username: string;
+        };
+        Maintenance: {
+            /** Format: date-time */
+            checkedAt: string;
+            enabled: boolean;
+            /** Format: date-time */
+            endedAt: string;
+            reason: string;
+            recheck: components["schemas"]["Recheck"];
+            /** Format: date-time */
+            recheckRequestedAt: string;
+            /** Format: date-time */
+            since: string;
+        };
+        maintenanceRequest: {
+            enabled: boolean;
+            reason: string;
+        };
+        maintenanceResponse: {
+            affectedJobs: components["schemas"]["affectedJob"][];
+            node: components["schemas"]["Node"];
+        };
+        Node: {
+            arch: string;
+            certificate: components["schemas"]["Certificate"];
+            components: components["schemas"]["Component"][];
+            /** Format: date-time */
+            conflictAt: string;
+            connection: components["schemas"]["Connection"];
+            /** Format: date-time */
+            createdAt: string;
+            fingerprint: string;
+            group: string;
+            hostname: string;
+            id: string;
+            machineId: string;
+            maintenance: components["schemas"]["Maintenance"];
+            name: string;
+            os: string;
+            pendingSync: string[];
+            removal: components["schemas"]["Removal"];
+            revocation: components["schemas"]["Revocation"];
+            state: string;
+            tags: string[];
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: int64 */
+            version: number;
+        };
+        NodeMatch: {
+            keyRetired: boolean;
+            keyRetiredReason?: string;
+            name: string;
+            nodeId: string;
+            reason: string;
+            state: string;
+        };
+        NodePatch: {
+            group: string;
+            name: string;
+            tags: string[];
+        };
+        nodeResponse: {
+            node: components["schemas"]["Node"];
         };
         overviewOperation: {
             docs: string;
@@ -1036,6 +1387,17 @@ export interface components {
             method?: string;
             password: string;
         };
+        Recheck: {
+            detail?: string;
+            /** Format: date-time */
+            finishedAt: string;
+            health?: unknown;
+            identityMatches: boolean;
+            jobId?: string;
+            /** Format: date-time */
+            requestedAt: string;
+            state: string;
+        };
         recoveryCodesResponse: {
             recoveryCodes: string[];
         };
@@ -1051,6 +1413,15 @@ export interface components {
             nodeId?: string;
             remoteAddr: string;
         };
+        Removal: {
+            /** Format: date-time */
+            at: string;
+            by: string;
+            mode: string;
+        };
+        removeNodeRequest: {
+            mode: string;
+        };
         ResourceRef: {
             device?: string;
             id?: string;
@@ -1060,8 +1431,23 @@ export interface components {
             path?: string;
             resolvedPath?: string;
         };
+        Revocation: {
+            /** Format: date-time */
+            agentNotifiedAt: string;
+            by: string;
+            pending: boolean;
+            propagationSeconds: number;
+            reason: string;
+            /** Format: date-time */
+            requestedAt: string;
+            /** Format: date-time */
+            sessionClosedAt: string;
+        };
         revokedResponse: {
             revoked: number;
+        };
+        revokeNodeRequest: {
+            reason: string;
         };
         roleInfo: {
             actions: string[];
@@ -1069,6 +1455,16 @@ export interface components {
         };
         rolesResponse: {
             roles: components["schemas"]["roleInfo"][];
+        };
+        Rotation: {
+            /** Format: date-time */
+            deliveredAt: string;
+            error?: string;
+            /** Format: date-time */
+            newNotAfter: string;
+            newSerial: string;
+            /** Format: date-time */
+            requestedAt: string;
         };
         Scope: {
             id: string;
@@ -3847,6 +4243,1164 @@ export interface operations {
             };
             /** @description Not Found: NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    listNodeEnrollments: {
+        parameters: {
+            query?: {
+                /** @description page.nextCursor of the previous page; continues the same query */
+                cursor?: string;
+                /** @description rows per page */
+                limit?: number;
+                /** @description comma-separated fields, '-' for descending; default -createdAt */
+                sort?: string;
+                /** @description enrollments in this state */
+                state?: "waiting" | "expired" | "revoked" | "pending_approval" | "approved" | "rejected" | "approval_expired";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListResponse_nodereg.Enrollment"];
+                };
+            };
+            /** @description Bad Request: QUERY_LIMIT_EXCEEDED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    createNodeEnrollment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["createEnrollmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["enrollmentCreatedResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    getNodeEnrollment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["enrollmentResponse"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    withdrawNodeEnrollment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["enrollmentResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: PRECHECK_FAILED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    approveNodeEnrollment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["approveEnrollmentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["nodeResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: PRECHECK_FAILED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    rejectNodeEnrollment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["enrollmentResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: PRECHECK_FAILED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    listNodes: {
+        parameters: {
+            query?: {
+                /** @description page.nextCursor of the previous page; continues the same query */
+                cursor?: string;
+                /** @description nodes in this group */
+                group?: string;
+                /** @description rows per page */
+                limit?: number;
+                /** @description name, host name or group contains this text, or the node id or key fingerprint starts with it */
+                q?: string;
+                /** @description comma-separated fields, '-' for descending; default name */
+                sort?: string;
+                /** @description nodes in this state; removed nodes are only listed when asked for */
+                state?: "active" | "revoked" | "identity_conflict" | "removed";
+                /** @description nodes with this tag */
+                tag?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListResponse_nodereg.Node"];
+                };
+            };
+            /** @description Bad Request: QUERY_LIMIT_EXCEEDED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    getNode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["nodeResponse"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    updateNode: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description "v<version>" from the ETag of the resource as you read it */
+                "If-Match": string;
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NodePatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["nodeResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Precondition Failed: VERSION_MISMATCH */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Precondition Required: VERSION_REQUIRED */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    setNodeMaintenance: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["maintenanceRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["maintenanceResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: PRECHECK_FAILED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    recheckNode: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["nodeResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: PRECHECK_FAILED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    removeNode: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["removeNodeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["nodeResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: NOT_AVAILABLE, PRECHECK_FAILED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    revokeNode: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["revokeNodeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["nodeResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: PRECHECK_FAILED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    rotateNodeCertificate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["nodeResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: PRECHECK_FAILED */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

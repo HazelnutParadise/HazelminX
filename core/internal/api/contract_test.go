@@ -20,6 +20,7 @@ import (
 	"github.com/HazelnutParadise/hazelminx/core/internal/confirm"
 	"github.com/HazelnutParadise/hazelminx/core/internal/iam"
 	"github.com/HazelnutParadise/hazelminx/core/internal/jobs"
+	"github.com/HazelnutParadise/hazelminx/core/internal/plans"
 	"github.com/HazelnutParadise/hazelminx/core/internal/store"
 )
 
@@ -62,6 +63,7 @@ func newContractHarness(t *testing.T) *contractHarness {
 	s.RegisterJobs(e)
 	s.MountListQueries(lq)
 	s.MountConfirmations(cf)
+	s.MountChangePlans(plans.New(plans.Options{DB: st.DB, Audit: svc, Jobs: e}))
 	s.RegisterAgentConnections(fakeAgentConnections{})
 	hs.h, hs.svc, hs.srv = s.Handler(), svc, s
 	t.Cleanup(func() {
@@ -637,6 +639,7 @@ func newStoppedHarness(t *testing.T) (*contractHarness, func()) {
 	s.RegisterJobs(e)
 	s.MountListQueries(lq)
 	s.MountConfirmations(confirm.New(st.DB, nil))
+	s.MountChangePlans(plans.New(plans.Options{DB: st.DB, Audit: svc, Jobs: e}))
 	hs.h, hs.svc, hs.srv = s.Handler(), svc, s
 	started := false
 	t.Cleanup(func() {
