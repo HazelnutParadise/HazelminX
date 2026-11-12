@@ -139,9 +139,11 @@ func (s *Service) SetupCode(ctx context.Context) (string, time.Time, error) {
 // leaves a role-less owner behind (which would lock everyone out). The
 // session is held to second-factor enrolment until the owner adds one.
 func (s *Service) CompleteSetup(ctx context.Context, code, username, password string, src Source) (*LoginResult, error) {
-	if ok, retry := s.limiter.Check(setupKey, src.IP, false); !ok {
+	attempt, retry := s.limiter.Begin(setupKey, src.IP, false)
+	if attempt == nil {
 		return &LoginResult{RetryAfter: retry}, ErrThrottled
 	}
+	defer attempt.Done()
 	need, err := s.NeedsSetup(ctx)
 	if err != nil {
 		return nil, err
@@ -159,7 +161,7 @@ func (s *Service) CompleteSetup(ctx context.Context, code, username, password st
 	}
 	s.setupMu.Unlock()
 	if !validCode {
-		s.limiter.Failure(setupKey, src.IP)
+		attempt.Failure()
 		s.record(ctx, s.db, AuditEvent{Action: "setup.owner", Scope: Global, Result: ResultFailed, Message: "invalid or expired setup code", TraceID: src.TraceID, SourceIP: src.IP})
 		return nil, ErrSetupCode
 	}
@@ -219,11 +221,13 @@ func (s *Service) Login(ctx context.Context, username, password string, src Sour
 	// Unknown usernames queue the same way, so waiting reveals nothing.
 	unlock := s.locks.lock(loginLockKey(username))
 	defer unlock()
-	if ok, retry := s.limiter.Check(username, src.IP, trusted); !ok {
+	attempt, retry := s.limiter.Begin(username, src.IP, trusted)
+	if attempt == nil {
 		// Not audited: the failures that led here are already on the ledger,
 		// and a throttled source must not be able to grow it at wire speed.
 		return &LoginResult{RetryAfter: retry}, ErrThrottled
 	}
+	defer attempt.Done()
 
 	u, hash, err := s.userByUsername(ctx, username)
 	if err != nil && !errors.Is(err, ErrNotFound) {
@@ -237,7 +241,7 @@ func (s *Service) Login(ctx context.Context, username, password string, src Sour
 		return nil, verr
 	}
 	if u == nil || !match || u.Status != StatusActive {
-		s.limiter.Failure(username, src.IP)
+		attempt.Failure()
 		s.record(ctx, s.db, AuditEvent{Action: "login", Scope: Global, Result: ResultFailed, Message: "invalid credentials",
 			After: map[string]any{"username": username}, TraceID: src.TraceID, SourceIP: src.IP})
 		return nil, ErrInvalidCredentials
@@ -252,7 +256,7 @@ func (s *Service) Login(ctx context.Context, username, password string, src Sour
 		if err != nil {
 			return nil, err
 		}
-		s.limiter.Success(username)
+		attempt.Success()
 		if err := s.record(ctx, s.db, AuditEvent{ActorID: u.ID, ActorName: u.Username, Action: "login.password", Scope: Global,
 			ResourceKind: "user", ResourceID: u.ID, Result: ResultOK, Message: "second factor required",
 			After: map[string]any{"methods": ch.Methods}, TraceID: src.TraceID, SourceIP: src.IP}); err != nil {
@@ -269,7 +273,7 @@ func (s *Service) Login(ctx context.Context, username, password string, src Sour
 	if err != nil {
 		return nil, err
 	}
-	s.limiter.Success(username)
+	attempt.Success()
 	return &LoginResult{Session: sess, User: u, EnrollmentRequired: RequiresSecondFactor(pr)}, nil
 }
 
