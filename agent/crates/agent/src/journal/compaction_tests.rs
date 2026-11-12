@@ -34,17 +34,21 @@ fn rec(kind: EventKind, job: &str, step: u32, at: OffsetDateTime, generation: u6
 }
 
 fn run_step(j: &mut Journal, job: &str, step: u32, at: OffsetDateTime, generation: u64) {
-    j.append(rec(EventKind::Started, job, step, at, generation))
+    let started = j
+        .append(rec(EventKind::Started, job, step, at, generation))
         .expect("append started");
     let mut done = rec(EventKind::Completed, job, step, at, generation);
     done.result = Some(serde_json::json!({"ok": true}));
+    done.evidence = vec![format!("agent://journal/{}", started.seq)];
     j.append(done).expect("append completed");
 }
 
 fn fail_step(j: &mut Journal, job: &str, step: u32, at: OffsetDateTime) {
-    j.append(rec(EventKind::Started, job, step, at, 1))
+    let started = j
+        .append(rec(EventKind::Started, job, step, at, 1))
         .expect("append started");
     let mut failed = rec(EventKind::Failed, job, step, at, 1);
+    failed.evidence = vec![format!("agent://journal/{}", started.seq)];
     failed.error = Some(StepFailure {
         code: "disk_full".to_string(),
         summary: "磁碟已滿".to_string(),
@@ -358,22 +362,198 @@ fn appends_after_compaction_continue_the_seq_across_restarts() {
 }
 
 #[test]
-fn a_compacted_job_may_be_started_again_by_a_new_request() {
+fn a_compacted_step_refuses_a_new_start_even_after_restart() {
     let d = tempdir().unwrap();
     let mut j = Journal::open(d.path()).unwrap();
     run_step(&mut j, "job-old", 1, old(), 1);
     j.ack(2).unwrap();
     j.compact(TEST_NOW).unwrap();
-    // The journal no longer knows the step; a later start is accepted and
-    // survives a reopen (transition checks only look at hot records).
-    j.append(rec(EventKind::Started, "job-old", 1, recent(), 1))
-        .unwrap();
+    assert!(
+        j.append(rec(EventKind::Started, "job-old", 1, recent(), 1))
+            .is_err(),
+        "a finished step never starts again"
+    );
     drop(j);
+    let mut j = Journal::open(d.path()).unwrap();
+    assert!(
+        j.append(rec(EventKind::Started, "job-old", 1, recent(), 1))
+            .is_err()
+    );
+    assert_eq!(j.last_seq(), 2, "nothing was written");
+}
+
+// ---------- outcomes of compacted steps ----------
+
+/// job-old's steps and job-failed's step answer with their outcome, whether
+/// their records are still in the journal or were compacted.
+fn assert_outcomes_known(j: &Journal, context: &str) {
+    for (job, step, kind, evidence) in [
+        ("job-old", 1, EventKind::Completed, "agent://journal/1"),
+        ("job-old", 2, EventKind::Completed, "agent://journal/3"),
+        ("job-failed", 1, EventKind::Failed, "agent://journal/5"),
+    ] {
+        let (got_kind, got_evidence) = match j.step_state(job, step) {
+            StepState::Completed(r) | StepState::Failed(r) => (r.kind, r.evidence),
+            StepState::Compacted(t) => (t.kind, t.evidence),
+            other => panic!("{context}: {job} step {step} lost its outcome: {other:?}"),
+        };
+        assert_eq!(got_kind, kind, "{context}: {job} step {step}");
+        assert_eq!(got_evidence, vec![evidence.to_string()], "{context}: {job}");
+    }
+}
+
+#[test]
+fn compacted_steps_keep_their_outcome_in_memory_and_across_restart() {
+    let d = tempdir().unwrap();
+    let (mut j, _) = mixed(d.path());
+    j.compact(TEST_NOW).unwrap();
+    match j.step_state("job-failed", 1) {
+        StepState::Compacted(t) => {
+            assert_eq!(t.kind, EventKind::Failed);
+            assert_eq!(t.seq, 6);
+            assert_eq!(t.error.as_ref().unwrap().summary, "磁碟已滿");
+        }
+        other => panic!("expected Compacted, got {other:?}"),
+    }
+    assert!(matches!(
+        j.step_state("job-old", 2),
+        StepState::Compacted(_)
+    ));
+    assert_outcomes_known(&j, "after compaction");
+    drop(j);
+
     let j = Journal::open(d.path()).unwrap();
     assert!(matches!(
         j.step_state("job-old", 1),
-        StepState::Interrupted { .. }
+        StepState::Compacted(_)
     ));
+    assert_outcomes_known(&j, "after restart");
+    assert_eq!(j.step_state("job-never", 1), StepState::NotStarted);
+    let mode = fs::metadata(d.path().join(OUTCOMES_FILE))
+        .unwrap()
+        .permissions()
+        .mode()
+        & 0o777;
+    assert_eq!(mode, 0o600);
+}
+
+#[test]
+fn outcomes_beyond_the_cap_drop_the_oldest_first() {
+    let d = tempdir().unwrap();
+    // A full outcomes file, written by hand, for seqs below anything real.
+    let mut text = String::new();
+    for n in 0..OUTCOMES_MAX_STEPS as u64 {
+        let t = Outcome {
+            seq: 0,
+            kind: EventKind::Completed,
+            job_id: format!("job-pre-{n}"),
+            step: 1,
+            evidence: Vec::new(),
+            error: None,
+        };
+        text.push_str(&serde_json::to_string(&t).unwrap());
+        text.push('\n');
+    }
+    fs::write(d.path().join(OUTCOMES_FILE), text).unwrap();
+    let (mut j, _) = mixed(d.path());
+    j.compact(TEST_NOW).unwrap();
+    assert_eq!(j.outcomes.len(), OUTCOMES_MAX_STEPS);
+    assert_outcomes_known(&j, "newest kept");
+    drop(j);
+    let j = Journal::open(d.path()).unwrap();
+    assert_eq!(j.outcomes.len(), OUTCOMES_MAX_STEPS);
+    assert_outcomes_known(&j, "newest kept after restart");
+}
+
+#[test]
+fn an_invalid_outcomes_file_fails_open() {
+    let d = tempdir().unwrap();
+    fs::write(d.path().join(OUTCOMES_FILE), "{\"seq\":\n").unwrap();
+    assert!(Journal::open(d.path()).is_err());
+}
+
+fn steps_for(dir: &Path) -> crate::steps::Steps {
+    crate::steps::Steps::new(
+        Journal::open(dir).unwrap(),
+        "node-fp".to_string(),
+        crate::actions::specs(),
+        crate::actions::capabilities(),
+    )
+}
+
+#[test]
+fn a_reconcile_of_a_compacted_step_reports_its_recorded_outcome() {
+    let d = tempdir().unwrap();
+    let (mut j, _) = mixed(d.path());
+    j.compact(TEST_NOW).unwrap();
+    drop(j);
+    let steps = steps_for(d.path());
+    let ask = |job: &str| Message::StepReconcile {
+        request_id: format!("rec-{job}"),
+        job_id: job.to_string(),
+        step: 1,
+        target_node: "node-fp".to_string(),
+    };
+
+    match steps.reconcile(&ask("job-old")).unwrap() {
+        crate::steps::ReconcileAnswer::Now(Message::ReconcileReport {
+            started,
+            completed,
+            failed,
+            evidence,
+            error,
+            ..
+        }) => {
+            assert!(started && completed && !failed);
+            assert_eq!(evidence, vec!["agent://journal/1".to_string()]);
+            assert_eq!(error, None);
+        }
+        other => panic!("expected a report, got {other:?}"),
+    }
+    match steps.reconcile(&ask("job-failed")).unwrap() {
+        crate::steps::ReconcileAnswer::Now(Message::ReconcileReport {
+            started,
+            completed,
+            failed,
+            error,
+            ..
+        }) => {
+            assert!(started && !completed && failed);
+            assert_eq!(error.unwrap().summary, "磁碟已滿");
+        }
+        other => panic!("expected a report, got {other:?}"),
+    }
+}
+
+#[test]
+fn a_repeated_execute_of_a_compacted_step_is_refused_as_outcome_unknown() {
+    let d = tempdir().unwrap();
+    let (mut j, _) = mixed(d.path());
+    j.compact(TEST_NOW).unwrap();
+    let last = j.last_seq();
+    drop(j);
+    let mut steps = steps_for(d.path());
+    let msg = Message::StepExecute {
+        request_id: "req-again".to_string(),
+        job_id: "job-old".to_string(),
+        step: 1,
+        step_name: "again".to_string(),
+        action: "agent.info".to_string(),
+        action_version: 1,
+        params: serde_json::Map::new(),
+        target_node: "node-fp".to_string(),
+        control_generation: 9,
+        expires_at: TEST_NOW + time::Duration::minutes(5),
+        retryable: true,
+        irreversible: false,
+    };
+    match steps.decide(&msg, TEST_NOW).unwrap() {
+        crate::steps::Decision::Reject(Message::StepRejected { code, .. }) => {
+            assert_eq!(code, hazelminx_protocol::step_reject_code::OUTCOME_UNKNOWN);
+        }
+        other => panic!("a compacted step must not run again: {other:?}"),
+    }
+    assert_eq!(steps.journal().last_seq(), last, "nothing journaled");
 }
 
 #[test]
@@ -461,9 +641,10 @@ fn open_fails_when_acked_is_below_the_compacted_floor() {
 // ---------- crashes during compaction ----------
 
 /// Every point at which a compaction can be cut off by a power loss.
-const CRASH_POINTS: [CrashPoint; 6] = [
+const CRASH_POINTS: [CrashPoint; 7] = [
     CrashPoint::ArchiveTorn,
     CrashPoint::AfterArchive,
+    CrashPoint::AfterOutcomes,
     CrashPoint::TmpTorn,
     CrashPoint::AfterTmp,
     CrashPoint::AfterRename,
@@ -493,6 +674,7 @@ fn a_crash_at_any_point_of_compaction_loses_no_unacked_or_kept_record() {
         let mut j = Journal::load(d.path())
             .unwrap_or_else(|e| panic!("{point:?}: reopen after crash: {e:#}"));
         assert_eq!(observe(&j), before, "{point:?}");
+        assert_outcomes_known(&j, &format!("{point:?}: after crash"));
         assert!(
             !d.path().join(JOURNAL_TMP_FILE).exists(),
             "{point:?}: leftover temp file is removed on open"
@@ -516,9 +698,11 @@ fn a_crash_at_any_point_of_compaction_loses_no_unacked_or_kept_record() {
             "{point:?}: archive"
         );
         assert_eq!(observe(&j), before, "{point:?}: after recovery");
+        assert_outcomes_known(&j, &format!("{point:?}: after recovery"));
         drop(j);
         let j = Journal::open(d.path()).unwrap();
         assert_eq!(observe(&j), before, "{point:?}: after second restart");
+        assert_outcomes_known(&j, &format!("{point:?}: after second restart"));
     }
 }
 

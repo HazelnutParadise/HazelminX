@@ -54,6 +54,12 @@ pub const RETAIN_MAX_RECORDS: usize = 10_000;
 /// The archive is rotated once it reaches this size; with the previous
 /// generation, the archive takes at most about twice this on disk.
 pub const ARCHIVE_MAX_BYTES: u64 = 16 * 1024 * 1024;
+/// Outcomes of compacted steps, rewritten (temp file, fsync, rename) by
+/// each compaction.
+pub const OUTCOMES_FILE: &str = "journal.outcomes.jsonl";
+const OUTCOMES_TMP_FILE: &str = "journal.outcomes.jsonl.tmp";
+/// At most this many compacted steps keep their outcome, newest first.
+pub const OUTCOMES_MAX_STEPS: usize = 50_000;
 /// How often `ack` tries to compact.
 const COMPACT_INTERVAL: std::time::Duration = std::time::Duration::from_secs(3600);
 
@@ -78,8 +84,10 @@ fn clock() -> OffsetDateTime {
 enum CrashPoint {
     /// Half of the archive batch is written.
     ArchiveTorn,
-    /// The archive batch is fsynced; the journal is not rewritten yet.
+    /// The archive batch is fsynced; the outcomes are not rewritten yet.
     AfterArchive,
+    /// The outcomes file is renamed; the journal is not rewritten yet.
+    AfterOutcomes,
     /// Half of the temporary journal is written.
     TmpTorn,
     /// The temporary journal is fsynced but not renamed.
@@ -140,6 +148,21 @@ pub struct NewRecord {
     pub error: Option<StepFailure>,
 }
 
+/// What is kept of a compacted step: its last (terminal) record without
+/// the result.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct Outcome {
+    pub seq: u64,
+    pub kind: EventKind,
+    pub job_id: String,
+    pub step: u32,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub evidence: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub error: Option<StepFailure>,
+}
+
 /// What the journal knows about one step.
 #[derive(Debug, Clone, PartialEq)]
 pub enum StepState {
@@ -152,6 +175,9 @@ pub enum StepState {
     },
     Completed(Record),
     Failed(Record),
+    /// The step finished and its records were compacted; only the outcome
+    /// is left.
+    Compacted(Outcome),
 }
 
 pub struct Journal {
@@ -160,6 +186,8 @@ pub struct Journal {
     records: Vec<Record>,
     acked: u64,
     floor: Floor,
+    /// Outcomes of compacted steps, by (job_id, step).
+    outcomes: HashMap<(String, u32), Outcome>,
     /// When `ack` next tries to compact.
     compact_due: Instant,
     /// False until a compaction succeeds in this process: an earlier one
@@ -281,6 +309,7 @@ impl Journal {
             records,
             acked,
             floor,
+            outcomes: HashMap::new(),
             compact_due: Instant::now() + COMPACT_INTERVAL,
             archive_clean: false,
             #[cfg(test)]

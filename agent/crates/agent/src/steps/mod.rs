@@ -160,7 +160,7 @@ impl Steps {
                     ));
                 }
             }
-            StepState::NotStarted => {}
+            StepState::NotStarted | StepState::Compacted(_) => {}
         }
 
         if *expires_at <= now {
@@ -326,7 +326,9 @@ impl Steps {
         };
 
         match self.journal.step_state(job_id, *step) {
-            StepState::NotStarted => Ok(report(false, false, false, Vec::new(), None)),
+            StepState::NotStarted | StepState::Compacted(_) => {
+                Ok(report(false, false, false, Vec::new(), None))
+            }
             StepState::Interrupted { started } => {
                 if self.running.contains(&(job_id.clone(), *step)) {
                     Ok(ReconcileAnswer::WhenFinished)
