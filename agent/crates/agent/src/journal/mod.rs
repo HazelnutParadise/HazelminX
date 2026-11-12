@@ -26,6 +26,27 @@ pub const JOURNAL_FILE: &str = "journal.jsonl";
 pub const ACKED_FILE: &str = "acked";
 /// Staging name for the acked watermark; renamed over `ACKED_FILE`.
 const ACKED_TMP_FILE: &str = "acked.tmp";
+pub const JOURNAL_TMP_FILE: &str = "journal.jsonl.tmp";
+pub const ARCHIVE_FILE: &str = "journal.archive.jsonl";
+pub const ARCHIVE_PREV_FILE: &str = "journal.archive.1.jsonl";
+pub const RETAIN_AGE: time::Duration = time::Duration::days(7);
+pub const RETAIN_MAX_RECORDS: usize = 10_000;
+pub const ARCHIVE_MAX_BYTES: u64 = 16 * 1024 * 1024;
+const COMPACT_INTERVAL: std::time::Duration = std::time::Duration::from_secs(3600);
+
+#[cfg(test)]
+const TEST_NOW: OffsetDateTime = time::macros::datetime!(2026-11-08 12:00:00 UTC);
+
+#[cfg(test)]
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum CrashPoint {
+    ArchiveTorn,
+    AfterArchive,
+    TmpTorn,
+    AfterTmp,
+    AfterRename,
+    AfterRotate,
+}
 
 /// One line of the journal.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -79,6 +100,10 @@ pub struct Journal {
     dir: PathBuf,
     records: Vec<Record>,
     acked: u64,
+    compact_due: std::time::Instant,
+    archive_clean: bool,
+    #[cfg(test)]
+    crash_at: Option<CrashPoint>,
 }
 
 impl Record {
@@ -159,7 +184,20 @@ impl Journal {
             dir: dir.to_path_buf(),
             records,
             acked,
+            compact_due: std::time::Instant::now() + COMPACT_INTERVAL,
+            archive_clean: false,
+            #[cfg(test)]
+            crash_at: None,
         })
+    }
+
+    #[cfg(test)]
+    fn open_without_compaction(dir: &Path) -> Result<Journal> {
+        Journal::open(dir)
+    }
+
+    pub fn compact(&mut self, _now: OffsetDateTime) -> Result<usize> {
+        Ok(0)
     }
 
     /// Appends one record with `seq = last_seq() + 1`, writes it as one JSON
@@ -468,3 +506,5 @@ fn parent_of(dir: &Path) -> &Path {
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod compaction_tests;
