@@ -161,7 +161,7 @@ Core 派送前先比對能力；Agent 沒宣告或版本較低的動作，Core �
 | `WRONG_NODE` | `targetNode` 不是這個節點的指紋 |
 | `EXPIRED` | 已超過 `expiresAt` |
 | `STALE_CONTROL_GENERATION` | `controlGeneration` 小於 Agent 已見過的最大值 |
-| `OUTCOME_UNKNOWN` | 紀錄顯示這個步驟開始過但沒有結束（例如 Agent 中途重開機），要先對帳；請求標記可重試時才會再跑 |
+| `OUTCOME_UNKNOWN` | 紀錄顯示這個步驟開始過但沒有結束（例如 Agent 中途重開機），要先對帳；請求標記可重試時才會再跑。步驟已完成、但紀錄已壓縮掉只剩結果時也回這個碼，Core 對帳後會看到「已完成」 |
 | `JOURNAL_UNAVAILABLE` | Agent 寫不了步驟紀錄（例如磁碟滿），所以什麼都沒做；可以稍後重試 |
 | `WRONG_RESOURCE_SCOPE` | 動作會碰到 `resources` 沒列的資源，或 `resources` 裡有沒名字、不乾淨的項目 |
 
@@ -174,6 +174,15 @@ Agent 的每個動作宣告它的參數會碰哪些資源。唯讀動作（目�
 這一層保證 Agent 只碰工作保留的資源；資源本身該不該由這個工作碰（擁有者），由 Core 決定（票 090）。
 
 同一個 `jobId`＋`step` 已有完成或失敗紀錄時，Agent 不重跑，直接重送那筆持久事件。步驟跑完卻寫不進紀錄時，Agent 結束會話；重連後 Core 對帳，看到的是「開始過、沒有結束」。
+
+Agent 會壓縮步驟紀錄（決策 0032）：工作的每筆紀錄都被 Core 確認、每個步驟都已結束，而且最後一筆超過 7 天（或比它新的已結束紀錄已超過 1 萬筆），整個工作就移出 `journal.jsonl`。移出後每個步驟仍留下最後一筆紀錄，只是不含 `result`：
+
+- `step_reconcile` 照留下的紀錄回報已完成或已失敗，跟壓縮前一樣。
+- 失敗的步驟再收到 `step_execute`，照樣重送那筆失敗事件。
+- 完成的步驟再收到 `step_execute`，因為 `result` 已經不在，回 `OUTCOME_UNKNOWN`，讓 Core 先對帳。
+- 已結束的步驟不會再開始。
+
+Agent 最多留 5 萬個被壓縮步驟的結果，更舊的會刪掉。Core 若在那之後才對帳那麼舊的步驟，Agent 會回「沒開始過」。
 
 Core 收到 `step_reconcile` 的答案前，Agent 若還在跑那個步驟，會等步驟結束才回答；Core 在會話存活期間定期再問，直到拿到答案。
 

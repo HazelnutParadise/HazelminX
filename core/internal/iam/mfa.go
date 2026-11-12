@@ -227,9 +227,11 @@ func (s *Service) Reauthenticate(ctx context.Context, p *Principal, password str
 	unlock := s.lockUser(p.User.ID)
 	defer unlock()
 	key := secondFactorKey(p.User.ID)
-	if ok, _ := s.limiter.Check(key, src.IP, false); !ok {
+	attempt, _ := s.limiter.Begin(key, src.IP, false)
+	if attempt == nil {
 		return ErrThrottled
 	}
+	defer attempt.Done()
 	_, hash, err := s.userByUsername(ctx, p.User.Username)
 	if err != nil {
 		return err
@@ -239,7 +241,7 @@ func (s *Service) Reauthenticate(ctx context.Context, p *Principal, password str
 		return err
 	}
 	if !match {
-		s.limiter.Failure(key, src.IP)
+		attempt.Failure()
 		s.record(ctx, s.db, AuditEvent{ActorID: p.User.ID, ActorName: p.User.Username, Action: "reauthenticate", Scope: Global,
 			ResourceKind: "session", ResourceID: p.SessionID, Result: ResultFailed, Message: "invalid credentials", TraceID: src.TraceID, SourceIP: src.IP})
 		return ErrInvalidCredentials
@@ -273,7 +275,7 @@ func (s *Service) Reauthenticate(ctx context.Context, p *Principal, password str
 			return err
 		}
 		tx.Rollback()
-		s.limiter.Failure(key, src.IP)
+		attempt.Failure()
 		s.record(ctx, s.db, AuditEvent{ActorID: p.User.ID, ActorName: p.User.Username, Action: "reauthenticate", Scope: Global,
 			ResourceKind: "session", ResourceID: p.SessionID, Result: ResultFailed, Message: "second factor rejected",
 			After: map[string]any{"method": proof.Method}, TraceID: src.TraceID, SourceIP: src.IP})
@@ -290,7 +292,7 @@ func (s *Service) Reauthenticate(ctx context.Context, p *Principal, password str
 	if err := tx.Commit(); err != nil {
 		return err
 	}
-	s.limiter.Success(key)
+	attempt.Success()
 	return nil
 }
 
@@ -461,17 +463,7 @@ func (s *Service) newChallenge(ctx context.Context, u *User, f factorState, src 
 // and the challenge's attempt count then see every answer before the next
 // is checked, so a burst of parallel guesses gets no extra tries and two
 // valid proofs racing on one challenge open one session.
-func (s *Service) lockUser(id string) func() {
-	s.userMu.Lock()
-	m := s.userLocks[id]
-	if m == nil {
-		m = &sync.Mutex{}
-		s.userLocks[id] = m
-	}
-	s.userMu.Unlock()
-	m.Lock()
-	return m.Unlock
-}
+func (s *Service) lockUser(id string) func() { return s.locks.lock("user:" + id) }
 
 // CompleteSecondFactor finishes a login started by Login. An unknown,
 // expired or spent challenge is ErrChallengeInvalid; a wrong answer is
@@ -488,9 +480,11 @@ func (s *Service) CompleteSecondFactor(ctx context.Context, challengeToken strin
 		return nil, ErrChallengeInvalid
 	}
 	key := secondFactorKey(c.userID)
-	if ok, retry := s.limiter.Check(key, src.IP, false); !ok {
+	attempt, retry := s.limiter.Begin(key, src.IP, false)
+	if attempt == nil {
 		return &LoginResult{RetryAfter: retry}, ErrThrottled
 	}
+	defer attempt.Done()
 	p, err := s.principal(ctx, c.userID)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
@@ -527,7 +521,7 @@ func (s *Service) CompleteSecondFactor(ctx context.Context, challengeToken strin
 			return nil, verr
 		}
 		spent := s.challenges.failure(challengeToken)
-		s.limiter.Failure(key, src.IP)
+		attempt.Failure()
 		s.record(ctx, s.db, AuditEvent{ActorID: p.User.ID, ActorName: p.User.Username, Action: "login.second-factor", Scope: Global,
 			Result: ResultFailed, Message: "second factor rejected", After: map[string]any{"method": proof.Method, "challengeSpent": spent},
 			TraceID: src.TraceID, SourceIP: src.IP})
@@ -541,7 +535,7 @@ func (s *Service) CompleteSecondFactor(ctx context.Context, challengeToken strin
 		return nil, err
 	}
 	s.challenges.drop(challengeToken)
-	s.limiter.Success(key)
+	attempt.Success()
 	return &LoginResult{Session: sess, User: &p.User}, nil
 }
 
@@ -629,9 +623,11 @@ func (s *Service) ConfirmTOTP(ctx context.Context, p *Principal, code string, sr
 	unlock := s.lockUser(p.User.ID)
 	defer unlock()
 	key := secondFactorKey(p.User.ID)
-	if ok, _ := s.limiter.Check(key, src.IP, false); !ok {
+	attempt, _ := s.limiter.Begin(key, src.IP, false)
+	if attempt == nil {
 		return nil, ErrThrottled
 	}
+	defer attempt.Done()
 	var id, secretID, created string
 	var confirmed sql.NullString
 	err := s.db.QueryRowContext(ctx, `SELECT id,secret_id,created_at,confirmed_at FROM totp_credentials WHERE user_id=?`, p.User.ID).Scan(&id, &secretID, &created, &confirmed)
@@ -650,7 +646,7 @@ func (s *Service) ConfirmTOTP(ctx context.Context, p *Principal, code string, sr
 	}
 	step, ok := VerifyTOTP(seed, code, s.now(), 0)
 	if !ok {
-		s.limiter.Failure(key, src.IP)
+		attempt.Failure()
 		s.record(ctx, s.db, AuditEvent{ActorID: p.User.ID, ActorName: p.User.Username, Action: "totp.enroll", Scope: Global,
 			ResourceKind: "user", ResourceID: p.User.ID, Result: ResultFailed, Message: "code rejected", TraceID: src.TraceID, SourceIP: src.IP})
 		return nil, ErrSecondFactor
@@ -688,7 +684,7 @@ func (s *Service) ConfirmTOTP(ctx context.Context, p *Principal, code string, sr
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	s.limiter.Success(key)
+	attempt.Success()
 	return out, nil
 }
 

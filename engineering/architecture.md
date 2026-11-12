@@ -74,7 +74,7 @@ scripts/   CI 與發布腳本（簽署清單、依賴檢查）
 | 協定單一來源 | `agent/crates/protocol`（Rust serde 型別）+ `engineering/contracts/fixtures/*.json` 黃金樣本；Go 端 `core/internal/protocol` 以相同樣本做契約測試 | 兩種語言各自編譯，樣本保證相容。 |
 | 高權限隔離 | `hazelminx-privileged` 獨立行程（root），Unix socket，`SO_PEERCRED` 驗證呼叫者 uid；每個動作是具名 enum + 結構化參數，執行時以 `Command::args` 傳遞，不經 shell；每個請求附 Core 簽發的 Ed25519 授權憑證（權限名稱清單、有效期上限 24 小時、可依 id 撤銷），執行器以 `issuer.pub` 驗簽並逐動作比對權限；`health`／`revoke` 不排動作名額，輸出走有界通道 | 32.2、SEC-005、SEC-006、SEC-009。Komodo `lib/command` 以 shell 字串執行，不直接沿用。 |
 | 主機變更帳本 | 執行器在每個會改主機的動作前後寫帳本：動作在 `Action::ledger_decl` 宣告會改的對象（只讀動作宣告只讀），執行器先讀出變更前狀態、同步寫入意圖行，才執行，之後讀變更後狀態寫結果行。沒有宣告、帳本不可用、讀不到變更前狀態都拒絕並記安全事件。帳本在 `/var/lib/hazelminx/ledger`（root 0700，上層不得可被他人寫入），每行帶前一行的 SHA-256 形成雜湊鏈，檔案類對象另存原內容備份。Core 的副本經 Core↔Agent 通道同步：Core 為每一頁簽一張只有 `host.ledger.read` 的授權憑證（簽發金鑰在機密服務），送 `ledger_pull`，Agent 轉交執行器的 `ledger_export`，Core 驗證雜湊鏈後存進只能新增的 `host_ledger_lines`。安裝器（013）用同一個 `Recorder` 記錄安裝步驟，安裝前先跑 `snapshot capture` | 增補 07 第 55.1 節、UNX-001、UNX-002、T-250。擁有權依「變更前是否存在」與「變更前後狀態是否不同」判定，之後只升不降。原始行原樣傳給 Core，Go 端以 `json.RawMessage` 驗雜湊，不必重現 Rust 的序列化。 |
-| 工作引擎 | Core 持久化工作與步驟；Agent 在每個步驟開始前與結束後先寫入本機 append-only 紀錄（`journal.jsonl`，fsync）再回報；重連先對帳（Core 以 `step_reconcile` 查 Agent 紀錄）再決定續跑，已完成步驟不重跑，中斷的步驟只有標記可重試時才再跑；資源鎖以「裝置身分 + 掛載 + 正規化路徑」為鍵 | 33 章。 |
+| 工作引擎 | Core 持久化工作與步驟；Agent 在每個步驟開始前與結束後先寫入本機 append-only 紀錄（`journal.jsonl`，fsync）再回報，已確認且已結束的工作會壓縮進封存檔，步驟只留結果（決策 0032）；重連先對帳（Core 以 `step_reconcile` 查 Agent 紀錄）再決定續跑，已完成步驟不重跑，中斷的步驟只有標記可重試時才再跑；資源鎖以「裝置身分 + 掛載 + 正規化路徑」為鍵 | 33 章。 |
 | 前端 | React 19、TypeScript、Vite+（`vp`）；路由 react-router；資料 TanStack Query；表單 react-hook-form + zod；UI 以 Cloudflare Kumo（`@cloudflare/kumo`，MIT，Base UI 原語＋Tailwind v4）為元件底層，主題以 DESIGN.md token 覆蓋 Kumo 語意 token，對映表在 `design/component-mapping.md`；i18n i18next（zh-TW、en）；終端機 xterm.js；編輯器 CodeMirror 6；圖表 Kumo Chart（ECharts 6），配色與規則依 DESIGN.md「資料視覺化」 | 7.2、UI-005；不複製上游品牌素材。 |
 | Zentinel 整合 | 固定版本；Core 產生完整解析後的 KDL（不含 `${VAR}`）→ Agent 經 privileged 寫入候選檔 → `zentinel --validate`（以選定版本能力為準）→ 原子換檔 → SIGHUP → 實際請求驗證 | 研究報告：無 HTTP reload API、無環境變數代換、admin listener 預設 `0.0.0.0:9090` 且無驗證（必須改綁本機並以防火牆限制）。 |
 | 可信訪客 IP | Zentinel 只處理 `X-Forwarded-For` 與 per-listener `trusted-proxies`；`CF-Connecting-IP`／Tunnel 判定由平台維護的 Zentinel agent filter 實作，輸出單一 `X-HazelminX-Client-IP` 供 WAF、限速、分析共用 | IP-002、研究報告第 6 節。 |
@@ -190,4 +190,5 @@ CI 必跑：`go test ./... && go vet`、`cargo test --workspace && cargo clippy 
 - [0029 — Agent 每個步驟前後先寫 journal 才回報](decisions/0029-agent-step-journal.md)
 - [0030 — 握手訊息寬鬆解碼，之後嚴格解碼](decisions/0030-lenient-handshake-strict-after.md)
 - [0031 — 節點註冊用一次性碼換憑證，Core CA 由註冊碼驗證，管理員核對後才簽發](decisions/0031-node-enrollment-code-and-ca-discovery.md)
+- [0032 — Agent 壓縮已結束的步驟紀錄，被壓縮的步驟仍留下結果](decisions/0032-agent-journal-compaction.md)
 - [0033 — 變更計畫的批准綁定內容摘要，批准與執行前都重算計畫](decisions/0033-change-plan-approval-binding.md)
