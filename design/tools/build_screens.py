@@ -181,12 +181,13 @@ def overview() -> str:
                 f'{U.state_timeline(timeline)}<div class="ft"><span class="note">{domain}</span><span style="margin-left:auto" class="note">{note}</span></div></a>')
     projects = f"""
     <section class="panel" id="projects" aria-labelledby="h-proj">
-      <div class="ph"><h2 id="h-proj">專案 · 3 環境</h2>{U.legend(TL_LEGEND)}<a class="more" href="Projects.dc.html">全部 →</a></div>
+      <div class="ph"><h2 id="h-proj">專案 · 12 個環境</h2>{U.legend(TL_LEGEND)}<a class="more" href="Projects.dc.html">全部 →</a></div>
       <div class="fleet">
-        {pcard("shop", "production", U.status("ok", "成功"), "a3f9c1e", "02:57", "tw-01", "shop.example.tw", "oooooooofoooooooooooooro", "自動部署暫停：#418 待批准")}
-        {pcard("wiki", "production", U.status("ok", "成功"), "7d02b4a", "1 天前", "jp-02", "wiki.example.tw", "oooooooooooooooooooooooo")}
         {pcard("shop", "staging", U.status("dng", "失敗"), "c91e0d7", "03:12", "lab-mini", "staging.shop.example.tw", "oooofooooooooofoooooffff", "migration 不相容")}
+        {pcard("shop", "production", U.status("ok", "成功"), "a3f9c1e", "02:57", "tw-01", "shop.example.tw", "oooooooofoooooooooooooro", "自動部署暫停：#418 待批准")}
+        {pcard("wiki", "production", U.status("ok", "成功"), "7d02b4a", "1 天前", "jp-02", "wiki.example.tw", "oooooooooooooooooooooooo", "已釘選")}
       </div>
+      <div style="display:flex;gap:8px;align-items:center;padding:10px 14px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)">另外 9 個環境都正常，最近 24 小時沒有部署<a class="more" href="Projects.dc.html" style="margin-left:auto">看全部 →</a></div>
     </section>"""
 
     main = (U.page_head("總覽", OBS, '<a class="btn pri" href="AddNode.dc.html">新增主機</a><a class="btn" href="GitHubSource.dc.html">部署專案</a>',
