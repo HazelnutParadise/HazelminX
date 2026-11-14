@@ -246,7 +246,7 @@ describe("host overview: exhaustion and hardware", () => {
 
   it("shows the kernel's unlimited file-max as no limit instead of a mangled 2^63", async () => {
     const l = latest();
-    l.exhaustion.fileHandles = { ...l.exhaustion.fileHandles, limit: 9223372036854775807, percent: 0 };
+    l.exhaustion.fileHandles = { ...l.exhaustion.fileHandles, limit: Number.MAX_SAFE_INTEGER * 1024, percent: 0 };
     coreWith({ l });
     renderAt("/nodes/tw-01");
     const lim = await panel("系統上限");
@@ -284,6 +284,23 @@ describe("host overview: exhaustion and hardware", () => {
     const swap = within(mem).getByText("Swap").closest("li")!;
     expect(within(swap).getByText("未提供")).toBeInTheDocument();
     expect(within(mem).getByText("12.0 GiB / 32.0 GiB")).toBeInTheDocument();
+  });
+
+  it("keeps a bar that only compares interfaces neutral, even for the busiest one", async () => {
+    const l = latest(
+      {},
+      {
+        networks: [{ name: "wg0", class: "virtual", speedMbps: null, rxBytesPerSecond: 9e6, txBytesPerSecond: 1e6 }],
+      },
+    );
+    coreWith({ l });
+    renderAt("/nodes/tw-01");
+    const net = await panel("網路");
+    const meter = within(net).getByRole("meter");
+    expect(meter).toHaveAttribute("aria-valuenow", "100");
+    expect(meter).toHaveClass("is-use");
+    const chart = await screen.findByRole("figure", { name: "網路" });
+    expect(await within(chart).findByText(/這台主機沒有實體網卡/)).toBeInTheDocument();
   });
 
   it("leaves the loopback interface out of the network card", async () => {

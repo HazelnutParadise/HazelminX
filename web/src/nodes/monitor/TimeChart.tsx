@@ -23,6 +23,10 @@ interface Props {
   yMax?: number;
   /** Smallest top from the data, so near-zero values do not give an axis of identical rounded labels. */
   minTop?: number;
+  /** Axis steps are nice multiples of this unit (2^30 for GiB), not of 1. */
+  scale?: number;
+  /** Shown instead of 「這段時間沒有資料」 when the chart has nothing it could read. */
+  emptyText?: string;
   /** The newest sample is older than three intervals: its point is drawn hollow (DESIGN.md 過期尾段). */
   stale?: boolean;
   /** Under the chart: units and what the series cover. */
@@ -60,6 +64,8 @@ export function TimeChart({
   partial,
   extra,
   minTop = 0,
+  scale = 1,
+  emptyText,
 }: Props) {
   const { t } = useTranslation();
   const id = useId();
@@ -70,8 +76,8 @@ export function TimeChart({
     if (yMax != null) return yMax;
     let m = 0;
     for (const s of series) for (const p of s.points) m = Math.max(m, p.value);
-    return niceMax(Math.max(m, minTop));
-  }, [series, yMax]);
+    return niceMax(Math.max(m, minTop) / scale) * scale;
+  }, [series, yMax, minTop, scale]);
   const x = (ms: number) => ((ms - from) / span) * W;
   const y = (v: number) => H - (Math.min(Math.max(v, 0), top) / top) * H;
   const withDate = span > 24 * 3600_000;
@@ -129,8 +135,8 @@ export function TimeChart({
         {extra}
         {series.length > 1 && (
           <ul className="hx-legend" aria-label={t("nodes.monitor.legend")}>
-            {series.map((s) => (
-              <li key={s.name}>
+            {series.map((s, i) => (
+              <li key={i}>
                 <span className={`hx-swatch hx-c-${s.color}`} aria-hidden="true" />
                 {s.name}
               </li>
@@ -157,7 +163,7 @@ export function TimeChart({
         </div>
         <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
           {paths.map((p, i) => (
-            <g key={series[i]!.name} className={`hx-c-${series[i]!.color}`}>
+            <g key={i} className={`hx-c-${series[i]!.color}`}>
               {single && <path d={p.area} className="hx-chart-area" />}
               <path d={p.d} className="hx-chart-line" vectorEffect="non-scaling-stroke" />
             </g>
@@ -168,7 +174,7 @@ export function TimeChart({
             (p, i) =>
               p && (
                 <span
-                  key={series[i]!.name}
+                  key={i}
                   className={`hx-chart-stale hx-c-${series[i]!.color}`}
                   style={{ left: `${(x(Date.parse(p.at)) / W) * 100}%`, top: `${(y(p.value) / H) * 100}%` }}
                   aria-hidden="true"
@@ -185,7 +191,7 @@ export function TimeChart({
             >
               <div className="hx-chart-tip-time">{time(read.at, withDate)}</div>
               {series.map((s, i) => (
-                <div key={s.name} className="hx-chart-tip-row">
+                <div key={i} className="hx-chart-tip-row">
                   <span className={`hx-swatch hx-c-${s.color}`} />
                   <span>{s.name}</span>
                   <span className="hx-mono">
@@ -197,7 +203,9 @@ export function TimeChart({
           </>
         )}
         {!loading && (empty || error) && (
-          <p className="hx-chart-empty">{error ? t("nodes.monitor.historyFailed") : t("nodes.monitor.noHistory")}</p>
+          <p className="hx-chart-empty">
+            {error ? t("nodes.monitor.historyFailed") : (emptyText ?? t("nodes.monitor.noHistory"))}
+          </p>
         )}
       </div>
       <div className="hx-chart-x" aria-hidden="true">
@@ -250,8 +258,8 @@ function ChartTable({
         <thead>
           <tr>
             <th scope="col">{t("nodes.monitor.time")}</th>
-            {series.map((s) => (
-              <th key={s.name} scope="col">
+            {series.map((s, i) => (
+              <th key={i} scope="col">
                 {s.name}
               </th>
             ))}
@@ -264,8 +272,8 @@ function ChartTable({
                 {time(Date.parse(at), withDate)}
                 {ps.some((p) => p?.gapBefore) && <span className="hx-sub"> {t("nodes.monitor.afterGap")}</span>}
               </td>
-              {series.map((s, i) => (
-                <td key={s.name} className="hx-mono">
+              {series.map((_, i) => (
+                <td key={i} className="hx-mono">
                   {ps[i] ? format(ps[i]!.value) : "—"}
                 </td>
               ))}

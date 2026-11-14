@@ -823,7 +823,8 @@
       "hideTable": "Hide table",
       "time": "Time",
       "afterGap": "(after a gap)",
-      "noLimit": "{{used}} · no limit"
+      "noLimit": "{{used}} · no limit",
+      "noPhysicalNic": "This host has no physical interface; history is kept for physical interfaces only"
     }
   }
 }

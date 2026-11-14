@@ -242,10 +242,10 @@ function ExhaustionNotice({ x }: { x: Exhaustion }) {
   );
 }
 
-function Meter({ pct, label }: { pct: number | null; label: string }) {
+function Meter({ pct, label, neutral }: { pct: number | null; label: string; neutral?: boolean }) {
   return (
     <span
-      className={`hx-meter is-${meterTone(pct)}`}
+      className={`hx-meter is-${neutral ? "use" : meterTone(pct)}`}
       role="meter"
       aria-label={label}
       aria-valuemin={0}
@@ -263,6 +263,8 @@ interface BarRow {
   sub?: string;
   /** 0–100 for the bar; null draws an empty track. */
   pct: number | null;
+  /** The bar compares rows with each other, not use against a capacity: always the neutral colour. */
+  relative?: boolean;
   value: ReactNode;
   flag?: ReactNode;
 }
@@ -276,7 +278,7 @@ function Bars({ rows, label }: { rows: BarRow[]; label: string }) {
         <span className="hx-mono">{r.name}</span>
         {r.sub && <span className="hx-sub">{r.sub}</span>}
       </span>
-      <Meter pct={r.pct} label={`${label} ${r.name}`} />
+      <Meter pct={r.pct} label={`${label} ${r.name}`} neutral={r.relative} />
       <span className="hx-bar-value hx-mono">
         {r.value}
         {r.flag}
@@ -374,6 +376,7 @@ function Hardware({ sample: s, exhaustion: x }: { sample: Sample; exhaustion: Ex
           .filter(Boolean)
           .join(" · "),
         pct: sum == null ? null : cap ? ratio(sum, cap) : netMax > 0 ? ratio(sum, netMax) : 0,
+        relative: !cap,
         value:
           sum == null ? (
             <NotProvided />
@@ -549,42 +552,53 @@ interface SeriesSpec {
   color: ChartSeries["color"];
 }
 
-/** Reads one chart's series for the range; refetched as often as the range's points change. */
-function useSeries(nodeId: string, range: RangeKey, specs: SeriesSpec[], window: { from: number; to: number }) {
+/** How often a range's points change: every sample for raw ranges, every rollup bucket (5 minutes) otherwise. */
+const stepOf = (range: RangeKey) => (RANGES.find((x) => x.key === range)!.resolution === "raw" ? REFRESH_MS : 300_000);
+
+/** The window a read covers: ending at the next step boundary, as long as the range. */
+function windowOf(range: RangeKey, now = Date.now()) {
+  const r = RANGES.find((x) => x.key === range)!;
+  const step = stepOf(range);
+  const to = Math.ceil(now / step) * step;
+  return { from: to - r.seconds * 1000, to };
+}
+
+/**
+ * Reads one chart's series for the range. The key has no time in it: each series is one cache entry per range,
+ * read again once per step, and the window it covered travels with the data so the axis matches the points.
+ */
+function useSeries(nodeId: string, range: RangeKey, specs: SeriesSpec[]) {
   const r = RANGES.find((x) => x.key === range)!;
   const qs = useQueries({
     queries: specs.map((s) => ({
-      queryKey: [...monitorKeys.history(nodeId, range, s.series, s.key), window.to] as const,
-      queryFn: ({ signal }: { signal: AbortSignal }) =>
-        monitorApi.history(
+      queryKey: monitorKeys.history(nodeId, range, s.series, s.key),
+      queryFn: async ({ signal }: { signal: AbortSignal }) => {
+        const w = windowOf(range);
+        const h = await monitorApi.history(
           nodeId,
           {
             series: s.series,
             key: s.key,
             resolution: r.resolution,
-            from: new Date(window.from).toISOString(),
-            to: new Date(window.to).toISOString(),
+            from: new Date(w.from).toISOString(),
+            to: new Date(w.to).toISOString(),
           },
           signal,
-        ),
+        );
+        return { ...h, ...w };
+      },
+      refetchInterval: stepOf(range),
       placeholderData: (prev: unknown) => prev as never,
     })),
   });
+  const first = qs.find((q) => q.data)?.data;
   return {
     series: specs.map((s, i) => ({ name: s.name, color: s.color, points: qs[i]?.data?.points ?? [] })),
+    window: first ? { from: first.from, to: first.to } : windowOf(range),
     loading: qs.some((q) => q.isFetching),
     error: qs.some((q) => q.isError) && qs.every((q) => !q.data),
     partial: qs.some((q) => q.data && !q.data.complete),
   };
-}
-
-/** The window end, moved forward on each refresh tick of the range (10 s raw, 60 s at 5 minutes). */
-function useWindow(range: RangeKey) {
-  const r = RANGES.find((x) => x.key === range)!;
-  const now = useNow(r.resolution === "raw" ? REFRESH_MS : 60_000);
-  const step = r.resolution === "raw" ? REFRESH_MS : 60_000;
-  const to = Math.ceil(now.getTime() / step) * step;
-  return { from: to - r.seconds * 1000, to };
 }
 
 function Charts({ nodeId, latest }: { nodeId: string; latest?: LatestMetrics }) {
@@ -592,7 +606,6 @@ function Charts({ nodeId, latest }: { nodeId: string; latest?: LatestMetrics }) 
   const [params, setParams] = useSearchParams();
   const range = (RANGES.find((r) => r.key === params.get("range"))?.key ?? "1h") as RangeKey;
   const r = RANGES.find((x) => x.key === range)!;
-  const win = useWindow(range);
   const s = latest?.sample;
   const disks = (s?.disks ?? [])
     .filter((d): d is NonNullable<typeof d> => d != null && d.class !== "loop")
@@ -655,7 +668,6 @@ function Charts({ nodeId, latest }: { nodeId: string; latest?: LatestMetrics }) 
         <SeriesChart
           nodeId={nodeId}
           range={range}
-          win={win}
           stale={stale}
           title={t("nodes.monitor.cpuUsage")}
           specs={[{ series: "cpu.usage", name: t("nodes.monitor.cpu"), color: "hazel" }]}
@@ -665,7 +677,6 @@ function Charts({ nodeId, latest }: { nodeId: string; latest?: LatestMetrics }) 
         <SeriesChart
           nodeId={nodeId}
           range={range}
-          win={win}
           stale={stale}
           title={t("nodes.monitor.memory")}
           specs={[
@@ -675,12 +686,12 @@ function Charts({ nodeId, latest }: { nodeId: string; latest?: LatestMetrics }) 
           ]}
           format={bytes}
           minTop={2 ** 30}
+          scale={2 ** 30}
           note={t("nodes.monitor.memNote")}
         />
         <SeriesChart
           nodeId={nodeId}
           range={range}
-          win={win}
           stale={stale}
           title={t("nodes.monitor.diskIo")}
           picker={
@@ -700,7 +711,6 @@ function Charts({ nodeId, latest }: { nodeId: string; latest?: LatestMetrics }) 
         <SeriesChart
           nodeId={nodeId}
           range={range}
-          win={win}
           stale={stale}
           title={t("nodes.monitor.network")}
           picker={n ? <KeyPicker label={t("nodes.monitor.iface")} value={n} options={nets} onChange={setNet} /> : null}
@@ -715,11 +725,11 @@ function Charts({ nodeId, latest }: { nodeId: string; latest?: LatestMetrics }) 
           format={rate}
           minTop={1024}
           note={t("nodes.monitor.netNote")}
+          emptyText={s && nets.length === 0 ? t("nodes.monitor.noPhysicalNic") : undefined}
         />
         <SeriesChart
           nodeId={nodeId}
           range={range}
-          win={win}
           stale={stale}
           title={t("nodes.monitor.loadAvg")}
           specs={[
@@ -733,7 +743,6 @@ function Charts({ nodeId, latest }: { nodeId: string; latest?: LatestMetrics }) 
         <SeriesChart
           nodeId={nodeId}
           range={range}
-          win={win}
           stale={stale}
           title={t("nodes.monitor.temperature")}
           specs={temps.map((v, i) => ({
@@ -780,7 +789,6 @@ function KeyPicker({
 function SeriesChart({
   nodeId,
   range,
-  win,
   stale,
   title,
   specs,
@@ -789,16 +797,19 @@ function SeriesChart({
 }: {
   nodeId: string;
   range: RangeKey;
-  win: { from: number; to: number };
   stale: boolean;
   title: string;
   specs: SeriesSpec[];
   picker?: ReactNode;
   format: (v: number) => string | null;
   yMax?: number;
+  minTop?: number;
+  scale?: number;
   note?: string;
+  emptyText?: string;
 }) {
-  const h = useSeries(nodeId, range, specs, win);
+  const h = useSeries(nodeId, range, specs);
+  const win = h.window;
   return (
     <TimeChart
       extra={picker}

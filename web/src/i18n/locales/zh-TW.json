@@ -800,7 +800,8 @@
       "hideTable": "收起表格",
       "time": "時間",
       "afterGap": "（前面有缺口）",
-      "noLimit": "{{used}} · 沒有上限"
+      "noLimit": "{{used}} · 沒有上限",
+      "noPhysicalNic": "這台主機沒有實體網卡，只有虛擬網卡的流量不記錄歷史"
     }
   }
 }
