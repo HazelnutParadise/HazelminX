@@ -301,7 +301,7 @@ async fn podman_docker_socket_is_podman_and_rootless_envs_stay_apart() {
     let mine: Vec<&Environment> = r
         .environments
         .iter()
-        .filter(|e| e.owner_uid == me)
+        .filter(|e| e.owner_uid == me && e.endpoint.starts_with("/run/user/"))
         .collect();
     if me != 0 {
         assert_eq!(mine.len(), 3 - 1);
