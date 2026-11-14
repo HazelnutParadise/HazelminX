@@ -1,0 +1,12 @@
+{
+  "type": "storage_usage_request",
+  "requestId": "sur_4f1c2a9b0d3e5f67",
+  "grant": {
+    "id": "grant-storage-01",
+    "subject": "system:storage-usage",
+    "permissions": ["host.storage.read"],
+    "not_before": "2026-11-14T03:05:00Z",
+    "expires_at": "2026-11-14T03:10:00Z",
+    "signature": "2fa524355de6c74329d890e58181869704ca982e5d7de5d3c27afbc358f987ebe00de1fc1ef661a50a9c45fc986f33a4219ae466e7057bf99ead7b950d53ac01"
+  }
+}

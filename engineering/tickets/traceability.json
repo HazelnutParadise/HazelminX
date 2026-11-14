@@ -723,13 +723,58 @@
         "019",
         "020"
       ],
+      "requirements": [],
+      "acceptance_tests": [],
+      "issue": 30
+    },
+    {
+      "id": "030.1",
+      "file": "030.1-storage-inventory-usage-alerts-api.md",
+      "title": "Agent 回報磁碟、分割區、掛載與用量分類，Core 保存並以 API 提供容量告警",
+      "epic": "storage",
+      "milestone": "M1",
+      "blocked_by": [
+        "020.1"
+      ],
       "requirements": [
         "STO-001",
-        "STO-010",
+        "STO-010"
+      ],
+      "acceptance_tests": [],
+      "issue": 170,
+      "parent": "030"
+    },
+    {
+      "id": "030.2",
+      "file": "030.2-storage-screens.md",
+      "title": "維運者可以在儲存與備份頁、主機磁碟頁看到磁碟、掛載、用量分類與容量告警",
+      "epic": "storage",
+      "milestone": "M1",
+      "blocked_by": [
+        "030.1",
+        "017"
+      ],
+      "requirements": [],
+      "acceptance_tests": [],
+      "issue": 171,
+      "parent": "030"
+    },
+    {
+      "id": "030.3",
+      "file": "030.3-snapshots-vs-backups.md",
+      "title": "管理員可以管理快照與檔案備份，兩者清楚區分",
+      "epic": "storage",
+      "milestone": "M1",
+      "blocked_by": [
+        "030.1",
+        "078"
+      ],
+      "requirements": [
         "STO-011"
       ],
       "acceptance_tests": [],
-      "issue": 30
+      "issue": 172,
+      "parent": "030"
     },
     {
       "id": "031",
