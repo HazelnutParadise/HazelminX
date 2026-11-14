@@ -141,7 +141,9 @@ Agent 主動連到 Core 的 Agent 入口（預設 `:9801`，路徑 `/agent/v1/co
 | `metrics_report` | Agent→Core | Core 還沒確認的樣本，由舊到新：`samples`、`droppedSamples` |
 | `metrics_ack` | Core→Agent | `seq` 以前的樣本都已保存 |
 | `host_storage` | Agent→Core | 儲存清單：`collectedAt`、`storage`（見下方「儲存清單與用量」） |
-| `storage_usage` | Agent→Core | 最近一輪用量量測：`usage` |
+| `storage_usage_request` | Core→Agent | 要一輪用量量測：`requestId`、`grant`（帶 `host.storage.read`），見下方「儲存清單與用量」 |
+| `storage_usage` | Agent→Core | 執行器的量測原樣轉送：`requestId`、`usage` |
+| `storage_usage_unavailable` | Agent→Core | 拿不到量測：`requestId`、`code`（`EXECUTOR_UNREACHABLE`、`EXECUTOR_REFUSED`、`MEASURE_FAILED`）、`message` |
 | `engines_probe` | Core→Agent | 要主機上的容器引擎：`requestId`、`grant`（帶 `host.engines.read`），見下方「容器引擎」 |
 | `engines_report` | Agent→Core | 執行器的引擎報告原樣轉送：`requestId`、`collectedAt`、`report` |
 | `engines_unavailable` | Agent→Core | 拿不到報告：`requestId`、`code`（`EXECUTOR_UNREACHABLE`、`EXECUTOR_REFUSED`、`INSPECT_FAILED`）、`message` |
@@ -158,7 +160,7 @@ Agent 主動連到 Core 的 Agent 入口（預設 `:9801`，路徑 `/agent/v1/co
 | `host.ledger` | 1 | `ledger_pull`、`ledger_page`、`ledger_unavailable` |
 | `node.certificate` | 1 | `certificate_renew`、`certificate_installed`、`certificate_refused` |
 | `host.metrics` | 1 | `host_facts`、`metrics_report`、`metrics_ack`。雙方都宣告時 Agent 才送；Core 沒宣告時 Agent 不送 |
-| `host.storage` | 1 | `host_storage`、`storage_usage`。雙方都宣告時 Agent 才送；Core 沒宣告時 Agent 不送 |
+| `host.storage` | 1 | `host_storage`、`storage_usage_request`、`storage_usage`、`storage_usage_unavailable`。Core 宣告時 Agent 才送 `host_storage`；Agent 宣告時 Core 才送 `storage_usage_request` |
 | `host.engines` | 1 | `engines_probe`、`engines_report`、`engines_unavailable`。Agent 宣告時 Core 才送 `engines_probe` |
 
 Core 派送前先比對能力；Agent 沒宣告或版本較低的動作，Core 不送出，直接讓步驟失敗為 `CAPABILITY_UNSUPPORTED`。Agent 收到未宣告的動作、多餘參數欄位、別的節點、已過期、控制世代倒退或碰到工作沒保留的資源的步驟，一律回 `step_rejected`，不執行。
@@ -258,20 +260,21 @@ hazelminx-grant-v1
 
 ### 儲存清單與用量
 
-型別在 `agent/crates/protocol/src/storage.rs` 與 `core/internal/protocol/storage.go`，樣本見 `fixtures/messages/host_storage.json`、`storage_usage.json`。容量與 inode 不在這裡，照舊在 `metrics_report` 的 `filesystems`。
+型別在 `agent/crates/protocol/src/storage.rs` 與 `core/internal/protocol/storage.go`，樣本見 `fixtures/messages/host_storage.json`、`storage_usage_request.json`、`storage_usage.json`、`storage_usage_unavailable.json`。容量與 inode 不在這裡，照舊在 `metrics_report` 的 `filesystems`。
 
-- `host_storage` 每 60 秒讀一次，連線後送一次，之後只在內容改變時再送。兩則訊息都沒有確認：Core 存失敗就等下一次改變或下一條會話，Agent 每條新會話都會重送目前的內容。
+- `host_storage` 由 Agent 自己每 60 秒讀一次，連線後送一次，之後只在內容改變時再送。沒有確認：Core 存失敗就等下一次改變或下一條會話，Agent 每條新會話都會重送目前的內容。
 - `devices` 是 `/sys/block` 的整顆磁碟與它的分割區。檔案系統類型、UUID、標籤、分割區 UUID 與名稱讀 `/run/udev/data`，沒有時讀 `/dev/disk/by-*` 連結，都沒有就是 `null`。
 - `configs` 是 `/etc/fstab` 的每一行與 `/etc/systemd/system/*.mount` 單元（`/run` 下由 fstab 產生的單元不讀）。`reference` 說它怎麼認來源：`uuid`、`label`、`partuuid`、`partlabel`、`id`（換插槽仍認得到），`path`（認插槽），`device`（核心名稱，例如 `/dev/sdb1`，重開機或換插拔後可能指到別顆），`mapper`（device-mapper 或 RAID 名稱），`network`、`virtual`、`other`。`boot` 是 `auto`、`onDemand`（`x-systemd.automount` 或有對應的 `.automount`）、`noauto`。`resolvesTo` 是它現在指到的區塊裝置，找不到時是 `null`。
 - `mounts` 是 `/proc/self/mountinfo` 裡非虛擬的掛載，同一個掛載點只留最後一個。`configs` 是 `configs` 陣列的索引，空陣列代表手動掛上、重開機後不會回來；`reference` 有設定時取第一筆設定的，否則看來源本身。
 - `problems`：`duplicateMountPoint`（兩筆設定掛同一個點）、`missingDevice`（設定指到這台沒有的裝置）、`notMounted`（開機該掛的現在沒掛）、`deviceName`（本機實體或虛擬磁碟用核心名稱掛載，包含 swap 分割區）。
 - `unreadable` 列出讀不到的來源（例如 `/etc/fstab`），讀不到時清單少的那些只是不知道，不是沒有。
 - 設定裡的機密不離開主機：`options` 裡 `password`、`pass`、`passwd`、`pw`、`secret`、`token`、`key`、`passphrase` 的值換成 `***`（不分大小寫，`credentials=` 指的是檔案，保留），`spec` 與掛載的 `source` 是帶密碼的網址時（`https://u:密碼@host/`）密碼換成 `***`；`user=`、`username=` 裡 `%` 後面的 CIFS 密碼也換掉，CIFS 密碼裡以 `,,` 寫的逗號連同後面的部分一起遮掉。
-- 一則 `host_storage` 編碼後不超過 384 KiB：超過時先丟 loop 裝置與 snap、squashfs 掛載，再丟虛擬與網路掛載，最後才從後面丟其他項目，`unreadable` 加一筆 `truncated: …` 寫出丟了幾筆；用量量測照樣涵蓋被丟掉的本機掛載，但丟掉的掛載在 Core 沒有對應的清單項目。
-- `storage_usage` 量測每個本機檔案系統裡一組固定目錄的大小，分類是 `appData`、`database`、`backupStaging`、`containerImages`、`osAndLogs`，沒量到的已用空間是 `other`。每個路徑只算一類：目錄本身是另一類的起點時（`/var/lib/docker/volumes` 在 `/var/lib/docker` 裡），交給那一類。不跨到別的檔案系統，算配置的區塊不算檔案長度，硬連結只算一次。
+- 一則 `host_storage` 編碼後不超過 384 KiB：超過時先丟 loop 裝置與 snap、squashfs 掛載，再丟虛擬與網路掛載，最後才從後面丟其他項目，`unreadable` 加一筆 `truncated: …` 寫出丟了幾筆；用量量測讀的是執行器自己看到的 mountinfo，照樣涵蓋被丟掉的本機掛載，但丟掉的掛載在 Core 沒有對應的清單項目。
+- 用量由高權限執行器的唯讀動作 `storage_usage`（權限 `host.storage.read`，沒有參數）以 root 量測，因為 Agent 的帳號讀不到 Docker 的 `/var/lib/docker`（0710 root）與資料庫目錄（各自服務帳號的 0700）。執行器自己讀 mountinfo，目錄、上限與優先權都是固定的，呼叫端不能指定路徑。Core 每 5 分鐘看一次已連線的節點，最新量測（或最近一次失敗）超過 6 小時就送 `storage_usage_request`，附 5 分鐘內有效的授權，等答覆最多 25 分鐘；同一節點同時只有一個請求。拿不到量測時 Agent 回 `storage_usage_unavailable`，Core 記下代碼與訊息並保留上一次的量測，畫面顯示「無法量測」與原因，不顯示 0。
+- 量測內容：每個本機檔案系統裡一組固定目錄的大小，分類是 `appData`、`database`、`backupStaging`、`containerImages`、`osAndLogs`，沒量到的已用空間是 `other`。每個路徑只算一類：目錄本身是另一類的起點時（`/var/lib/docker/volumes` 在 `/var/lib/docker` 裡），交給那一類。不跨到別的檔案系統，算配置的區塊不算檔案長度，硬連結只算一次。
 - 用量 `state`：`complete`（`categories` 加上 `otherBytes` 等於 `usedBytes`）、`partial`（碰到筆數或時間上限、有目錄讀不到，或量到的比已用空間還多，例如 reflink、btrfs 快照共用區塊或量測期間寫入；數字是下限，`otherBytes` 是 `null`）、`unmeasured`（`statvfs` 失敗）。`categories` 只列有位元組的類別。
-- 第一輪在 Agent 啟動 5 分鐘後開始，之後每 6 小時一輪；量測執行緒用最低的 CPU 與 I/O 優先權，每 2048 筆停 10 毫秒，一輪最多 500 萬筆、20 分鐘。
-- Core 不保存 `collectedAt`（或 `startedAt`）比 Core 的時鐘快 5 分鐘以上的訊息、比已存的舊的重送、索引超出 `configs` 範圍的清單，類別重複或不認得的用量，以及標成 `complete` 卻加不起來的用量。
+- 執行器的量測執行緒用最低的 CPU 與 I/O 優先權（nice 19、idle I/O 類別），每 2048 筆停 10 毫秒，一輪最多 500 萬筆、20 分鐘。節點連上後最晚 5 分鐘內量第一輪。
+- Core 不保存 `collectedAt`（或 `startedAt`）比 Core 的時鐘快 5 分鐘以上的訊息（量測被拒時記為 `INVALID_USAGE`）、比已存的舊的重送、索引超出 `configs` 範圍的清單，類別重複或不認得的用量，以及標成 `complete` 卻加不起來的用量。
 
 ### 容器引擎
 
