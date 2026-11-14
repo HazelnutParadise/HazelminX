@@ -709,6 +709,7 @@
         "label": "Host tabs",
         "overview": "Overview",
         "system": "System",
+        "disks": "Disks",
         "notFound": "This host has no such tab"
       },
       "facts": "Host facts",
@@ -825,6 +826,146 @@
       "afterGap": "(after a gap)",
       "noLimit": "{{used}} · no limit",
       "noPhysicalNic": "This host has no physical interface; history is kept for physical interfaces only"
+    },
+    "disks": {
+      "title": "Disks",
+      "loading": "Loading disks…",
+      "loadFailed": "Could not read this host's disks.",
+      "refreshFailed": "Refresh failed; showing the last data read.",
+      "notReported": "This host has not reported its disks yet. The agent sends them once it connects.",
+      "unreadable": "The agent could not read {{list}}; the lists may miss entries.",
+      "justNow": "just now",
+      "collected": "Disk list updated {{time}}",
+      "usageMeasured": "Usage measured {{time}} · every 6 hours",
+      "usageNever": "Usage not measured yet · every 6 hours",
+      "usageError": {
+        "EXECUTOR_UNREACHABLE": "Measurement failed {{time}}: privileged executor unreachable",
+        "EXECUTOR_REFUSED": "Measurement failed {{time}}: privileged executor refused",
+        "MEASURE_FAILED": "Measurement failed {{time}}",
+        "other": "Measurement failed {{time}}"
+      },
+      "summary": "Disk summary",
+      "disks": "Disks",
+      "healthNotRead": "Health not read yet",
+      "mounts": "Mounts",
+      "autoCount_one": "{{count}} mounted at boot",
+      "autoCount_other": "{{count}} mounted at boot",
+      "conflictCount_one": "{{count}} conflict",
+      "conflictCount_other": "{{count}} conflicts",
+      "byDeviceName": "Mounted by device name",
+      "alerts": "Capacity alerts",
+      "noAlerts": "No alerts",
+      "devicesTitle": "Disks and partitions",
+      "noDevices": "No disks reported.",
+      "col": {
+        "device": "Device",
+        "size": "Size",
+        "fs": "Filesystem",
+        "mountedAt": "Mounted at",
+        "health": "Health",
+        "temp": "Temperature",
+        "mountPoint": "Mount point",
+        "use": "Used",
+        "boot": "At boot",
+        "config": "Configured in",
+        "alerts": "Alerts",
+        "problem": "Problem",
+        "writtenAt": "Written at"
+      },
+      "labelValue": "label {{label}}",
+      "removable": "removable",
+      "class": {
+        "physical": "physical",
+        "raid": "RAID",
+        "mapper": "device-mapper",
+        "virtual": "virtual",
+        "loop": "loop",
+        "network": "network"
+      },
+      "health": {
+        "ok": "Healthy",
+        "warning": "Warning",
+        "failing": "Failing",
+        "unsupported": "Unsupported"
+      },
+      "notRead": "Not read yet",
+      "mountsTitle": "Mounts · {{count}}",
+      "noMounts": "No mounts reported.",
+      "readOnly": "read-only",
+      "ref": {
+        "uuid": "UUID",
+        "label": "label",
+        "partuuid": "partition UUID",
+        "partlabel": "partition label",
+        "id": "disk ID",
+        "path": "port path",
+        "mapper": "device-mapper",
+        "device": "device name",
+        "network": "network share",
+        "virtual": "virtual",
+        "other": "other"
+      },
+      "deviceNameWarn": "Mounted by device name; after a re-plug or reboot it can mount another disk",
+      "boot": {
+        "auto": "Mounted at boot",
+        "onDemand": "Mounted on use",
+        "noauto": "Not mounted at boot",
+        "manual": "Mounted by hand"
+      },
+      "swapKind": {
+        "partition": "swap partition",
+        "file": "swap file"
+      },
+      "swapBoot": {
+        "auto": "Enabled at boot",
+        "manual": "Enabled by hand"
+      },
+      "noConfig": "Not configured",
+      "alert": {
+        "availableLow": "{{pct}} available ({{bytes}})",
+        "inodesLow": "{{pct}} inodes free",
+        "fullSoon_one": "Full in about {{count}} day at the 7-day trend",
+        "fullSoon_other": "Full in about {{count}} days at the 7-day trend"
+      },
+      "conflictsTitle": "Configuration conflicts · {{count}}",
+      "problem": {
+        "duplicateMountPoint": "Mount point configured twice",
+        "missingDevice": "Points at a disk that is not there",
+        "notMounted": "Should mount at boot but is not mounted"
+      },
+      "usageTitle": "Disk usage",
+      "available": "Available",
+      "cat": {
+        "appData": "App data",
+        "database": "Databases",
+        "backupStaging": "Backup staging",
+        "containerImages": "Container images",
+        "osAndLogs": "OS and logs",
+        "other": "Other"
+      },
+      "noCapacity": "Capacity not reported yet",
+      "growth": "7-day trend {{value}} a day",
+      "noTrend": "The trend needs a day of data",
+      "fullIn_one": "full in about {{count}} day",
+      "fullIn_other": "full in about {{count}} days",
+      "atLeast": "at least {{value}}",
+      "state": {
+        "none": "Usage by category not measured yet.",
+        "unmeasured": "Measured {{time}} without this filesystem's capacity; no categories.",
+        "complete": "Complete measurement · {{time}}",
+        "partial": "Incomplete measurement",
+        "unreadableDirs_one": "{{count}} directory unreadable",
+        "unreadableDirs_other": "{{count}} directories unreadable",
+        "limit": "the walk hit its entry or time limit",
+        "measured": "measured {{time}}"
+      },
+      "rule": {
+        "builtIn": "Alert rule: built-in default",
+        "default": "Alert rule: platform default",
+        "node": "Alert rule: this host",
+        "mountPoint": "Alert rule: this mount point on every host",
+        "nodeMountPoint": "Alert rule: this mount point on this host"
+      }
     }
   }
 }

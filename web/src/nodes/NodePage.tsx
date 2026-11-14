@@ -13,6 +13,7 @@ import { NODE_STATE, nodeKeys, nodesApi, type Node } from "./api";
 import { REFRESH_MS, useCanWriteNodes } from "./hooks";
 import { NodeActionDialog } from "./NodeActions";
 import { HostOverview } from "./monitor/HostOverview";
+import { NodeDisks } from "./storage/NodeDisks";
 import { NODES_PATH, nodeHref } from "./paths";
 import { CertificatePill, Field, HostStatusPill, LastContact, NodeError, PendingSync, WriteButton } from "./parts";
 import { at, availableActions, hostStatusNote, type NodeAction } from "./status";
@@ -20,7 +21,7 @@ import "./nodes.css";
 
 /**
  * One host: the 概況 tab with facts, hardware and trends (ticket 020.4) and the 系統 tab with what Core knows
- * about it and the actions it allows (ticket 125). The other workspace tabs of the board (containers, disks,
+ * about it and the actions it allows (ticket 125) and the 磁碟 tab with its storage (ticket 030.2). The other workspace tabs of the board (containers,
  * files, logs, terminal, change ledger) belong to later tickets and appear with them.
  */
 export function NodePage() {
@@ -68,6 +69,7 @@ export function NodePage() {
 const TABS = [
   { key: "overview", path: "" },
   { key: "system", path: "system" },
+  { key: "disks", path: "disks" },
 ] as const;
 
 function NodeDetail({ node: n, tab }: { node: Node; tab: string }) {
@@ -120,6 +122,8 @@ function NodeDetail({ node: n, tab }: { node: Node; tab: string }) {
       </nav>
       {tab === "" ? (
         <HostOverview node={n} />
+      ) : tab === "disks" ? (
+        <NodeDisks node={n} />
       ) : tab === "system" ? (
         <SystemTab node={n} canWrite={canWrite} />
       ) : (

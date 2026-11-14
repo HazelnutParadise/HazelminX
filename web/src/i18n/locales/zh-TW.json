@@ -692,6 +692,7 @@
         "label": "主機分頁",
         "overview": "概況",
         "system": "系統",
+        "disks": "磁碟",
         "notFound": "這台主機沒有這個分頁"
       },
       "facts": "主機資訊",
@@ -802,6 +803,146 @@
       "afterGap": "（前面有缺口）",
       "noLimit": "{{used}} · 沒有上限",
       "noPhysicalNic": "這台主機沒有實體網卡，只有虛擬網卡的流量不記錄歷史"
+    },
+    "disks": {
+      "title": "磁碟",
+      "loading": "正在讀取磁碟…",
+      "loadFailed": "讀不到這台主機的磁碟資料。",
+      "refreshFailed": "更新失敗，下面是上一次讀到的資料。",
+      "notReported": "這台主機還沒回報磁碟清單。agent 連上控制中心後會自動送出。",
+      "unreadable": "agent 讀不到 {{list}}，清單可能少列項目。",
+      "justNow": "剛剛",
+      "collected": "磁碟清單更新於 {{time}}",
+      "usageMeasured": "用量量測於 {{time}} · 每 6 小時量一次",
+      "usageNever": "用量還沒量過 · 每 6 小時量一次",
+      "usageError": {
+        "EXECUTOR_UNREACHABLE": "{{time}} 量測失敗：連不到高權限執行器",
+        "EXECUTOR_REFUSED": "{{time}} 量測失敗：高權限執行器拒絕",
+        "MEASURE_FAILED": "{{time}} 量測失敗",
+        "other": "{{time}} 量測失敗"
+      },
+      "summary": "磁碟摘要",
+      "disks": "磁碟",
+      "healthNotRead": "健康尚未讀取",
+      "mounts": "掛載",
+      "autoCount_one": "{{count}} 個開機自動掛載",
+      "autoCount_other": "{{count}} 個開機自動掛載",
+      "conflictCount_one": "{{count}} 個設定衝突",
+      "conflictCount_other": "{{count}} 個設定衝突",
+      "byDeviceName": "用裝置名稱掛載",
+      "alerts": "容量告警",
+      "noAlerts": "沒有告警",
+      "devicesTitle": "磁碟與分割區",
+      "noDevices": "沒有回報任何磁碟。",
+      "col": {
+        "device": "裝置",
+        "size": "大小",
+        "fs": "檔案系統",
+        "mountedAt": "掛在哪",
+        "health": "健康",
+        "temp": "溫度",
+        "mountPoint": "掛載點",
+        "use": "使用",
+        "boot": "開機時",
+        "config": "設定寫在哪",
+        "alerts": "告警",
+        "problem": "問題",
+        "writtenAt": "寫在哪"
+      },
+      "labelValue": "標籤 {{label}}",
+      "removable": "可卸除",
+      "class": {
+        "physical": "實體碟",
+        "raid": "RAID",
+        "mapper": "device-mapper",
+        "virtual": "虛擬碟",
+        "loop": "loop",
+        "network": "網路碟"
+      },
+      "health": {
+        "ok": "健康",
+        "warning": "要注意",
+        "failing": "故障中",
+        "unsupported": "不支援"
+      },
+      "notRead": "尚未讀取",
+      "mountsTitle": "掛載 · {{count}}",
+      "noMounts": "沒有回報任何掛載。",
+      "readOnly": "唯讀",
+      "ref": {
+        "uuid": "UUID",
+        "label": "標籤",
+        "partuuid": "分割區 UUID",
+        "partlabel": "分割區標籤",
+        "id": "磁碟 ID",
+        "path": "連接埠路徑",
+        "mapper": "device-mapper",
+        "device": "裝置名稱",
+        "network": "網路分享",
+        "virtual": "虛擬",
+        "other": "其他"
+      },
+      "deviceNameWarn": "用裝置名稱掛載，換插槽或重開機後可能掛到別顆磁碟",
+      "boot": {
+        "auto": "開機自動掛載",
+        "onDemand": "用到才掛載",
+        "noauto": "不會自動掛載",
+        "manual": "手動掛上"
+      },
+      "swapKind": {
+        "partition": "swap 分割區",
+        "file": "swap 檔案"
+      },
+      "swapBoot": {
+        "auto": "開機自動啟用",
+        "manual": "手動啟用"
+      },
+      "noConfig": "沒有設定",
+      "alert": {
+        "availableLow": "可用空間剩 {{pct}}（{{bytes}}）",
+        "inodesLow": "inode 剩 {{pct}}",
+        "fullSoon_one": "照 7 天趨勢約 {{count}} 天後寫滿",
+        "fullSoon_other": "照 7 天趨勢約 {{count}} 天後寫滿"
+      },
+      "conflictsTitle": "設定衝突 · {{count}}",
+      "problem": {
+        "duplicateMountPoint": "同一個掛載點寫了兩次",
+        "missingDevice": "指向不存在的磁碟",
+        "notMounted": "開機該掛卻沒掛上"
+      },
+      "usageTitle": "磁碟用量",
+      "available": "可用",
+      "cat": {
+        "appData": "應用資料",
+        "database": "資料庫",
+        "backupStaging": "備份暫存",
+        "containerImages": "容器映像",
+        "osAndLogs": "作業系統與日誌",
+        "other": "其他"
+      },
+      "noCapacity": "容量還沒回報",
+      "growth": "7 天趨勢每天 {{value}}",
+      "noTrend": "趨勢要累積一天資料",
+      "fullIn_one": "約 {{count}} 天後寫滿",
+      "fullIn_other": "約 {{count}} 天後寫滿",
+      "atLeast": "至少 {{value}}",
+      "state": {
+        "none": "還沒量過用量分類。",
+        "unmeasured": "{{time}} 量測時讀不到這個檔案系統的容量，沒有分類。",
+        "complete": "量測完整 · {{time}}",
+        "partial": "量測不完整",
+        "unreadableDirs_one": "{{count}} 個目錄讀不到",
+        "unreadableDirs_other": "{{count}} 個目錄讀不到",
+        "limit": "掃描到達項目或時間上限",
+        "measured": "量測於 {{time}}"
+      },
+      "rule": {
+        "builtIn": "告警規則：內建預設",
+        "default": "告警規則：平台預設",
+        "node": "告警規則：這台主機",
+        "mountPoint": "告警規則：所有主機的這個掛載點",
+        "nodeMountPoint": "告警規則：這台主機的這個掛載點"
+      }
     }
   }
 }
