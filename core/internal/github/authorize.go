@@ -23,7 +23,7 @@ const (
 // Optional capabilities an App may ask for beyond reading (GIT-014). The
 // manifest asks only for what is listed.
 const (
-	CapabilityWebhook      = "webhook"
+	CapabilityWebhook     = "webhook"
 	CapabilityStatusWrite = "status-write"
 )
 
@@ -230,8 +230,8 @@ func (s *Service) StartAuthorization(ctx context.Context, in AuthorizeInput, act
 
 type authRequest struct {
 	id, userID, sessionID, purpose, appRef, connID, name, redirect string
-	expires                                                         time.Time
-	finished                                                        bool
+	expires                                                        time.Time
+	finished                                                       bool
 }
 
 // claim finds the request for a state and marks it finished, once. Only

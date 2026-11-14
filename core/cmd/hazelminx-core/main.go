@@ -20,6 +20,7 @@ import (
 	"github.com/HazelnutParadise/hazelminx/core/internal/api"
 	"github.com/HazelnutParadise/hazelminx/core/internal/config"
 	"github.com/HazelnutParadise/hazelminx/core/internal/confirm"
+	"github.com/HazelnutParadise/hazelminx/core/internal/github"
 	"github.com/HazelnutParadise/hazelminx/core/internal/grants"
 	"github.com/HazelnutParadise/hazelminx/core/internal/hostledger"
 	"github.com/HazelnutParadise/hazelminx/core/internal/iam"
@@ -160,6 +161,13 @@ func run(args []string) error {
 	// Change plans (ticket 016.1). Resource tickets register their plan
 	// kinds on this service; until then it has none.
 	router.MountChangePlans(plans.New(plans.Options{DB: st.DB, Audit: identity, Jobs: engine}))
+	// GitHub Apps and connections (ticket 047.1). Their secrets stay in
+	// the secret store; only Core talks to GitHub.
+	sources, err := github.New(github.Options{DB: st.DB, Vault: sec, Audit: identity, Client: github.NewHTTPClient(), PublicOrigin: cfg.PublicOrigin})
+	if err != nil {
+		return err
+	}
+	router.MountGitHub(sources)
 	if err := announceSetup(ctx, identity, os.Stdout); err != nil {
 		return err
 	}

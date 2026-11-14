@@ -70,9 +70,14 @@ const (
 	CodeReauthRequired        = "REAUTHENTICATION_REQUIRED"
 	CodeLastSecondFactor      = "LAST_SECOND_FACTOR"
 	CodeNotAvailable          = "NOT_AVAILABLE"
-	CodeInternal              = "INTERNAL"
-	CodeUINotEmbedded         = "UI_NOT_EMBEDDED"
-	CodeUIIndexMissing        = "UI_INDEX_MISSING"
+
+	CodeGitHubRejected       = "GITHUB_REJECTED"
+	CodeGitHubUnavailable    = "GITHUB_UNAVAILABLE"
+	CodeGitHubAuthInvalid    = "GITHUB_AUTHORIZATION_INVALID"
+	CodeGitHubReauthRequired = "GITHUB_REAUTHORIZATION_REQUIRED"
+	CodeInternal             = "INTERNAL"
+	CodeUINotEmbedded        = "UI_NOT_EMBEDDED"
+	CodeUIIndexMissing       = "UI_INDEX_MISSING"
 )
 
 var errorTable = []ErrorCode{
@@ -116,6 +121,10 @@ var errorTable = []ErrorCode{
 	{CodeReauthRequired, http.StatusForbidden, false, "新增或移除登入憑證前，要在 10 分鐘內重新驗證密碼與第二驗證（POST /management/v1/auth/reauthenticate）。"},
 	{CodeLastSecondFactor, http.StatusConflict, false, "這個帳號至少要保留一個驗證器 App 或 Passkey；請先新增另一個再移除。"},
 	{CodeNotAvailable, http.StatusConflict, false, "這個功能在目前的環境不能使用，例如用 IP 開啟面板時不能使用 Passkey；message 寫出原因。"},
+	{CodeGitHubRejected, http.StatusConflict, false, "GitHub 拒絕了這份憑證、授權碼或要求，例如 Token 錯誤、已撤銷或權限不足；message 寫出 GitHub 回的原因，不含憑證。"},
+	{CodeGitHubUnavailable, http.StatusBadGateway, true, "暫時連不到 GitHub、GitHub 回伺服器錯誤或限流；retryAfterSeconds 有值時照它等待。沒有變更任何資料。"},
+	{CodeGitHubAuthInvalid, http.StatusConflict, false, "這次 GitHub 授權回呼不被接受；details.reason 寫出原因（unknown、expired、used、session-mismatch、wrong-account、installation-mismatch、app-mismatch、cancelled-by-github）。原有連線沒有改變，請重新開始授權。"},
+	{CodeGitHubReauthRequired, http.StatusConflict, false, "這份 GitHub 連線需要重新授權（Token 到期、被撤銷或安裝已移除）；平台不會自動延長或換用其他連線。"},
 	{CodeInternal, http.StatusInternalServerError, true, "伺服器內部錯誤；traceId 可用來查日誌。"},
 	{CodeUINotEmbedded, http.StatusServiceUnavailable, false, "這個版本沒有內嵌網頁介面，請使用管理 API。"},
 	{CodeUIIndexMissing, http.StatusInternalServerError, false, "內嵌介面缺少 index.html。"},

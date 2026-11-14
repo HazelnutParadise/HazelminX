@@ -80,7 +80,9 @@ func (f *fakeGitHub) enter(name string) error {
 	return nil
 }
 
-var refused = func(status int, reason string) error { return &APIError{Kind: ErrRejected, Status: status, Reason: reason} }
+var refused = func(status int, reason string) error {
+	return &APIError{Kind: ErrRejected, Status: status, Reason: reason}
+}
 
 // appFromJWT checks the JWT the way GitHub does: signature by the App's key.
 func (f *fakeGitHub) appFromJWT(token string) (AppInfo, error) {
