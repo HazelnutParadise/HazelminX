@@ -17,6 +17,7 @@ pub const PERM_HOST_PACKAGES_READ: &str = "host.packages.read";
 pub const PERM_HOST_SERVICES_MANAGE: &str = "host.services.manage";
 pub const PERM_HOST_LEDGER_READ: &str = "host.ledger.read";
 pub const PERM_HOST_ENGINES_READ: &str = "host.engines.read";
+pub const PERM_HOST_STORAGE_READ: &str = "host.storage.read";
 /// Reserved for a future terminal/script action; listed so grant issuers and
 /// reviewers treat it as a separate high-risk permission (spec 32.2).
 pub const PERM_SHELL: &str = "host.shell";
@@ -45,6 +46,9 @@ pub enum Action {
     /// Which container engines the host has: programs, units, sockets and
     /// what each socket answers (ticket 039.1).
     EngineInspect {},
+    /// How much of each local filesystem a fixed set of directories holds,
+    /// by category (ticket 030.1). No parameters: roots and limits are fixed.
+    StorageUsage {},
 }
 
 impl Action {
@@ -56,6 +60,7 @@ impl Action {
         "restart_service",
         "ledger_export",
         "engine_inspect",
+        "storage_usage",
     ];
 
     pub fn kind(&self) -> &'static str {
@@ -65,6 +70,7 @@ impl Action {
             Action::RestartService { .. } => "restart_service",
             Action::LedgerExport { .. } => "ledger_export",
             Action::EngineInspect {} => "engine_inspect",
+            Action::StorageUsage {} => "storage_usage",
         }
     }
 
@@ -76,7 +82,8 @@ impl Action {
             Action::SystemInfo {}
             | Action::ListPackageUpdates {}
             | Action::LedgerExport { .. }
-            | Action::EngineInspect {} => LedgerDecl::ReadOnly,
+            | Action::EngineInspect {}
+            | Action::StorageUsage {} => LedgerDecl::ReadOnly,
             Action::RestartService { unit } => LedgerDecl::Changes(vec![Declared {
                 target: Target::SystemdUnit { unit: unit.clone() },
                 change: ChangeKind::Restart,
@@ -97,6 +104,7 @@ impl Action {
             "restart_service" => Some(PERM_HOST_SERVICES_MANAGE),
             "ledger_export" => Some(PERM_HOST_LEDGER_READ),
             "engine_inspect" => Some(PERM_HOST_ENGINES_READ),
+            "storage_usage" => Some(PERM_HOST_STORAGE_READ),
             _ => None,
         }
     }

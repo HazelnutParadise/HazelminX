@@ -4,5 +4,6 @@
 
 pub mod engines;
 pub mod packages;
+pub mod storage_usage;
 pub mod system_info;
 pub mod systemd;

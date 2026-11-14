@@ -52,6 +52,9 @@
 | 028 | 使用者可以瀏覽、整理、授權與追蹤宿主機檔案 | 檔案管理 | 012, 017 | [#28](https://github.com/HazelnutParadise/hazelminx/issues/28) |
 | 029 | 使用者可以上傳、下載、續傳大檔，線上編輯、壓縮與安全預覽 | 檔案管理 | 028, 010 | [#29](https://github.com/HazelnutParadise/hazelminx/issues/29) |
 | 030 | 維運者可以查看磁碟、分割區、檔案系統、健康與容量告警 | 磁碟與儲存 | 019, 020 | [#30](https://github.com/HazelnutParadise/hazelminx/issues/30) |
+| 030.1 | Agent 回報磁碟、分割區、掛載與用量分類，Core 保存並以 API 提供容量告警 | 磁碟與儲存 | 020.1 | [#170](https://github.com/HazelnutParadise/hazelminx/issues/170) |
+| 030.2 | 維運者可以在儲存與備份頁、主機磁碟頁看到磁碟、掛載、用量分類與容量告警 | 磁碟與儲存 | 030.1, 017 | [#171](https://github.com/HazelnutParadise/hazelminx/issues/171) |
+| 030.3 | 管理員可以管理快照與檔案備份，兩者清楚區分 | 磁碟與儲存 | 030.1, 078 | [#172](https://github.com/HazelnutParadise/hazelminx/issues/172) |
 | 031 | 維運者可以分割、格式化、掛載磁碟並管理 LVM、RAID、LUKS 與網路儲存 | 磁碟與儲存 | 012, 016, 030 | [#31](https://github.com/HazelnutParadise/hazelminx/issues/31) |
 | 032 | 管理員可以設定資料位置並以裝置身分綁定，掛錯磁碟時服務不啟動 | 磁碟與儲存 | 031, 008 | [#32](https://github.com/HazelnutParadise/hazelminx/issues/32) |
 | 033 | 管理員可以把應用資料安全搬到另一顆磁碟 | 磁碟與儲存 | 032, 016 | [#33](https://github.com/HazelnutParadise/hazelminx/issues/33) |

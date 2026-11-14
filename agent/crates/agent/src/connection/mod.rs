@@ -15,6 +15,7 @@ use crate::config::CoreTransport;
 use crate::identity::Identity;
 use crate::monitor::Monitor;
 use crate::steps::{Decision, ReconcileAnswer, RunTicket, Steps};
+use crate::storage::Storage;
 use anyhow::{Context, Result, anyhow, bail};
 use base64::Engine;
 use futures_util::{SinkExt, StreamExt};
@@ -62,6 +63,8 @@ pub struct Shared {
     next_failures: std::sync::atomic::AtomicU32,
     /// Host facts and samples waiting for the Core (`host.metrics`).
     pub monitor: Arc<Monitor>,
+    /// Storage inventory and usage waiting for the Core (`host.storage`).
+    pub storage: Arc<Storage>,
 }
 
 impl Shared {
@@ -93,6 +96,7 @@ impl Shared {
             renewed: std::sync::atomic::AtomicBool::new(false),
             next_failures: std::sync::atomic::AtomicU32::new(0),
             monitor: Arc::default(),
+            storage: Arc::default(),
         })
     }
 }
@@ -274,7 +278,15 @@ async fn connect_and_serve(opts: &Options, shared: &Arc<Shared>) -> End {
         }
     }
     info!(session = %ready.session_id, protocol = ready.protocol_version, core_version = %ready.core_version, "connected to core");
-    let err = serve(ws, shared, ready.keys, ready.heartbeat, ready.metrics).await;
+    let err = serve(
+        ws,
+        shared,
+        ready.keys,
+        ready.heartbeat,
+        ready.metrics,
+        ready.storage,
+    )
+    .await;
     End::Lost {
         error: err,
         lived: started.elapsed(),
@@ -381,6 +393,8 @@ struct Ready {
     /// The Core declared `host.metrics` v1, so it reads host facts and
     /// samples; an older Core would answer them with protocol_error.
     metrics: bool,
+    /// The Core declared `host.storage` v1.
+    storage: bool,
 }
 
 async fn handshake(
@@ -521,6 +535,9 @@ async fn handshake(
         metrics: core_caps
             .iter()
             .any(|c| c.name == proto::CAP_HOST_METRICS && c.version >= 1),
+        storage: core_caps
+            .iter()
+            .any(|c| c.name == proto::CAP_HOST_STORAGE && c.version >= 1),
     })
 }
 
@@ -585,6 +602,7 @@ async fn serve(
     keys: proto::SessionKeys,
     heartbeat: Duration,
     metrics: bool,
+    storage: bool,
 ) -> anyhow::Error {
     let mut ch = Channel {
         keys,
@@ -604,6 +622,8 @@ async fn serve(
         enabled: metrics,
         facts: 0,
         in_flight: None,
+        storage,
+        inventory: 0,
     };
     let mut tick = tokio::time::interval(heartbeat);
     tick.tick().await;
@@ -677,6 +697,9 @@ struct HostSent {
     /// The report waiting for its acknowledgement: its last seq and when
     /// it went out. The next one is sent only after it is answered.
     in_flight: Option<(u64, std::time::Instant)>,
+    /// `host.storage` is on, and the inventory version sent.
+    storage: bool,
+    inventory: u64,
 }
 
 /// Sends journal records after `sent_up_to`, queued answers, and host
@@ -704,6 +727,12 @@ async fn flush(
     }
     for m in outbox {
         ch.send(ws, &m).await?;
+    }
+    if host.storage
+        && let Some((v, m)) = shared.storage.inventory_after(host.inventory)
+    {
+        ch.send(ws, &m).await?;
+        host.inventory = v;
     }
     if host.enabled {
         if let Some((v, m)) = shared.monitor.facts_after(host.facts) {
@@ -835,6 +864,20 @@ fn handle(shared: &Arc<Shared>, msg: Message) -> Vec<Message> {
                 let answer = crate::engines::answer(&shared.privileged, request_id, grant).await;
                 if let Message::EnginesUnavailable { code, message, .. } = &answer {
                     warn!(%code, %message, "cannot inspect container engines for the core");
+                }
+                shared.outbox.lock().unwrap().push(answer);
+                shared.changed.notify_one();
+            });
+            vec![]
+        }
+        Message::StorageUsageRequest { request_id, grant } => {
+            // A round can take minutes: off the session loop, the answer
+            // goes out through the outbox.
+            let (shared, request_id, grant) = (shared.clone(), request_id.clone(), grant.clone());
+            tokio::spawn(async move {
+                let answer = crate::storage::answer(&shared.privileged, request_id, grant).await;
+                if let Message::StorageUsageUnavailable { code, message, .. } = &answer {
+                    warn!(%code, %message, "cannot measure storage usage for the core");
                 }
                 shared.outbox.lock().unwrap().push(answer);
                 shared.changed.notify_one();

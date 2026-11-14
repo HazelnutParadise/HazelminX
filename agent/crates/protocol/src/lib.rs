@@ -14,6 +14,7 @@
 pub mod engines;
 pub mod enroll;
 pub mod metrics;
+pub mod storage;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -46,6 +47,12 @@ pub const CAP_NODE_CERTIFICATE: &str = "node.certificate";
 /// samples (ticket 020.1). The agent sends them only when the Core declares
 /// this capability too.
 pub const CAP_HOST_METRICS: &str = "host.metrics";
+/// `host_storage`, `storage_usage_request` / `storage_usage` /
+/// `storage_usage_unavailable`: block devices, mounts and their
+/// configuration, and per-category filesystem usage measured by the
+/// privileged executor (ticket 030.1). The agent sends `host_storage` only
+/// when the Core declares this capability too.
+pub const CAP_HOST_STORAGE: &str = "host.storage";
 /// `engines_probe` / `engines_report` / `engines_unavailable`: the container
 /// engines on the host (ticket 039.1), read by the privileged executor.
 pub const CAP_HOST_ENGINES: &str = "host.engines";
@@ -102,6 +109,17 @@ pub mod ledger_unavailable_code {
 }
 
 /// `engines_unavailable` codes.
+/// `storage_usage_unavailable` codes.
+pub mod storage_usage_unavailable_code {
+    /// The agent cannot reach the privileged executor's socket.
+    pub const EXECUTOR_UNREACHABLE: &str = "EXECUTOR_UNREACHABLE";
+    /// The executor refused the request (grant, permission, parameters).
+    pub const EXECUTOR_REFUSED: &str = "EXECUTOR_REFUSED";
+    /// The executor accepted but could not measure, or answered something
+    /// that is not a usage measurement.
+    pub const MEASURE_FAILED: &str = "MEASURE_FAILED";
+}
+
 pub mod engines_unavailable_code {
     /// The agent cannot reach the privileged executor's socket.
     pub const EXECUTOR_UNREACHABLE: &str = "EXECUTOR_UNREACHABLE";
@@ -369,6 +387,30 @@ pub enum Message {
     MetricsAck {
         seq: u64,
     },
+    /// Disks, partitions, mounts and mount configuration; sent after
+    /// `ready` and when any of it changes.
+    HostStorage {
+        #[serde(with = "time::serde::rfc3339")]
+        collected_at: OffsetDateTime,
+        storage: Box<storage::StorageInventory>,
+    },
+    /// Core asks for a usage measurement; the agent passes `grant` to the
+    /// privileged executor's `storage_usage`, which walks as root.
+    StorageUsageRequest {
+        request_id: String,
+        grant: ExecutorGrant,
+    },
+    /// The executor's measurement, unchanged.
+    StorageUsage {
+        request_id: String,
+        usage: Box<storage::StorageUsage>,
+    },
+    /// The agent could not get a measurement.
+    StorageUsageUnavailable {
+        request_id: String,
+        code: String,
+        message: String,
+    },
     /// Core asks which container engines the host has; the agent passes
     /// `grant` to the privileged executor's `engine_inspect`.
     EnginesProbe {
@@ -493,6 +535,10 @@ const SESSION_TYPES: &[&str] = &[
     "host_facts",
     "metrics_report",
     "metrics_ack",
+    "host_storage",
+    "storage_usage_request",
+    "storage_usage",
+    "storage_usage_unavailable",
     "engines_probe",
     "engines_report",
     "engines_unavailable",

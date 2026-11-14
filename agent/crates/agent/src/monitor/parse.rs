@@ -178,7 +178,7 @@ pub struct Mount {
 }
 
 /// Undoes the octal escapes mountinfo uses for space, tab, newline and `\`.
-fn unescape(s: &str) -> String {
+pub fn unescape(s: &str) -> String {
     let b = s.as_bytes();
     let mut out = Vec::with_capacity(b.len());
     let mut i = 0;
@@ -216,6 +216,44 @@ pub fn mountinfo(text: &str) -> Vec<Mount> {
             fs_type: r[0].to_string(),
             source: unescape(r[1]),
             read_only: per_mount_ro || super_ro,
+        });
+    }
+    out
+}
+
+/// A line of /proc/self/mountinfo with its device number and options.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MountFull {
+    pub mount_point: String,
+    pub fs_type: String,
+    pub source: String,
+    pub read_only: bool,
+    /// `major:minor`.
+    pub dev: String,
+    /// Per-mount options.
+    pub options: String,
+}
+
+pub fn mountinfo_full(text: &str) -> Vec<MountFull> {
+    let mut out = Vec::new();
+    for line in text.lines() {
+        let Some((left, right)) = line.split_once(" - ") else {
+            continue;
+        };
+        let l: Vec<&str> = left.split(' ').collect();
+        let r: Vec<&str> = right.split(' ').collect();
+        if l.len() < 6 || r.len() < 2 {
+            continue;
+        }
+        let sup = r.get(2).copied().unwrap_or("");
+        let ro = l[5].split(',').any(|o| o == "ro") || sup.split(',').any(|o| o == "ro");
+        out.push(MountFull {
+            mount_point: unescape(l[4]),
+            fs_type: r[0].to_string(),
+            source: unescape(r[1]),
+            read_only: ro,
+            dev: l[2].to_string(),
+            options: l[5].to_string(),
         });
     }
     out

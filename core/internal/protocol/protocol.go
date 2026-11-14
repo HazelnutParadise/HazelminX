@@ -54,6 +54,10 @@ const (
 	// CapHostMetrics: host_facts / metrics_report / metrics_ack, host facts
 	// and resource samples (ticket 020.1).
 	CapHostMetrics = "host.metrics"
+	// CapHostStorage: host_storage, storage_usage_request / storage_usage /
+	// storage_usage_unavailable: disks, mounts and per-category usage
+	// measured by the privileged executor (ticket 030.1).
+	CapHostStorage = "host.storage"
 	// CapHostEngines: engines_probe / engines_report / engines_unavailable,
 	// the container engines on the host (ticket 039.1).
 	CapHostEngines = "host.engines"
@@ -136,6 +140,10 @@ const (
 	TypeHostFacts            = "host_facts"
 	TypeMetricsReport        = "metrics_report"
 	TypeMetricsAck           = "metrics_ack"
+	TypeHostStorage          = "host_storage"
+	TypeStorageUsageRequest  = "storage_usage_request"
+	TypeStorageUsage         = "storage_usage"
+	TypeStorageUsageUnavail  = "storage_usage_unavailable"
 	TypeEnginesProbe         = "engines_probe"
 	TypeEnginesReport        = "engines_report"
 	TypeEnginesUnavailable   = "engines_unavailable"
@@ -457,6 +465,10 @@ var sessionTypes = map[string]func() any{
 	TypeHostFacts:            func() any { return &HostFacts{} },
 	TypeMetricsReport:        func() any { return &MetricsReport{} },
 	TypeMetricsAck:           func() any { return &MetricsAck{} },
+	TypeHostStorage:          func() any { return &HostStorage{} },
+	TypeStorageUsageRequest:  func() any { return &StorageUsageRequest{} },
+	TypeStorageUsage:         func() any { return &StorageUsage{} },
+	TypeStorageUsageUnavail:  func() any { return &StorageUsageUnavailable{} },
 	TypeEnginesProbe:         func() any { return &EnginesProbe{} },
 	TypeEnginesReport:        func() any { return &EnginesReport{} },
 	TypeEnginesUnavailable:   func() any { return &EnginesUnavailable{} },

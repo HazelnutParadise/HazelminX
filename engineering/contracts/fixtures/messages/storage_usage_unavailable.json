@@ -1,0 +1,6 @@
+{
+  "type": "storage_usage_unavailable",
+  "requestId": "sur_4f1c2a9b0d3e5f67",
+  "code": "EXECUTOR_UNREACHABLE",
+  "message": "cannot reach the privileged executor: No such file or directory (os error 2)"
+}
