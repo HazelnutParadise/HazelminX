@@ -111,7 +111,7 @@ pub fn spawn(
                 loop {
                     let now = OffsetDateTime::now_utc();
                     let now = now.replace_nanosecond(0).unwrap_or(now);
-                    if storage.set_inventory(now, inv.read_all()) {
+                    if storage.set_inventory(now, fit(inv.read_all())) {
                         wake();
                     }
                     std::thread::sleep(INVENTORY_INTERVAL);
@@ -145,6 +145,42 @@ pub fn spawn(
             }
         })
         .map(|_| ())
+}
+
+/// Upper bound of one encoded `host_storage`; the Core reads at most 1 MiB
+/// per message, and the body is escaped again inside the frame.
+pub const INVENTORY_BYTES: usize = 384 * 1024;
+
+/// Drops the last devices and mounts until the inventory fits, and names
+/// what was left out in `unreadable`, so a host with thousands of loop
+/// devices still reports instead of losing its session.
+pub fn fit(mut inv: StorageInventory) -> StorageInventory {
+    fn len<T: serde::Serialize>(v: &T) -> usize {
+        serde_json::to_vec(v).map(|b| b.len()).unwrap_or(usize::MAX)
+    }
+    // The whole is encoded once; each dropped entry takes its own encoded
+    // length and a comma off it, so this stays linear.
+    let mut size = len(&inv);
+    let (mut devices, mut mounts) = (0, 0);
+    // Room for the note added below.
+    let limit = INVENTORY_BYTES - 200;
+    while size > limit {
+        if inv.devices.len() >= inv.mounts.len() {
+            let Some(d) = inv.devices.pop() else { break };
+            size = size.saturating_sub(len(&d) + 1);
+            devices += 1;
+        } else {
+            let Some(m) = inv.mounts.pop() else { break };
+            size = size.saturating_sub(len(&m) + 1);
+            mounts += 1;
+        }
+    }
+    if devices + mounts > 0 {
+        inv.unreadable.push(format!(
+            "truncated: {devices} devices and {mounts} mounts left out (inventory over {INVENTORY_BYTES} bytes)"
+        ));
+    }
+    inv
 }
 
 /// Every mount point of mountinfo, virtual ones included.

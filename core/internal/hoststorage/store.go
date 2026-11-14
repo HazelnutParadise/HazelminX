@@ -106,6 +106,15 @@ func (s *Store) RecordUsage(ctx context.Context, nodeID string, m *protocol.Stor
 			}
 			seen[c.Category] = true
 		}
+		if f.State == "complete" {
+			var sum uint64
+			for _, c := range f.Categories {
+				sum += c.Bytes
+			}
+			if f.UsedBytes == nil || f.OtherBytes == nil || sum+*f.OtherBytes != *f.UsedBytes {
+				return fmt.Errorf("%w: filesystem %q is complete but its categories do not add up to used space", ErrValidation, f.MountPoint)
+			}
+		}
 	}
 	b, err := json.Marshal(u)
 	if err != nil {

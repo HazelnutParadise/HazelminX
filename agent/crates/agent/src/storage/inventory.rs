@@ -355,6 +355,51 @@ fn unescape_udev(s: &str) -> String {
     out
 }
 
+/// Option keys whose values are secrets (CIFS, davfs, sshfs and others
+/// accept a password in the options). `credentials=` names a file and is
+/// kept.
+const SECRET_OPTIONS: &[&str] = &[
+    "password",
+    "pass",
+    "passwd",
+    "pw",
+    "secret",
+    "token",
+    "key",
+    "passphrase",
+];
+
+/// The options with every secret value replaced by `***`, so mount
+/// configuration never carries a password off the host.
+pub fn redact_options(options: &str) -> String {
+    options
+        .split(',')
+        .map(|o| match o.split_once('=') {
+            Some((k, _)) if SECRET_OPTIONS.contains(&k.to_ascii_lowercase().as_str()) => {
+                format!("{k}=***")
+            }
+            _ => o.to_string(),
+        })
+        .collect::<Vec<_>>()
+        .join(",")
+}
+
+/// A source with a password in it (`https://user:secret@host/dav`) keeps
+/// the user and loses the password.
+pub fn redact_spec(spec: &str) -> String {
+    let Some((scheme, rest)) = spec.split_once("://") else {
+        return spec.to_string();
+    };
+    let Some(at) = rest.find('@') else {
+        return spec.to_string();
+    };
+    let (userinfo, host) = rest.split_at(at);
+    match userinfo.split_once(':') {
+        Some((user, _)) => format!("{scheme}://{user}:***{host}"),
+        None => spec.to_string(),
+    }
+}
+
 pub fn fstab(text: &str, file: &str) -> Vec<MountConfig> {
     let mut out = Vec::new();
     for (i, line) in text.lines().enumerate() {
@@ -366,10 +411,10 @@ pub fn fstab(text: &str, file: &str) -> Vec<MountConfig> {
         if f.len() < 3 {
             continue;
         }
-        let spec = parse::unescape(f[0]);
+        let spec = redact_spec(&parse::unescape(f[0]));
         let target = parse::unescape(f[1]);
         let fs_type = f[2].to_string();
-        let options = f.get(3).copied().unwrap_or("defaults").to_string();
+        let options = redact_options(f.get(3).copied().unwrap_or("defaults"));
         out.push(MountConfig {
             origin: "fstab".into(),
             file: file.into(),
@@ -403,10 +448,10 @@ pub fn unit(text: &str, file: &str, automount: bool) -> Option<MountConfig> {
         };
         let (k, v) = (k.trim(), v.trim().to_string());
         match (section, k) {
-            ("[Mount]", "What") => what = Some(v),
+            ("[Mount]", "What") => what = Some(redact_spec(&v)),
             ("[Mount]", "Where") => wh = Some(v),
             ("[Mount]", "Type") => ty = v,
-            ("[Mount]", "Options") => opts = v,
+            ("[Mount]", "Options") => opts = redact_options(&v),
             ("[Install]", "WantedBy" | "RequiredBy") => wanted = !v.is_empty(),
             _ => {}
         }

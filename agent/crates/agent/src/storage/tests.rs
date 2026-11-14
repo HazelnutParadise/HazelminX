@@ -425,3 +425,71 @@ fn usage_stops_at_mount_points_and_skips_virtual_roots() {
     assert_eq!(d.categories.len(), 1);
     assert_eq!(d.categories[0].category, category::CONTAINER_IMAGES);
 }
+
+/// A password in fstab or a unit never leaves the host.
+#[test]
+fn mount_secrets_are_redacted() {
+    let c = inventory::fstab(
+        "//nas/share /mnt/s cifs username=u,password=hunter2,credentials=/etc/smb.cred,vers=3.0 0 0\n\
+         https://u:hunter2@dav.example/x /mnt/dav davfs pass=hunter2 0 0\n",
+        "/etc/fstab",
+    );
+    assert_eq!(
+        c[0].options,
+        "username=u,password=***,credentials=/etc/smb.cred,vers=3.0"
+    );
+    assert_eq!(c[1].spec, "https://u:***@dav.example/x");
+    assert_eq!(c[1].options, "pass=***");
+    let u = inventory::unit(
+        "[Mount]\nWhat=//nas/b\nWhere=/mnt/b\nType=cifs\nOptions=user=u,Password=hunter2\n",
+        "/etc/systemd/system/mnt-b.mount",
+        false,
+    )
+    .unwrap();
+    assert_eq!(u.options, "user=u,Password=***");
+    let all = format!("{c:?}{u:?}");
+    assert!(!all.contains("hunter2"), "{all}");
+}
+
+/// Measured more than used: the categories cannot add up, so the round is
+/// partial and has no "other".
+#[cfg(unix)]
+#[test]
+fn usage_over_used_space_is_partial() {
+    let t = tempfile::tempdir().unwrap();
+    let r = t.path();
+    write(r, "/var/log/a", "");
+    fs::write(r.join("var/log/a"), vec![1u8; 64 * 1024]).unwrap();
+    let u = usage::measure(
+        r,
+        &[root_mount(r)],
+        &["/".into()],
+        Budget::default(),
+        |_| Some(1),
+    );
+    assert_eq!(u.filesystems[0].state, "partial");
+    assert_eq!(u.filesystems[0].other_bytes, None);
+}
+
+/// A huge inventory is cut to fit one message, and says so.
+#[test]
+fn oversized_inventory_is_truncated_and_named() {
+    let mut inv = Inventory::new("/nonexistent-root").read_all();
+    let m = root_mount(Path::new("/"));
+    inv.mounts = (0..20_000)
+        .map(|i| Mount {
+            mount_point: format!("/snap/pkg{i}"),
+            ..m.clone()
+        })
+        .collect();
+    let out = fit(inv);
+    assert!(serde_json::to_vec(&out).unwrap().len() <= INVENTORY_BYTES);
+    assert!(out.mounts.len() < 20_000 && !out.mounts.is_empty());
+    assert!(
+        out.unreadable.iter().any(|u| u.starts_with("truncated:")),
+        "{:?}",
+        out.unreadable
+    );
+    let small = fit(Inventory::new("/nonexistent-root").read_all());
+    assert!(!small.unreadable.iter().any(|u| u.starts_with("truncated:")));
+}

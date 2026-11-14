@@ -166,6 +166,23 @@ func TestRecordRejectsBadReports(t *testing.T) {
 	}
 }
 
+func TestRecordUsageRejectsCompleteThatDoesNotAddUp(t *testing.T) {
+	now := time.Date(2026, 11, 14, 0, 0, 0, 0, time.UTC)
+	s, node := openStore(t, now)
+	mk := func(other *uint64) *protocol.StorageUsage {
+		return &protocol.StorageUsage{Usage: protocol.StorageUsageData{StartedAt: now, Filesystems: []protocol.FilesystemUsage{{MountPoint: "/", State: "complete",
+			UsedBytes: u64(100), OtherBytes: other, Categories: []protocol.CategoryUsage{{Category: protocol.CategoryOSAndLogs, Bytes: 60}}}}}}
+	}
+	for _, other := range []*uint64{nil, u64(0), u64(41)} {
+		if err := s.RecordUsage(context.Background(), node, mk(other)); !errors.Is(err, ErrValidation) {
+			t.Errorf("other %v: %v", other, err)
+		}
+	}
+	if err := s.RecordUsage(context.Background(), node, mk(u64(40))); err != nil {
+		t.Errorf("adds up: %v", err)
+	}
+}
+
 func TestFSUsageOrderAndOther(t *testing.T) {
 	f := protocol.FilesystemUsage{State: "complete", UsedBytes: u64(100), OtherBytes: u64(10), Categories: []protocol.CategoryUsage{
 		{Category: protocol.CategoryOSAndLogs, Bytes: 50}, {Category: protocol.CategoryAppData, Bytes: 40}, {Category: protocol.CategoryDatabase, Bytes: 0}}}

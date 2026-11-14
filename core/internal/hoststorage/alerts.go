@@ -156,7 +156,8 @@ func (s *Store) RuleFor(ctx context.Context, nodeID, mountPoint string) (Rule, e
 
 // Alert is one capacity condition of one filesystem.
 type Alert struct {
-	// Kind: availableLow, inodesLow, fullSoon or readOnly.
+	// Kind: availableLow, inodesLow or fullSoon. Read-only filesystems are
+	// flagged by the metrics exhaustion view (ROB-009), not here.
 	Kind string `json:"kind"`
 	// Level: warning or critical.
 	Level   string `json:"level"`

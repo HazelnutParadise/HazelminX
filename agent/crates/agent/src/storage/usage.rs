@@ -261,9 +261,13 @@ pub fn measure(
             .unwrap_or_else(|| m.mount_point.clone());
         let used_bytes = used(&join(&mount_point));
         let sum: u64 = t.by_cat.values().map(|(b, _)| *b).sum();
+        // More measured than used (shared extents from reflinks or btrfs
+        // snapshots, compression, files written during the walk): the
+        // categories cannot add up, so the round is not complete.
+        let over = used_bytes.is_some_and(|u| sum > u);
         let state = if used_bytes.is_none() {
             "unmeasured"
-        } else if t.partial || t.unreadable > 0 {
+        } else if t.partial || t.unreadable > 0 || over {
             "partial"
         } else {
             "complete"
