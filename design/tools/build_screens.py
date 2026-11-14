@@ -2013,14 +2013,49 @@ def shell_states() -> str:
     card = "background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0"
     def box(title, body):
         return f'<section style="{card}"><h2 style="font-size:14px">{title}</h2>{body}</section>'
-    menu = box("帳號選單", f"""
-      <div style="border:1px solid var(--line);border-radius:8px;background:var(--raised);display:flex;flex-direction:column">
-        <div style="padding:10px 12px;border-bottom:1px solid var(--line)"><strong>tim</strong><div class="note">擁有者 · tim@hazelnut.tw</div></div>
-        <a class="nv" href="AccountSecurity.dc.html" style="padding:8px 12px">{U.icon("user", 14)} 帳號安全</a>
-        <a class="nv" href="Terminal.dc.html" style="padding:8px 12px">{U.icon("terminal", 14)} 終端機</a>
-        <button type="button" class="nv" style="padding:8px 12px;text-align:left">{U.icon("globe", 14)} 語言 · 繁體中文</button>
-        <button type="button" class="nv" style="padding:8px 12px;text-align:left;border-top:1px solid var(--line)">登出</button>
-      </div>""")
+    def acct_menu(mobile=False):
+        it = "padding:9px 12px;text-align:left;display:flex;gap:8px;align-items:center;width:100%"
+        term = f'<a class="nv" href="Terminal.dc.html" style="{it}">{U.icon("terminal", 14)} 終端機</a>' if mobile else ""
+        return f"""
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <button type="button" class="ib user" aria-label="tim · 擁有者" aria-expanded="true" aria-haspopup="menu" style="border-color:var(--hazel)">{U.icon("user")}{"" if mobile else "<span>tim</span>"}</button>
+        <div role="menu" aria-label="帳號選單" style="width:min(280px,100%);border:1px solid var(--line);border-radius:8px;background:var(--raised);display:flex;flex-direction:column;box-shadow:0 12px 32px rgb(0 0 0/.18)">
+          <div style="padding:10px 12px;border-bottom:1px solid var(--line)"><strong>tim</strong><div style="font-size:12px;color:var(--muted)">擁有者 · tim@hazelnut.tw</div><div style="font-size:12px;color:var(--muted);margin-top:4px">這次登入 <span class="mono">03:12</span> · Chrome · macOS</div></div>
+          <a class="nv" role="menuitem" href="AccountSecurity.dc.html" style="{it}">{U.icon("lock", 14)} 帳號安全<span style="margin-left:auto;font-size:12px;color:var(--muted)">密碼、二次驗證、裝置</span></a>
+          <a class="nv" role="menuitem" href="IAM.dc.html" style="{it}">{U.icon("api", 14)} 我的 API Token<span style="margin-left:auto;font-size:12px;color:var(--muted)">2 個</span></a>
+          {term}
+          <button type="button" class="nv" role="menuitem" style="{it}">{U.icon("globe", 14)} 語言<span style="margin-left:auto;font-size:12px;color:var(--muted)">繁體中文</span></button>
+          <button type="button" class="nv" role="menuitem" style="{it}">{U.icon("history", 14)} 時間顯示<span style="margin-left:auto;font-size:12px;color:var(--muted)">Asia/Taipei</span></button>
+          <button type="button" class="nv" role="menuitem" style="{it}">{U.icon("search", 14)} 鍵盤快捷鍵<span class="mono" style="margin-left:auto;font-size:12px;color:var(--muted)">?</span></button>
+          <button type="button" class="nv" role="menuitem" style="{it};border-top:1px solid var(--line)">登出</button>
+        </div>
+      </div>"""
+    menu = box("帳號選單 · 點頂列自己的名字", acct_menu() + '<div class="wrap">' + U.status("info", "按 Esc 或點外面關閉；主題切換留在頂列，不放進選單") + "</div>")
+    menu_m = box("帳號選單 · 手機", f'<div style="max-width:360px;width:100%;margin-left:auto">{acct_menu(True)}</div><div class="wrap">' + U.status("info", "手機頂列放不下終端機，收進這個選單") + "</div>")
+    def att_row(tag, color, title, sub, act, href):
+        return (f'<div style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-top:1px solid var(--line)">'
+                f'<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:{color}">{tag}</div>'
+                f'<div style="font-size:13px;font-weight:500;overflow-wrap:anywhere">{title}</div><div style="font-size:12px;color:var(--muted);overflow-wrap:anywhere">{sub}</div></div>'
+                f'<a class="btn sm" href="{href}" style="flex:none">{act}</a></div>')
+    def att_panel(rows, count):
+        bell = f'<button type="button" class="ib" aria-label="需要處理 {count}" aria-expanded="true" aria-haspopup="dialog" style="border-color:var(--hazel);position:relative">{U.icon("events")}' + (f'<b class="badge dng">{count}</b>' if count else "") + "</button>"
+        body = rows or ('<div style="padding:20px 12px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:6px;align-items:flex-start">' + U.status("ok", "現在沒有需要處理的事") + '<span style="font-size:12px;color:var(--muted)">告警、待批准和安全提醒出現時會列在這裡</span></div>')
+        return f"""
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        {bell}
+        <div role="dialog" aria-label="需要處理" style="width:min(400px,100%);border:1px solid var(--line);border-radius:8px;background:var(--raised);display:flex;flex-direction:column;box-shadow:0 12px 32px rgb(0 0 0/.18)">
+          <div style="display:flex;align-items:center;gap:8px;padding:10px 12px"><strong>需要處理 · {count}</strong><a href="Events.dc.html" style="margin-left:auto;font-size:12px;color:var(--hazel)">事件與告警 →</a></div>
+          {body}
+          <div style="padding:8px 12px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)">只列要你動手的事，最嚴重的在最上面。處理完或靜音就會消失</div>
+        </div>
+      </div>"""
+    att_rows = (att_row("主機沒有回應 · 48 秒", "var(--danger)", "hazel-jp-02", "wiki.example.tw 仍可連", "處理", "NodeOffline.dc.html")
+                + att_row("對外開著 · 2 個 Port", "var(--danger)", "wiki-db 5432、ollama 11434", "從外部連得到，沒有防火牆擋", "處理", "Security.dc.html#exposure")
+                + att_row("資料碟 93%", "var(--danger)", "hazel-jp-02 /mnt/data", "剩 61 GiB · 預估 15 天後滿", "查看", "Storage.dc.html")
+                + att_row("待批准 · 計畫 #418", "var(--hazel)", "shop production", "新增宿主機掛載 · 自動部署已暫停", "檢視差異", "DeployCheck.dc.html")
+                + att_row("憑證到期 · 11 天", "var(--warn)", "shop.example.tw", "續期失敗 3 次", "重試", "Websites.dc.html"))
+    bell = box("需要處理 · 點頂列的鈴", att_panel(att_rows, 5) + '<div class="wrap">' + U.status("info", "和總覽右欄是同一份清單；在其他頁面不用回總覽就看得到") + "</div>")
+    bell0 = box("需要處理 · 沒有事的時候", att_panel("", 0) + '<div class="wrap">' + U.status("info", "鈴上沒有數字") + "</div>")
     signed_out = box("未登入時的頂列", f"""
       <div class="top" style="border:1px solid var(--line);border-radius:8px"><span class="brand"><span class="logo" aria-hidden="true"></span><span>HazelminX</span></span>
         <div class="tright"><button type="button" class="ib" aria-label="切換淺色或深色">{U.icon("sun")}</button><button type="button" class="ib" aria-label="語言">{U.icon("globe")}</button></div></div>
@@ -2070,7 +2105,7 @@ config check failed, refusing to start</div></details>""")
           <div class="wrap">{U.status("info", "群組標題換成分隔線")}</div><div class="wrap">{U.status("info", "計數變成圖示右上角的小徽章")}</div><div class="wrap">{U.status("info", "名稱在滑過或 Tab 移到時顯示")}</div>
         </div></div>""")
     grid = (f'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr));gap:16px;align-items:start">'
-            f'{menu}{signed_out}{obs}{collapsed}{empty}{nf}{err}{loading}{raw}</div>')
+            f'{bell}{bell0}{menu}{menu_m}{signed_out}{obs}{collapsed}{empty}{nf}{err}{loading}{raw}</div>')
     main = head + grid + f'<div class="cg">{cdown_states}{savebars}</div>'
     return U.shell("overview", main)
 
@@ -4026,8 +4061,9 @@ def connection_panel() -> str:
     def ref(k, expr, val, st):
         return f'<div class="row"><span class="mono">{k}</span><span class="wr"><span class="mono" style="overflow-wrap:anywhere;white-space:normal">{expr}</span></span><span class="wr"><span class="mono" style="overflow-wrap:anywhere;white-space:normal">{val}</span></span><span>{st}</span></div>'
     return f"""
+    <div class="lvl"><div class="lvl-h"><div class="panel"><div class="tabs" role="tablist"><span class="lbl">部署單元</span><button type="button" class="tab" role="tab" aria-selected="false">web</button><button type="button" class="tab" role="tab" aria-selected="false">worker</button><button type="button" class="tab on" role="tab" aria-selected="true">search</button></div></div></div><div class="lvl-b">
     <section class="panel" aria-labelledby="h-conn">
-      <div class="ph"><h2 id="h-conn">search · 連線</h2>{_seg(["web", "worker", "search"], 2, "單元")}</div>
+      <div class="ph"><h2 id="h-conn">連線</h2></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:12px 20px;padding:12px 14px;font-size:13px">
         {kv("內部位址", '<span class="wrap"><span class="mono" style="overflow-wrap:anywhere">search.production.shop.internal</span>' + eye + '</span><div style="margin-top:4px;font-size:12px;color:var(--muted)">其他服務用這個名字連 search。改名、搬主機都不會變</div>')}
         {kv("容器內的 Port", '<span class="mono">http 9200 · transport 9300</span><div style="margin-top:4px;font-size:12px;color:var(--muted)">服務在容器裡聽的 Port。用內部位址連的時候接這個號碼</div>')}
@@ -4035,16 +4071,21 @@ def connection_panel() -> str:
         {kv("對外網址", '<span class="note">未設定</span>')}
         {kv("從其他主機連入", "tw-01：私有網路 · jp-02：加密轉送，只開 9200")}
       </div>
-      <div class="ph" style="border-top:1px solid var(--line)"><h2>search 的變數</h2></div>
+    </section>
+    <section class="panel" aria-labelledby="h-vars">
+      <div class="ph"><h2 id="h-vars">變數</h2></div>
       <div style="padding:8px 14px;font-size:12px;color:var(--muted)">同專案的其他服務可以直接引用這些變數，不用設定。只有機密要先勾「讓其他服務使用」</div>
       <div class="row hd"><span>變數</span><span>值</span><span class="c3">誰在用</span><span></span></div>
       {pub("SEARCH_URL", "http://${search.HZX_HOST}:${search.HZX_PORT_HTTP}", "", "web、worker")}
       {pub("SEARCH_ADMIN_TOKEN", "••••••••（機密）", '<label class="wrap" style="flex-wrap:nowrap"><input type="checkbox" aria-label="讓同專案的其他服務使用 SEARCH_ADMIN_TOKEN">讓其他服務使用</label>', "沒有人")}
-      <div class="ph" style="border-top:1px solid var(--line)"><h2>web 引用了誰</h2></div>
-      <div class="row hd"><span>變數</span><span>寫法</span><span>解析結果</span><span>檢查</span></div>
-      {ref("SEARCH_URL", "${search.SEARCH_URL}", "http://search.production.shop.internal:9200", U.status("ok", "連得到"))}
-      {ref("ADMIN_TOKEN", "${search.SEARCH_ADMIN_TOKEN}", "—", U.status("dng", "這是機密，search 沒有分享"))}
-    </section>"""
+    </section>
+    <section class="panel" aria-labelledby="h-refs">
+      <div class="ph"><h2 id="h-refs">被誰引用</h2></div>
+      <div class="row hd"><span>誰的哪個變數</span><span>寫法</span><span>解析結果</span><span>檢查</span></div>
+      {ref("web · SEARCH_URL", "${search.SEARCH_URL}", "http://search.production.shop.internal:9200", U.status("ok", "連得到"))}
+      {ref("worker · ADMIN_TOKEN", "${search.SEARCH_ADMIN_TOKEN}", "—", U.status("dng", "這是機密，search 沒有分享"))}
+    </section>
+    </div></div>"""
 
 
 # ---------- 單元設定 ----------

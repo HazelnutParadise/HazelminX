@@ -92,6 +92,8 @@
 | 047.1 | 使用者可以用 API 以 GitHub 網頁授權或 PAT 建立可重用連線，管理員可以接入自己的 GitHub App | GitHub 來源 | 009, 011, 010 | [#159](https://github.com/HazelnutParadise/hazelminx/issues/159) |
 | 047.2 | 使用者可以在畫面上連接 GitHub、管理多個連線並檢查回呼與 Webhook 可達性 | GitHub 來源 | 047.1, 017 | [#160](https://github.com/HazelnutParadise/hazelminx/issues/160) |
 | 048 | 使用者可以瀏覽、搜尋、分頁載入可用 Repo，並選分支、commit 與 Compose 檔案 | GitHub 來源 | 047, 017 | [#48](https://github.com/HazelnutParadise/hazelminx/issues/48) |
+| 048.1 | 使用者可以用 API 瀏覽、搜尋與分頁同步可用 Repo，並讀取分支、commit、檔案與 Compose 檔案 | GitHub 來源 | 047.1 | [#163](https://github.com/HazelnutParadise/hazelminx/issues/163) |
+| 048.2 | 使用者可以在共用來源選擇器搜尋 Repo、選授權、分支或 commit 與 Compose 檔案 | GitHub 來源 | 048.1, 047.2, 017 | [#164](https://github.com/HazelnutParadise/hazelminx/issues/164) |
 | 049 | 專案管理員可以從 GitHub 以固定 commit 隔離抓取、建置並部署，手動 URL／PAT／SSH 模式照常可用 | GitHub 來源 | 048, 044, 012 | [#49](https://github.com/HazelnutParadise/hazelminx/issues/49) |
 | 050 | 管理員可以設定 Webhook 或定期檢查觸發部署，並決定多環境與連續 commit 政策 | GitHub 來源 | 049 | [#50](https://github.com/HazelnutParadise/hazelminx/issues/50) |
 | 051 | 管理員可以分開授權連線的查看、瀏覽、使用與管理，並安全輪替、撤銷與斷開 | GitHub 來源 | 049, 016 | [#51](https://github.com/HazelnutParadise/hazelminx/issues/51) |

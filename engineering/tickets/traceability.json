@@ -1259,6 +1259,19 @@
         "047",
         "017"
       ],
+      "requirements": [],
+      "acceptance_tests": [],
+      "issue": 48
+    },
+    {
+      "id": "048.1",
+      "file": "048.1-repo-picker-api.md",
+      "title": "使用者可以用 API 瀏覽、搜尋與分頁同步可用 Repo，並讀取分支、commit、檔案與 Compose 檔案",
+      "epic": "github",
+      "milestone": "M2",
+      "blocked_by": [
+        "047.1"
+      ],
       "requirements": [
         "GIT-005",
         "GIT-006",
@@ -1272,7 +1285,24 @@
         "GH-T07",
         "GH-T08"
       ],
-      "issue": 48
+      "issue": 163,
+      "parent": "048"
+    },
+    {
+      "id": "048.2",
+      "file": "048.2-repo-picker-screens.md",
+      "title": "使用者可以在共用來源選擇器搜尋 Repo、選授權、分支或 commit 與 Compose 檔案",
+      "epic": "github",
+      "milestone": "M2",
+      "blocked_by": [
+        "048.1",
+        "047.2",
+        "017"
+      ],
+      "requirements": [],
+      "acceptance_tests": [],
+      "issue": 164,
+      "parent": "048"
     },
     {
       "id": "049",
