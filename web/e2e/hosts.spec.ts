@@ -118,6 +118,7 @@ test("add a host: the code is shown once, the host's report is checked, then it 
   await page.getByRole("link", { name: "查看這台主機" }).click();
   await expect(h1(page)).toHaveText(name);
   await expect(page.locator(".hx-node-status")).toContainText("從未連線");
+  await page.getByRole("navigation", { name: "主機分頁" }).getByRole("link", { name: "系統" }).click();
   await expect(page.getByText(host.hostname, { exact: true })).toBeVisible();
   await scanScreen(page, errors, "host page");
 
@@ -212,6 +213,7 @@ test("rename, maintenance, certificate rotation and revocation", async ({ page }
   await expect(row(page, name)).toContainText("已撤銷 · 待送達");
   await expect(row(page, name)).toContainText("撤銷");
   await page.getByRole("link", { name, exact: true }).click();
+  await page.getByRole("navigation", { name: "主機分頁" }).getByRole("link", { name: "系統" }).click();
   await expect(page.getByRole("region", { name: "撤銷", exact: true })).toContainText("待送達");
   await scanScreen(page, errors, "revoked host page");
 });

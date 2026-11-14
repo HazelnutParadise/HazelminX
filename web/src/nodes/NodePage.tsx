@@ -2,7 +2,7 @@ import { Table } from "@cloudflare/kumo/components/table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useParams } from "react-router";
+import { Link, NavLink, useParams } from "react-router";
 import { isApiError } from "../auth/api";
 import { Notice } from "../auth/parts";
 import { StatusPill, type StatusTone } from "../components/StatusPill";
@@ -12,18 +12,20 @@ import { useDocumentTitle } from "../shell/useDocumentTitle";
 import { NODE_STATE, nodeKeys, nodesApi, type Node } from "./api";
 import { REFRESH_MS, useCanWriteNodes } from "./hooks";
 import { NodeActionDialog } from "./NodeActions";
-import { NODES_PATH } from "./paths";
+import { HostOverview } from "./monitor/HostOverview";
+import { NODES_PATH, nodeHref } from "./paths";
 import { CertificatePill, Field, HostStatusPill, LastContact, NodeError, PendingSync, WriteButton } from "./parts";
 import { at, availableActions, hostStatusNote, type NodeAction } from "./status";
 import "./nodes.css";
 
 /**
- * One host: what Core knows about it and the actions it allows (ticket 125). The host workspace tabs
- * (monitoring, system, files, terminal, disks) belong to later tickets.
+ * One host: the 概況 tab with facts, hardware and trends (ticket 020.4) and the 系統 tab with what Core knows
+ * about it and the actions it allows (ticket 125). The other workspace tabs of the board (containers, disks,
+ * files, logs, terminal, change ledger) belong to later tickets and appear with them.
  */
 export function NodePage() {
   const { t } = useTranslation();
-  const { id = "" } = useParams();
+  const { id = "", "*": tab = "" } = useParams();
   const q = useQuery({
     queryKey: nodeKeys.one(id),
     queryFn: () => nodesApi.get(id),
@@ -58,12 +60,17 @@ export function NodePage() {
   return (
     <>
       {crumbs}
-      <NodeDetail node={n} />
+      <NodeDetail node={n} tab={tab} />
     </>
   );
 }
 
-function NodeDetail({ node: n }: { node: Node }) {
+const TABS = [
+  { key: "overview", path: "" },
+  { key: "system", path: "system" },
+] as const;
+
+function NodeDetail({ node: n, tab }: { node: Node; tab: string }) {
   const { t } = useTranslation();
   const canWrite = useCanWriteNodes(n.id);
   const [open, setOpen] = useState<NodeAction | null>(null);
@@ -104,16 +111,35 @@ function NodeDetail({ node: n }: { node: Node }) {
       {n.state === NODE_STATE.conflict && (
         <Notice tone="danger">{t("nodes.detail.conflict", { time: at(n.conflictAt) })}</Notice>
       )}
-      <div className="hx-node-grid">
-        <IdentityPanel node={n} />
-        <ConnectionPanel node={n} />
-        <CertificatePanel node={n} />
-        <MaintenancePanel node={n} canWrite={canWrite} />
-        {n.revocation && <RevocationPanel node={n} />}
-        <ComponentsPanel node={n} />
-      </div>
+      <nav className="hx-tabs" aria-label={t("nodes.monitor.tabs.label")}>
+        {TABS.map((x) => (
+          <NavLink key={x.key} to={x.path ? `${nodeHref(n.id)}/${x.path}` : nodeHref(n.id)} end>
+            {t(`nodes.monitor.tabs.${x.key}`)}
+          </NavLink>
+        ))}
+      </nav>
+      {tab === "" ? (
+        <HostOverview node={n} />
+      ) : tab === "system" ? (
+        <SystemTab node={n} canWrite={canWrite} />
+      ) : (
+        <StateBlock title={t("nodes.monitor.tabs.notFound")} />
+      )}
       {open && <NodeActionDialog node={n} action={open} onClose={() => setOpen(null)} />}
     </>
+  );
+}
+
+function SystemTab({ node: n, canWrite }: { node: Node; canWrite: boolean | undefined }) {
+  return (
+    <div className="hx-node-grid">
+      <IdentityPanel node={n} />
+      <ConnectionPanel node={n} />
+      <CertificatePanel node={n} />
+      <MaintenancePanel node={n} canWrite={canWrite} />
+      {n.revocation && <RevocationPanel node={n} />}
+      <ComponentsPanel node={n} />
+    </div>
   );
 }
 

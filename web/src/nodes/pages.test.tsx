@@ -520,7 +520,7 @@ describe("host page", () => {
       pendingSync: ["revocation"],
     });
     coreWith([revoked]);
-    renderAt("/nodes/jp-02");
+    renderAt("/nodes/jp-02/system");
     await h1("hazel-jp-02");
     expect(screen.getAllByText("已撤銷 · 待送達").length).toBeGreaterThan(0);
     expect(screen.getAllByText("待送達").length).toBeGreaterThan(0);
@@ -542,7 +542,7 @@ describe("host page", () => {
       } as never,
     });
     coreWith([revoked]);
-    renderAt("/nodes/jp-02");
+    renderAt("/nodes/jp-02/system");
     expect(await screen.findByText("90 秒")).toBeInTheDocument();
   });
 
@@ -573,7 +573,7 @@ describe("host page", () => {
       core.on(`GET ${B}/nodes/tw-01`, { status: 200, body: { node: pending } });
       return { status: 200, body: { node: pending } };
     });
-    renderAt("/nodes/tw-01");
+    renderAt("/nodes/tw-01/system");
     expect(await screen.findByText("失敗")).toBeInTheDocument();
     expect(screen.getByText("agent answered for another node")).toBeInTheDocument();
     await userEvent.setup().click(screen.getByRole("button", { name: "再檢查一次" }));
@@ -598,7 +598,7 @@ describe("host page", () => {
       } as never,
     });
     coreWith([n]);
-    renderAt("/nodes/tw-01");
+    renderAt("/nodes/tw-01/system");
     expect(await screen.findByText("輪替失敗")).toBeInTheDocument();
     expect(screen.getByText(/agent refused the certificate/)).toBeInTheDocument();
   });

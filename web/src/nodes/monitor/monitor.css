@@ -1,0 +1,437 @@
+/* Host 概況 tab (board NodeDetail; DESIGN.md meter, 時間序列圖, 分段控制). */
+.hx-mon {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.hx-mon-h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.hx-mon-fresh {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.hx-np {
+  color: var(--hx-faint);
+}
+.hx-mon-source {
+  display: block;
+  font-size: 11px;
+  color: var(--hx-faint);
+}
+
+/* Facts: label over value, as many columns as fit. */
+.hx-mon-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px 24px;
+  width: 100%;
+  margin: 0;
+}
+.hx-mon-facts dt {
+  font-size: 12px;
+  color: var(--text-color-kumo-subtle);
+}
+.hx-mon-facts dd {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+}
+.hx-mon-xlist {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+/* Hardware cards: three per row on desktop, one on phones. */
+.hx-hw-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+.hx-hw .hx-panel-head h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.hx-hw .hx-panel-body {
+  align-items: stretch;
+}
+.hx-hw-big {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 4px 12px;
+}
+.hx-hw-big .hx-sub {
+  grid-column: 1 / -1;
+}
+.hx-hw-num {
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.hx-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hx-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "name value" "meter meter";
+  align-items: center;
+  gap: 4px 12px;
+}
+.hx-bar-name {
+  grid-area: name;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.hx-bar .hx-meter {
+  grid-area: meter;
+}
+.hx-bar-value {
+  grid-area: value;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+  text-align: right;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.hx-bars-more summary {
+  min-height: 24px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-color-kumo-subtle);
+}
+.hx-bars-more[open] summary {
+  margin-bottom: 8px;
+}
+.hx-mon-kv {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 13px;
+}
+.hx-mon-kv > div {
+  display: contents;
+}
+.hx-mon-kv dt {
+  color: var(--text-color-kumo-subtle);
+}
+.hx-mon-kv dd {
+  margin: 0;
+  text-align: right;
+}
+
+/* Meter: 6px, track the lightest single-hue step, fill neutral / warn ≥70 % / danger ≥90 %. */
+.hx-meter {
+  display: block;
+  height: 6px;
+  border-radius: 4px;
+  background: var(--hx-q1);
+  overflow: hidden;
+  min-width: 48px;
+}
+.hx-meter > span {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--hx-use);
+}
+.hx-meter.is-warn > span {
+  background: var(--color-kumo-warning);
+}
+.hx-meter.is-danger > span {
+  background: var(--color-kumo-danger);
+}
+
+/* History: the range control sits above every chart and is only as wide as its options. */
+.hx-mon-hist-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-bottom: 12px;
+}
+.hx-seg {
+  display: inline-flex;
+  flex: none;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding: 2px;
+  border: 1px solid var(--color-kumo-line);
+  border-radius: 6px;
+  background: var(--color-kumo-base);
+}
+.hx-seg button {
+  min-height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-color-kumo-subtle);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.hx-seg button:hover {
+  color: var(--text-color-kumo-default);
+}
+.hx-seg button[aria-pressed="true"] {
+  background: var(--color-kumo-elevated);
+  color: var(--text-color-kumo-default);
+  font-weight: 600;
+}
+.hx-chart-grid2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
+  gap: 12px;
+}
+
+.hx-chart {
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--color-kumo-line);
+  border-radius: 8px;
+  background: var(--color-kumo-base);
+}
+.hx-chart-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin-bottom: 8px;
+}
+.hx-chart-head h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.hx-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: var(--text-color-kumo-subtle);
+}
+.hx-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.hx-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 3px;
+  border-radius: 2px;
+  background: currentColor;
+}
+.hx-c-hazel {
+  color: var(--color-kumo-brand);
+}
+.hx-c-1 {
+  color: var(--hx-series-1);
+}
+.hx-c-2 {
+  color: var(--hx-series-2);
+}
+.hx-c-3 {
+  color: var(--hx-series-3);
+}
+.hx-c-4 {
+  color: var(--hx-series-4);
+}
+.hx-mon-pick select {
+  min-height: 28px;
+  max-width: 160px;
+  padding: 0 6px;
+  border: 1px solid var(--color-kumo-line);
+  border-radius: 4px;
+  background: var(--color-kumo-elevated);
+  color: var(--text-color-kumo-default);
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+/* Plot: 180px; the left gutter holds the HTML Y labels. */
+.hx-chart-plot {
+  position: relative;
+  height: 180px;
+  margin-left: 64px;
+  touch-action: pan-y;
+}
+.hx-chart-plot.is-loading svg {
+  opacity: 0.6;
+}
+.hx-chart-plot svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.hx-chart-grid {
+  position: absolute;
+  inset: 0;
+}
+.hx-chart-ytick {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px solid var(--color-kumo-line);
+}
+.hx-chart-ylabel {
+  position: absolute;
+  right: calc(100% + 6px);
+  transform: translateY(-50%);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--hx-faint);
+  white-space: nowrap;
+}
+.hx-chart-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2px;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.hx-chart-area {
+  fill: currentColor;
+  opacity: 0.1;
+  stroke: none;
+}
+.hx-chart-stale {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  background: var(--color-kumo-base);
+}
+.hx-chart-cross {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid var(--hx-faint);
+  pointer-events: none;
+}
+.hx-chart-tip {
+  position: absolute;
+  top: 4px;
+  z-index: 1;
+  margin-left: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--color-kumo-line);
+  border-radius: 6px;
+  background: var(--color-kumo-elevated);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.hx-chart-tip.is-left {
+  transform: translateX(calc(-100% - 16px));
+}
+.hx-chart-tip-time {
+  color: var(--text-color-kumo-subtle);
+  margin-bottom: 2px;
+}
+.hx-chart-tip-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 6px;
+}
+.hx-chart-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-color-kumo-subtle);
+}
+.hx-chart-x {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 4px 0 0 64px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--hx-faint);
+}
+.hx-chart-x span:nth-child(even) {
+  display: none;
+}
+@media (min-width: 768px) {
+  .hx-chart-x span:nth-child(even) {
+    display: inline;
+  }
+}
+.hx-chart-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-color-kumo-subtle);
+}
+.hx-chart-tablebtn {
+  min-height: 24px;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-color-kumo-link);
+  font: inherit;
+  cursor: pointer;
+}
+.hx-chart-table {
+  max-height: 280px;
+  margin-top: 8px;
+  overflow: auto;
+}
+.hx-chart {
+  margin: 0;
+}
+
+/* Phones: every control is a 44px touch target (DESIGN.md 斷點). */
+@media (max-width: 767px) {
+  .hx-seg button,
+  .hx-chart-tablebtn,
+  .hx-bars-more summary,
+  .hx-mon-pick select {
+    min-height: 44px;
+  }
+  .hx-bars-more summary {
+    line-height: 44px;
+  }
+}
