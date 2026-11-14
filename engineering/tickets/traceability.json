@@ -1168,18 +1168,69 @@
         "008",
         "016"
       ],
+      "requirements": [],
+      "acceptance_tests": [],
+      "issue": 44
+    },
+    {
+      "id": "044.1",
+      "file": "done/044.1-compose-projects-api.md",
+      "title": "專案管理員可以用 API 建立專案與環境、匯入完整 Compose、看到驗證結果與部署預覽",
+      "epic": "compose",
+      "milestone": "M2",
+      "blocked_by": [
+        "039.1",
+        "010",
+        "011"
+      ],
       "requirements": [
         "CMP-001",
-        "CMP-007",
-        "CMP-008",
-        "CMP-012",
-        "CMP-015",
-        "UI-008"
+        "CMP-015"
       ],
       "acceptance_tests": [
         "T-052"
       ],
-      "issue": 44
+      "issue": 176,
+      "parent": "044"
+    },
+    {
+      "id": "044.2",
+      "file": "044.2-compose-deploy.md",
+      "title": "專案管理員可以在預檢與批准後，由工作透過高權限執行器建置並部署整個 Compose 專案",
+      "epic": "compose",
+      "milestone": "M2",
+      "blocked_by": [
+        "044.1",
+        "008",
+        "016",
+        "113"
+      ],
+      "requirements": [
+        "CMP-007",
+        "CMP-008",
+        "CMP-012"
+      ],
+      "acceptance_tests": [],
+      "issue": 177,
+      "parent": "044"
+    },
+    {
+      "id": "044.3",
+      "file": "044.3-compose-project-screens.md",
+      "title": "專案管理員可以在專案頁匯入、編輯、驗證 Compose 並看到部署預檢",
+      "epic": "compose",
+      "milestone": "M2",
+      "blocked_by": [
+        "044.1",
+        "044.2",
+        "017"
+      ],
+      "requirements": [
+        "UI-008"
+      ],
+      "acceptance_tests": [],
+      "issue": 178,
+      "parent": "044"
     },
     {
       "id": "045",
