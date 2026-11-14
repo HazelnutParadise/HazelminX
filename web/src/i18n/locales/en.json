@@ -968,5 +968,308 @@
       },
       "scrollTable": "Table, scrolls sideways"
     }
+  },
+  "projects": {
+    "add": "New project",
+    "breadcrumb": "Breadcrumb",
+    "backToList": "Back to projects",
+    "cancel": "Cancel",
+    "close": "Close",
+    "loading": "Loading",
+    "sep": ", ",
+    "listTitle": "Projects · {{count}}",
+    "notFound": "No project {{id}}",
+    "loadFailed": "Cannot read this project",
+    "envLoadFailed": "Cannot read environments",
+    "noEnvironments": "No environments yet",
+    "needWrite": "Needs projects:write",
+    "needDeploy": "Needs projects:deploy",
+    "nameRule": "Starts with a lowercase letter; lowercase letters, digits and -; at most 30",
+    "nameInvalid": "The name does not follow the rule",
+    "empty": {
+      "title": "No projects yet",
+      "detail": "A project has environments; each environment holds one Compose unit deployed to one host."
+    },
+    "col": {
+      "project": "Project",
+      "environments": "Environments",
+      "description": "Description",
+      "createdAt": "Created"
+    },
+    "create": {
+      "title": "New project",
+      "name": "Project name",
+      "displayName": "Display name (optional)",
+      "description": "Description (optional)",
+      "submit": "Create project"
+    },
+    "env": {
+      "frame": "Environments",
+      "label": "Environment",
+      "add": "Environment",
+      "notFound": "This project has no such environment",
+      "backToFirst": "Back to the first environment",
+      "empty": {
+        "title": "This project has no environments",
+        "detail": "Add an environment, such as production or staging, then import Compose."
+      },
+      "create": {
+        "title": "New environment of {{project}}",
+        "name": "Environment name",
+        "description": "Description (optional)",
+        "submit": "Create environment"
+      }
+    },
+    "unit": {
+      "composeProject": "Compose project name",
+      "source": "Source",
+      "target": "Deploys to",
+      "noTarget": "No host chosen",
+      "version": "Version",
+      "versionValue": "Version {{version}}",
+      "edit": "Edit Compose",
+      "sources": {
+        "upload": "Upload",
+        "editor": "Editor",
+        "git": "Git"
+      }
+    },
+    "files": {
+      "title": "Files · {{count}}",
+      "path": "Path",
+      "role": "Role",
+      "size": "Size",
+      "sha256": "SHA-256",
+      "secret": "Secret",
+      "roleMain": "Main file (-f 1)",
+      "roleExtra": "Merged (-f {{n}})",
+      "roleOther": "Referenced file",
+      "options": "Profiles: {{profiles}} · Working directory: {{workingDir}}"
+    },
+    "findings": {
+      "title": "Compose check",
+      "valid": "Docker Compose can read it",
+      "invalid": "Docker Compose cannot read it",
+      "none": "Nothing to handle",
+      "result": "Result",
+      "where": "Where",
+      "message": "Item"
+    },
+    "severity": {
+      "error": "Blocked",
+      "high-risk": "High risk",
+      "warning": "Warning",
+      "kept": "Kept, not applied"
+    },
+    "vars": {
+      "name": "Variable",
+      "state": "State",
+      "default": "Default",
+      "files": "Used in",
+      "states": {
+        "missing": "Missing",
+        "default": "Uses default",
+        "empty": "Empty string",
+        "provided": "Set"
+      }
+    },
+    "services": {
+      "title": "Services · {{count}}",
+      "name": "Service",
+      "image": "Image",
+      "ports": "Ports",
+      "mounts": "Mounts",
+      "build": "Built on the host",
+      "disabled": "Not enabled (profiles: {{profiles}})"
+    },
+    "editor": {
+      "titleImport": "Import Compose",
+      "titleEdit": "Edit Compose",
+      "upload": "Upload files",
+      "addFile": "Add file",
+      "rawNote": "Files are kept byte for byte; keys HazelminX does not know stay as written.",
+      "noFiles": "Upload compose.yaml and its files, or add a file and paste its content.",
+      "fileN": "File {{n}} {{path}}",
+      "path": "Path",
+      "secret": "Secret file",
+      "remove": "Remove {{path}}",
+      "untitled": "untitled",
+      "content": "Content of {{path}}",
+      "storedSecret": "A stored secret file; its content is never sent to the browser and is kept on save.",
+      "replaceSecret": "Replace content",
+      "readFailed": "Cannot read {{file}}",
+      "options": "Compose options",
+      "mainFile": "Main file",
+      "extraFiles": "Merged files (-f, in order)",
+      "extraFilesHint": "Comma separated, in -f order",
+      "profiles": "Profiles",
+      "workingDir": "Working directory",
+      "target": "Deploys to",
+      "host": "Host",
+      "noHost": "Choose later",
+      "engine": "Engine environment",
+      "chooseEngine": "Choose an engine environment",
+      "engineNotReported": "This host has not reported its engines yet.",
+      "noRootfulEngine": "This host has no root-owned Docker or Podman.",
+      "checkResult": "Check result (not saved)",
+      "check": "Check",
+      "save": "Save",
+      "import": "Import",
+      "problemsLabel": "Why it cannot be sent yet",
+      "problem": {
+        "noFiles": "Add at least one file",
+        "emptyPath": "A file has no path",
+        "duplicate": "Two files have the same path",
+        "tooMany": "At most {{max}} files",
+        "fileTooBig": "One file is at most {{max}}",
+        "tooBig": "All files together are at most {{max}}",
+        "extraMissing": "Merged files not in the list: {{files}}",
+        "noEngine": "Choose an engine environment for the host"
+      }
+    },
+    "engineState": {
+      "running": "running",
+      "stopped": "stopped",
+      "unreachable": "unreachable"
+    },
+    "preview": {
+      "title": "Deployment preview",
+      "hostCheck": "Check host",
+      "createPlan": "Create deployment plan",
+      "target": "Target engine",
+      "engine": "Engine",
+      "deployable": "Can deploy",
+      "yes": "Yes",
+      "no": "No",
+      "approval": "Approval",
+      "needsApproval": "High-risk settings: the owner must approve",
+      "noApproval": "No approval needed",
+      "blockers": "What blocks the deployment",
+      "pending": "Checked on the host before deploying: {{checks}}"
+    },
+    "hostCheck": {
+      "images-reachable": "images",
+      "disk-space": "disk space",
+      "ports-free": "port conflicts",
+      "bind-mount-sources": "mount paths"
+    },
+    "targetState": {
+      "ready": "Ready",
+      "not-set": "No host chosen",
+      "not-probed": "Host has not reported its engines",
+      "not-found": "No such engine environment on the host",
+      "unsupported": "Not Docker or Podman",
+      "not-running": "Engine does not answer",
+      "no-compose": "No Docker Compose on the host"
+    },
+    "hostCheckJob": {
+      "title": "Host check"
+    },
+    "deployJob": {
+      "title": "Deployment progress"
+    },
+    "job": {
+      "progress": "Progress {{n}}%",
+      "nothingChanged": "Nothing on the host was changed.",
+      "failedNoRollback": "The deployment failed and is not rolled back: containers already updated keep the new version, the rest keep the old one, and the previous revision's files stay on the host."
+    },
+    "plan": {
+      "title": "Deployment plan",
+      "target": "Target",
+      "risk": "Risk",
+      "approval": "Approval",
+      "expires": "Valid until",
+      "approve": "Approve",
+      "withdraw": "Withdraw",
+      "execute": "Deploy to {{host}}",
+      "newPlan": "Create a new plan",
+      "autoApproved": "No approval needed; approved automatically",
+      "approvedBy": "Approved by {{name}}",
+      "needsOwner": "Waiting for the owner",
+      "needsApproval": "Waiting for approval",
+      "ownerRequired": "High-risk settings: only the owner can approve",
+      "invalidated": "The content or a version changed; the approval no longer counts:",
+      "moved": "{{name}} moved from version {{from}} to {{to}}",
+      "decision": "{{name}}: {{reason}}",
+      "checks": "Prechecks · {{count}}",
+      "affected": "Affected services · {{count}}",
+      "changes": "Changes · {{count}}"
+    },
+    "risk": {
+      "low": "Low",
+      "warning": "Warning",
+      "high": "High risk"
+    },
+    "approve": {
+      "title": "Approve deploying {{name}} to {{host}}",
+      "what": "After approval, the Compose of {{env}} is deployed to {{host}}.",
+      "noRollback": "A failed deployment is not rolled back; containers may be left partly updated.",
+      "typeEnv": "Type the environment name {{env}} to confirm",
+      "submit": "Approve {{env}}"
+    },
+    "deployments": {
+      "title": "Deployments · {{count}}",
+      "none": "No deployments yet",
+      "deployment": "Deployment",
+      "state": "State",
+      "started": "Time",
+      "result": "Result",
+      "openPlan": "Open plan",
+      "running": "Running on the host",
+      "leftBehind": "Not rolled back; containers may be left partly updated"
+    },
+    "deployState": {
+      "running": "Deploying",
+      "succeeded": "Succeeded",
+      "failed": "Failed"
+    },
+    "planState": {
+      "awaiting_approval": "Awaiting approval",
+      "approved": "Approved",
+      "executed": "Executed",
+      "rejected": "Rejected",
+      "withdrawn": "Withdrawn",
+      "expired": "Expired",
+      "invalidated": "Invalidated"
+    },
+    "checkState": {
+      "pass": "Pass",
+      "warning": "Warning",
+      "high_risk": "High risk",
+      "failed": "Blocked"
+    },
+    "jobState": {
+      "created": "Created",
+      "prechecking": "Prechecking",
+      "awaiting_approval": "Awaiting approval",
+      "queued": "Queued",
+      "running": "Running",
+      "verifying": "Verifying",
+      "succeeded": "Succeeded",
+      "failed": "Failed",
+      "rolling_back": "Rolling back",
+      "rolled_back": "Rolled back",
+      "cancel_requested": "Cancel requested",
+      "cancelled": "Cancelled",
+      "unknown": "Unknown",
+      "needs_attention": "Needs attention"
+    },
+    "stepState": {
+      "pending": "Pending",
+      "running": "Running",
+      "done": "Done",
+      "failed": "Failed",
+      "skipped": "Skipped",
+      "unknown": "Unknown",
+      "rolled_back": "Rolled back",
+      "rollback_failed": "Rollback failed"
+    },
+    "errors": {
+      "versionMismatch": "Someone changed it first; reload and edit again.",
+      "alreadyExists": "This name is already used.",
+      "forbidden": "This account is not allowed.",
+      "planChanged": "The plan's content or a version changed; the approval no longer counts.",
+      "validation": "Core does not accept this content."
+    }
   }
 }
