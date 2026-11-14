@@ -657,7 +657,7 @@ def login() -> str:
         {brand}
         <h1 id="h-so" style="font-size:20px">登入管理介面</h1>
         <div class="wrap">{U.status("warn", "沒有確認登出成功")}</div>
-        <span style="color:var(--muted);font-size:12.5px">按登出時連不上伺服器，這個瀏覽器可能還是登入狀態。別人會用這台電腦的話，請再登出一次</span>
+        <span style="color:var(--muted);font-size:12.5px">已經自動重試 3 次都連不上伺服器，這個瀏覽器可能還是登入狀態。別人會用這台電腦的話，請再登出一次</span>
         <button type="button" class="btn" style="min-height:40px">再登出一次</button>
         {field("帳號", "使用者名稱")}
         {field("密碼", "密碼", typ="password")}
