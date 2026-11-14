@@ -516,3 +516,101 @@ func TestInventoryFollowsTheCurrentAuthorization(t *testing.T) {
 		t.Fatalf("rotation drops the inventory: %+v", st)
 	}
 }
+
+// Review fixes (2026-11-14).
+
+// An App user token renews every few hours; that alone must not make the
+// inventory stale.
+func TestTokenRenewalKeepsTheGeneration(t *testing.T) {
+	a := Connection{Kind: KindAppUser, Account: Account{ID: 1}}
+	b := a
+	exp := time.Date(2026, 11, 14, 16, 0, 0, 0, time.UTC)
+	b.AccessExpiresAt = &exp
+	if generationOf(a) != generationOf(b) {
+		t.Fatal("expiry changes the generation")
+	}
+	b.Scopes = []string{"repo"}
+	if generationOf(a) == generationOf(b) {
+		t.Fatal("scopes must change the generation")
+	}
+}
+
+// Rows beyond the first step of a new round stay marked stale until they
+// are read again.
+func TestRowsNotReadAgainStayStale(t *testing.T) {
+	e := newEnv(t, "")
+	c := patConn(t, e, "ghp_a", 101, "octo", e.alice)
+	e.gh.repos().pageSize = 1
+	e.gh.addRepos(SourceUser, manyRepos(1, 15, "octo")...)
+	syncUntilDone(t, e, c.ID, e.alice)
+	if _, err := e.st.DB.Exec(`UPDATE github_connections SET scopes='["public_repo"]' WHERE id=?`, c.ID); err != nil {
+		t.Fatal(err)
+	}
+	st, err := e.svc.SyncRepositories(ctx, c.ID, e.alice)
+	if err != nil || st.Complete || st.State != InventoryStale || !st.Sources[0].Stale {
+		t.Fatalf("mid round: %+v %v", st, err)
+	}
+	got, _ := e.svc.ListRepositories(ctx, e.alice, RepoFilter{})
+	stale := 0
+	for _, it := range got {
+		if it.Stale {
+			stale++
+		}
+	}
+	if len(got) != 15 || stale != 5 {
+		t.Fatalf("rows not yet read again: %d of %d stale", stale, len(got))
+	}
+	if st := syncUntilDone(t, e, c.ID, e.alice); !st.Complete {
+		t.Fatalf("finished: %+v", st)
+	}
+}
+
+// After the wait the status says the sync can go on; a shorter wait never
+// shortens a longer one.
+func TestRateLimitWaitEndsAndIsNeverShortened(t *testing.T) {
+	e := newEnv(t, "")
+	c := patConn(t, e, "ghp_a", 101, "octo", e.alice)
+	e.gh.addRepos(SourceUser, manyRepos(1, 150, "octo")...)
+	e.gh.repos().pageErr["user#2"] = &APIError{Kind: ErrUnavailable, Status: 429, Reason: "rate limited", RetryAfter: 10 * time.Minute}
+	if st, _ := e.svc.SyncRepositories(ctx, c.ID, e.alice); st.State != InventoryRateLimited {
+		t.Fatalf("%+v", st)
+	}
+	e.svc.noteRateLimit(ctx, c.ID, e.clock.Add(time.Minute))
+	e.advance(2 * time.Minute)
+	if st, _ := e.svc.RepositorySync(ctx, c.ID, e.alice); st.State != InventoryRateLimited || !st.RetryAt.Equal(e.clock.Add(8*time.Minute)) {
+		t.Fatalf("shortened: %+v", st)
+	}
+	e.advance(9 * time.Minute)
+	if st, _ := e.svc.RepositorySync(ctx, c.ID, e.alice); st.State != InventorySyncing {
+		t.Fatalf("after the wait: %+v", st)
+	}
+}
+
+// A ref is put into a GitHub URL path: dot segments and other non-ref
+// characters are refused before GitHub is asked.
+func TestRefsCannotLeaveTheRepository(t *testing.T) {
+	e := newEnv(t, "")
+	c := patConn(t, e, "ghp_a", 101, "octo", e.alice)
+	e.gh.addRepos(SourceUser, repo(1, "octo", "shop", true))
+	syncUntilDone(t, e, c.ID, e.alice)
+	before := e.gh.count("GetCommit") + e.gh.count("ListCommits")
+	for _, ref := range []string{"../../../victim/private/commits/main", "a/./b", "a//b", "/main", "main/", "a\\b", "a b", "x\x00", "a..b/../c", "@{-1}", ".hidden"} {
+		if _, err := e.svc.ResolveRef(ctx, c.ID, 1, ref, e.alice); !errors.Is(err, ErrValidation) {
+			t.Fatalf("resolve %q: %v", ref, err)
+		}
+		if _, err := e.svc.FindComposeFiles(ctx, c.ID, 1, ref, e.alice); !errors.Is(err, ErrValidation) {
+			t.Fatalf("compose %q: %v", ref, err)
+		}
+		if _, err := e.svc.ListCommits(ctx, c.ID, 1, ref, 1, e.alice); !errors.Is(err, ErrValidation) {
+			t.Fatalf("commits %q: %v", ref, err)
+		}
+	}
+	if after := e.gh.count("GetCommit") + e.gh.count("ListCommits"); after != before {
+		t.Fatalf("GitHub was asked: %d", after-before)
+	}
+	for _, ok := range []string{"main", "feature/x-1", "v1.0.0", "4d81a2c"} {
+		if err := checkRef(ok); err != nil {
+			t.Fatalf("%q refused: %v", ok, err)
+		}
+	}
+}

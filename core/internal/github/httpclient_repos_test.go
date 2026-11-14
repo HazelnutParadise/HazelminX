@@ -3,6 +3,7 @@ package github
 import (
 	"errors"
 	"net/http"
+	"strings"
 	"testing"
 )
 
@@ -72,5 +73,18 @@ func TestHTTPClientRepositoryPagesETagsAndLimits(t *testing.T) {
 	}
 	if _, err := c.ListRepositories(ctx, "bad", RepoSource{Kind: SourceUser}, 1, ""); !errors.Is(err, ErrRejected) {
 		t.Fatalf("refused: %v", err)
+	}
+}
+
+func TestHTTPClientRefusesAnswersOverTheLimit(t *testing.T) {
+	c := localGitHub(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"sha":"abc","tree":[`))
+		for i := 0; i < 30000; i++ {
+			w.Write([]byte(`{"path":"some/long/path/file.txt","type":"blob"},`))
+		}
+		w.Write([]byte(`{"path":"x","type":"blob"}]}`))
+	})
+	if _, err := c.GetTree(ctx, "tok", "acme/big", "abc"); !errors.Is(err, ErrUnavailable) || !strings.Contains(err.Error(), "larger than 1 MiB") {
+		t.Fatalf("large answer: %v", err)
 	}
 }

@@ -43,12 +43,11 @@ const (
 // generationOf fingerprints what a connection is allowed to see. Rows read
 // under another generation are stale (spec 15.9: the cache includes the
 // authorization and the permissions observed).
+// Token expiry is left out: an App user token renews every few hours
+// without changing what it may see. A rotated PAT drops the inventory
+// instead (RotatePAT).
 func generationOf(c Connection) string {
-	exp := ""
-	if c.AccessExpiresAt != nil {
-		exp = c.AccessExpiresAt.UTC().Format(time.RFC3339)
-	}
-	b, _ := json.Marshal([]any{c.Host, c.Kind, c.Account.ID, c.InstallationID, c.TokenType, c.Scopes, c.Permissions, c.RepositoryIDs, c.RepositorySelection, exp})
+	b, _ := json.Marshal([]any{c.Host, c.Kind, c.Account.ID, c.InstallationID, c.TokenType, c.Scopes, c.Permissions, c.RepositoryIDs, c.RepositorySelection})
 	sum := sha256.Sum256(b)
 	return hex.EncodeToString(sum[:12])
 }
@@ -129,10 +128,11 @@ type RepoFilter struct {
 
 func (s *Service) sourcesOf(ctx context.Context, q interface {
 	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
-}, connID string) ([]SourceStatus, error) {
+}, connID, gen string) ([]SourceStatus, error) {
 	rows, err := q.QueryContext(ctx, `SELECT s.source_key, s.kind, s.login, s.state, s.next_page, s.error, s.retry_at, s.synced_at, s.generation,
-		(SELECT COUNT(*) FROM github_repositories r WHERE r.connection_id=s.connection_id AND r.source_key=s.source_key)
-		FROM github_repo_sources s WHERE s.connection_id=? ORDER BY CASE s.kind WHEN 'org' THEN 1 ELSE 0 END, s.source_key`, connID)
+		(SELECT COUNT(*) FROM github_repositories r WHERE r.connection_id=s.connection_id AND r.source_key=s.source_key),
+		(SELECT COUNT(*) FROM github_repositories r WHERE r.connection_id=s.connection_id AND r.source_key=s.source_key AND r.generation<>?)
+		FROM github_repo_sources s WHERE s.connection_id=? ORDER BY CASE s.kind WHEN 'org' THEN 1 ELSE 0 END, s.source_key`, gen, connID)
 	if err != nil {
 		return nil, err
 	}
@@ -141,9 +141,13 @@ func (s *Service) sourcesOf(ctx context.Context, q interface {
 	for rows.Next() {
 		var st SourceStatus
 		var retry, synced sql.NullString
-		if err := rows.Scan(&st.Key, &st.Kind, &st.Login, &st.State, &st.NextPage, &st.Error, &retry, &synced, &st.gen, &st.Repositories); err != nil {
+		var old int
+		if err := rows.Scan(&st.Key, &st.Kind, &st.Login, &st.State, &st.NextPage, &st.Error, &retry, &synced, &st.gen, &st.Repositories, &old); err != nil {
 			return nil, err
 		}
+		// Stale: rows of this source were read under another authorization
+		// and not read again yet.
+		st.Stale = st.gen != gen || old > 0
 		st.RetryAt, st.SyncedAt = parseTSPtr(retry), parseTSPtr(synced)
 		if st.State == SyncComplete || st.State == SyncFailed {
 			st.NextPage = 0
@@ -165,7 +169,7 @@ func (s *Service) RepositorySync(ctx context.Context, connID string, actor Actor
 func (s *Service) syncStatus(ctx context.Context, c Connection) (SyncStatus, error) {
 	connID := c.ID
 	gen := generationOf(c)
-	srcs, err := s.sourcesOf(ctx, s.db, connID)
+	srcs, err := s.sourcesOf(ctx, s.db, connID, gen)
 	if err != nil {
 		return SyncStatus{}, err
 	}
@@ -175,9 +179,10 @@ func (s *Service) syncStatus(ctx context.Context, c Connection) (SyncStatus, err
 		return st, nil
 	}
 	var limited, failed, pending, stale bool
-	for i, src := range srcs {
-		if src.gen != gen {
-			srcs[i].Stale, stale = true, true
+	for _, src := range srcs {
+		stale = stale || src.Stale
+		if src.State == SyncRateLimited && (src.RetryAt == nil || !s.now().Before(*src.RetryAt)) {
+			src.State = SyncPending // the wait is over; the next step goes on
 		}
 		switch src.State {
 		case SyncRateLimited:
@@ -238,7 +243,7 @@ func rateWait(err error) (time.Duration, bool) {
 // noteRateLimit records a rate limit on the connection, so neither a sync
 // nor a browse call asks GitHub again before it resets.
 func (s *Service) noteRateLimit(ctx context.Context, connID string, until time.Time) {
-	if _, err := s.db.ExecContext(ctx, `UPDATE github_repo_sources SET retry_at=?, updated_at=? WHERE connection_id=?`,
+	if _, err := s.db.ExecContext(ctx, `UPDATE github_repo_sources SET retry_at=CASE WHEN retry_at IS NOT NULL AND retry_at>?1 THEN retry_at ELSE ?1 END, updated_at=?2 WHERE connection_id=?3`,
 		until.UTC().Format(time.RFC3339), s.ts(), connID); err != nil {
 		s.log.Warn("github: recording a rate limit failed", "connection", connID, "error", err)
 	}
@@ -293,12 +298,12 @@ func (s *Service) SyncRepositories(ctx context.Context, connID string, actor Act
 	if err != nil {
 		return SyncStatus{}, err
 	}
-	srcs, err := s.sourcesOf(ctx, s.db, c.ID)
+	gen := generationOf(c)
+	srcs, err := s.sourcesOf(ctx, s.db, c.ID, gen)
 	if err != nil {
 		return SyncStatus{}, err
 	}
 	open, stale := 0, false
-	gen := generationOf(c)
 	for _, src := range srcs {
 		if src.State == SyncPending || src.State == SyncSyncing || src.State == SyncRateLimited {
 			open++
@@ -313,7 +318,7 @@ func (s *Service) SyncRepositories(ctx context.Context, connID string, actor Act
 			}
 			return SyncStatus{}, err
 		}
-		if srcs, err = s.sourcesOf(ctx, s.db, c.ID); err != nil {
+		if srcs, err = s.sourcesOf(ctx, s.db, c.ID, gen); err != nil {
 			return SyncStatus{}, err
 		}
 	}
@@ -325,7 +330,7 @@ func (s *Service) SyncRepositories(ctx context.Context, connID string, actor Act
 		page := max(src.NextPage, 1)
 		for budget > 0 {
 			budget--
-			next, stop, err := s.syncPage(ctx, c, cred.Value, src, page)
+			next, stop, err := s.syncPage(ctx, c, gen, cred.Value, src, page)
 			if err != nil {
 				return SyncStatus{}, err
 			}
@@ -422,7 +427,7 @@ func (s *Service) startRound(ctx context.Context, c Connection, token string) er
 // syncPage reads one page. It returns the next page to read (0 when the
 // source is finished) and stop=true when the whole step must end (rate
 // limit). A failure of the source is recorded on it, not returned.
-func (s *Service) syncPage(ctx context.Context, c Connection, token string, src SourceStatus, page int) (next int, stop bool, err error) {
+func (s *Service) syncPage(ctx context.Context, c Connection, gen, token string, src SourceStatus, page int) (next int, stop bool, err error) {
 	var etag string
 	var hadNext int
 	_ = s.db.QueryRowContext(ctx, `SELECT etag, has_next FROM github_repo_pages WHERE connection_id=? AND source_key=? AND page=?`,
@@ -454,7 +459,7 @@ func (s *Service) syncPage(ctx context.Context, c Connection, token string, src 
 	more := res.Next
 	if res.NotModified {
 		more = hadNext == 1
-		if _, err := tx.ExecContext(ctx, `UPDATE github_repositories SET seen_at=? WHERE connection_id=? AND source_key=? AND page=?`, now, c.ID, src.Key, page); err != nil {
+		if _, err := tx.ExecContext(ctx, `UPDATE github_repositories SET seen_at=?, generation=? WHERE connection_id=? AND source_key=? AND page=?`, now, gen, c.ID, src.Key, page); err != nil {
 			return 0, true, err
 		}
 	} else {
@@ -465,7 +470,7 @@ func (s *Service) syncPage(ctx context.Context, c Connection, token string, src 
 			if !c.coversRepository(r.ID) {
 				continue
 			}
-			if err := insertRepo(ctx, tx, c.ID, src.Key, page, r, now); err != nil {
+			if err := insertRepo(ctx, tx, c.ID, src.Key, page, gen, r, now); err != nil {
 				return 0, true, err
 			}
 		}
@@ -526,21 +531,21 @@ func boolInt(b bool) int {
 	return 0
 }
 
-func insertRepo(ctx context.Context, tx *sql.Tx, connID, key string, page int, r Repository, now string) error {
+func insertRepo(ctx context.Context, tx *sql.Tx, connID, key string, page int, gen string, r Repository, now string) error {
 	var pushed any
 	if r.PushedAt != nil {
 		pushed = r.PushedAt.UTC().Format(time.RFC3339)
 	}
 	_, err := tx.ExecContext(ctx, `INSERT INTO github_repositories(connection_id, source_key, page, repo_id, full_name, name, owner_id, owner_login, owner_type,
-		private, visibility, archived, disabled, fork, default_branch, html_url, pushed_at, size_kb, can_push, can_admin, seen_at)
-		VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		private, visibility, archived, disabled, fork, default_branch, html_url, pushed_at, size_kb, can_push, can_admin, seen_at, generation)
+		VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(connection_id, source_key, repo_id) DO UPDATE SET page=excluded.page, full_name=excluded.full_name, name=excluded.name,
 		owner_id=excluded.owner_id, owner_login=excluded.owner_login, owner_type=excluded.owner_type, private=excluded.private,
 		visibility=excluded.visibility, archived=excluded.archived, disabled=excluded.disabled, fork=excluded.fork,
 		default_branch=excluded.default_branch, html_url=excluded.html_url, pushed_at=excluded.pushed_at, size_kb=excluded.size_kb,
-		can_push=excluded.can_push, can_admin=excluded.can_admin, seen_at=excluded.seen_at`,
+		can_push=excluded.can_push, can_admin=excluded.can_admin, seen_at=excluded.seen_at, generation=excluded.generation`,
 		connID, key, page, r.ID, r.FullName, r.Name, r.Owner.ID, r.Owner.Login, r.Owner.Type, boolInt(r.Private), r.Visibility,
-		boolInt(r.Archived), boolInt(r.Disabled), boolInt(r.Fork), r.DefaultBranch, r.HTMLURL, pushed, r.SizeKB, boolInt(r.Push), boolInt(r.Admin), now)
+		boolInt(r.Archived), boolInt(r.Disabled), boolInt(r.Fork), r.DefaultBranch, r.HTMLURL, pushed, r.SizeKB, boolInt(r.Push), boolInt(r.Admin), now, gen)
 	return err
 }
 
@@ -574,9 +579,8 @@ func (s *Service) ListRepositories(ctx context.Context, actor Actor, f RepoFilte
 	for _, c := range conns {
 		gens[c.ID], byID[c.ID] = generationOf(c), c
 	}
-	q := `SELECT ` + repoColumns + `, c.id, c.name, c.kind, c.state, r.seen_at, s.generation FROM github_repositories r
+	q := `SELECT ` + repoColumns + `, c.id, c.name, c.kind, c.state, r.seen_at, r.generation FROM github_repositories r
 		JOIN github_connections c ON c.id = r.connection_id
-		JOIN github_repo_sources s ON s.connection_id = r.connection_id AND s.source_key = r.source_key
 		WHERE c.owner_user_id=?`
 	args := []any{actor.UserID}
 	if f.ConnectionID != "" {
@@ -784,6 +788,9 @@ func (s *Service) ListRefs(ctx context.Context, connID string, repoID int64, kin
 
 // ListCommits lists commits reachable from ref (default branch when empty).
 func (s *Service) ListCommits(ctx context.Context, connID string, repoID int64, ref string, page int, actor Actor) (RefPage[Commit], error) {
+	if err := checkRef(ref); err != nil {
+		return RefPage[Commit]{}, err
+	}
 	t, err := s.target(ctx, connID, repoID, actor)
 	if err != nil {
 		return RefPage[Commit]{}, err
@@ -801,6 +808,30 @@ func (s *Service) ListCommits(ctx context.Context, connID string, repoID int64, 
 		out.Items = []Commit{}
 	}
 	return out, nil
+}
+
+// checkRef accepts a branch, tag or SHA the way git does (the parts of
+// git check-ref-format that matter here): no empty, "." or ".." parts, no
+// control characters, backslash, space or ~^:?*[ characters. A ref is put
+// into a GitHub URL path, so this keeps it inside the chosen repository.
+func checkRef(ref string) error {
+	if ref == "" {
+		return nil
+	}
+	if len(ref) > 255 || strings.HasPrefix(ref, "/") || strings.HasSuffix(ref, "/") || strings.HasSuffix(ref, ".lock") || strings.Contains(ref, "@{") {
+		return invalid("ref", "not a valid branch, tag or commit name")
+	}
+	for _, part := range strings.Split(ref, "/") {
+		if part == "" || part == "." || part == ".." || strings.HasPrefix(part, ".") {
+			return invalid("ref", "not a valid branch, tag or commit name")
+		}
+	}
+	for _, r := range ref {
+		if r < 0x20 || r == 0x7f || strings.ContainsRune("\\ ~^:?*[", r) {
+			return invalid("ref", "not a valid branch, tag or commit name")
+		}
+	}
+	return nil
 }
 
 // refErr turns GitHub's answer to an unknown ref into a validation error.
@@ -831,6 +862,9 @@ func (s *Service) ResolveRef(ctx context.Context, connID string, repoID int64, r
 }
 
 func (s *Service) resolve(ctx context.Context, t *repoTarget, ref string) (Resolved, error) {
+	if err := checkRef(ref); err != nil {
+		return Resolved{}, err
+	}
 	if ref == "" {
 		// The default branch may have changed since the inventory was read.
 		r, err := s.client.GetRepositoryByID(ctx, t.token, t.repo.ID)

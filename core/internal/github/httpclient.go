@@ -83,9 +83,12 @@ func (c *HTTPClient) callH(ctx context.Context, method, rawURL, auth string, bod
 		return nil, 0, &APIError{Kind: ErrUnavailable, Reason: fmt.Sprintf("%s %s: request failed", method, req.URL.Host)}
 	}
 	defer resp.Body.Close()
-	data, err := io.ReadAll(io.LimitReader(resp.Body, maxBody))
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxBody+1))
 	if err != nil {
 		return nil, resp.StatusCode, &APIError{Kind: ErrUnavailable, Status: resp.StatusCode, Reason: "reading the answer failed"}
+	}
+	if len(data) > maxBody {
+		return resp.Header, resp.StatusCode, &APIError{Kind: ErrUnavailable, Status: resp.StatusCode, Reason: "answer larger than 1 MiB; not read"}
 	}
 	if resp.StatusCode == http.StatusNotModified && extra.Get("If-None-Match") != "" {
 		return resp.Header, resp.StatusCode, nil

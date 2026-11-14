@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS github_repositories (
     can_push       INTEGER NOT NULL DEFAULT 0,
     can_admin      INTEGER NOT NULL DEFAULT 0,
     seen_at        TEXT    NOT NULL,
+    generation     TEXT    NOT NULL DEFAULT '', -- source generation this row was read under
     PRIMARY KEY (connection_id, source_key, repo_id),
     FOREIGN KEY (connection_id, source_key) REFERENCES github_repo_sources(connection_id, source_key) ON DELETE CASCADE
 );
