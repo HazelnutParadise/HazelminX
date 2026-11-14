@@ -279,8 +279,7 @@
       ],
       "requirements": [
         "IAM-004",
-        "IAM-009",
-        "IAM-010"
+        "IAM-009"
       ],
       "acceptance_tests": [],
       "issue": 15
@@ -3047,6 +3046,44 @@
       "requirements": [],
       "acceptance_tests": [],
       "issue": 149
+    },
+    {
+      "id": "127",
+      "file": "127-oidc-login.md",
+      "title": "管理員可以讓成員用公司帳號登入，本機登入與救援不受影響",
+      "epic": "iam",
+      "milestone": "M1",
+      "blocked_by": [
+        "014",
+        "015",
+        "011"
+      ],
+      "requirements": [
+        "IAM-010",
+        "OID-001",
+        "OID-002",
+        "OID-003",
+        "OID-004",
+        "OID-005",
+        "OID-006",
+        "OID-007",
+        "OID-008",
+        "OID-009",
+        "OID-010"
+      ],
+      "acceptance_tests": [
+        "T-276",
+        "T-277",
+        "T-278",
+        "T-279",
+        "T-280",
+        "T-281",
+        "T-282",
+        "T-283",
+        "T-284",
+        "T-285"
+      ],
+      "issue": 179
     }
   ]
 }
