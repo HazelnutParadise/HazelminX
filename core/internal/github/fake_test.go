@@ -53,6 +53,16 @@ type fakeGitHub struct {
 	// lastVerifier is the PKCE verifier the last code exchange sent.
 	lastVerifier string
 	lastScope    InstallationTokenRequest
+
+	r   *fakeRepos       // repository calls (fake_repos_test.go)
+	now func() time.Time // the test clock
+}
+
+func (f *fakeGitHub) clockNow() time.Time {
+	if f.now == nil {
+		return time.Now()
+	}
+	return f.now()
 }
 
 type codeGrant struct {
@@ -354,6 +364,7 @@ func newEnv(t *testing.T, origin string) *env {
 		t.Fatal(err)
 	}
 	e := &env{t: t, st: st, vault: vault, gh: newFake(), aud: &recAudit{}, clock: time.Date(2026, 11, 14, 8, 0, 0, 0, time.UTC)}
+	e.gh.now = e.now
 	for _, u := range []string{"usr_alice", "usr_bob"} {
 		if _, err := st.DB.Exec(`INSERT INTO users(id, username, password_hash, created_at, updated_at) VALUES(?, ?, 'x', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')`, u, u); err != nil {
 			t.Fatal(err)

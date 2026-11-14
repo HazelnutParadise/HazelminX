@@ -297,6 +297,14 @@ func (s *Session) handle(msg any) {
 		if p := s.lookup(m.RequestID); p != nil {
 			s.deliver(m.RequestID, p, m)
 		}
+	case *protocol.EnginesReport:
+		if p := s.lookup(m.RequestID); p != nil {
+			s.deliver(m.RequestID, p, m)
+		}
+	case *protocol.EnginesUnavailable:
+		if p := s.lookup(m.RequestID); p != nil {
+			s.deliver(m.RequestID, p, m)
+		}
 	case *protocol.HostFacts:
 		if r := s.hub.opts.HostReports; r != nil {
 			ctx, cancel := context.WithTimeout(context.Background(), hostReportTimeout)
@@ -343,7 +351,8 @@ func (s *Session) handle(msg any) {
 	case *protocol.ProtocolError:
 		s.hub.opts.Logger.Warn("agent could not read a core message", "node", s.id.Fingerprint, "code", m.Code, "detail", m.Message)
 	default:
-		// step_execute, step_reconcile, ack, ledger_pull and certificate_renew
+		// step_execute, step_reconcile, ack, ledger_pull, certificate_renew and
+		// engines_probe
 		// only flow core→agent.
 		s.protocolError(protocol.ErrorUnknownMessage, "message is not valid in the agent→core direction")
 	}

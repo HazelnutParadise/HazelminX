@@ -1,4 +1,4 @@
--- 0013: storage inventory, usage and capacity alert rules (ticket 030.1,
+-- 0015: storage inventory, usage and capacity alert rules (ticket 030.1,
 -- STO-001, STO-010). Keyed by node id. A missing value is NULL ("not
 -- provided"), never 0.
 

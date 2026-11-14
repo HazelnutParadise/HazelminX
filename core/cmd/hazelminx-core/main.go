@@ -20,6 +20,7 @@ import (
 	"github.com/HazelnutParadise/hazelminx/core/internal/api"
 	"github.com/HazelnutParadise/hazelminx/core/internal/config"
 	"github.com/HazelnutParadise/hazelminx/core/internal/confirm"
+	"github.com/HazelnutParadise/hazelminx/core/internal/engines"
 	"github.com/HazelnutParadise/hazelminx/core/internal/github"
 	"github.com/HazelnutParadise/hazelminx/core/internal/grants"
 	"github.com/HazelnutParadise/hazelminx/core/internal/hostledger"
@@ -42,6 +43,10 @@ const IssuerPublicKeyFile = "privileged-issuer.pub"
 // LedgerSyncInterval is how often connected nodes' ledgers are copied
 // again during a session (they are also copied when a session starts).
 const LedgerSyncInterval = 5 * time.Minute
+
+// EngineProbeInterval is how often connected nodes' container engines are
+// read again (ticket 039.1); a refresh from the API reads them at once.
+const EngineProbeInterval = 5 * time.Minute
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
@@ -104,6 +109,7 @@ func run(args []string) error {
 	}
 	var reconciler *nodes.Reconciler
 	var ledgers *hostledger.Syncer
+	var engineProber *engines.Prober
 	// Host facts and metrics (ticket 020.1): agents report every 10 s;
 	// raw points are kept 48 hours and 5-minute rollups 90 days.
 	hostMetrics := hostmetrics.NewStore(st.DB, nil)
@@ -119,6 +125,8 @@ func run(args []string) error {
 			// Core's copy of the host change ledger (spec 55.1) catches up
 			// as soon as a node connects.
 			go func() { _, _ = ledgers.SyncNode(ctx, s.NodeID()) }()
+			// Container engines (ticket 039.1) are read on every connect.
+			go func() { _ = engineProber.Probe(ctx, s.NodeID()) }()
 			reconciler.OnReady(s, inFlight)
 		}})
 	ledgers = &hostledger.Syncer{Store: hostledger.NewStore(st.DB, nil), Grants: issuer, Pull: hub}
@@ -130,6 +138,16 @@ func run(args []string) error {
 		}
 		return ids
 	}, LedgerSyncInterval)
+	engineStore := engines.NewStore(st.DB, nil)
+	engineProber = &engines.Prober{Store: engineStore, Grants: issuer, Hub: hub, NodeID: registry.NodeIDByFingerprint}
+	go engineProber.Run(ctx, func() []string {
+		conns, _ := hub.Connections()
+		fps := make([]string, len(conns))
+		for i, c := range conns {
+			fps[i] = c.NodeID
+		}
+		return fps
+	}, EngineProbeInterval)
 	registry.AttachChannel(hub)
 	runner := nodes.NewStepRunner(hub)
 	runner.Gate = registry.GateJob
@@ -167,6 +185,7 @@ func run(args []string) error {
 	router.RegisterNodes(registry)
 	router.RegisterHostMetrics(registry, hostMetrics)
 	router.RegisterHostStorage(registry, hostStorage, hostMetrics)
+	router.RegisterHostEngines(registry, engineStore, engineProber)
 	router.MountListQueries(listQueries)
 	go listQueries.RunPurger(ctx, time.Hour)
 	router.MountConfirmations(confirm.New(st.DB, nil))

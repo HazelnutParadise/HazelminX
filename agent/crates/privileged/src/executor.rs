@@ -85,6 +85,7 @@ impl Executor for HostExecutor {
                 Action::RestartService { unit } => {
                     handlers::systemd::restart(runner, sink, unit).await
                 }
+                Action::EngineInspect {} => handlers::engines::run(runner, &sysroot).await,
                 Action::LedgerExport {
                     after_seq,
                     limit,

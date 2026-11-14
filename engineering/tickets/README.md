@@ -81,6 +81,9 @@
 | 票 | 使用者可以做什麼 | Epic | Blocked by | Issue |
 |---|---|---|---|---|
 | 039 | 管理員可以看到 Docker、Podman、K3s 各自狀態並在頁面一鍵安裝 Docker | 容器引擎 | 019, 016, 012 | [#39](https://github.com/HazelnutParadise/hazelminx/issues/39) |
+| 039.1 | Agent 與 Core 偵測並提供每個節點的 Docker、Podman、K3s 狀態與環境 | 容器引擎 | 019, 012 | [#165](https://github.com/HazelnutParadise/hazelminx/issues/165) |
+| 039.2 | 管理員可以在預覽與批准後，由工作透過高權限執行器安裝、啟停與移除 Docker | 容器引擎 | 039.1, 016, 113 | [#166](https://github.com/HazelnutParadise/hazelminx/issues/166) |
+| 039.3 | 管理員可以在容器頁看到各引擎與環境狀態，並從未安裝畫面走完安裝流程 | 容器引擎 | 039.1, 039.2, 017 | [#167](https://github.com/HazelnutParadise/hazelminx/issues/167) |
 | 040 | 容器管理員可以建立、檢視、操作容器並查看日誌、終端機與暴露範圍 | 容器引擎 | 039, 027 | [#40](https://github.com/HazelnutParadise/hazelminx/issues/40) |
 | 041 | 管理員可以管理映像、登錄站、容器網路與 Volume 並採用安全更新 | 容器引擎 | 039 | [#41](https://github.com/HazelnutParadise/hazelminx/issues/41) |
 | 042 | 管理員可以匯入既有容器選擇接管，並管理引擎設定、儲存位置與 GPU 裝置 | 容器引擎 | 040, 032 | [#42](https://github.com/HazelnutParadise/hazelminx/issues/42) |
@@ -92,6 +95,8 @@
 | 047.1 | 使用者可以用 API 以 GitHub 網頁授權或 PAT 建立可重用連線，管理員可以接入自己的 GitHub App | GitHub 來源 | 009, 011, 010 | [#159](https://github.com/HazelnutParadise/hazelminx/issues/159) |
 | 047.2 | 使用者可以在畫面上連接 GitHub、管理多個連線並檢查回呼與 Webhook 可達性 | GitHub 來源 | 047.1, 017 | [#160](https://github.com/HazelnutParadise/hazelminx/issues/160) |
 | 048 | 使用者可以瀏覽、搜尋、分頁載入可用 Repo，並選分支、commit 與 Compose 檔案 | GitHub 來源 | 047, 017 | [#48](https://github.com/HazelnutParadise/hazelminx/issues/48) |
+| 048.1 | 使用者可以用 API 瀏覽、搜尋與分頁同步可用 Repo，並讀取分支、commit、檔案與 Compose 檔案 | GitHub 來源 | 047.1 | [#163](https://github.com/HazelnutParadise/hazelminx/issues/163) |
+| 048.2 | 使用者可以在共用來源選擇器搜尋 Repo、選授權、分支或 commit 與 Compose 檔案 | GitHub 來源 | 048.1, 047.2, 017 | [#164](https://github.com/HazelnutParadise/hazelminx/issues/164) |
 | 049 | 專案管理員可以從 GitHub 以固定 commit 隔離抓取、建置並部署，手動 URL／PAT／SSH 模式照常可用 | GitHub 來源 | 048, 044, 012 | [#49](https://github.com/HazelnutParadise/hazelminx/issues/49) |
 | 050 | 管理員可以設定 Webhook 或定期檢查觸發部署，並決定多環境與連續 commit 政策 | GitHub 來源 | 049 | [#50](https://github.com/HazelnutParadise/hazelminx/issues/50) |
 | 051 | 管理員可以分開授權連線的查看、瀏覽、使用與管理，並安全輪替、撤銷與斷開 | GitHub 來源 | 049, 016 | [#51](https://github.com/HazelnutParadise/hazelminx/issues/51) |

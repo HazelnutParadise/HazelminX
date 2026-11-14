@@ -862,6 +862,20 @@ fn handle(shared: &Arc<Shared>, msg: Message) -> Vec<Message> {
             });
             vec![]
         }
+        Message::EnginesProbe { request_id, grant } => {
+            // Like ledger_pull: the executor round trip runs off the
+            // session loop and the answer goes out through the outbox.
+            let (shared, request_id, grant) = (shared.clone(), request_id.clone(), grant.clone());
+            tokio::spawn(async move {
+                let answer = crate::engines::answer(&shared.privileged, request_id, grant).await;
+                if let Message::EnginesUnavailable { code, message, .. } = &answer {
+                    warn!(%code, %message, "cannot inspect container engines for the core");
+                }
+                shared.outbox.lock().unwrap().push(answer);
+                shared.changed.notify_one();
+            });
+            vec![]
+        }
         Message::CertificateRenew {
             request_id,
             certificate,
