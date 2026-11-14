@@ -2013,14 +2013,25 @@ def shell_states() -> str:
     card = "background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0"
     def box(title, body):
         return f'<section style="{card}"><h2 style="font-size:14px">{title}</h2>{body}</section>'
-    menu = box("帳號選單", f"""
-      <div style="border:1px solid var(--line);border-radius:8px;background:var(--raised);display:flex;flex-direction:column">
-        <div style="padding:10px 12px;border-bottom:1px solid var(--line)"><strong>tim</strong><div class="note">擁有者 · tim@hazelnut.tw</div></div>
-        <a class="nv" href="AccountSecurity.dc.html" style="padding:8px 12px">{U.icon("user", 14)} 帳號安全</a>
-        <a class="nv" href="Terminal.dc.html" style="padding:8px 12px">{U.icon("terminal", 14)} 終端機</a>
-        <button type="button" class="nv" style="padding:8px 12px;text-align:left">{U.icon("globe", 14)} 語言 · 繁體中文</button>
-        <button type="button" class="nv" style="padding:8px 12px;text-align:left;border-top:1px solid var(--line)">登出</button>
-      </div>""")
+    def acct_menu(mobile=False):
+        it = "padding:9px 12px;text-align:left;display:flex;gap:8px;align-items:center;width:100%"
+        term = f'<a class="nv" href="Terminal.dc.html" style="{it}">{U.icon("terminal", 14)} 終端機</a>' if mobile else ""
+        return f"""
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <button type="button" class="ib user" aria-label="tim · 擁有者" aria-expanded="true" aria-haspopup="menu" style="border-color:var(--hazel)">{U.icon("user")}{"" if mobile else "<span>tim</span>"}</button>
+        <div role="menu" aria-label="帳號選單" style="width:min(280px,100%);border:1px solid var(--line);border-radius:8px;background:var(--raised);display:flex;flex-direction:column;box-shadow:0 12px 32px rgb(0 0 0/.18)">
+          <div style="padding:10px 12px;border-bottom:1px solid var(--line)"><strong>tim</strong><div style="font-size:12px;color:var(--muted)">擁有者 · tim@hazelnut.tw</div><div style="font-size:12px;color:var(--muted);margin-top:4px">這次登入 <span class="mono">03:12</span> · Chrome · macOS</div></div>
+          <a class="nv" role="menuitem" href="AccountSecurity.dc.html" style="{it}">{U.icon("lock", 14)} 帳號安全<span style="margin-left:auto;font-size:12px;color:var(--muted)">密碼、二次驗證、裝置</span></a>
+          <a class="nv" role="menuitem" href="IAM.dc.html" style="{it}">{U.icon("api", 14)} 我的 API Token<span style="margin-left:auto;font-size:12px;color:var(--muted)">2 個</span></a>
+          {term}
+          <button type="button" class="nv" role="menuitem" style="{it}">{U.icon("globe", 14)} 語言<span style="margin-left:auto;font-size:12px;color:var(--muted)">繁體中文</span></button>
+          <button type="button" class="nv" role="menuitem" style="{it}">{U.icon("history", 14)} 時間顯示<span style="margin-left:auto;font-size:12px;color:var(--muted)">Asia/Taipei</span></button>
+          <button type="button" class="nv" role="menuitem" style="{it}">{U.icon("search", 14)} 鍵盤快捷鍵<span class="mono" style="margin-left:auto;font-size:12px;color:var(--muted)">?</span></button>
+          <button type="button" class="nv" role="menuitem" style="{it};border-top:1px solid var(--line)">登出</button>
+        </div>
+      </div>"""
+    menu = box("帳號選單 · 點頂列自己的名字", acct_menu() + '<div class="wrap">' + U.status("info", "按 Esc 或點外面關閉；主題切換留在頂列，不放進選單") + "</div>")
+    menu_m = box("帳號選單 · 手機", f'<div style="max-width:360px;width:100%;margin-left:auto">{acct_menu(True)}</div><div class="wrap">' + U.status("info", "手機頂列放不下終端機，收進這個選單") + "</div>")
     signed_out = box("未登入時的頂列", f"""
       <div class="top" style="border:1px solid var(--line);border-radius:8px"><span class="brand"><span class="logo" aria-hidden="true"></span><span>HazelminX</span></span>
         <div class="tright"><button type="button" class="ib" aria-label="切換淺色或深色">{U.icon("sun")}</button><button type="button" class="ib" aria-label="語言">{U.icon("globe")}</button></div></div>
@@ -2070,7 +2081,7 @@ config check failed, refusing to start</div></details>""")
           <div class="wrap">{U.status("info", "群組標題換成分隔線")}</div><div class="wrap">{U.status("info", "計數變成圖示右上角的小徽章")}</div><div class="wrap">{U.status("info", "名稱在滑過或 Tab 移到時顯示")}</div>
         </div></div>""")
     grid = (f'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr));gap:16px;align-items:start">'
-            f'{menu}{signed_out}{obs}{collapsed}{empty}{nf}{err}{loading}{raw}</div>')
+            f'{menu}{menu_m}{signed_out}{obs}{collapsed}{empty}{nf}{err}{loading}{raw}</div>')
     main = head + grid + f'<div class="cg">{cdown_states}{savebars}</div>'
     return U.shell("overview", main)
 
