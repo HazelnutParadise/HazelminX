@@ -262,8 +262,8 @@ hazelminx-grant-v1
 - `mounts` 是 `/proc/self/mountinfo` 裡非虛擬的掛載，同一個掛載點只留最後一個。`configs` 是 `configs` 陣列的索引，空陣列代表手動掛上、重開機後不會回來；`reference` 有設定時取第一筆設定的，否則看來源本身。
 - `problems`：`duplicateMountPoint`（兩筆設定掛同一個點）、`missingDevice`（設定指到這台沒有的裝置）、`notMounted`（開機該掛的現在沒掛）、`deviceName`（本機實體或虛擬磁碟用核心名稱掛載，包含 swap 分割區）。
 - `unreadable` 列出讀不到的來源（例如 `/etc/fstab`），讀不到時清單少的那些只是不知道，不是沒有。
-- 設定裡的機密不離開主機：`options` 裡 `password`、`pass`、`passwd`、`pw`、`secret`、`token`、`key`、`passphrase` 的值換成 `***`（不分大小寫，`credentials=` 指的是檔案，保留），`spec` 是帶密碼的網址時（`https://u:密碼@host/`）密碼換成 `***`。
-- 一則 `host_storage` 編碼後不超過 384 KiB：超過時從後面丟掉磁碟與掛載，`unreadable` 加一筆 `truncated: …` 寫出丟了幾筆。
+- 設定裡的機密不離開主機：`options` 裡 `password`、`pass`、`passwd`、`pw`、`secret`、`token`、`key`、`passphrase` 的值換成 `***`（不分大小寫，`credentials=` 指的是檔案，保留），`spec` 與掛載的 `source` 是帶密碼的網址時（`https://u:密碼@host/`）密碼換成 `***`；`user=`、`username=` 裡 `%` 後面的 CIFS 密碼也換掉，CIFS 密碼裡以 `,,` 寫的逗號連同後面的部分一起遮掉。
+- 一則 `host_storage` 編碼後不超過 384 KiB：超過時先丟 loop 裝置與 snap、squashfs 掛載，再丟虛擬與網路掛載，最後才從後面丟其他項目，`unreadable` 加一筆 `truncated: …` 寫出丟了幾筆；用量量測照樣涵蓋被丟掉的本機掛載，但丟掉的掛載在 Core 沒有對應的清單項目。
 - `storage_usage` 量測每個本機檔案系統裡一組固定目錄的大小，分類是 `appData`、`database`、`backupStaging`、`containerImages`、`osAndLogs`，沒量到的已用空間是 `other`。每個路徑只算一類：目錄本身是另一類的起點時（`/var/lib/docker/volumes` 在 `/var/lib/docker` 裡），交給那一類。不跨到別的檔案系統，算配置的區塊不算檔案長度，硬連結只算一次。
 - 用量 `state`：`complete`（`categories` 加上 `otherBytes` 等於 `usedBytes`）、`partial`（碰到筆數或時間上限、有目錄讀不到，或量到的比已用空間還多，例如 reflink、btrfs 快照共用區塊或量測期間寫入；數字是下限，`otherBytes` 是 `null`）、`unmeasured`（`statvfs` 失敗）。`categories` 只列有位元組的類別。
 - 第一輪在 Agent 啟動 5 分鐘後開始，之後每 6 小時一輪；量測執行緒用最低的 CPU 與 I/O 優先權，每 2048 筆停 10 毫秒，一輪最多 500 萬筆、20 分鐘。
