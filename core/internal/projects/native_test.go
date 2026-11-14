@@ -42,13 +42,17 @@ type nativeConfig struct {
 
 func nativeCompose(t *testing.T) string {
 	t.Helper()
+	skip := t.Skip
+	if os.Getenv("CI") == "true" {
+		skip = t.Fatal // CI runners have Docker Compose: T-052 must run there
+	}
 	bin, err := exec.LookPath("docker")
 	if err != nil {
-		t.Skip("no docker CLI: native comparison not run")
+		skip("no docker CLI: native comparison not run")
 	}
 	out, err := exec.Command(bin, "compose", "version", "--short").Output()
 	if err != nil {
-		t.Skip("docker has no compose plugin: native comparison not run")
+		skip("docker has no compose plugin: native comparison not run")
 	}
 	t.Logf("comparing with Docker Compose %s", strings.TrimSpace(string(out)))
 	return bin

@@ -465,7 +465,8 @@ func (h *projectRoutes) previewUnit(c *gin.Context) {
 		h.fail(c, err, nil)
 		return
 	}
-	pv, err := h.svc.PreviewUnit(c.Request.Context(), u, h.views)
+	see := u.Target == nil || iam.Visible(Principal(c), iam.Scope{Kind: iam.ScopeNode, ID: u.Target.NodeID})
+	pv, err := h.svc.PreviewUnit(c.Request.Context(), u, h.views, see)
 	if err != nil {
 		h.fail(c, err, nil)
 		return

@@ -25,6 +25,9 @@ const (
 	TargetReady       = "ready"
 )
 
+// TargetNotVisible: the caller may not see the target node.
+const TargetNotVisible = "not-visible"
+
 // TargetCheck is what the preview knows about the target engine.
 type TargetCheck struct {
 	State  string `json:"state"`
@@ -60,13 +63,17 @@ type Preview struct {
 var hostChecks = []string{"images-reachable", "disk-space", "ports-free", "bind-mount-sources"}
 
 // PreviewUnit computes the preview of a stored unit.
-func (s *Service) PreviewUnit(ctx context.Context, u *Unit, views EngineViews) (Preview, error) {
+// canSeeNode says whether the caller may see the target node; when not,
+// nothing about the node is shown.
+func (s *Service) PreviewUnit(ctx context.Context, u *Unit, views EngineViews, canSeeNode bool) (Preview, error) {
 	a, err := s.AnalyzeUnit(ctx, u)
 	if err != nil {
 		return Preview{}, err
 	}
-	t, err := checkTarget(ctx, u.Target, views)
-	if err != nil {
+	var t TargetCheck
+	if u.Target != nil && !canSeeNode {
+		t = TargetCheck{State: TargetNotVisible, Reason: "this account cannot see the target node"}
+	} else if t, err = checkTarget(ctx, u.Target, views); err != nil {
 		return Preview{}, err
 	}
 	p := Preview{Analysis: a, Target: t, Blockers: []Finding{}, HostChecksPending: hostChecks}

@@ -175,9 +175,10 @@ const (
 // File is one file of a unit. Content is set only for files that are not
 // secret, and only when the unit is read with its contents.
 type File struct {
-	Path    string  `json:"path"`
-	Secret  bool    `json:"secret"`
-	Size    int64   `json:"size"`
+	Path   string `json:"path"`
+	Secret bool   `json:"secret"`
+	Size   int64  `json:"size"`
+	// SHA256 is empty for a secret file.
 	SHA256  string  `json:"sha256"`
 	Content *string `json:"content,omitempty"`
 }
@@ -781,6 +782,9 @@ func prepare(in UnitInput, old map[string]storedFile) (*prepared, error) {
 			}
 			sf.Size, sf.SHA256, sf.content = int64(len(b)), sum(b), b
 			if f.Secret {
+				// A digest of a short secret is guessable offline: secret
+				// files carry no digest anywhere (API, audit, table).
+				sf.SHA256 = ""
 				p.newSecrets = append(p.newSecrets, i)
 			}
 		}
@@ -901,7 +905,7 @@ func (s *Service) storeSecrets(ctx context.Context, a Actor, unitID string, p *p
 	var created []string
 	for _, i := range p.newSecrets {
 		f := &p.files[i]
-		sec, err := s.vault.Create(ctx, secrets.CreateInput{Kind: secrets.KindGeneric, Name: "projects/" + unitID + "/" + f.Path,
+		sec, err := s.vault.Create(ctx, secrets.CreateInput{Kind: secrets.KindGeneric, Name: "projects/" + unitID + "/" + f.Path + "#" + newID("v"),
 			Value: f.content, Scope: []string{consumer(unitID)}, Actor: a.UserID})
 		if err != nil {
 			s.dropSecrets(ctx, a, created...)

@@ -528,6 +528,16 @@ func (a *Analysis) describe(p *types.Project, files map[string]SourceFile) {
 				a.add(SeverityWarning, "env-file-optional-missing", "", ea, "the optional env file "+r+" is not among the unit's files")
 			}
 		}
+		for i, lf := range s.LabelFiles {
+			la := fmt.Sprintf("%s.label_file[%d]", at, i)
+			r, kind := resolve(a.ProjectDir, lf)
+			switch {
+			case kind != pathUnit:
+				a.add(SeverityError, "path-outside-unit", "", la, "the label file "+lf+" is not inside the unit's files")
+			case !exists(r):
+				a.add(SeverityError, "file-missing", "", la, r+" is not among the unit's files")
+			}
+		}
 		for k := range s.Extensions {
 			a.add(SeverityKept, "extension", "", at+"."+k, "extension kept as written; HazelminX does not read it")
 		}

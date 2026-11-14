@@ -252,3 +252,14 @@ func TestRelativePathsThatLeaveTheUnit(t *testing.T) {
 		t.Fatalf("%+v", a.Findings)
 	}
 }
+
+func TestLabelFilesStayInsideTheUnit(t *testing.T) {
+	a := analyze(t, SourceSpec{Files: files("compose.yaml", "services:\n  web:\n    image: nginx\n    label_file: /etc/shadow\n"), MainFile: "compose.yaml"})
+	if a.Valid || finding(a, "path-outside-unit") == nil {
+		t.Fatalf("host label file: %+v", a.Findings)
+	}
+	ok := analyze(t, SourceSpec{Files: files("compose.yaml", "services:\n  web:\n    image: nginx\n    label_file: ./labels\n", "labels", "a=b\n"), MainFile: "compose.yaml"})
+	if !ok.Valid {
+		t.Fatalf("unit label file: %+v", ok.Findings)
+	}
+}

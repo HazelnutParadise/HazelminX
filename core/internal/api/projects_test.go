@@ -196,6 +196,23 @@ func TestProjectsEnvironmentsAndComposeUnitsOverTheAPI(t *testing.T) {
 		t.Fatalf("services.web.x-team must be listed as kept: %v", an["findings"])
 	}
 	uid := unit["id"].(string)
+	for _, f := range unit["files"].([]any) {
+		if fm := obj(f); fm["path"] == "db_pw.txt" && fm["sha256"] != "" {
+			t.Fatalf("a secret file must carry no digest: %v", fm)
+		}
+	}
+
+	// A secret file's content can be replaced in one write.
+	rot := unitBody(nil)
+	rot["files"].([]map[string]any)[3]["content"] = "new-value"
+	if r := owner.do(http.MethodPut, ubase, rot, etag(owner.do(http.MethodGet, ubase, nil, nil))); r.Code != 200 {
+		t.Fatalf("rotate a secret file: %d %s", r.Code, r.Raw)
+	}
+	var live int
+	ph.st.DB.QueryRow(`SELECT count(*) FROM secrets WHERE name LIKE 'projects/%' AND deleted_at IS NULL`).Scan(&live)
+	if live != 1 {
+		t.Fatalf("after rotation %d live secrets, want 1", live)
+	}
 
 	// Replace keeping the secret, enabling a profile.
 	cur := owner.do(http.MethodGet, ubase, nil, nil)
@@ -206,7 +223,7 @@ func TestProjectsEnvironmentsAndComposeUnitsOverTheAPI(t *testing.T) {
 		t.Fatalf("replace without If-Match: %d", r.Code)
 	}
 	r = owner.do(http.MethodPut, ubase, body, etag(cur))
-	if r.Code != 200 || obj(r.Body["unit"])["version"] != float64(2) {
+	if r.Code != 200 || obj(r.Body["unit"])["version"] != float64(3) {
 		t.Fatalf("replace: %d %s", r.Code, r.Raw)
 	}
 	if r := owner.do(http.MethodPut, ubase, body, etag(cur)); r.Code != 412 {
@@ -279,8 +296,8 @@ func TestProjectsEnvironmentsAndComposeUnitsOverTheAPI(t *testing.T) {
 		t.Fatalf("project admin creating a project: %d", r.Code)
 	}
 	admin := ph.createUser(owner, "shopadmin", iam.RoleProjectAdmin, iam.Scope{Kind: iam.ScopeProject, ID: pid}, "10.0.0.8")
-	if r := admin.do(http.MethodGet, ubase+"/preview", nil, nil); r.Code != 200 {
-		t.Fatalf("project admin preview: %d", r.Code)
+	if r := admin.do(http.MethodGet, ubase+"/preview", nil, nil); r.Code != 200 || obj(obj(r.Body["preview"])["target"])["state"] != projects.TargetNotVisible || strings.Contains(r.Raw, "engineVersion") {
+		t.Fatalf("project admin preview must not describe a node it cannot see: %d %s", r.Code, r.Raw)
 	}
 	cur = admin.do(http.MethodGet, ubase, nil, nil)
 	body["target"] = map[string]any{"nodeId": node, "engineEnvironmentId": "env:/run/docker.sock"}
@@ -306,7 +323,7 @@ func TestProjectsEnvironmentsAndComposeUnitsOverTheAPI(t *testing.T) {
 	if vaultRows != 0 {
 		t.Fatalf("secret files left after delete: %d", vaultRows)
 	}
-	if got := strings.Join(ph.audit(t, uid), " "); got != "compose-unit.create:ok compose-unit.update:ok compose-unit.update:ok compose-unit.update:ok compose-unit.delete:ok" {
+	if got := strings.Join(ph.audit(t, uid), " "); got != "compose-unit.create:ok compose-unit.update:ok compose-unit.update:ok compose-unit.update:ok compose-unit.update:ok compose-unit.delete:ok" {
 		t.Fatalf("unit audit: %s", got)
 	}
 	if r := owner.do(http.MethodDelete, pbase+"/environments/"+eid, nil, etag(owner.do(http.MethodGet, pbase+"/environments/"+eid, nil, nil))); r.Code != 204 {
