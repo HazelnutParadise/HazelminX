@@ -1418,7 +1418,7 @@
     },
     {
       "id": "049.1",
-      "file": "doing/049.1-git-source-deploy.md",
+      "file": "done/049.1-git-source-deploy.md",
       "title": "專案管理員可以讓 Compose 單元的來源是 Git，固定到 Core 解析的 commit 抓取並經既有預檢與批准部署",
       "epic": "github",
       "milestone": "M2",
