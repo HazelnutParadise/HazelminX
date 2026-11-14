@@ -4337,12 +4337,12 @@ def project_triggers() -> str:
         return (f'<div class="row"><span class="mono">{name}</span><span>{src}</span><span>{how}</span><span class="c3 mono">{interval}</span><span class="c4">{appr}</span><span>{sw}</span><span>{U.actions(["more"])}</span></div>')
     envs = _fp("每個環境聽哪裡", f"""
       <div class="row hd"><span>環境</span><span>觸發來源</span><span>方式</span><span class="c3">檢查間隔</span><span class="c4">高風險變更</span><span>自動部署</span><span></span></div>
-      {env("production", '<span class="wrap"><span class="chip on">分支</span><span class="mono">main</span></span>', U.status("ok", "Webhook"), "—", "暫停等批准", True)}
-      {env("staging", '<span class="wrap"><span class="chip on">分支樣式</span><span class="mono">release/*</span></span>', U.status("ok", "Webhook"), "—", "暫停等批准", True)}
-      {env("preview", '<span class="wrap"><span class="chip on">標籤樣式</span><span class="mono">v*</span></span>', U.status("info", "定期檢查"), "5 分鐘", "暫停等批准", False)}
+      {env("production", '<span class="wrap"><span class="chip on">單一分支</span><span class="mono">main</span></span>', U.status("ok", "Webhook"), "—", "暫停等批准", True)}
+      {env("staging", '<span class="wrap"><span class="chip on">符合規則的分支</span><span class="mono">release/*</span></span>', U.status("ok", "Webhook"), "—", "暫停等批准", True)}
+      {env("preview", '<span class="wrap"><span class="chip on">符合規則的標籤</span><span class="mono">v*</span></span>', U.status("info", "定期檢查"), "5 分鐘", "暫停等批准", False)}
 """)
     edit = _fp("production · 觸發設定", _grid(
-        _fld("觸發來源", _seg(["分支", "分支樣式", "標籤樣式"], 0, "觸發來源")),
+        _fld("觸發來源", _seg(["單一分支", "符合規則的分支", "符合規則的標籤"], 0, "觸發來源"), "單一分支：只聽 main 這種固定的分支。符合規則的分支：寫 release/*，推到 release/1.9、release/2.0 都會部署。符合規則的標籤：寫 v*，推上 v1.9.0 這種版本標籤才部署", wide=True),
         _fld("分支", _dd("main")),
         _fld("方式", _seg(["Webhook（推薦）", "定期檢查"], 0, "方式"), "Webhook 需要 GitHub 能連到 hook.example.tw"),
         _fld("部署中又收到 push", _seg(["只保留最新的（推薦）", "依序全部部署"], 0, "連續推送")),
