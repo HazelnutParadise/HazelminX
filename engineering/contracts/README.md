@@ -140,6 +140,8 @@ Agent 主動連到 Core 的 Agent 入口（預設 `:9801`，路徑 `/agent/v1/co
 | `host_facts` | Agent→Core | 主機資訊：`collectedAt`、`facts`（見下方「主機資訊與指標」） |
 | `metrics_report` | Agent→Core | Core 還沒確認的樣本，由舊到新：`samples`、`droppedSamples` |
 | `metrics_ack` | Core→Agent | `seq` 以前的樣本都已保存 |
+| `host_storage` | Agent→Core | 儲存清單：`collectedAt`、`storage`（見下方「儲存清單與用量」） |
+| `storage_usage` | Agent→Core | 最近一輪用量量測：`usage` |
 
 ### 能力
 
@@ -153,6 +155,7 @@ Agent 主動連到 Core 的 Agent 入口（預設 `:9801`，路徑 `/agent/v1/co
 | `host.ledger` | 1 | `ledger_pull`、`ledger_page`、`ledger_unavailable` |
 | `node.certificate` | 1 | `certificate_renew`、`certificate_installed`、`certificate_refused` |
 | `host.metrics` | 1 | `host_facts`、`metrics_report`、`metrics_ack`。雙方都宣告時 Agent 才送；Core 沒宣告時 Agent 不送 |
+| `host.storage` | 1 | `host_storage`、`storage_usage`。雙方都宣告時 Agent 才送；Core 沒宣告時 Agent 不送 |
 
 Core 派送前先比對能力；Agent 沒宣告或版本較低的動作，Core 不送出，直接讓步驟失敗為 `CAPABILITY_UNSUPPORTED`。Agent 收到未宣告的動作、多餘參數欄位、別的節點、已過期、控制世代倒退或碰到工作沒保留的資源的步驟，一律回 `step_rejected`，不執行。
 
@@ -248,6 +251,21 @@ hazelminx-grant-v1
 - 每條會話一次只有一則 `metrics_report` 在等確認，收到 `metrics_ack` 才送下一則，所以確認的 `seq`（報告裡最大的值）一定涵蓋它回答的那一則。Core 存好整則才確認，存失敗不回；Agent 30 秒沒收到確認就重送同一批，新連線也從最舊的未確認樣本送起。
 - Core 用不了的樣本（`intervalSeconds` 不在 1 到 3600、`collectedAt` 比 Core 的時鐘快 5 分鐘以上或早於 48 小時）不保存，但照樣確認，因為重送也不會變好。比 Core 快 5 分鐘以上的 `host_facts` 也不保存。
 - `droppedSamples` 是還沒被確認的丟棄筆數，帶它的那一則被確認才歸零；沒被確認就隨重送再帶一次，所以 Core 可能多算，不會少算。報告裡的樣本全都用不了時，筆數照樣加進節點的統計（節點還沒有任何樣本時除外）。
+
+### 儲存清單與用量
+
+型別在 `agent/crates/protocol/src/storage.rs` 與 `core/internal/protocol/storage.go`，樣本見 `fixtures/messages/host_storage.json`、`storage_usage.json`。容量與 inode 不在這裡，照舊在 `metrics_report` 的 `filesystems`。
+
+- `host_storage` 每 60 秒讀一次，連線後送一次，之後只在內容改變時再送。兩則訊息都沒有確認：Core 存失敗就等下一次改變或下一條會話，Agent 每條新會話都會重送目前的內容。
+- `devices` 是 `/sys/block` 的整顆磁碟與它的分割區。檔案系統類型、UUID、標籤、分割區 UUID 與名稱讀 `/run/udev/data`，沒有時讀 `/dev/disk/by-*` 連結，都沒有就是 `null`。
+- `configs` 是 `/etc/fstab` 的每一行與 `/etc/systemd/system/*.mount` 單元（`/run` 下由 fstab 產生的單元不讀）。`reference` 說它怎麼認來源：`uuid`、`label`、`partuuid`、`partlabel`、`id`（換插槽仍認得到），`path`（認插槽），`device`（核心名稱，例如 `/dev/sdb1`，重開機或換插拔後可能指到別顆），`mapper`（device-mapper 或 RAID 名稱），`network`、`virtual`、`other`。`boot` 是 `auto`、`onDemand`（`x-systemd.automount` 或有對應的 `.automount`）、`noauto`。`resolvesTo` 是它現在指到的區塊裝置，找不到時是 `null`。
+- `mounts` 是 `/proc/self/mountinfo` 裡非虛擬的掛載，同一個掛載點只留最後一個。`configs` 是 `configs` 陣列的索引，空陣列代表手動掛上、重開機後不會回來；`reference` 有設定時取第一筆設定的，否則看來源本身。
+- `problems`：`duplicateMountPoint`（兩筆設定掛同一個點）、`missingDevice`（設定指到這台沒有的裝置）、`notMounted`（開機該掛的現在沒掛）、`deviceName`（本機實體或虛擬磁碟用核心名稱掛載，包含 swap 分割區）。
+- `unreadable` 列出讀不到的來源（例如 `/etc/fstab`），讀不到時清單少的那些只是不知道，不是沒有。
+- `storage_usage` 量測每個本機檔案系統裡一組固定目錄的大小，分類是 `appData`、`database`、`backupStaging`、`containerImages`、`osAndLogs`，沒量到的已用空間是 `other`。每個路徑只算一類：目錄本身是另一類的起點時（`/var/lib/docker/volumes` 在 `/var/lib/docker` 裡），交給那一類。不跨到別的檔案系統，算配置的區塊不算檔案長度，硬連結只算一次。
+- 用量 `state`：`complete`（`categories` 加上 `otherBytes` 等於 `usedBytes`）、`partial`（碰到筆數或時間上限、或有目錄讀不到，數字是下限，`otherBytes` 是 `null`）、`unmeasured`（`statvfs` 失敗）。`categories` 只列有位元組的類別。
+- 第一輪在 Agent 啟動 5 分鐘後開始，之後每 6 小時一輪；量測執行緒用最低的 CPU 與 I/O 優先權，每 2048 筆停 10 毫秒，一輪最多 500 萬筆、20 分鐘。
+- Core 不保存 `collectedAt`（或 `startedAt`）比 Core 的時鐘快 5 分鐘以上的訊息、比已存的舊的重送、索引超出 `configs` 範圍的清單，以及類別重複或不認得的用量。
 
 ### 憑證輪替
 
