@@ -440,7 +440,11 @@ async fn compose_actions_need_a_grant_bound_to_their_content() {
         ("g-other", elsewhere.binding()),
     ] {
         let g = h.grant_bound(id, &[PERM_HOST_COMPOSE_CHECK], binding);
-        let e = h.client.execute("r", &g, &check, |_, _| {}).await.unwrap_err();
+        let e = h
+            .client
+            .execute("r", &g, &check, |_, _| {})
+            .await
+            .unwrap_err();
         assert_eq!(rejected_code(e), ErrorCode::PermissionDenied, "{id}");
     }
     assert_eq!(started.load(Ordering::SeqCst), 0);

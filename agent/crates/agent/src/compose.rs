@@ -45,8 +45,9 @@ pub fn parse(p: &Map<String, Value>) -> Result<Params, String> {
             return Err(format!("unknown param {k:?}"));
         }
     }
-    let grant: ExecutorGrant = serde_json::from_value(p.get("grant").cloned().ok_or("grant is missing")?)
-        .map_err(|e| format!("grant: {e}"))?;
+    let grant: ExecutorGrant =
+        serde_json::from_value(p.get("grant").cloned().ok_or("grant is missing")?)
+            .map_err(|e| format!("grant: {e}"))?;
     let grant: Grant = serde_json::to_value(&grant)
         .and_then(serde_json::from_value)
         .map_err(|e| format!("grant: {e}"))?;
@@ -63,8 +64,14 @@ pub fn parse(p: &Map<String, Value>) -> Result<Params, String> {
         if o.keys().any(|k| k != "sha256" && k != "content") {
             return Err("a file has keys other than sha256 and content".into());
         }
-        let sha = o.get("sha256").and_then(Value::as_str).ok_or("a file has no sha256")?;
-        let content = o.get("content").and_then(Value::as_str).ok_or("a file has no content")?;
+        let sha = o
+            .get("sha256")
+            .and_then(Value::as_str)
+            .ok_or("a file has no sha256")?;
+        let content = o
+            .get("content")
+            .and_then(Value::as_str)
+            .ok_or("a file has no content")?;
         if hex::encode(Sha256::digest(content.as_bytes())) != sha {
             return Err("a file's content does not match its sha256".into());
         }
@@ -113,7 +120,10 @@ fn failure(code: &str, summary: impl Into<String>, retryable: bool) -> StepFailu
 
 /// Writes the revision's spool: `<spool>/<revision>/<sha256>`, 0700/0600.
 fn write_spool(spool: &Path, p: &Params) -> std::io::Result<PathBuf> {
-    std::fs::DirBuilder::new().mode(0o700).recursive(true).create(spool)?;
+    std::fs::DirBuilder::new()
+        .mode(0o700)
+        .recursive(true)
+        .create(spool)?;
     let dir = spool.join(p.manifest.revision.as_str());
     // A retried step finds its own earlier spool; start it again.
     let _ = std::fs::remove_dir_all(&dir);
@@ -171,8 +181,13 @@ pub async fn run(
     mut log: impl FnMut(Vec<String>),
 ) -> Result<Value, StepFailure> {
     let p = parse(params).map_err(|e| failure("INVALID_PARAMS", e, false))?;
-    let dir = write_spool(spool, &p)
-        .map_err(|e| failure("SPOOL_FAILED", format!("cannot stage the revision's files: {e}"), true))?;
+    let dir = write_spool(spool, &p).map_err(|e| {
+        failure(
+            "SPOOL_FAILED",
+            format!("cannot stage the revision's files: {e}"),
+            true,
+        )
+    })?;
     let manifest = p.manifest.clone();
     let act = if action == DEPLOY {
         Action::ComposeDeploy { manifest }
@@ -260,7 +275,10 @@ mod tests {
         p["files"][0]["content"] = json!("services: {x: {}}\n");
         assert!(validate(&p).is_err());
         let mut p = params();
-        p["files"].as_array_mut().unwrap().push(json!({"sha256": sha("x"), "content": "x"}));
+        p["files"]
+            .as_array_mut()
+            .unwrap()
+            .push(json!({"sha256": sha("x"), "content": "x"}));
         assert!(validate(&p).is_err());
         let mut p = params();
         p.insert("cmd".into(), json!("id"));
@@ -279,7 +297,10 @@ mod tests {
         let dir = write_spool(&spool, &p).unwrap();
         let c = "services: {}\n";
         assert_eq!(std::fs::read_to_string(dir.join(sha(c))).unwrap(), c);
-        assert_eq!(std::fs::metadata(&dir).unwrap().permissions().mode() & 0o777, 0o700);
+        assert_eq!(
+            std::fs::metadata(&dir).unwrap().permissions().mode() & 0o777,
+            0o700
+        );
         // Written again on a retried step.
         write_spool(&spool, &p).unwrap();
     }

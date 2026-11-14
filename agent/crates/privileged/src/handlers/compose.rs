@@ -67,7 +67,12 @@ pub struct Check {
     pub detail: String,
 }
 
-fn check(severity: &'static str, code: &'static str, service: Option<&str>, detail: String) -> Check {
+fn check(
+    severity: &'static str,
+    code: &'static str,
+    service: Option<&str>,
+    detail: String,
+) -> Check {
     Check {
         severity,
         code,
@@ -85,7 +90,10 @@ fn fail(m: impl Into<String>) -> ActionError {
 /// The engine socket of a root-owned environment, checked: a socket (not a
 /// link), owned by root.
 pub fn engine_socket(sysroot: &Path, env: &EnvironmentId) -> Result<PathBuf, String> {
-    let abs = env.as_str().strip_prefix("env:").expect("validated environment id");
+    let abs = env
+        .as_str()
+        .strip_prefix("env:")
+        .expect("validated environment id");
     let p = under(sysroot, Path::new(abs));
     let md = std::fs::symlink_metadata(&p)
         .map_err(|e| format!("engine socket {abs}: {e}; is the engine running?"))?;
@@ -159,7 +167,12 @@ pub fn parse_containers(v: &Value) -> Result<ComposeState, String> {
 fn own_ports(v: &Value) -> BTreeSet<(String, u16)> {
     let mut out = BTreeSet::new();
     for c in v.as_array().into_iter().flatten() {
-        for p in c.get("Ports").and_then(Value::as_array).into_iter().flatten() {
+        for p in c
+            .get("Ports")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+        {
             if let (Some(port), Some(proto)) = (
                 p.get("PublicPort").and_then(Value::as_u64),
                 p.get("Type").and_then(Value::as_str),
@@ -176,7 +189,10 @@ fn docker_bin(sysroot: &Path) -> Result<PathBuf, String> {
         .iter()
         .find(|b| under(sysroot, Path::new(b)).is_file())
         .map(PathBuf::from)
-        .ok_or_else(|| "the docker CLI is not installed; installing it is not available yet (ticket 039.2)".into())
+        .ok_or_else(|| {
+            "the docker CLI is not installed; installing it is not available yet (ticket 039.2)"
+                .into()
+        })
 }
 
 // ---- spool --------------------------------------------------------------
@@ -210,7 +226,10 @@ fn agent_dir(f: &File, uid: u32, what: &str) -> Result<(), String> {
         return Err(format!("{what} is not a directory"));
     }
     if md.uid() != uid {
-        return Err(format!("{what} is owned by uid {}, not the agent", md.uid()));
+        return Err(format!(
+            "{what} is owned by uid {}, not the agent",
+            md.uid()
+        ));
     }
     if md.mode() & 0o022 != 0 {
         return Err(format!("{what} is writable by others"));
@@ -229,8 +248,12 @@ pub fn read_spool(cfg: &ComposeConfig, m: &ComposeManifest) -> Result<Vec<Vec<u8
         .open(&cfg.spool_dir)
         .map_err(|e| format!("compose spool: {e}"))?;
     agent_dir(&spool, uid, "the compose spool")?;
-    let rev = open_at(&spool, m.revision.as_str(), libc::O_RDONLY | libc::O_DIRECTORY)
-        .map_err(|e| format!("spool of revision {}: {e}", m.revision.as_str()))?;
+    let rev = open_at(
+        &spool,
+        m.revision.as_str(),
+        libc::O_RDONLY | libc::O_DIRECTORY,
+    )
+    .map_err(|e| format!("spool of revision {}: {e}", m.revision.as_str()))?;
     agent_dir(&rev, uid, "the revision's spool")?;
     let mut out = Vec::with_capacity(m.files.len());
     for f in &m.files {
@@ -242,7 +265,11 @@ pub fn read_spool(cfg: &ComposeConfig, m: &ComposeManifest) -> Result<Vec<Vec<u8
             return Err(format!("{what} is not a regular file"));
         }
         if md.len() != f.size {
-            return Err(format!("{what} is {} bytes, the manifest says {}", md.len(), f.size));
+            return Err(format!(
+                "{what} is {} bytes, the manifest says {}",
+                md.len(),
+                f.size
+            ));
         }
         let mut buf = Vec::with_capacity(f.size as usize);
         (&mut file)
@@ -383,7 +410,12 @@ pub fn parse_config(v: &Value) -> Result<Resolved, String> {
             build: s.get("build").is_some(),
             ..Default::default()
         };
-        for p in s.get("ports").and_then(Value::as_array).into_iter().flatten() {
+        for p in s
+            .get("ports")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+        {
             let published = match p.get("published") {
                 Some(Value::String(x)) => x.parse::<u16>().ok(),
                 Some(Value::Number(x)) => x.as_u64().and_then(|n| u16::try_from(n).ok()),
@@ -395,11 +427,16 @@ pub fn parse_config(v: &Value) -> Result<Resolved, String> {
                 r.ports.push((proto.to_string(), port, ip.to_string()));
             }
         }
-        for m in s.get("volumes").and_then(Value::as_array).into_iter().flatten() {
-            if m.get("type").and_then(Value::as_str) == Some("bind") {
-                if let Some(src) = m.get("source").and_then(Value::as_str) {
-                    r.binds.push(src.to_string());
-                }
+        for m in s
+            .get("volumes")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+        {
+            if m.get("type").and_then(Value::as_str) == Some("bind")
+                && let Some(src) = m.get("source").and_then(Value::as_str)
+            {
+                r.binds.push(src.to_string());
             }
         }
         out.services.push(r);
@@ -420,7 +457,11 @@ fn compose(docker: &Path, sock: &Path, dir: &Path, m: &ComposeManifest) -> Comma
         .arg("--project-name")
         .arg(m.project.as_str())
         .arg("--project-directory")
-        .arg(if pdir.is_empty() { dir.to_path_buf() } else { dir.join(pdir) });
+        .arg(if pdir.is_empty() {
+            dir.to_path_buf()
+        } else {
+            dir.join(pdir)
+        });
     for f in std::iter::once(&m.main_file).chain(&m.extra_files) {
         spec = spec.arg("--file").arg(dir.join(f.as_str()));
     }
@@ -433,7 +474,10 @@ fn compose(docker: &Path, sock: &Path, dir: &Path, m: &ComposeManifest) -> Comma
 fn tail(b: &[u8]) -> String {
     let s = String::from_utf8_lossy(b);
     let t: String = s.chars().rev().take(MAX_ERROR_TEXT).collect();
-    t.chars().rev().filter(|c| *c == '\n' || !c.is_control()).collect()
+    t.chars()
+        .rev()
+        .filter(|c| *c == '\n' || !c.is_control())
+        .collect()
 }
 
 async fn resolve(
@@ -443,14 +487,20 @@ async fn resolve(
     dir: &Path,
     m: &ComposeManifest,
 ) -> Result<Resolved, String> {
-    let spec = compose(docker, sock, dir, m).arg("config").arg("--format").arg("json");
+    let spec = compose(docker, sock, dir, m)
+        .arg("config")
+        .arg("--format")
+        .arg("json");
     let out = tokio::time::timeout(CONFIG_TIMEOUT, runner.run(spec, OutputSink::discard()))
         .await
         .map_err(|_| "docker compose config did not finish in 60 s".to_string())?
         .map_err(|e| format!("run docker compose config: {e}"))?;
     if !out.success() {
         // stderr names the file and line; it does not print values.
-        return Err(format!("docker compose config failed: {}", tail(&out.stderr)));
+        return Err(format!(
+            "docker compose config failed: {}",
+            tail(&out.stderr)
+        ));
     }
     let v: Value = serde_json::from_slice(&out.stdout)
         .map_err(|e| format!("docker compose config output is not JSON: {e}"))?;
@@ -543,23 +593,39 @@ async fn host_checks(
     }
 
     // Disk space: the engine's data root and the platform's directory.
-    let docker_root = get_json(sock, "/info", 0)
-        .await
-        .ok()
-        .and_then(|v| v.get("DockerRootDir").and_then(Value::as_str).map(PathBuf::from));
+    let docker_root = get_json(sock, "/info", 0).await.ok().and_then(|v| {
+        v.get("DockerRootDir")
+            .and_then(Value::as_str)
+            .map(PathBuf::from)
+    });
     let mut disks = vec![("the platform's Compose directory", existing(project_root))];
     if let Some(d) = docker_root {
         disks.push(("the engine's data directory", existing(&under(sysroot, &d))));
     }
     for (what, p) in disks {
         match free_bytes(&p) {
-            Some(f) if f < DISK_MIN_BYTES => checks.push(check("error", "DISK_LOW", None,
-                format!("{what} ({}) has {f} bytes free; at least {DISK_MIN_BYTES} are needed", p.display()))),
-            Some(f) if f < DISK_WARN_BYTES => checks.push(check("warning", "DISK_LOW", None,
-                format!("{what} ({}) has {f} bytes free", p.display()))),
+            Some(f) if f < DISK_MIN_BYTES => checks.push(check(
+                "error",
+                "DISK_LOW",
+                None,
+                format!(
+                    "{what} ({}) has {f} bytes free; at least {DISK_MIN_BYTES} are needed",
+                    p.display()
+                ),
+            )),
+            Some(f) if f < DISK_WARN_BYTES => checks.push(check(
+                "warning",
+                "DISK_LOW",
+                None,
+                format!("{what} ({}) has {f} bytes free", p.display()),
+            )),
             Some(_) => {}
-            None => checks.push(check("warning", "DISK_UNKNOWN", None,
-                format!("free space of {what} ({}) cannot be read", p.display()))),
+            None => checks.push(check(
+                "warning",
+                "DISK_UNKNOWN",
+                None,
+                format!("free space of {what} ({}) cannot be read", p.display()),
+            )),
         }
     }
 
@@ -583,13 +649,25 @@ async fn host_checks(
                                 || l.address == "::")
                     });
                     if let Some(l) = clash {
-                        checks.push(check("error", "PORT_IN_USE", Some(&s.name),
-                            format!("host port {proto}/{port} is already listened on at {}", l.address)));
+                        checks.push(check(
+                            "error",
+                            "PORT_IN_USE",
+                            Some(&s.name),
+                            format!(
+                                "host port {proto}/{port} is already listened on at {}",
+                                l.address
+                            ),
+                        ));
                     }
                 }
             }
         }
-        Err(e) => checks.push(check("warning", "PORTS_UNKNOWN", None, format!("listening ports cannot be read: {e}"))),
+        Err(e) => checks.push(check(
+            "warning",
+            "PORTS_UNKNOWN",
+            None,
+            format!("listening ports cannot be read: {e}"),
+        )),
     }
 
     // Bind mount sources outside the revision must exist; Docker would
@@ -600,8 +678,12 @@ async fn host_checks(
                 continue;
             }
             if std::fs::symlink_metadata(under(sysroot, Path::new(b))).is_err() {
-                checks.push(check("error", "BIND_SOURCE_MISSING", Some(&s.name),
-                    format!("bind mount source {b} does not exist on the host")));
+                checks.push(check(
+                    "error",
+                    "BIND_SOURCE_MISSING",
+                    Some(&s.name),
+                    format!("bind mount source {b} does not exist on the host"),
+                ));
             }
         }
     }
@@ -610,21 +692,35 @@ async fn host_checks(
     // registry.
     let mut remote = 0;
     for s in &r.services {
-        let Some(img) = s.image.as_deref() else { continue };
+        let Some(img) = s.image.as_deref() else {
+            continue;
+        };
         if s.build {
             continue;
         }
         if img.starts_with('-') || img.chars().any(char::is_whitespace) {
-            checks.push(check("error", "IMAGE_INVALID", Some(&s.name), "image reference is not valid".into()));
+            checks.push(check(
+                "error",
+                "IMAGE_INVALID",
+                Some(&s.name),
+                "image reference is not valid".into(),
+            ));
             continue;
         }
-        let local = get_json(sock, &format!("/images/{}/json", urlencode(img)), 0).await.is_ok();
+        let local = get_json(sock, &format!("/images/{}/json", urlencode(img)), 0)
+            .await
+            .is_ok();
         if local {
             continue;
         }
         remote += 1;
         if remote > MAX_REMOTE_IMAGES {
-            checks.push(check("warning", "IMAGE_UNCHECKED", Some(&s.name), format!("{img} was not looked up (more than {MAX_REMOTE_IMAGES} images)")));
+            checks.push(check(
+                "warning",
+                "IMAGE_UNCHECKED",
+                Some(&s.name),
+                format!("{img} was not looked up (more than {MAX_REMOTE_IMAGES} images)"),
+            ));
             continue;
         }
         let spec = CommandSpec::new(docker)
@@ -635,10 +731,27 @@ async fn host_checks(
             .arg(img);
         match tokio::time::timeout(IMAGE_TIMEOUT, runner.run(spec, OutputSink::discard())).await {
             Ok(Ok(o)) if o.success() => {}
-            Ok(Ok(o)) => checks.push(check("error", "IMAGE_UNAVAILABLE", Some(&s.name),
-                format!("{img} is not on this host and cannot be found in its registry: {}", tail(&o.stderr)))),
-            Ok(Err(e)) => checks.push(check("warning", "IMAGE_UNCHECKED", Some(&s.name), format!("{img}: {e}"))),
-            Err(_) => checks.push(check("warning", "IMAGE_UNCHECKED", Some(&s.name), format!("{img}: registry did not answer in 30 s"))),
+            Ok(Ok(o)) => checks.push(check(
+                "error",
+                "IMAGE_UNAVAILABLE",
+                Some(&s.name),
+                format!(
+                    "{img} is not on this host and cannot be found in its registry: {}",
+                    tail(&o.stderr)
+                ),
+            )),
+            Ok(Err(e)) => checks.push(check(
+                "warning",
+                "IMAGE_UNCHECKED",
+                Some(&s.name),
+                format!("{img}: {e}"),
+            )),
+            Err(_) => checks.push(check(
+                "warning",
+                "IMAGE_UNCHECKED",
+                Some(&s.name),
+                format!("{img}: registry did not answer in 30 s"),
+            )),
         }
     }
     checks
@@ -647,7 +760,9 @@ async fn host_checks(
 fn urlencode(s: &str) -> String {
     s.bytes()
         .map(|b| match b {
-            b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => (b as char).to_string(),
+            b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                (b as char).to_string()
+            }
             _ => format!("%{b:02X}"),
         })
         .collect()
@@ -674,11 +789,19 @@ struct Prepared {
     contents: Vec<Vec<u8>>,
 }
 
-fn prepare(sysroot: &Path, cfg: &ComposeConfig, m: &ComposeManifest) -> Result<Prepared, ActionError> {
+fn prepare(
+    sysroot: &Path,
+    cfg: &ComposeConfig,
+    m: &ComposeManifest,
+) -> Result<Prepared, ActionError> {
     let docker = docker_bin(sysroot).map_err(fail)?;
     let sock = engine_socket(sysroot, &m.environment).map_err(fail)?;
     let contents = read_spool(cfg, m).map_err(fail)?;
-    Ok(Prepared { docker, sock, contents })
+    Ok(Prepared {
+        docker,
+        sock,
+        contents,
+    })
 }
 
 /// `compose_check`: read-only.
@@ -695,10 +818,22 @@ pub async fn check_only(
     let r = match resolve(&runner, &p.docker, &p.sock, &tmp.0, &m).await {
         Ok(r) => r,
         Err(e) => {
-            return Ok(json!({"ready": false, "checks": [check("error", "COMPOSE_INVALID", None, e)], "services": []}));
+            return Ok(
+                json!({"ready": false, "checks": [check("error", "COMPOSE_INVALID", None, e)], "services": []}),
+            );
         }
     };
-    let checks = host_checks(&runner, sysroot, &p.docker, &p.sock, &tmp.0, &m, &r, &project_root).await;
+    let checks = host_checks(
+        &runner,
+        sysroot,
+        &p.docker,
+        &p.sock,
+        &tmp.0,
+        &m,
+        &r,
+        &project_root,
+    )
+    .await;
     Ok(json!({
         "ready": !blocked(&checks),
         "checks": checks,
@@ -754,15 +889,32 @@ pub async fn deploy(
             return Err(fail(e));
         }
     }
-    let r = resolve(&runner, &p.docker, &p.sock, &rev, &m).await.map_err(fail)?;
-    let checks = host_checks(&runner, sysroot, &p.docker, &p.sock, &rev, &m, &r, &project_root).await;
+    let r = resolve(&runner, &p.docker, &p.sock, &rev, &m)
+        .await
+        .map_err(fail)?;
+    let checks = host_checks(
+        &runner,
+        sysroot,
+        &p.docker,
+        &p.sock,
+        &rev,
+        &m,
+        &r,
+        &project_root,
+    )
+    .await;
     if blocked(&checks) {
         if !existed {
             let _ = std::fs::remove_dir_all(&rev);
         }
         return Err(fail(format!(
             "host pre-checks failed; nothing was started: {}",
-            checks.iter().filter(|c| c.severity == "error").map(|c| c.detail.as_str()).collect::<Vec<_>>().join("; ")
+            checks
+                .iter()
+                .filter(|c| c.severity == "error")
+                .map(|c| c.detail.as_str())
+                .collect::<Vec<_>>()
+                .join("; ")
         )));
     }
 
@@ -777,9 +929,16 @@ pub async fn deploy(
             d.push(seg);
             match std::fs::symlink_metadata(&d) {
                 Ok(md) if md.is_dir() => {}
-                Ok(_) => return Err(fail(format!("data path {rel} is not a directory on the host (a link or a file); refusing to mount it"))),
+                Ok(_) => {
+                    return Err(fail(format!(
+                        "data path {rel} is not a directory on the host (a link or a file); refusing to mount it"
+                    )));
+                }
                 Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-                    std::fs::DirBuilder::new().mode(0o755).create(&d).map_err(|e| fail(format!("create data directory {rel}: {e}")))?;
+                    std::fs::DirBuilder::new()
+                        .mode(0o755)
+                        .create(&d)
+                        .map_err(|e| fail(format!("create data directory {rel}: {e}")))?;
                 }
                 Err(e) => return Err(fail(format!("data directory {rel}: {e}"))),
             }
@@ -793,19 +952,38 @@ pub async fn deploy(
             }
         }
         match std::fs::symlink_metadata(&link) {
-            Ok(md) if md.file_type().is_symlink() && std::fs::read_link(&link).ok().as_deref() == Some(target.as_path()) => {}
-            Ok(_) => return Err(fail(format!("{rel} in the revision is not the expected data link"))),
-            Err(_) => std::os::unix::fs::symlink(&target, &link).map_err(|e| fail(format!("link data directory {rel}: {e}")))?,
+            Ok(md)
+                if md.file_type().is_symlink()
+                    && std::fs::read_link(&link).ok().as_deref() == Some(target.as_path()) => {}
+            Ok(_) => {
+                return Err(fail(format!(
+                    "{rel} in the revision is not the expected data link"
+                )));
+            }
+            Err(_) => std::os::unix::fs::symlink(&target, &link)
+                .map_err(|e| fail(format!("link data directory {rel}: {e}")))?,
         }
     }
 
-    sink.send(StreamKind::Stdout, format!("deploying revision {} of {}\n", m.revision.as_str(), m.project.as_str()).into_bytes()).await;
+    sink.send(
+        StreamKind::Stdout,
+        format!(
+            "deploying revision {} of {}\n",
+            m.revision.as_str(),
+            m.project.as_str()
+        )
+        .into_bytes(),
+    )
+    .await;
     let spec = compose(&p.docker, &p.sock, &rev, &m)
         .arg("up")
         .arg("--detach")
         .arg("--build")
         .arg("--remove-orphans");
-    let out = runner.run(spec, sink).await.map_err(|e| fail(format!("run docker compose up: {e}")))?;
+    let out = runner
+        .run(spec, sink)
+        .await
+        .map_err(|e| fail(format!("run docker compose up: {e}")))?;
     let state = project_state(sysroot, &m.environment, &m.project).await;
     let containers = match &state {
         Ok(s) => json!(s.containers),

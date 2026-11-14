@@ -67,13 +67,14 @@ string_param!(ComposeProjectName, |v| {
         && v.len() <= MAX_PROJECT_NAME
         && v.as_bytes()[0].is_ascii_lowercase()
         && !v.ends_with('-')
-        && v
-            .bytes()
+        && v.bytes()
             .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-');
     if ok {
         Ok(())
     } else {
-        Err("compose project name must be lowercase letters, digits and '-', starting with a letter")
+        Err(
+            "compose project name must be lowercase letters, digits and '-', starting with a letter",
+        )
     }
 });
 
@@ -117,7 +118,10 @@ string_param!(ProfileName, |v| {
 
 // Lowercase hex SHA-256.
 string_param!(Sha256Hex, |v| {
-    if v.len() == 64 && v.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)) {
+    if v.len() == 64
+        && v.bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    {
         Ok(())
     } else {
         Err("sha256 must be 64 lowercase hex characters")
@@ -221,7 +225,12 @@ impl TryFrom<RawManifest> for ComposeManifest {
         // A path may not also be a directory of another path ("a" and "a/b").
         for p in &paths {
             let mut prefix = String::new();
-            for seg in p.split('/').collect::<Vec<_>>().split_last().map_or(&[][..], |x| x.1) {
+            for seg in p
+                .split('/')
+                .collect::<Vec<_>>()
+                .split_last()
+                .map_or(&[][..], |x| x.1)
+            {
                 prefix.push_str(seg);
                 if paths.contains(prefix.as_str()) {
                     return Err(ParamError::new("a path is both a file and a directory"));
@@ -231,10 +240,15 @@ impl TryFrom<RawManifest> for ComposeManifest {
         }
         let listed = |p: &RelPath| paths.contains(p.as_str());
         if !listed(&r.main_file) || !r.extra_files.iter().all(listed) {
-            return Err(ParamError::new("the main and extra Compose files must be listed files"));
+            return Err(ParamError::new(
+                "the main and extra Compose files must be listed files",
+            ));
         }
         let mut seen = BTreeSet::new();
-        if !std::iter::once(&r.main_file).chain(&r.extra_files).all(|p| seen.insert(p)) {
+        if !std::iter::once(&r.main_file)
+            .chain(&r.extra_files)
+            .all(|p| seen.insert(p))
+        {
             return Err(ParamError::new("a Compose file is named twice"));
         }
         Ok(ComposeManifest {
@@ -384,9 +398,10 @@ mod tests {
         s["files"][0]["size"] = json!(MAX_FILE_BYTES + 1);
         assert!(serde_json::from_value::<ComposeManifest>(s).is_err());
         let mut s = sample();
-        s["files"].as_array_mut().unwrap().push(
-            json!({"path": "compose.yaml/x", "size": 1, "sha256": "c".repeat(64)}),
-        );
+        s["files"]
+            .as_array_mut()
+            .unwrap()
+            .push(json!({"path": "compose.yaml/x", "size": 1, "sha256": "c".repeat(64)}));
         assert!(serde_json::from_value::<ComposeManifest>(s).is_err());
         let mut s = sample();
         s["extra_files"] = json!(["compose.yaml"]);

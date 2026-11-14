@@ -68,7 +68,9 @@ impl std::fmt::Display for GrantRejection {
 
 /// 64 lowercase hex characters.
 pub fn is_hex_digest(s: &str) -> bool {
-    s.len() == 64 && s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    s.len() == 64
+        && s.bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
 }
 
 /// Characters allowed in id, subject and permission names.

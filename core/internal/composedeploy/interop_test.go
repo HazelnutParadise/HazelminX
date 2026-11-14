@@ -86,7 +86,11 @@ func (r *logRep) Log(l string)    { r.mu.Lock(); r.lines = append(r.lines, l); r
 func (r *logRep) Progress(int)    {}
 func (r *logRep) Heartbeat()      {}
 func (r *logRep) Evidence(string) {}
-func (r *logRep) String() string  { r.mu.Lock(); defer r.mu.Unlock(); return strings.Join(r.lines, "\n") }
+func (r *logRep) String() string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return strings.Join(r.lines, "\n")
+}
 
 func stopProc(cmd *exec.Cmd) {
 	if cmd.ProcessState != nil {

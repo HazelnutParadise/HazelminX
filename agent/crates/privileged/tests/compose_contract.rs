@@ -25,7 +25,10 @@ fn manifest_digest_and_bindings_match_core() {
         manifest: m.clone(),
     };
     let deploy = Action::ComposeDeploy { manifest: m };
-    assert_eq!(check.binding().unwrap(), f["bindingCheck"].as_str().unwrap());
+    assert_eq!(
+        check.binding().unwrap(),
+        f["bindingCheck"].as_str().unwrap()
+    );
     assert_eq!(
         deploy.binding().unwrap(),
         f["bindingDeploy"].as_str().unwrap()

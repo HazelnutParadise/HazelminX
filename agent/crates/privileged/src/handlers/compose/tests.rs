@@ -31,16 +31,28 @@ fn spool(files: &[(&str, &[u8])]) -> (tempfile::TempDir, ComposeConfig) {
         std::fs::write(rev.join(sha(c)), c).unwrap();
     }
     let uid = unsafe { libc::geteuid() };
-    (d, ComposeConfig { spool_dir: spool, agent_uid: Some(uid) })
+    (
+        d,
+        ComposeConfig {
+            spool_dir: spool,
+            agent_uid: Some(uid),
+        },
+    )
 }
 
-const FILES: &[(&str, &[u8])] = &[("compose.yaml", b"services: {}\n"), ("conf/app.conf", b"listen 80;\n")];
+const FILES: &[(&str, &[u8])] = &[
+    ("compose.yaml", b"services: {}\n"),
+    ("conf/app.conf", b"listen 80;\n"),
+];
 
 #[test]
 fn reads_the_files_the_manifest_signed() {
     let (_d, cfg) = spool(FILES);
     let got = read_spool(&cfg, &manifest(FILES)).unwrap();
-    assert_eq!(got, vec![b"services: {}\n".to_vec(), b"listen 80;\n".to_vec()]);
+    assert_eq!(
+        got,
+        vec![b"services: {}\n".to_vec(), b"listen 80;\n".to_vec()]
+    );
 }
 
 #[test]
@@ -68,11 +80,25 @@ fn refuses_a_spool_that_is_a_link_writable_by_others_or_not_the_agents() {
     std::fs::remove_file(&rev).unwrap();
     std::fs::rename(&moved, &rev).unwrap();
     std::fs::set_permissions(&rev, std::fs::Permissions::from_mode(0o777)).unwrap();
-    assert!(read_spool(&cfg, &m).unwrap_err().contains("writable by others"));
+    assert!(
+        read_spool(&cfg, &m)
+            .unwrap_err()
+            .contains("writable by others")
+    );
     std::fs::set_permissions(&rev, std::fs::Permissions::from_mode(0o700)).unwrap();
-    let other = ComposeConfig { agent_uid: Some(unsafe { libc::geteuid() } + 1), ..cfg.clone() };
-    assert!(read_spool(&other, &m).unwrap_err().contains("not the agent"));
-    let none = ComposeConfig { agent_uid: None, ..cfg };
+    let other = ComposeConfig {
+        agent_uid: Some(unsafe { libc::geteuid() } + 1),
+        ..cfg.clone()
+    };
+    assert!(
+        read_spool(&other, &m)
+            .unwrap_err()
+            .contains("not the agent")
+    );
+    let none = ComposeConfig {
+        agent_uid: None,
+        ..cfg
+    };
     assert!(read_spool(&none, &m).is_err());
 }
 
@@ -82,9 +108,24 @@ fn lays_out_files_under_a_private_directory() {
     let m = manifest(FILES);
     let base = d.path().join("rev");
     root_dir(&base, 0o700).unwrap();
-    write_files(&base, &m, &[b"services: {}\n".to_vec(), b"listen 80;\n".to_vec()]).unwrap();
-    assert_eq!(std::fs::read(base.join("conf/app.conf")).unwrap(), b"listen 80;\n");
-    assert_eq!(std::fs::metadata(base.join("conf")).unwrap().permissions().mode() & 0o777, 0o700);
+    write_files(
+        &base,
+        &m,
+        &[b"services: {}\n".to_vec(), b"listen 80;\n".to_vec()],
+    )
+    .unwrap();
+    assert_eq!(
+        std::fs::read(base.join("conf/app.conf")).unwrap(),
+        b"listen 80;\n"
+    );
+    assert_eq!(
+        std::fs::metadata(base.join("conf"))
+            .unwrap()
+            .permissions()
+            .mode()
+            & 0o777,
+        0o700
+    );
     assert!(same_files(&base, &m));
     assert!(write_files(&base, &m, &[b"x".to_vec(), b"y".to_vec()]).is_err());
 }
@@ -116,11 +157,20 @@ fn reads_images_ports_and_binds_from_compose_config() {
     }});
     let r = parse_config(&v).unwrap();
     let web = r.services.iter().find(|s| s.name == "web").unwrap();
-    assert_eq!(web.ports, vec![("tcp".into(), 8080, "".into()), ("udp".into(), 5353, "127.0.0.1".into())]);
+    assert_eq!(
+        web.ports,
+        vec![
+            ("tcp".into(), 8080, "".into()),
+            ("udp".into(), 5353, "127.0.0.1".into())
+        ]
+    );
     assert_eq!(web.binds.len(), 2);
     assert!(r.services.iter().any(|s| s.name == "api" && s.build));
     let m = manifest(FILES);
-    assert_eq!(data_dirs(Path::new("/srv/rev"), &m, &r), vec!["data".to_string()]);
+    assert_eq!(
+        data_dirs(Path::new("/srv/rev"), &m, &r),
+        vec!["data".to_string()]
+    );
 }
 
 #[test]
@@ -141,31 +191,66 @@ fn reads_containers_and_their_published_ports() {
 #[tokio::test]
 async fn compose_runs_with_fixed_arguments() {
     use crate::command::{RecordingRunner, output};
-    let runner = Arc::new(RecordingRunner::with_replies([output(0, r#"{"services":{"web":{"image":"x"}}}"#)]));
+    let runner = Arc::new(RecordingRunner::with_replies([output(
+        0,
+        r#"{"services":{"web":{"image":"x"}}}"#,
+    )]));
     let m = manifest(FILES);
     let dyn_runner: Arc<dyn CommandRunner> = runner.clone();
-    let r = resolve(&dyn_runner, Path::new("/usr/bin/docker"), Path::new("/var/run/docker.sock"), Path::new("/tmp/rev"), &m)
-        .await
-        .unwrap();
+    let r = resolve(
+        &dyn_runner,
+        Path::new("/usr/bin/docker"),
+        Path::new("/var/run/docker.sock"),
+        Path::new("/tmp/rev"),
+        &m,
+    )
+    .await
+    .unwrap();
     assert_eq!(r.services[0].name, "web");
     let call = &runner.calls()[0];
-    let args: Vec<String> = call.args.iter().map(|a| a.to_string_lossy().into_owned()).collect();
+    let args: Vec<String> = call
+        .args
+        .iter()
+        .map(|a| a.to_string_lossy().into_owned())
+        .collect();
     assert_eq!(
         args,
         [
-            "compose", "--progress", "plain", "--project-name", "shop-prod-web", "--project-directory", "/tmp/rev",
-            "--file", "/tmp/rev/compose.yaml", "config", "--format", "json"
+            "compose",
+            "--progress",
+            "plain",
+            "--project-name",
+            "shop-prod-web",
+            "--project-directory",
+            "/tmp/rev",
+            "--file",
+            "/tmp/rev/compose.yaml",
+            "config",
+            "--format",
+            "json"
         ]
     );
-    assert!(call.env.iter().any(|(k, v)| k == "DOCKER_HOST" && v == "unix:///var/run/docker.sock"));
+    assert!(
+        call.env
+            .iter()
+            .any(|(k, v)| k == "DOCKER_HOST" && v == "unix:///var/run/docker.sock")
+    );
 }
 
 #[test]
 fn engine_socket_must_be_a_root_socket_not_a_link() {
     let d = tempfile::tempdir().unwrap();
     let env: EnvironmentId = "env:/var/run/docker.sock".to_string().try_into().unwrap();
-    assert!(engine_socket(d.path(), &env).unwrap_err().contains("engine socket"));
+    assert!(
+        engine_socket(d.path(), &env)
+            .unwrap_err()
+            .contains("engine socket")
+    );
     std::fs::create_dir_all(d.path().join("var/run")).unwrap();
     std::fs::write(d.path().join("var/run/docker.sock"), b"").unwrap();
-    assert!(engine_socket(d.path(), &env).unwrap_err().contains("not a socket"));
+    assert!(
+        engine_socket(d.path(), &env)
+            .unwrap_err()
+            .contains("not a socket")
+    );
 }

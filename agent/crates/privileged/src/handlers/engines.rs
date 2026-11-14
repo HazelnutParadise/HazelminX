@@ -500,7 +500,11 @@ pub(crate) enum ProbeError {
 /// `owner` is the uid the socket file belonged to when it was checked; the
 /// process that accepts must run as that uid, so a path swapped for a link
 /// after the check cannot lead root to another socket.
-pub(crate) async fn get_json(sock: &Path, path: &str, owner: u32) -> Result<serde_json::Value, ProbeError> {
+pub(crate) async fn get_json(
+    sock: &Path,
+    path: &str,
+    owner: u32,
+) -> Result<serde_json::Value, ProbeError> {
     let fut = async {
         let mut s = tokio::net::UnixStream::connect(sock).await.map_err(|e| {
             if e.kind() == std::io::ErrorKind::PermissionDenied {
