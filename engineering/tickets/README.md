@@ -102,6 +102,9 @@
 | 048.1 | 使用者可以用 API 瀏覽、搜尋與分頁同步可用 Repo，並讀取分支、commit、檔案與 Compose 檔案 | GitHub 來源 | 047.1 | [#163](https://github.com/HazelnutParadise/hazelminx/issues/163) |
 | 048.2 | 使用者可以在共用來源選擇器搜尋 Repo、選授權、分支或 commit 與 Compose 檔案 | GitHub 來源 | 048.1, 047.2, 017 | [#164](https://github.com/HazelnutParadise/hazelminx/issues/164) |
 | 049 | 專案管理員可以從 GitHub 以固定 commit 隔離抓取、建置並部署，手動 URL／PAT／SSH 模式照常可用 | GitHub 來源 | 048, 044, 012 | [#49](https://github.com/HazelnutParadise/hazelminx/issues/49) |
+| 049.1 | 專案管理員可以讓 Compose 單元的來源是 Git，固定到 Core 解析的 commit 抓取並經既有預檢與批准部署 | GitHub 來源 | 048.1, 044.1, 044.2, 047.1, 011 | [#185](https://github.com/HazelnutParadise/hazelminx/issues/185) |
+| 049.2 | 專案管理員可以從 Git 來源在主機上隔離建置，submodule 與 Git LFS 逐項驗權抓取 | GitHub 來源 | 049.1, 044.2 | [#186](https://github.com/HazelnutParadise/hazelminx/issues/186) |
+| 049.3 | 使用者可以為 Git 來源的單元套用平台 .env 與客製設定，新 commit 不覆寫 | GitHub 來源 | 049.1, 045 | [#187](https://github.com/HazelnutParadise/hazelminx/issues/187) |
 | 050 | 管理員可以設定 Webhook 或定期檢查觸發部署，並決定多環境與連續 commit 政策 | GitHub 來源 | 049 | [#50](https://github.com/HazelnutParadise/hazelminx/issues/50) |
 | 051 | 管理員可以分開授權連線的查看、瀏覽、使用與管理，並安全輪替、撤銷與斷開 | GitHub 來源 | 049, 016 | [#51](https://github.com/HazelnutParadise/hazelminx/issues/51) |
 | 108 | 專案管理員可以在一個專案環境放多個 Compose 與 Kubernetes 部署單元，單元之間用公開變數與內部位址連線 | Compose 部署 | 044, 049, 086, 088 | [#115](https://github.com/HazelnutParadise/hazelminx/issues/115) |

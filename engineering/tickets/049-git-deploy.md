@@ -9,31 +9,16 @@
 
 ## What it delivers
 
-部署綁定（連線參照、Repo ID、ref、固定 SHA、Compose 清單）、受控抓取服務與不可信建置隔離、submodule／LFS 逐項驗權、憑證不進 URL／日誌／映像、SSH Deploy Key 指紋驗證、GitHub 秘密不當應用變數。
+這張票是索引，自己不交付內容，三張子票都在 `done/` 時一起關閉。拆分原因：
 
-## Acceptance criteria
+- 抓取來源與部署綁定只在 Core，審查重點是憑證與「讀到的、選的、部署的是同一份」。它接上 044.1 的驗證與 044.2 的部署，不另開一條部署路徑（決策 0036）。
+- 在主機上建置要把整個 build context 送到節點、以 root 執行不可信的 Dockerfile，還有 submodule 與 LFS 的逐項驗權，審查重點是建置隔離與跨站抓取，和第一部分的風險不同，一個 PR 審不完。
+- 平台 `.env` 與客製設定要等票 045 的變數分層。
 
-- [ ] **CMP-002** 管理員可以指定 GitHub repo、分支／tag／commit 與 Compose 路徑。 — 完成條件：每次部署固定 commit SHA，不在建置到一半改讀移動中的分支。
-- [ ] **CMP-003** 管理員可以使用 HTTPS 憑證、GitHub App 或 SSH Deploy Key 存取私有 repo。 — 完成條件：採最小權限；驗證伺服器指紋／CA；憑證不進 URL、日誌或建置 context。
-- [ ] **CMP-013** 管理員可以管理 submodule 與 Git LFS 專案。 — 完成條件：支援時拉到固定版本並受同樣授權；不支援的組合在預檢明確阻擋，不少拉檔案仍部署。
-- [ ] **GIT-009** 使用者可以繼續手動填 Repo URL 並指定個別 PAT 或 SSH 金鑰。 — 完成條件：不必先建立 GitHub App；原有部署不被強制改成帳號瀏覽模式。
-- [ ] **GIT-010** 使用者可以為挑選的 Repo 套用平台 `.env` 與客製設定。 — 完成條件：多環境設定分開；GitHub 秘密不當作應用變數；新 commit 不覆寫既有掛載、網路與 Port。
-- [ ] **GIT-011** 專案管理員可以讓多個部署綁定共用連線。 — 完成條件：保存連線參照而非複製明文 Token；每個專案的 Repo 與環境權限分別驗證。
-- [ ] **GIT-025** 系統可以隔離抓取憑證與不可信建置。 — 完成條件：App 私鑰不出 Core；抓取憑證不進 Git URL、全域設定、映像、日誌或一般建置環境，暫存可追蹤清除。
-- [ ] **GIT-027** 管理員可以管理私人 submodule 與 Git LFS 的抓取。 — 完成條件：固定來源與版本，逐項驗權；跨站轉址不傳原憑證，不能存取雲端中繼資料或管理入口。
-- [ ] **GIT-038** 使用者可以確認讀取、選擇與部署是同一份來源。 — 完成條件：授權、Repo ID、來源站台、ref、commit 與設定摘要綁定；預覽後權限或來源改變須重新檢查。
-- [ ] 惡意 Dockerfile 無法取得 App 私鑰或永久 PAT
-- [ ] 讀取、選擇與部署綁定同一份來源，權限或來源改變須重新檢查
+| 項目 | 子票 |
+|---|---|
+| Compose 單元的來源可以是 Git：GitHub 連線（App 或 PAT 連線）或手動 URL（不帶憑證、單元自己的 PAT、SSH Deploy Key 加主機指紋）；Core 把 ref 固定成 commit、隔離抓取那一個 commit，把 compose 檔與它引用的檔案變成 044.1 驗證、044.2 部署的單元內容；部署紀錄寫下 commit；預覽與部署綁定同一份來源，連線或來源改變時重新檢查；submodule、LFS、符號連結與 `build:` 在預檢明確擋下（CMP-002、CMP-003、GIT-009、GIT-011、GIT-038，GH-T09） | 049.1 |
+| 從 Git 在主機上建置：build context 送到節點、不可信建置的隔離、submodule 與 Git LFS 逐項驗權抓取（CMP-013、GIT-025、GIT-027，T-063、T-066、GH-T24、GH-T26） | 049.2 |
+| 為 Git 來源的單元套用平台 `.env` 與客製設定，新 commit 不覆寫（GIT-010，GH-T10） | 049.3 |
 
-## Acceptance tests（第 42 章）
-
-- **T-063** Repo 需要未支援 submodule／LFS。 → 預檢明確拒絕或完整處理，不部署缺檔內容。
-- **T-066** Build 過程嘗試讀宿主機秘密。 → 受到隔離與最小授權；建置產物與日誌不含測試秘密。
-- **GH-T09** 不設定 GitHub App，以手動 URL、專案 PAT、SSH Deploy Key 各部署。 → 原有模式能獨立使用，SSH 指紋與個別範圍照常驗證。
-- **GH-T10** 由 Repo 選擇器部署後修改平台 `.env`、Network、Port 與 Volume，再收到 push。 → 設定不被覆寫，正式／測試資料分開，GitHub 秘密未注入應用。
-- **GH-T24** 惡意 Dockerfile 與容器嘗試讀來源憑證、Git remote、環境與暫存。 → 不能取得 App 私鑰／永久 PAT；抓取與建置隔離，秘密無落入映像或日誌。
-- **GH-T26** 私人 submodule／LFS 指向另一 Repo，再加入跨站轉址及內網惡意位址。 → 逐項核對來源與憑證，缺權限預檢失敗；不跨站傳 Token 或存取敏感入口。
-
-## Delivery record
-
-需求 ID → 變更 → 測試環境 → 正常與失敗案例 → 證據 → 未驗證部分，依規格第 46.4 節填寫於 PR。
+畫面由 048.2（Repo 選擇器）與 044.3（匯入設定、相容性、部署預檢）接上，不另開子票。
