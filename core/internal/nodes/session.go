@@ -247,6 +247,10 @@ func (s *Session) protocolError(code, message string) {
 	_ = s.send(protocol.ProtocolError{Type: protocol.TypeProtocolError, Code: code, Message: message})
 }
 
+// hostReportTimeout bounds storing one host report, so a slow database
+// cannot stall the session's read loop past the heartbeat timeout.
+const hostReportTimeout = 10 * time.Second
+
 func (s *Session) handle(msg any) {
 	switch m := msg.(type) {
 	case *protocol.Heartbeat:
@@ -293,6 +297,29 @@ func (s *Session) handle(msg any) {
 		if p := s.lookup(m.RequestID); p != nil {
 			s.deliver(m.RequestID, p, m)
 		}
+	case *protocol.HostFacts:
+		if r := s.hub.opts.HostReports; r != nil {
+			ctx, cancel := context.WithTimeout(context.Background(), hostReportTimeout)
+			defer cancel()
+			if err := r.HostFacts(ctx, s, m); err != nil {
+				s.hub.opts.Logger.Warn("host facts not stored", "node", s.id.Fingerprint, "error", err)
+			}
+			return
+		}
+		s.protocolError(protocol.ErrorUnknownMessage, "host.metrics was not offered")
+	case *protocol.MetricsReport:
+		if r := s.hub.opts.HostReports; r != nil {
+			ctx, cancel := context.WithTimeout(context.Background(), hostReportTimeout)
+			defer cancel()
+			seq, err := r.MetricsReport(ctx, s, m)
+			if err != nil {
+				s.hub.opts.Logger.Warn("host samples not stored; the agent will send them again", "node", s.id.Fingerprint, "error", err)
+				return
+			}
+			_ = s.send(protocol.MetricsAck{Type: protocol.TypeMetricsAck, Seq: seq})
+			return
+		}
+		s.protocolError(protocol.ErrorUnknownMessage, "host.metrics was not offered")
 	case *protocol.ProtocolError:
 		s.hub.opts.Logger.Warn("agent could not read a core message", "node", s.id.Fingerprint, "code", m.Code, "detail", m.Message)
 	default:
