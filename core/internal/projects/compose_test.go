@@ -173,8 +173,11 @@ services:
 
 func TestNeverReadsTheDisk(t *testing.T) {
 	cases := map[string]string{
-		"include":      "include: [/etc/hostname]\nservices: {}\n",
-		"extends-file": "services:\n  web:\n    extends: {file: /etc/hostname, service: x}\n",
+		"include":            "include: [/etc/hostname]\nservices: {}\n",
+		"extends-file":       "services:\n  web:\n    extends: {file: /etc/hostname, service: x}\n",
+		"second-doc-extends": "services:\n  a:\n    image: nginx\n---\nservices:\n  web:\n    extends: {file: /etc/hostname, service: x}\n",
+		"second-doc-include": "services:\n  a:\n    image: nginx\n---\ninclude: [/etc/hostname]\n",
+		"anchor-extends":     "x-base: &b\n  extends: {file: /etc/hostname, service: x}\nservices:\n  web:\n    <<: *b\n",
 	}
 	for name, body := range cases {
 		a := analyze(t, SourceSpec{Files: files("compose.yaml", body), MainFile: "compose.yaml"})

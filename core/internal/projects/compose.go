@@ -1,9 +1,11 @@
 package projects
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"path"
 	"slices"
 	"sort"
@@ -212,16 +214,25 @@ func Analyze(ctx context.Context, spec SourceSpec) Analysis {
 	var configs []types.ConfigFile
 	for _, name := range order {
 		f := files[name]
-		var dict map[string]any
-		if err := yaml.Unmarshal(f.Content, &dict); err != nil {
+		docs, err := documents(f.Content)
+		if err != nil {
 			a.add(SeverityError, "yaml-invalid", name, "", "not valid YAML: "+err.Error())
 			continue
 		}
-		if dict == nil {
+		if len(docs) == 0 {
 			a.add(SeverityError, "compose-empty", name, "", "the file is empty")
 			continue
 		}
-		a.refuseDiskReads(name, dict)
+		dict := map[string]any{}
+		for _, d := range docs {
+			a.refuseDiskReads(name, d)
+			for k, v := range d {
+				dict[k+"#"+fmt.Sprint(len(dict))] = v // every document's variables
+			}
+			if n, ok := d["name"].(string); ok {
+				dict["name"] = n
+			}
+		}
 		for vn, v := range template.ExtractVariables(dict, template.DefaultPattern) {
 			cur, ok := vars[vn]
 			if !ok {
@@ -282,7 +293,11 @@ func Analyze(ctx context.Context, spec SourceSpec) Analysis {
 		o.SkipInclude = true
 		o.SkipResolveEnvironment = true
 		o.SkipResolveLabels = true
-		o.ResourceLoaders = nil
+		// compose-go always appends its own disk loader after these and tries
+		// them in order; this one accepts every reference and refuses it, so
+		// no include or extends.file ever reaches the disk, whatever the raw
+		// pass above missed.
+		o.ResourceLoaders = []loader.ResourceLoader{refuseLoader{}}
 	}, loader.WithUnsupportedAttributesCheck(patterns, func(found []loader.UnsupportedAttribute) { unsupported = found }))
 	if err != nil {
 		a.add(SeverityError, "compose-invalid", "", "", "Docker Compose refuses these files: "+loadError(err))
@@ -302,6 +317,36 @@ func Analyze(ctx context.Context, spec SourceSpec) Analysis {
 	a.sort()
 	return a
 }
+
+// documents decodes every YAML document of a file: compose-go loads them
+// all, so the raw pass must see them all.
+func documents(b []byte) ([]map[string]any, error) {
+	dec := yaml.NewDecoder(bytes.NewReader(b))
+	var out []map[string]any
+	for {
+		var d map[string]any
+		err := dec.Decode(&d)
+		if errors.Is(err, io.EOF) {
+			return out, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+		if d != nil {
+			out = append(out, d)
+		}
+	}
+}
+
+// refuseLoader is a resource loader that takes every reference and refuses
+// it (decision 0034).
+type refuseLoader struct{}
+
+var errNoFileReferences = errors.New("include and extends.file are not supported: list every file of the unit in the merge order instead")
+
+func (refuseLoader) Accept(string) bool                           { return true }
+func (refuseLoader) Load(context.Context, string) (string, error) { return "", errNoFileReferences }
+func (refuseLoader) Dir(string) string                            { return "." }
 
 // refuseDiskReads refuses include and extends.file: compose-go would read
 // them from Core's disk.
