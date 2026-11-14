@@ -8,8 +8,7 @@ import { isApiError } from "../auth/api";
 import { Notice } from "../auth/parts";
 import { ApiErrorMessage } from "../components/RawMessage";
 import { StatusPill, type StatusTone } from "../components/StatusPill";
-import { formatDateTime } from "../lib/time";
-import { activeLocale } from "../i18n";
+import { at } from "../nodes/status";
 
 const SEVERITY_TONE: Record<string, StatusTone> = {
   error: "danger",
@@ -72,7 +71,7 @@ export const StepPill = ({ value }: { value: string | null | undefined }) => (
 /** Absolute local time, or "—". */
 export function When({ iso }: { iso: string | null | undefined }) {
   if (!iso) return <span aria-hidden="true">—</span>;
-  return <time dateTime={iso}>{formatDateTime(iso, activeLocale(), "datetime")}</time>;
+  return <time dateTime={iso}>{at(iso)}</time>;
 }
 
 /** A section of the environment's content area: heading row, then its body. */

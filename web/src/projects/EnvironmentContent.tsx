@@ -101,7 +101,7 @@ function FilesPanel({ unit: u }: { unit: Unit }) {
             <Table.Row>
               <Table.Head>{t("projects.files.path")}</Table.Head>
               <Table.Head>{t("projects.files.role")}</Table.Head>
-              <Table.Head>{t("projects.files.size")}</Table.Head>
+              <Table.Head className="c5">{t("projects.files.size")}</Table.Head>
               <Table.Head className="c5">{t("projects.files.sha256")}</Table.Head>
             </Table.Row>
           </Table.Header>
@@ -113,7 +113,7 @@ function FilesPanel({ unit: u }: { unit: Unit }) {
                   {f.secret && <span className="hx-tag-secret">{t("projects.files.secret")}</span>}
                 </Table.Cell>
                 <Table.Cell>{role(f.path)}</Table.Cell>
-                <Table.Cell className="hx-nowrap">{bytes(f.size)}</Table.Cell>
+                <Table.Cell className="c5 hx-nowrap">{bytes(f.size)}</Table.Cell>
                 <Table.Cell className="c5 hx-mono hx-hash" title={f.sha256 ?? undefined}>
                   {(f.sha256 ?? "").slice(0, 12)}
                 </Table.Cell>
@@ -194,7 +194,7 @@ export function FindingsPanel({ analysis: a, title }: { analysis: Analysis; titl
               <Table.Row>
                 <Table.Head>{t("projects.vars.name")}</Table.Head>
                 <Table.Head>{t("projects.vars.state")}</Table.Head>
-                <Table.Head>{t("projects.vars.default")}</Table.Head>
+                <Table.Head className="c5">{t("projects.vars.default")}</Table.Head>
                 <Table.Head className="c5">{t("projects.vars.files")}</Table.Head>
               </Table.Row>
             </Table.Header>
@@ -203,7 +203,7 @@ export function FindingsPanel({ analysis: a, title }: { analysis: Analysis; titl
                 <Table.Row key={v.name}>
                   <Table.Cell className="hx-mono">{v.name}</Table.Cell>
                   <Table.Cell>{t(`projects.vars.states.${v.state}`, { defaultValue: v.state ?? "—" })}</Table.Cell>
-                  <Table.Cell className="hx-mono">{v.default || "—"}</Table.Cell>
+                  <Table.Cell className="c5 hx-mono">{v.default || "—"}</Table.Cell>
                   <Table.Cell className="c5 hx-mono">{(v.files ?? []).join(", ") || "—"}</Table.Cell>
                 </Table.Row>
               ))}

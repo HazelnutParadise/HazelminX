@@ -21,6 +21,7 @@
 }
 .hx-env-chips a {
   display: inline-flex;
+  white-space: nowrap;
   align-items: center;
   min-height: 24px;
   padding: 0 8px;
@@ -120,8 +121,10 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px 24px;
-  flex: 1 1 520px;
   margin: 0;
+}
+.hx-env-summary > .hx-env-facts {
+  flex: 1 1 520px;
 }
 .hx-env-facts dt {
   font-size: 12px;
@@ -242,6 +245,8 @@
 
 .hx-link-btn {
   display: inline-flex;
+  min-width: 44px;
+  white-space: nowrap;
   align-items: center;
   min-height: 24px;
   padding: 0;
@@ -314,6 +319,15 @@ textarea.hx-code-area {
 }
 
 @media (max-width: 767px) {
+  .hx-scope .c5,
+  .hx-projects .c5 {
+    display: none;
+  }
+  .hx-scope .hx-table .hx-mono,
+  .hx-projects .hx-mono {
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
   .hx-scope-body {
     padding: 10px;
   }
@@ -333,4 +347,12 @@ textarea.hx-code-area {
   .hx-env-chips a {
     min-height: 44px;
   }
+}
+
+.hx-projects td:first-child {
+  min-width: 9rem;
+}
+.hx-projects .hx-row-link {
+  overflow-wrap: normal;
+  word-break: keep-all;
 }

@@ -961,7 +961,7 @@
     "noEnvironments": "還沒有環境",
     "needWrite": "需要 projects:write 權限",
     "needDeploy": "需要 projects:deploy 權限",
-    "nameRule": "小寫英文字母開頭，只用小寫英文、數字與 -，最多 30 個字",
+    "nameRule": "小寫英文字母開頭，只用小寫英文、數字與 -（- 不能在最後），最多 30 個字",
     "nameInvalid": "名稱不符合規則",
     "empty": {
       "title": "還沒有專案",
@@ -1101,8 +1101,11 @@
         "fileTooBig": "單一檔案最大 {{max}}",
         "tooBig": "全部檔案合計最大 {{max}}",
         "extraMissing": "合併的檔案不在清單裡：{{files}}",
-        "noEngine": "選了主機就要選引擎環境"
-      }
+        "noEngine": "選了主機就要選引擎環境",
+        "unitName": "單元名稱不符合規則"
+      },
+      "unitName": "單元名稱",
+      "unitNameHint": "Compose 專案名稱會是 {{project}}，之後不能改"
     },
     "engineState": {
       "running": "執行中",

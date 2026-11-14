@@ -13,10 +13,8 @@ import { projectKeys, projectsApi, type Project } from "./api";
 import { PROJECTS_WRITE, useProjectPermission } from "./hooks";
 import { GuardedButton, ProjectError, When } from "./parts";
 import { envHref, projectHref } from "./paths";
+import { NAME_PATTERN } from "./names";
 import "./projects.css";
-
-/** Names Core accepts for projects and environments (spec 52.1): lowercase letter first, at most 30. */
-export const NAME_PATTERN = /^[a-z][a-z0-9-]{0,29}$/;
 
 /** Project list (board Projects「專案與服務」): every project the account can read, with its environments. */
 export function ProjectsPage() {

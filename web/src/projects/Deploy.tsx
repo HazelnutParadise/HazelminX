@@ -150,7 +150,6 @@ export function DeployPanel({ project: p, env, unit: u }: { project: Project; en
                   <dd>{pv.needsApproval ? t("projects.preview.needsApproval") : t("projects.preview.noApproval")}</dd>
                 </div>
               </dl>
-              {target?.reason && <p className="hx-raw hx-mono">{target.reason}</p>}
               {blockers.length > 0 && (
                 <ul className="hx-check-list" aria-label={t("projects.preview.blockers")}>
                   {blockers.map((b, i) => (
@@ -555,18 +554,26 @@ function JobPanel({
                       <span className="hx-mono hx-code">{s.error.code}</span>
                       <span className="hx-raw">{s.error.summary}</span>
                       {(s.error.evidence ?? []).length > 0 && (
-                        <pre className="hx-log">{(s.error.evidence ?? []).join("\n")}</pre>
+                        <pre className="hx-log" tabIndex={0}>
+                          {(s.error.evidence ?? []).join("\n")}
+                        </pre>
                       )}
                       {s.error.nothingChanged && <span className="hx-note">{t("projects.job.nothingChanged")}</span>}
                     </div>
                   )}
-                  {(s.logTail ?? []).length > 0 && <pre className="hx-log">{(s.logTail ?? []).join("\n")}</pre>}
+                  {(s.logTail ?? []).length > 0 && (
+                    <pre className="hx-log" tabIndex={0}>
+                      {(s.logTail ?? []).join("\n")}
+                    </pre>
+                  )}
                 </li>
               ))}
             </ol>
-            {deploy && (j.state === "failed" || j.state === "needs_attention") && (
-              <Notice tone="danger">{t("projects.job.failedNoRollback")}</Notice>
-            )}
+            {deploy &&
+              (j.state === "failed" || j.state === "needs_attention") &&
+              !(j.steps ?? []).some((s) => s.error?.nothingChanged) && (
+                <Notice tone="danger">{t("projects.job.failedNoRollback")}</Notice>
+              )}
             {(j.completion?.checks ?? []).length > 0 && (
               <ul className="hx-check-list">
                 {(j.completion?.checks ?? []).map((c) => (

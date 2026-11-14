@@ -26,6 +26,7 @@ import { PROJECTS_WRITE, useProjectPermission } from "./hooks";
 import { GuardedButton, Panel, ProjectError } from "./parts";
 import { bytes } from "./format";
 import { envHref } from "./paths";
+import { NAME_PATTERN } from "./names";
 
 /** One file in the editor. A stored secret file has no content here: it is kept unless replaced. */
 interface DraftFile {
@@ -74,6 +75,7 @@ export function UnitEditor({ project: p, env, current }: { project: Project; env
   const [mainFile, setMainFile] = useState(current?.mainFile ?? "");
   const [extra, setExtra] = useState((current?.extraFiles ?? []).join(", "));
   const [profiles, setProfiles] = useState((current?.profiles ?? []).join(", "));
+  const [unitName, setUnitName] = useState(current?.name ?? "app");
   const [workingDir, setWorkingDir] = useState(current?.workingDir ?? "");
   const [nodeId, setNodeId] = useState(current?.target?.nodeId ?? "");
   const [engineEnv, setEngineEnv] = useState(current?.target?.engineEnvironmentId ?? "");
@@ -96,15 +98,18 @@ export function UnitEditor({ project: p, env, current }: { project: Project; env
   if (total > LIMITS.unitBytes) problems.push(t("projects.editor.problem.tooBig", { max: bytes(LIMITS.unitBytes) }));
   const missingExtra = splitList(extra).filter((x) => !paths.includes(x));
   if (missingExtra.length) problems.push(t("projects.editor.problem.extraMissing", { files: missingExtra.join(", ") }));
+  if (!NAME_PATTERN.test(unitName)) problems.push(t("projects.editor.problem.unitName"));
   if (nodeId && !engineEnv) problems.push(t("projects.editor.problem.noEngine"));
 
   const input = (): UnitInput => ({
+    name: unitName,
     source: uploaded ? "upload" : current?.source && !uploaded ? current.source : "editor",
     mainFile: main,
     extraFiles: splitList(extra),
     profiles: splitList(profiles),
     workingDir: workingDir.trim() || undefined,
-    target: { nodeId, engineEnvironmentId: nodeId ? engineEnv : "" },
+    // Core takes no target (null) until a host is chosen, or both fields.
+    target: (nodeId ? { nodeId, engineEnvironmentId: engineEnv } : null) as UnitInput["target"],
     files: files.map((f): FileInput =>
       f.stored && f.content === ""
         ? { path: f.path.trim(), secret: true, unchanged: true }
@@ -169,7 +174,7 @@ export function UnitEditor({ project: p, env, current }: { project: Project; env
               id={uploadId}
               type="file"
               multiple
-              className="hx-visually-hidden"
+              hidden
               onChange={(e) => void readFiles(e.target.files)}
             />
             <Button
@@ -256,6 +261,15 @@ export function UnitEditor({ project: p, env, current }: { project: Project; env
 
       <Panel id="hx-editor-options" title={t("projects.editor.options")}>
         <div className="hx-panel-body hx-form hx-form-grid">
+          <Input
+            label={t("projects.editor.unitName")}
+            description={t("projects.editor.unitNameHint", { project: `${p.name}-${env.name}-${unitName}` })}
+            value={unitName}
+            className="hx-mono"
+            spellCheck={false}
+            disabled={!!current}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUnitName(e.target.value)}
+          />
           <Select
             label={t("projects.editor.mainFile")}
             items={paths.filter(Boolean).map((x) => ({ value: x, label: x }))}

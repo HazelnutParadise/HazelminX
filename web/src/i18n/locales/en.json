@@ -984,7 +984,7 @@
     "noEnvironments": "No environments yet",
     "needWrite": "Needs projects:write",
     "needDeploy": "Needs projects:deploy",
-    "nameRule": "Starts with a lowercase letter; lowercase letters, digits and -; at most 30",
+    "nameRule": "Starts with a lowercase letter; lowercase letters, digits and - (not last); at most 30",
     "nameInvalid": "The name does not follow the rule",
     "empty": {
       "title": "No projects yet",
@@ -1124,8 +1124,11 @@
         "fileTooBig": "One file is at most {{max}}",
         "tooBig": "All files together are at most {{max}}",
         "extraMissing": "Merged files not in the list: {{files}}",
-        "noEngine": "Choose an engine environment for the host"
-      }
+        "noEngine": "Choose an engine environment for the host",
+        "unitName": "The unit name does not follow the rule"
+      },
+      "unitName": "Unit name",
+      "unitNameHint": "The Compose project name will be {{project}} and cannot change later"
     },
     "engineState": {
       "running": "running",
