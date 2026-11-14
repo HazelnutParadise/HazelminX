@@ -4724,7 +4724,7 @@ def compose_compat() -> str:
       {it(blk, "compose.yml:79", "mysql 的資料目錄 /mnt/ssd1/n8n-stack/mysql 不存在", "Docker 會建空目錄，mysql 初始化成新的空資料庫", '<span class="wrap"><button type="button" class="btn sm">選既有路徑</button><button type="button" class="btn sm">從別台搬資料</button><button type="button" class="btn sm">從空的開始</button></span>')}
       {it(blk, "compose.yml:5、8", "production 的 n8n 單元也用這份 compose.yml", "同一台 tw-01：container_name n8n、Port 5678 會衝突", '<span class="wrap"><button type="button" class="btn sm">改成 n8n-staging</button><a class="btn sm" href="UnitConfig.dc.html">改部署到其他主機</a></span>')}
       {it(wrn, "compose.yml:31", "外部網路 infra-net 不存在", "compose 會直接失敗", '<span class="wrap">' + _seg(["建立", "對應到既有", "改用依賴連線"], 0, "infra-net") + '</span>')}
-      {it(wrn, "compose.yml:24、45、71", "4 個寫死的機密 · MYSQL_ROOT_PASSWORD 等", "能讀 repo 的人都看得到", '<button type="button" class="btn sm">移到平台變數</button>')}
+      {it(wrn, "compose.yml:24、45、71", "4 個看起來是機密的值 · MYSQL_ROOT_PASSWORD 等", "依變數名稱判斷 · 能讀 repo 的人都看得到", '<button type="button" class="btn sm">移到平台變數</button>')}
       {it(wrn, "compose.yml:8、96", "Port 5678、5679 開到所有位址", "繞過 Zentinel 與防火牆", '<button type="button" class="btn sm">改綁 127.0.0.1</button>')}
       {it(ok, "compose.yml:91", "phpmyadmin:latest 浮動標籤", "部署時記下 digest sha256:9c1e…", '<span class="note">回滾回到同一個 digest</span>')}
       {it(ok, "compose.yml:44", "task-runners 在主機上建置", "映像標成 hzx/n8n-stack/task-runners:4d81a2c3e9f0", '<span class="note">回滾不必重建</span>')}"""
@@ -4733,7 +4733,7 @@ def compose_compat() -> str:
       <div class="row hd"><span>這個專案</span><span>依賴</span><span>經由</span><span class="c3">依據</span></div>
       <div class="row"><span class="mono">n8n</span><span><a href="ProjectDetail.dc.html">whisper-api</a> · whisper-gateway</span><span class="mono">infra-net</span><span class="c3 mono">WHISPER_URL=http://whisper-gateway:5000</span></div>
       <div class="row"><span class="mono">n8n</span><span><a href="AI.dc.html">ollama</a></span><span class="mono">infra-net</span><span class="c3 mono">OLLAMA_URL=http://ollama:11434</span></div>
-      <div style="padding:8px 14px 12px" class="note">停止、改名或搬移這兩個，影響預覽會列出 n8n-stack</div>""")
+      <div style="padding:8px 14px 12px" class="note">依共用網路上的服務名稱出現在變數裡判斷 · 停止、改名或搬移這兩個，影響預覽會列出 n8n-stack</div>""", extra='<button type="button" class="btn sm" style="margin-left:auto">這不是依賴</button>')
     mounts = _fp("掛載路徑 · tw-01", f"""
       <div class="row hd"><span>主機路徑</span><span>掛到</span><span>磁碟</span><span>狀態</span></div>
       <div class="row"><span class="mono">/mnt/ssd1/n8n-stack/n8n</span><span class="mono">n8n:/home/node/.n8n</span><span class="mono">nvme1n1</span><span>{U.status("ok", "存在 · 2.1 GiB")}</span></div>
