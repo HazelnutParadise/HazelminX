@@ -4342,7 +4342,7 @@ def project_triggers() -> str:
       {env("preview", '<span class="wrap"><span class="chip on">符合規則的標籤</span><span class="mono">v*</span></span>', U.status("info", "定期檢查"), "5 分鐘", "暫停等批准", False)}
 """)
     edit = _fp("production · 觸發設定", _grid(
-        _fld("觸發來源", _seg(["單一分支", "符合規則的分支", "符合規則的標籤"], 0, "觸發來源"), "單一分支：只聽 main 這種固定的分支。符合規則的分支：寫 release/*，推到 release/1.9、release/2.0 都會部署。符合規則的標籤：寫 v*，推上 v1.9.0 這種版本標籤才部署", wide=True),
+        _fld("觸發來源", _seg(["單一分支", "符合規則的分支", "符合規則的標籤"], 0, "觸發來源"), "單一分支：只聽 main 這種固定的分支。符合規則的分支：寫 release/*，推到 release/1.9、release/2.0 都會部署。符合規則的標籤：寫 v*，推上 v1.9.0 這種版本標籤才部署。規則的寫法選了之後會列出來", wide=True),
         _fld("分支", _dd("main")),
         _fld("方式", _seg(["Webhook（推薦）", "定期檢查"], 0, "方式"), "Webhook 需要 GitHub 能連到 hook.example.tw"),
         _fld("部署中又收到 push", _seg(["只保留最新的（推薦）", "依序全部部署"], 0, "連續推送")),
@@ -4367,7 +4367,28 @@ def project_triggers() -> str:
       {ev("02:10", "ann → release/1.9", "e02b55f", "release 1.9.0", "ok", "已部署", "部署到 staging")}
       {ev("11/07 22:04", "tim → main", "a1b2c3d", "wip [skip deploy]", "none", "略過", "commit 訊息有 [skip deploy]")}
       {ev("11/07 18:30", "tim → main", "77f0c1a", "hotfix", "none", "略過", "production 的自動部署已暫停 · 可以手動部署這個 commit")}""", sub="結果只有已部署、部署中、等批准、失敗、略過五種；滑過看原因", extra='<a class="more" href="WorkCenter.dc.html">工作中心 →</a>')
-    main = head + envs + f'<div class="cg">{edit}{paths}</div>' + log
+    def syn(sym, mean, ex):
+        return f'<div class="row"><span class="mono">{sym}</span><span>{mean}</span><span class="mono c3">{ex}</span></div>'
+    rule_help = f"""
+      <div class="row hd"><span>寫法</span><span>意思</span><span class="c3">例子</span></div>
+      {syn("*", "任意文字，但不跨過 /", "release/* 符合 release/1.9，不符合 release/1.9/hotfix")}
+      {syn("**", "任意文字，可以跨過 /", "feature/** 符合 feature/cart/coupon")}
+      {syn("?", "剛好一個字", "v1.? 符合 v1.9，不符合 v1.10")}
+      {syn("!", "寫在最前面：排除", "!release/old-* 把舊的版本分支排除")}
+      {syn("換行", "一行一條，符合任何一條就算", "")}"""
+    rule_box = ('<div class="inp" style="align-items:flex-start;min-height:64px"><span class="mono" style="flex:1;min-width:0;white-space:pre-line">release/*\n!release/old-*</span></div>'
+                '<div class="wrap" style="margin-top:8px;font-size:12px"><span style="color:var(--muted)">常用，點了填入</span>'
+                '<button type="button" class="btn sm mono">release/*</button><button type="button" class="btn sm mono">feature/**</button><button type="button" class="btn sm mono">hotfix-*</button></div>')
+    match = (f'<div class="wrap">{U.status("ok", "符合 3 個分支")}<span class="mono">release/1.8</span><span class="mono">release/1.9</span><span class="mono">release/2.0</span></div>'
+             f'<div style="font-size:13px;margin-top:8px">會部署最新被推送的那一個，現在是 <span class="mono">release/2.0</span></div>'
+             f'<div style="font-size:13px;margin-top:4px;color:var(--muted)">被排除 1 個：<span class="mono">release/old-1.2</span></div>'
+             f'<div class="wrap" style="margin-top:8px">{U.status("ok", "沒有和其他環境的規則重疊")}</div>')
+    edit2 = _fp("staging · 觸發設定", _grid(
+        _fld("觸發來源", _seg(["單一分支", "符合規則的分支", "符合規則的標籤"], 1, "觸發來源 staging")),
+        _fld("分支規則", rule_box),
+        _fld("現在符合的分支", match), minw=300) + rule_help,
+        sub="選「符合規則的分支」或「符合規則的標籤」時，規則的寫法直接列在下面")
+    main = head + envs + f'<div class="cg">{edit}{paths}</div>' + edit2 + log
     return U.shell("projects", main)
 
 
