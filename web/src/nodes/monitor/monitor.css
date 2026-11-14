@@ -85,7 +85,7 @@
 }
 .hx-bar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(60px, 0.8fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas: "name value" "meter meter";
   align-items: center;
   gap: 4px 12px;
@@ -109,6 +109,7 @@
   gap: 4px;
   text-align: right;
   font-size: 13px;
+  white-space: nowrap;
 }
 .hx-bars-more summary {
   min-height: 24px;
@@ -418,4 +419,17 @@
 }
 .hx-chart {
   margin: 0;
+}
+
+/* Phones: every control is a 44px touch target (DESIGN.md 斷點). */
+@media (max-width: 767px) {
+  .hx-seg button,
+  .hx-chart-tablebtn,
+  .hx-bars-more summary,
+  .hx-mon-pick select {
+    min-height: 44px;
+  }
+  .hx-bars-more summary {
+    line-height: 44px;
+  }
 }

@@ -21,6 +21,8 @@ interface Props {
   format: (v: number) => string | null;
   /** Fixed top of the Y axis (100 for percent); otherwise from the data. */
   yMax?: number;
+  /** Smallest top from the data, so near-zero values do not give an axis of identical rounded labels. */
+  minTop?: number;
   /** The newest sample is older than three intervals: its point is drawn hollow (DESIGN.md 過期尾段). */
   stale?: boolean;
   /** Under the chart: units and what the series cover. */
@@ -57,6 +59,7 @@ export function TimeChart({
   error,
   partial,
   extra,
+  minTop = 0,
 }: Props) {
   const { t } = useTranslation();
   const id = useId();
@@ -67,7 +70,7 @@ export function TimeChart({
     if (yMax != null) return yMax;
     let m = 0;
     for (const s of series) for (const p of s.points) m = Math.max(m, p.value);
-    return niceMax(m);
+    return niceMax(Math.max(m, minTop));
   }, [series, yMax]);
   const x = (ms: number) => ((ms - from) / span) * W;
   const y = (v: number) => H - (Math.min(Math.max(v, 0), top) / top) * H;

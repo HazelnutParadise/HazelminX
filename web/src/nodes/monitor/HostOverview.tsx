@@ -40,7 +40,8 @@ export function HostOverview({ node }: { node: Node }) {
   const facts = useQuery({
     queryKey: monitorKeys.facts(node.id),
     queryFn: () => monitorApi.facts(node.id),
-    refetchInterval: FACTS_MS,
+    // Until the agent's first report, read as often as the metrics so a host that just connected fills in.
+    refetchInterval: (q) => (q.state.data?.reported ? FACTS_MS : REFRESH_MS),
   });
   const latest = useQuery({
     queryKey: monitorKeys.latest(node.id),
@@ -225,8 +226,8 @@ function ExhaustionNotice({ x }: { x: Exhaustion }) {
     );
   for (const fs of x.filesystems ?? []) {
     if (!fs) continue;
+    // A read-only mount is often meant to be (snap images, ISO); it is tagged on its row, not alarmed here.
     if (fs.inodesExhausted) items.push(t("nodes.monitor.x.inodes", { mount: fs.mountPoint }));
-    if (fs.readOnly) items.push(t("nodes.monitor.x.readOnly", { mount: fs.mountPoint }));
   }
   if (items.length === 0) return null;
   return (
@@ -347,7 +348,7 @@ function Hardware({ sample: s, exhaustion: x }: { sample: Sample; exhaustion: Ex
           ),
         flag: (
           <>
-            {f.readOnly && <StatusPill tone="danger">{t("nodes.monitor.readOnly")}</StatusPill>}
+            {f.readOnly && <StatusPill tone="warn">{t("nodes.monitor.readOnly")}</StatusPill>}
             {st?.inodesExhausted && <StatusPill tone="danger">{t("nodes.monitor.inodesFull")}</StatusPill>}
           </>
         ),
@@ -414,7 +415,14 @@ function Hardware({ sample: s, exhaustion: x }: { sample: Sample; exhaustion: Ex
       key: "files",
       name: t("nodes.monitor.fileHandles"),
       pct: x?.fileHandles?.percent ?? null,
-      value: x?.fileHandles?.percent == null ? <NotProvided /> : `${x.fileHandles.used} / ${x.fileHandles.limit}`,
+      value:
+        x?.fileHandles?.percent == null ? (
+          <NotProvided />
+        ) : (x.fileHandles.limit ?? 0) > Number.MAX_SAFE_INTEGER ? (
+          t("nodes.monitor.noLimit", { used: x.fileHandles.used })
+        ) : (
+          `${x.fileHandles.used} / ${x.fileHandles.limit}`
+        ),
     },
   ];
   const mp = x?.memoryPressure;
@@ -666,6 +674,7 @@ function Charts({ nodeId, latest }: { nodeId: string; latest?: LatestMetrics }) 
             { series: "memory.availableBytes", name: t("nodes.monitor.available"), color: 3 },
           ]}
           format={bytes}
+          minTop={2 ** 30}
           note={t("nodes.monitor.memNote")}
         />
         <SeriesChart
@@ -686,6 +695,7 @@ function Charts({ nodeId, latest }: { nodeId: string; latest?: LatestMetrics }) 
               : []
           }
           format={rate}
+          minTop={1024}
         />
         <SeriesChart
           nodeId={nodeId}
@@ -703,6 +713,7 @@ function Charts({ nodeId, latest }: { nodeId: string; latest?: LatestMetrics }) 
               : []
           }
           format={rate}
+          minTop={1024}
           note={t("nodes.monitor.netNote")}
         />
         <SeriesChart
@@ -716,7 +727,8 @@ function Charts({ nodeId, latest }: { nodeId: string; latest?: LatestMetrics }) 
             { series: "load.five", name: t("nodes.monitor.load5"), color: 2 },
             { series: "load.fifteen", name: t("nodes.monitor.load15"), color: 3 },
           ]}
-          format={(v) => num(v, 1)}
+          format={(v) => num(v, 2)}
+          minTop={1}
         />
         <SeriesChart
           nodeId={nodeId}
@@ -731,6 +743,7 @@ function Charts({ nodeId, latest }: { nodeId: string; latest?: LatestMetrics }) 
             color: (i + 1) as 1 | 2 | 3 | 4,
           }))}
           format={celsius}
+          minTop={100}
           note={temps.length ? t("nodes.monitor.tempNote") : undefined}
         />
       </div>

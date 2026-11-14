@@ -231,6 +231,28 @@ describe("host overview: exhaustion and hardware", () => {
     expect(screen.queryByText("有資源快用完了")).not.toBeInTheDocument();
   });
 
+  it("tags a read-only filesystem on its row without calling it a resource running out", async () => {
+    const l = latest();
+    l.exhaustion.pids.exceeded = false;
+    l.exhaustion.filesystems = [{ ...l.exhaustion.filesystems[0]!, inodesExhausted: false, readOnly: true }];
+    const s = l.sample as ReturnType<typeof sample>;
+    s.filesystems = [{ ...s.filesystems[0]!, readOnly: true }];
+    coreWith({ l });
+    renderAt("/nodes/tw-01");
+    const fs = await panel("檔案系統");
+    expect(within(fs).getByText("唯讀")).toBeInTheDocument();
+    expect(screen.queryByText("有資源快用完了")).not.toBeInTheDocument();
+  });
+
+  it("shows the kernel's unlimited file-max as no limit instead of a mangled 2^63", async () => {
+    const l = latest();
+    l.exhaustion.fileHandles = { ...l.exhaustion.fileHandles, limit: 9223372036854775807, percent: 0 };
+    coreWith({ l });
+    renderAt("/nodes/tw-01");
+    const lim = await panel("系統上限");
+    expect(within(lim).getByText("100 · 沒有上限")).toBeInTheDocument();
+  });
+
   it("lists the four busiest cores and folds the rest under 「全部 8 個」", async () => {
     coreWith();
     renderAt("/nodes/tw-01");
@@ -356,6 +378,8 @@ describe("host overview: history", () => {
     const fig = await chart("負載平均");
     expect(await within(fig).findByText("這段時間沒有資料")).toBeInTheDocument();
     expect(fig.querySelector("path.hx-chart-line")!.getAttribute("d")).toBe("");
+    const labels = [...fig.querySelectorAll(".hx-chart-ylabel")].map((e) => e.textContent);
+    expect(new Set(labels).size, labels.join(",")).toBe(5);
   });
 
   it("reads the disk and interface the latest sample named", async () => {

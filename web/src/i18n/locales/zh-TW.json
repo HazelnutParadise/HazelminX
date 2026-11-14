@@ -761,8 +761,7 @@
         "pids": "程序數用了 {{pct}}，超過 {{limit}}%，再多就無法建立新程序",
         "files": "檔案控制代碼用了 {{pct}}，超過 {{limit}}%",
         "pressure": "記憶體壓力 {{pct}}，超過 {{limit}}%，程式常在等記憶體",
-        "inodes": "{{mount}} 的 inode 用盡：還有空間，但無法建立新檔案",
-        "readOnly": "{{mount}} 是唯讀，無法寫入"
+        "inodes": "{{mount}} 的 inode 用盡：還有空間，但無法建立新檔案"
       },
       "history": "趨勢",
       "range": "時間範圍",
@@ -800,7 +799,8 @@
       "showTable": "表格檢視",
       "hideTable": "收起表格",
       "time": "時間",
-      "afterGap": "（前面有缺口）"
+      "afterGap": "（前面有缺口）",
+      "noLimit": "{{used}} · 沒有上限"
     }
   }
 }
