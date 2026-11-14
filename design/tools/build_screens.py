@@ -638,7 +638,7 @@ def login() -> str:
         {field("密碼", "密碼", typ="password", val="••••••••••")}
         <button type="button" class="btn pri" style="min-height:40px">繼續</button>
         <div style="display:flex;align-items:center;gap:10px" class="note"><span style="flex:1;border-top:1px solid var(--line)"></span>或<span style="flex:1;border-top:1px solid var(--line)"></span></div>
-        <button type="button" class="btn" style="min-height:40px">以公司帳號登入（OIDC）</button>
+        <button type="button" class="btn" style="min-height:40px">以 Hazelnut 帳號登入</button>
         <details><summary class="note" style="cursor:pointer">無法登入？</summary>
           <ul class="keep" style="margin:8px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:13px"><li>忘記二次驗證：第二步選「使用復原碼」</li><li>忘記密碼：請管理員重設，或在主機上執行 <span class="mono">sudo hazelminx recover-login</span></li></ul></details>
       </section>"""
@@ -2005,6 +2005,73 @@ def change_safety() -> str:
       </div>""")
     main = head + f'<div class="cg">{ver}{waiting}</div>' + preview + cd
     return U.shell("security", main)
+
+
+# ---------- 公司帳號登入（增補 10，票 127） ----------
+def oidc_setup() -> str:
+    copy = f'<button type="button" class="ib" aria-label="複製">{U.icon("copy")}</button>'
+    head = _form_head([("平台設定", "Settings.dc.html"), ("管理入口與安全", "Settings.dc.html")], "公司帳號登入",
+                      U.status("info", "還沒啟用") + '<a class="btn" href="Settings.dc.html">取消</a>')
+    conn = _fp("連到登入服務", _grid(
+        _fld("發行者網址", _in("https://login.example.tw", mono=True), "其他端點會從這個網址自動讀出來", wide=True),
+        _fld("讀取結果", f'<div class="wrap">{U.status("ok", "讀到登入服務的設定")}<span class="mono" style="font-size:12px">03:40:12</span></div>'),
+        _fld("用戶端 ID", _in("hazelminx-panel", mono=True)),
+        _fld("用戶端密鑰", _in("••••••••••••", mono=True, tail='<button type="button" class="btn sm">更換</button>'), "存在機密庫，儲存後不再顯示"),
+        _fld("登入頁按鈕上的名稱", _in("Hazelnut 帳號"), "按鈕會寫「以 Hazelnut 帳號登入」"),
+        _fld("回呼網址", _in("https://panel.example.tw/auth/oidc/callback", mono=True, tail=copy), "複製後貼到登入服務那一邊", wide=True),
+        _fld("群組欄位", _in("groups", mono=True), "登入服務用哪個欄位回傳群組")), sub="OpenID Connect")
+    test = _fp("測試登入", f"""
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:12px">
+        <div class="wrap"><button type="button" class="btn pri">再測一次</button>{U.status("ok", "測試成功 · 03:41")}</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:10px 16px;font-size:13px">
+          {kv("固定編號", '<span class="mono" style="overflow-wrap:anywhere">auth0|6f2c91b7e04a</span>')}
+          {kv("Email", '<span class="mono">tim@hazelnut.tw</span> ' + U.status("ok", "已驗證"))}
+          {kv("群組", '<span class="mono">ops、platform-admins</span>')}
+          {kv("登入後會得到", "維運者 · 全部主機")}
+          {kv("二次驗證", '<span class="note">登入服務沒有回報</span>')}
+        </div>
+        <label class="wrap" style="flex-wrap:nowrap;border-top:1px solid var(--line);padding-top:12px"><input type="checkbox" aria-label="啟用公司帳號登入">啟用公司帳號登入</label>
+      </div>""")
+    who = _fp("誰可以登入", _grid(
+        _fld("新的人", _seg(["只有被邀請的人", "符合條件就自動建立帳號"], 0, "誰可以登入")),
+        _fld("允許的 email 網域", _in("選自動建立時才要填", ph=True)),
+        _fld("已綁定的帳號", '<div class="wrap"><span class="mono">2 個</span><a class="btn sm" href="IAM.dc.html">看是誰</a></div>')))
+    def mp(group, role, scope, n):
+        return f'<div class="row cols-5"><span class="mono">{group}</span><span>{role}</span><span class="c3">{scope}</span><span class="mono">{n}</span><span>{U.actions(["rename", "trash"])}</span></div>'
+    def ch(who_, kind, text, change):
+        return f'<div class="row cols-3"><span class="mono">{who_}</span><span>{U.status(kind, text)}</span><span>{change}</span></div>'
+    mapping = _fp("群組對應到角色", f"""
+      <div class="row hd cols-5"><span>群組</span><span>角色</span><span class="c3">範圍</span><span>目前幾人</span><span></span></div>
+      {mp("ops", "維運者", "全部主機", "2")}
+      {mp("shop-dev", "部署者", "專案 shop", "1")}
+      <div class="wrap" style="padding:10px 14px"><button type="button" class="btn sm">{U.icon("plus", 14)}新增對應</button>{U.status("info", "擁有者只能手動指派，不能用對應給出")}</div>
+      <div class="ph" style="border-top:1px solid var(--line)"><h2>儲存後誰的權限會變</h2></div>
+      <div class="row hd cols-3"><span>帳號</span><span>變化</span><span>內容</span></div>
+      {ch("ops-ann", "warn", "變多", "加上 部署者 · 專案 shop")}
+      {ch("mei", "ok", "不變", "維運者 · 全部主機")}""", extra='<button type="button" class="btn sm" style="margin-left:auto">用群組試算</button>')
+    mfa = _fp("二次驗證與登入期限", _grid(
+        _fld("二次驗證", _seg(["平台自己做", "登入服務做過就不再問"], 0, "二次驗證")),
+        _fld("登入後多久要重新登入", _dd("12 小時"), "對方在公司被停用後，最晚這麼久會被擋下")))
+    rescue = _fp("登入服務出問題時", f"""
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">
+        {_chk("ok", "帳號密碼登入永遠可用", "登入頁不會只剩公司帳號", "")}
+        {_chk("ok", "本機擁有者 2 個", "tim、rescue · 最後一個不能刪除或停權", '<a href="IAM.dc.html">看帳號</a>')}
+      </div>""")
+    card = "background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0"
+    def box(title, body):
+        return f'<section style="{card}"><h2 style="font-size:14px">{title}</h2>{body}</section>'
+    btn = 'min-height:40px;width:100%;justify-content:center'
+    s_err = box("發行者網址連不上", _grid(_fld("發行者網址", _in("https://login.example.tw", mono=True)), minw=200)
+                + f'<div class="wrap">{U.status("dng", "解析不到 login.example.tw")}<button type="button" class="btn sm">再試一次</button></div>')
+    s_notest = box("還沒測試就想啟用", f'<label class="wrap" style="flex-wrap:nowrap"><input type="checkbox" disabled aria-label="啟用公司帳號登入">啟用公司帳號登入</label><div class="wrap">{U.status("warn", "要先測試登入成功一次")}</div>')
+    s_btn = box("登入頁的按鈕", f'<button type="button" class="btn" style="{btn}">以 Hazelnut 帳號登入</button><div class="wrap">{U.status("info", "沒有設定或沒有啟用時不顯示")}</div>')
+    s_down = box("登入服務不能用", f'<button type="button" class="btn" style="{btn}" disabled>以 Hazelnut 帳號登入</button><div class="wrap">{U.status("warn", "公司帳號登入目前不能用")}</div><div style="font-size:12px;color:var(--muted)">帳號密碼照常可以登入</div>')
+    s_none = box("公司帳號還沒被加入", f'<div style="border:1px dashed var(--line);border-radius:8px;padding:20px;display:flex;flex-direction:column;gap:8px;align-items:flex-start"><strong>這個公司帳號還沒有被加入 HazelminX</strong><span class="mono" style="font-size:13px">bob@example.tw</span><span style="font-size:13px">請管理員邀請你：tim@hazelnut.tw</span><a class="btn" href="Login.dc.html">回登入頁</a></div>')
+    s_issuer = box("改發行者網址", f'<div class="wrap">{U.status("warn", "2 個已綁定的帳號要重新綁定")}</div><div style="font-size:13px"><span class="mono">ops-ann、mei</span> 不能再用公司帳號登入，直到重新綁定</div><div class="wrap"><button type="button" class="btn">取消</button><button type="button" class="btn dng">確認更改</button></div>')
+    states = ('<h2 style="font-size:13px;color:var(--muted);letter-spacing:.04em">各種狀態</h2><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:16px">'
+              + s_btn + s_down + s_none + s_notest + s_err + s_issuer + "</div>")
+    main = head + conn + f'<div class="cg">{test}{who}</div>' + mapping + f'<div class="cg">{mfa}{rescue}</div>' + _bar(_submit("儲存")) + states
+    return U.shell("settings", main)
 
 
 # ---------- 外殼的各種狀態（票 005 設計缺口） ----------
@@ -4677,6 +4744,7 @@ SCREENS = {
     "ChangeSafety": ("變更前後的檢查", change_safety, 1440, 1500),
     "ShellStates": ("外殼的各種狀態", shell_states, 1440, 1800),
     "Settings": ("平台設定", settings, 1440, 2600),
+    "OidcSetup": ("平台設定 › 公司帳號登入", oidc_setup, 1440, 2000),
     "Logs": ("日誌", logs, 1440, 2200),
     "AppSettings": ("nextcloud · 網路與掛載", app_settings, 1440, 1300),
     "AppInstall": ("安裝應用（1Panel 市集）", app_install, 1440, 1800),
