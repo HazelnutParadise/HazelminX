@@ -116,8 +116,8 @@ func (h *composeDeployRoutes) list(c *gin.Context) {
 		return
 	}
 	// A row still running whose job has ended (failed, cancelled, waiting
-	// for a person) is shown as failed with the job's reason: its outcome
-	// is not "running", and the job holds the detail.
+	// for a person) is failed with the job's reason: its outcome is not
+	// "running", and the job holds the detail.
 	for i := range list {
 		if list[i].State != composedeploy.StateRunning {
 			continue
@@ -131,6 +131,11 @@ func (h *composeDeployRoutes) list(c *gin.Context) {
 			list[i].State = composedeploy.StateFailed
 			list[i].ErrorCode = "JOB_" + strings.ToUpper(string(j.State))
 			list[i].ErrorMessage = j.StateReason
+			// Record it, so every reader (NOD-008 among them) agrees.
+			if err := h.d.Store.Finish(c.Request.Context(), list[i].JobID, list[i].State, nil, list[i].ErrorCode, list[i].ErrorMessage); err != nil {
+				fail(c, CodeInternal, "internal error")
+				return
+			}
 		}
 	}
 	c.JSON(http.StatusOK, composeDeploymentsResponse{Deployments: list})

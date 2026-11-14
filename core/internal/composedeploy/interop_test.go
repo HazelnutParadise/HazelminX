@@ -299,7 +299,7 @@ func TestInteropDeploysThroughTheRealAgentExecutorAndDocker(t *testing.T) {
 	// setting without the owner's approval is refused on the host.
 	files7 := map[string][]byte{
 		"compose.yaml": []byte("services:\n  web:\n    image: busybox:1.37\n    command: [\"sleep\", \"3600\"]\n" +
-			"    volumes:\n      - ${SRC:-./d1}:/h1\n      - ${HOME:-./d2}/x:/h2\n"),
+			"    volumes:\n      - ${SRC:-./d1}:/h1\n      - ${HOME:-./d2}/x:/h2\n      - ${DOCKER_CONFIG:-./d3}:/h3\n      - ${PATH:-./d4}:/h4\n"),
 		".env":             []byte("SRC=/etc\n"),
 		"deploy/prod.yaml": []byte("services: {}\n"),
 	}
@@ -308,7 +308,8 @@ func TestInteropDeploysThroughTheRealAgentExecutorAndDocker(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(string(res), "/etc") || strings.Contains(string(res), "/root") || !strings.Contains(string(res), `"d1"`) {
+	if strings.Contains(string(res), "/etc") || strings.Contains(string(res), "/root") || strings.Contains(string(res), "/usr") ||
+		!strings.Contains(string(res), `"d1"`) || !strings.Contains(string(res), `"d4"`) {
 		t.Fatalf(".env or HOME reached the executor's interpolation: %s", res)
 	}
 	files8 := map[string][]byte{"compose.yaml": []byte("services:\n  web:\n    image: busybox:1.37\n    privileged: true\n    volumes: [/etc:/h:ro]\n"),

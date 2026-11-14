@@ -553,12 +553,16 @@ pub fn parse_config(v: &Value, dir: &Path) -> Result<Resolved, String> {
 /// out in `dir`, in a clean environment.
 fn compose(docker: &Path, sock: &Path, dir: &Path, m: &ComposeManifest) -> CommandSpec {
     let pdir = m.project_dir();
+    // An empty environment and no .env: Compose substitutes variables from
+    // the process environment, so it must see exactly what Core analysed
+    // (044.1 reads no .env and no environment). The engine and root's
+    // Docker config (registry credentials) are CLI flags, not variables.
     let mut spec = CommandSpec::new(docker)
-        .env("DOCKER_HOST", format!("unix://{}", sock.display()))
-        // No HOME and no .env: Compose interpolates exactly what Core
-        // analysed (044.1 reads no .env and no environment). Registry
-        // credentials come from root's Docker config.
-        .env("DOCKER_CONFIG", "/root/.docker")
+        .bare_env()
+        .arg("--host")
+        .arg(format!("unix://{}", sock.display()))
+        .arg("--config")
+        .arg("/root/.docker")
         .arg("compose")
         .arg("--env-file")
         .arg("/dev/null")
@@ -860,8 +864,11 @@ async fn host_checks(
             continue;
         }
         let spec = CommandSpec::new(docker)
-            .env("DOCKER_HOST", format!("unix://{}", sock.display()))
-            .env("DOCKER_CONFIG", "/root/.docker")
+            .bare_env()
+            .arg("--host")
+            .arg(format!("unix://{}", sock.display()))
+            .arg("--config")
+            .arg("/root/.docker")
             .arg("manifest")
             .arg("inspect")
             .arg(img);

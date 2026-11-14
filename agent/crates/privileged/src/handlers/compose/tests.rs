@@ -216,6 +216,10 @@ async fn compose_runs_with_fixed_arguments() {
     assert_eq!(
         args,
         [
+            "--host",
+            "unix:///var/run/docker.sock",
+            "--config",
+            "/root/.docker",
             "compose",
             "--env-file",
             "/dev/null",
@@ -232,13 +236,8 @@ async fn compose_runs_with_fixed_arguments() {
             "json"
         ]
     );
-    assert!(
-        call.env
-            .iter()
-            .any(|(k, v)| k == "DOCKER_HOST" && v == "unix:///var/run/docker.sock")
-    );
-    // No HOME: ~ and ${HOME} are not expanded to root's home.
-    assert!(!call.env.iter().any(|(k, _)| k == "HOME"));
+    // Nothing in the environment for Compose to substitute.
+    assert!(call.bare_env && call.env.is_empty());
 }
 
 #[test]

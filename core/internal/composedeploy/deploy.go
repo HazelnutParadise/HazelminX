@@ -377,7 +377,7 @@ func (d *Deployer) prepare(ctx context.Context, job *jobs.Job) (*prepared, error
 	// High-risk settings pass the executor only in a deployment whose plan
 	// an owner approved: the plan service requires the owner for any
 	// high-risk check, and the plan is bound to this unit version.
-	if job.Kind == KindDeploy && job.ChangePlanID != "" && job.Approver != "" {
+	if job.Kind == KindDeploy && job.ChangePlanID != "" && job.Approver != "" && job.Approver != plans.AutoApprover {
 		an, err := d.Units.AnalyzeUnit(ctx, u)
 		if err != nil {
 			return nil, err
