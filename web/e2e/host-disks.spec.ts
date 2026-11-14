@@ -30,6 +30,8 @@ async function scanScreen(page: Page, errors: string[], label: string, shot?: st
     expect(await scanIssues(page), `${label} @${width} ${mode}`).toEqual([]);
     if (shot) {
       mkdirSync(SHOTS, { recursive: true });
+      // The scan scrolls tables to reach their cells; photograph them as a reader first sees them.
+      await page.evaluate(() => document.querySelectorAll(".hx-table-wrap").forEach((w) => (w.scrollLeft = 0)));
       await page.screenshot({ path: join(SHOTS, `${shot}-${width}-${mode}.png`), fullPage: true });
     }
   }

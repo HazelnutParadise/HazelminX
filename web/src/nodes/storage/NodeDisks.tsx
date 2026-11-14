@@ -149,13 +149,17 @@ function Summary({ view: v }: { view: StorageView }) {
         <Stat
           label={t("nodes.disks.mounts")}
           value={mounts.length}
-          sub={[
-            t("nodes.disks.autoCount", { count: auto }),
-            conflicts ? t("nodes.disks.conflictCount", { count: conflicts }) : null,
-          ]
-            .filter(Boolean)
-            .join(" · ")}
-          tone={conflicts ? "danger" : undefined}
+          sub={
+            <>
+              {t("nodes.disks.autoCount", { count: auto })}
+              {conflicts > 0 && (
+                <>
+                  {" · "}
+                  <span className="is-danger">{t("nodes.disks.conflictCount", { count: conflicts })}</span>
+                </>
+              )}
+            </>
+          }
         />
         <Stat
           label={t("nodes.disks.byDeviceName")}
@@ -205,9 +209,9 @@ function NotRead({ reason }: { reason?: string | null }) {
   );
 }
 
-/** The mount on a block device: mountinfo names it `/dev/<name>` (or a mapper path ending in the name). */
-function mountOf(d: Device, mounts: MountView[]) {
-  return mounts.find((m) => m.device === `/dev/${d.name}` || m.device === d.name);
+/** The mount points on a block device; mountinfo names the device by its kernel name (`sdb1`). */
+function mountsOf(d: Device, mounts: MountView[]) {
+  return mounts.filter((m) => m.device === d.name || m.device === `/dev/${d.name}`).map((m) => m.mountPoint);
 }
 
 function DevicesPanel({ view: v }: { view: StorageView }) {
@@ -229,7 +233,7 @@ function DevicesPanel({ view: v }: { view: StorageView }) {
         </div>
       ) : (
         <div className="hx-table-wrap" tabIndex={0} role="group" aria-label={t("nodes.disks.scrollTable")}>
-          <Table className="hx-table">
+          <Table className="hx-table hx-disk-table">
             <Table.Header>
               <Table.Row>
                 <Table.Head>{t("nodes.disks.col.device")}</Table.Head>
@@ -243,7 +247,7 @@ function DevicesPanel({ view: v }: { view: StorageView }) {
             <Table.Body>
               {all.map((d) => {
                 const part = d.kind === "partition";
-                const m = mountOf(d, mounts);
+                const on = mountsOf(d, mounts);
                 const swap = swaps.find((s) => s.name === `/dev/${d.name}`);
                 const ids = [
                   d.fsUuid ? `UUID ${d.fsUuid}` : null,
@@ -262,11 +266,13 @@ function DevicesPanel({ view: v }: { view: StorageView }) {
                         {about && <div className="hx-sub hx-mono">{about}</div>}
                       </div>
                     </Table.Cell>
-                    <Table.Cell className="hx-mono">{bytes(d.sizeBytes) ?? <NotProvided />}</Table.Cell>
+                    <Table.Cell className="hx-mono hx-disk-nowrap">{bytes(d.sizeBytes) ?? <NotProvided />}</Table.Cell>
                     <Table.Cell className="hx-mono">
                       {d.fsType ?? (part ? "—" : t(`nodes.disks.class.${d.class}`, { defaultValue: d.class ?? "—" }))}
                     </Table.Cell>
-                    <Table.Cell className="hx-mono">{m?.mountPoint ?? (swap ? "swap" : "—")}</Table.Cell>
+                    <Table.Cell className="hx-mono hx-disk-pre">
+                      {on.length ? on.join("\n") : swap ? "swap" : "—"}
+                    </Table.Cell>
                     <Table.Cell className="hx-disk-c3">
                       {d.health ? (
                         d.health.state === "notCollected" ? (
@@ -343,11 +349,11 @@ function MountsPanel({ view: v }: { view: StorageView }) {
         </div>
       ) : (
         <div className="hx-table-wrap" tabIndex={0} role="group" aria-label={t("nodes.disks.scrollTable")}>
-          <Table className="hx-table">
+          <Table className="hx-table hx-disk-table">
             <Table.Header>
               <Table.Row>
                 <Table.Head>{t("nodes.disks.col.mountPoint")}</Table.Head>
-                <Table.Head>{t("nodes.disks.col.fs")}</Table.Head>
+                <Table.Head className="hx-disk-c3">{t("nodes.disks.col.fs")}</Table.Head>
                 <Table.Head>{t("nodes.disks.col.use")}</Table.Head>
                 <Table.Head>{t("nodes.disks.col.boot")}</Table.Head>
                 <Table.Head className="hx-disk-c5">{t("nodes.disks.col.config")}</Table.Head>
@@ -368,7 +374,7 @@ function MountsPanel({ view: v }: { view: StorageView }) {
                         <Reference mount={m} spec={cs[0]?.spec ?? m.source ?? ""} />
                       </div>
                     </Table.Cell>
-                    <Table.Cell className="hx-mono">
+                    <Table.Cell className="hx-mono hx-disk-c3">
                       {m.fsType}
                       {m.readOnly && <div className="hx-sub">{t("nodes.disks.readOnly")}</div>}
                     </Table.Cell>
@@ -415,7 +421,7 @@ function MountsPanel({ view: v }: { view: StorageView }) {
                       <div className="hx-name hx-mono">swap</div>
                       <div className="hx-sub hx-mono">{s.name}</div>
                     </Table.Cell>
-                    <Table.Cell className="hx-mono hx-disk-nowrap">
+                    <Table.Cell className="hx-mono hx-disk-nowrap hx-disk-c3">
                       {t(`nodes.disks.swapKind.${s.kind}`, { defaultValue: s.kind ?? "" })}
                     </Table.Cell>
                     <Table.Cell className="hx-mono">{bytes(s.sizeBytes) ?? <NotProvided />}</Table.Cell>
@@ -481,7 +487,7 @@ function ConflictsPanel({ view: v }: { view: StorageView }) {
   return (
     <Panel id="hx-disks-conflicts" title={t("nodes.disks.conflictsTitle", { count: list.length })}>
       <div className="hx-table-wrap" tabIndex={0} role="group" aria-label={t("nodes.disks.scrollTable")}>
-        <Table className="hx-table">
+        <Table className="hx-table hx-disk-table">
           <Table.Header>
             <Table.Row>
               <Table.Head>{t("nodes.disks.col.problem")}</Table.Head>

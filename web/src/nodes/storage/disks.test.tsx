@@ -248,6 +248,15 @@ describe("disks tab", () => {
     expect(within(p).getAllByText("健康", { exact: false })).toHaveLength(1); // the column head only
   });
 
+  it("lists every mount point on a device, as mountinfo names it by kernel name", async () => {
+    const bind = { ...view.mounts[0], mountPoint: "/srv/data", device: "sdb1", configs: [] };
+    coreWith({ ...view, mounts: [{ ...view.mounts[0], device: "sdb1" }, bind] });
+    renderAt("/nodes/tw-01/disks");
+    const p = await panel("磁碟與分割區");
+    const sdb1 = within(p).getByText("sdb1").closest("tr")!;
+    expect(within(sdb1).getByText(/\/mnt\/data\s+\/srv\/data/)).toBeInTheDocument();
+  });
+
   it("marks only the mount named by device name, and says where each mount is configured", async () => {
     coreWith(view);
     renderAt("/nodes/tw-01/disks");

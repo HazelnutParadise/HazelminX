@@ -25,7 +25,8 @@
   color: var(--text-color-kumo-subtle);
   overflow-wrap: anywhere;
 }
-.hx-disk-stat-sub.is-danger {
+.hx-disk-stat-sub.is-danger,
+.hx-disk-stat-sub .is-danger {
   color: var(--text-color-kumo-danger);
 }
 @media (max-width: 640px) {
@@ -153,11 +154,25 @@
   background: var(--hx-q1);
   box-shadow: inset 0 0 0 1px var(--color-kumo-line);
 }
-.hx-disk-nowrap {
+.hx-disk-nowrap,
+.hx-table td.hx-disk-nowrap {
   white-space: nowrap;
 }
 @media (max-width: 640px) {
-  .hx-disk-c3 {
+  .hx-disk-c3,
+  .hx-disk-use .hx-meter {
     display: none;
   }
+  .hx-disk-alerts .hx-status-pill {
+    word-break: keep-all;
+  }
+}
+.hx-disk-table .hx-name {
+  white-space: nowrap;
+}
+.hx-disk-table td:first-child {
+  min-width: 10rem;
+}
+.hx-table td.hx-disk-pre {
+  white-space: pre;
 }
