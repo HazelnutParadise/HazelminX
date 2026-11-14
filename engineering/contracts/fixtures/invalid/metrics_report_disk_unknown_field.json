@@ -1,0 +1,270 @@
+{
+  "type": "metrics_report",
+  "droppedSamples": 3,
+  "samples": [
+    {
+      "seq": 41,
+      "collectedAt": "2026-11-14T03:00:00Z",
+      "intervalSeconds": 10,
+      "cpu": {
+        "total": null,
+        "cores": []
+      },
+      "memory": {
+        "totalBytes": 4096000000,
+        "availableBytes": null,
+        "usedBytes": null,
+        "freeBytes": 1024000000,
+        "buffersBytes": 1000,
+        "cachedBytes": 2000,
+        "shmemBytes": 300,
+        "reclaimableSlabBytes": 400
+      },
+      "swap": {
+        "totalBytes": 0,
+        "freeBytes": 0,
+        "usedBytes": 0
+      },
+      "load": {
+        "one": 0.25,
+        "five": 0.5,
+        "fifteen": null
+      },
+      "pressure": {
+        "state": "disabled",
+        "cpu": null,
+        "memory": null,
+        "io": null
+      },
+      "limits": {
+        "tasks": 312,
+        "pidMax": 4194304,
+        "fileHandles": 1888,
+        "fileMax": null
+      },
+      "filesystems": [],
+      "disks": [],
+      "networks": [],
+      "temperatures": []
+    },
+    {
+      "seq": 42,
+      "collectedAt": "2026-11-14T03:00:10Z",
+      "intervalSeconds": 10,
+      "cpu": {
+        "total": {
+          "usage": 12.5,
+          "user": 8.25,
+          "system": 3.5,
+          "iowait": 0.5,
+          "steal": 0.25
+        },
+        "cores": [
+          {
+            "id": 0,
+            "usage": {
+              "usage": 20.5,
+              "user": 15.5,
+              "system": 4.5,
+              "iowait": 0.5,
+              "steal": 0.5
+            }
+          },
+          {
+            "id": 1,
+            "usage": {
+              "usage": 4.5,
+              "user": 1.5,
+              "system": 2.5,
+              "iowait": 0.5,
+              "steal": 0.5
+            }
+          }
+        ]
+      },
+      "memory": {
+        "totalBytes": 4096000000,
+        "availableBytes": 3000000000,
+        "usedBytes": 1096000000,
+        "freeBytes": 1024000000,
+        "buffersBytes": 1000,
+        "cachedBytes": 2000,
+        "shmemBytes": 300,
+        "reclaimableSlabBytes": 400
+      },
+      "swap": {
+        "totalBytes": 1073741824,
+        "freeBytes": 1073741824,
+        "usedBytes": 0
+      },
+      "load": {
+        "one": 0.25,
+        "five": 0.5,
+        "fifteen": 0.75
+      },
+      "pressure": {
+        "state": "ok",
+        "cpu": {
+          "someAvg10": 0.5,
+          "someAvg60": 1.25,
+          "someAvg300": 0.75,
+          "fullAvg10": null,
+          "fullAvg60": null,
+          "fullAvg300": null
+        },
+        "memory": {
+          "someAvg10": 0.5,
+          "someAvg60": 11.5,
+          "someAvg300": 2.5,
+          "fullAvg10": 0.5,
+          "fullAvg60": 1.5,
+          "fullAvg300": 0.5
+        },
+        "io": {
+          "someAvg10": 0.5,
+          "someAvg60": 0.25,
+          "someAvg300": 0.5,
+          "fullAvg10": 0.5,
+          "fullAvg60": 0.25,
+          "fullAvg300": 0.5
+        }
+      },
+      "limits": {
+        "tasks": 312,
+        "pidMax": 4194304,
+        "fileHandles": 1888,
+        "fileMax": 9223372036854775807
+      },
+      "filesystems": [
+        {
+          "mountPoint": "/",
+          "device": "/dev/vda1",
+          "fsType": "ext4",
+          "class": "local",
+          "readOnly": false,
+          "state": "ok",
+          "totalBytes": 100000000000,
+          "freeBytes": 40000000000,
+          "availableBytes": 35000000000,
+          "usedBytes": 60000000000,
+          "inodes": "ok",
+          "inodesTotal": 6553600,
+          "inodesFree": 0
+        },
+        {
+          "mountPoint": "/srv/pool",
+          "device": "pool",
+          "fsType": "btrfs",
+          "class": "local",
+          "readOnly": true,
+          "state": "ok",
+          "totalBytes": 200000000000,
+          "freeBytes": 100000000000,
+          "availableBytes": 100000000000,
+          "usedBytes": 100000000000,
+          "inodes": "notApplicable",
+          "inodesTotal": null,
+          "inodesFree": null
+        },
+        {
+          "mountPoint": "/mnt/nas",
+          "device": "nas:/export",
+          "fsType": "nfs4",
+          "class": "network",
+          "readOnly": false,
+          "state": "unresponsive",
+          "totalBytes": null,
+          "freeBytes": null,
+          "availableBytes": null,
+          "usedBytes": null,
+          "inodes": "ok",
+          "inodesTotal": null,
+          "inodesFree": null
+        }
+      ],
+      "disks": [
+        {
+          "name": "vda",
+          "class": "virtual",
+          "model": null,
+          "transport": null,
+          "rotational": false,
+          "removable": false,
+          "sizeBytes": 107374182400,
+          "readBytesPerSecond": 4096.5,
+          "writeBytesPerSecond": 81920.5,
+          "readsPerSecond": 1.5,
+          "writesPerSecond": 12.5,
+          "readLatencyMs": 0.75,
+          "writeLatencyMs": 2.25,
+          "utilization": 3.5,
+          "vendor": "x"
+        },
+        {
+          "name": "sda",
+          "class": "physical",
+          "model": "Samsung SSD 870",
+          "transport": "usb",
+          "rotational": false,
+          "removable": false,
+          "sizeBytes": 500107862016,
+          "readBytesPerSecond": null,
+          "writeBytesPerSecond": null,
+          "readsPerSecond": null,
+          "writesPerSecond": null,
+          "readLatencyMs": null,
+          "writeLatencyMs": null,
+          "utilization": null
+        }
+      ],
+      "networks": [
+        {
+          "name": "eth0",
+          "class": "physical",
+          "operState": "up",
+          "speedMbps": 1000,
+          "rxBytesPerSecond": 2048.5,
+          "txBytesPerSecond": 1024.5,
+          "rxPacketsPerSecond": 10.5,
+          "txPacketsPerSecond": 8.5,
+          "rxErrors": 0,
+          "txErrors": 0,
+          "rxDrops": 2,
+          "txDrops": 0
+        },
+        {
+          "name": "lo",
+          "class": "loopback",
+          "operState": "unknown",
+          "speedMbps": null,
+          "rxBytesPerSecond": 0.5,
+          "txBytesPerSecond": 0.5,
+          "rxPacketsPerSecond": 0.5,
+          "txPacketsPerSecond": 0.5,
+          "rxErrors": 0,
+          "txErrors": 0,
+          "rxDrops": 0,
+          "txDrops": 0
+        }
+      ],
+      "temperatures": [
+        {
+          "source": "hwmon",
+          "chip": "k10temp",
+          "label": "Tctl",
+          "celsius": 48.5,
+          "highCelsius": 70.5,
+          "criticalCelsius": 95.5
+        },
+        {
+          "source": "thermal_zone",
+          "chip": "acpitz",
+          "label": "thermal_zone0",
+          "celsius": 27.8,
+          "highCelsius": null,
+          "criticalCelsius": null
+        }
+      ]
+    }
+  ]
+}

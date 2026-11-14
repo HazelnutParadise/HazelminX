@@ -90,10 +90,25 @@ type HubOptions struct {
 	DuplicatePingTimeout time.Duration
 	Now                  func() time.Time
 	Logger               *slog.Logger
+	// HostReports receives host facts and samples (host.metrics v1). When
+	// set, the hub declares the capability and acknowledges each report
+	// the receiver stored; when nil, agents do not send them.
+	HostReports HostReports
 	// Range is the protocol range this hub speaks; zero means
 	// protocol.SupportedRange(). Tests use it to stand in for an older or
 	// newer Core.
 	Range protocol.Range
+}
+
+// HostReports stores what agents report about their hosts. Calls run on
+// the session's read loop, one at a time per session.
+type HostReports interface {
+	// HostFacts stores the facts of the node behind s.
+	HostFacts(ctx context.Context, s *Session, m *protocol.HostFacts) error
+	// MetricsReport stores the samples and returns the seq the agent may
+	// forget; an error sends no acknowledgement, and the agent sends the
+	// samples again after 30 seconds without one.
+	MetricsReport(ctx context.Context, s *Session, m *protocol.MetricsReport) (uint64, error)
 }
 
 // Limits on inbound data. Before the agent has proven who it is, messages
@@ -548,6 +563,9 @@ func (h *Hub) handshake(r *http.Request, conn *websocket.Conn, slot *handshakeSl
 		return
 	}
 	coreCaps := []protocol.Capability{{Name: protocol.CapJobs, Version: JobsProtocolVersion}}
+	if h.opts.HostReports != nil {
+		coreCaps = append(coreCaps, protocol.Capability{Name: protocol.CapHostMetrics, Version: 1})
+	}
 	heartbeat := int(h.opts.Heartbeat / time.Second)
 	// The signatures cover the whole hello as received and the welcome's
 	// parameters, so a proxy cannot alter either side's offer.

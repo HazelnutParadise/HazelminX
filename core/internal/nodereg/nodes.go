@@ -380,6 +380,18 @@ func (r *Registry) GetNode(ctx context.Context, id string) (Node, error) {
 	return r.view(ctx, n, r.liveMap()), nil
 }
 
+// NodeIDByFingerprint returns the id of the active node whose current key
+// has this fingerprint (the identity an agent session proved), or
+// ErrNotFound.
+func (r *Registry) NodeIDByFingerprint(ctx context.Context, fp string) (string, error) {
+	var id string
+	err := r.db.QueryRowContext(ctx, `SELECT id FROM nodes WHERE fingerprint = ? AND state = 'active'`, fp).Scan(&id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", ErrNotFound
+	}
+	return id, err
+}
+
 // ListNodes returns the nodes matching f, by name.
 func (r *Registry) ListNodes(ctx context.Context, f NodeFilter) ([]Node, error) {
 	rows, err := r.db.QueryContext(ctx, `SELECT `+nodeColumns+` FROM nodes ORDER BY name, id`)

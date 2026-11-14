@@ -10,6 +10,7 @@ mod enroll;
 mod identity;
 mod journal;
 mod ledger;
+mod monitor;
 mod steps;
 
 use anyhow::Result;
@@ -201,6 +202,14 @@ async fn run(cfg: Config) -> Result<()> {
         opts.agent_version.clone(),
         hazelminx_privileged::client::Client::new(&cfg.privileged_socket),
     );
+    {
+        let waker = shared.clone();
+        monitor::spawn(
+            shared.monitor.clone(),
+            monitor::collect::Collector::new("/", monitor::INTERVAL.as_secs() as u32),
+            move || waker.wake(),
+        )?;
+    }
     connection::run(opts, shared, shutdown_signal()).await;
     info!("shutting down");
     Ok(())

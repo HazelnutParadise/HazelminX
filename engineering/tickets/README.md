@@ -38,6 +38,10 @@
 | 018 | 管理員可以設定面板名稱、時區、入口、通知、更新通道與遙測 | 基礎建設 | 017 | [#18](https://github.com/HazelnutParadise/hazelminx/issues/18) |
 | 019 | 管理員可以用一次性註冊碼加入節點，並看到離線、過期、維護與撤銷狀態 | 節點與 Agent | 004, 007, 009 | [#19](https://github.com/HazelnutParadise/hazelminx/issues/19) |
 | 020 | 維運者可以查看主機資訊、資源指標與歷史趨勢 | 主機管理 | 019, 017 | [#20](https://github.com/HazelnutParadise/hazelminx/issues/20) |
+| 020.1 | Agent 回報主機資訊與資源指標，Core 保存有解析度的歷史並以 API 提供 | 主機管理 | 019 | [#155](https://github.com/HazelnutParadise/hazelminx/issues/155) |
+| 020.2 | 使用者可以看 GPU 型號、顯示記憶體、使用率、溫度、功耗與使用中的程序 | 主機管理 | 020.1 | [#156](https://github.com/HazelnutParadise/hazelminx/issues/156) |
+| 020.3 | 使用者可以看磁碟健康與 SMART，讀不到時明示原因 | 主機管理 | 020.1, 012 | [#157](https://github.com/HazelnutParadise/hazelminx/issues/157) |
+| 020.4 | 維運者可以在主機頁看到主機資訊、硬體卡片與趨勢圖，耗盡狀態會被標出 | 主機管理 | 020.1, 017 | [#158](https://github.com/HazelnutParadise/hazelminx/issues/158) |
 | 021 | 維運者可以搜尋、安裝、更新、移除套件並套用安全更新 | 主機管理 | 019, 012 | [#21](https://github.com/HazelnutParadise/hazelminx/issues/21) |
 | 022 | 維運者可以管理 systemd 服務、計時器與其設定檔 | 主機管理 | 012 | [#22](https://github.com/HazelnutParadise/hazelminx/issues/22) |
 | 023 | 維運者可以查看程序並管理 Linux 使用者、群組與 sudo | 主機管理 | 012 | [#23](https://github.com/HazelnutParadise/hazelminx/issues/23) |
@@ -58,7 +62,7 @@
 | 038 | 擁有者可以在資料庫損壞或鎖死時用離線救援方式恢復管理 | 安裝、更新與卸載 | 013 | [#38](https://github.com/HazelnutParadise/hazelminx/issues/38) |
 | 107 | 維運者可以看到每個資源由誰管理、與平台紀錄差在哪，並在寫入前看到影響範圍 | 基礎建設 | 007, 008, 010 | [#114](https://github.com/HazelnutParadise/hazelminx/issues/114) |
 
-規格增補 03（`engineering/specs/addendum-03-robustness.md`，異常情境的整體處理，ROB-001～015、T-157～188、T-231～233 與 T-242～243），2026-11-07 使用者核定，ROB-013～015 於 2026-11-08 加入。ROB-001／002／003／006／012 由票 107 擁有，ROB-004／005／007／008／013 由 017、ROB-009 由 020、ROB-010／014 由 024、ROB-011 由 081、ROB-015 由 035 擁有；010、027、028、040 另有驗證條目。
+規格增補 03（`engineering/specs/addendum-03-robustness.md`，異常情境的整體處理，ROB-001～015、T-157～188、T-231～233 與 T-242～243），2026-11-07 使用者核定，ROB-013～015 於 2026-11-08 加入。ROB-001／002／003／006／012 由票 107 擁有，ROB-004／005／007／008／013 由 017、ROB-009 由 020.1、ROB-010／014 由 024、ROB-011 由 081、ROB-015 由 035 擁有；010、027、028、040 另有驗證條目。
 | 117 | 同時送出大量密碼猜測時，同一帳號的登入嘗試仍然受冷卻次數限制 | 身分與存取 | — | [#135](https://github.com/HazelnutParadise/hazelminx/issues/135) |
 | 119 | 使用者可以在畫面上登入、完成首次設定、綁定第二驗證並管理自己的帳號安全 | 身分與存取 | 005, 009, 014 | [#137](https://github.com/HazelnutParadise/hazelminx/issues/137) |
 | 120 | 同一秒內建立的工作與稽核紀錄在列表裡依實際時間順序排列 | 基礎建設 | — | [#138](https://github.com/HazelnutParadise/hazelminx/issues/138) |

@@ -137,6 +137,9 @@ Agent 主動連到 Core 的 Agent 入口（預設 `:9801`，路徑 `/agent/v1/co
 | `certificate_renew` | Core→Agent | 換發節點憑證：`requestId`、`certificate`（PEM），見下方「憑證輪替」 |
 | `certificate_installed` | Agent→Core | 新憑證已驗證並寫入：`requestId` |
 | `certificate_refused` | Agent→Core | 沒有換：`requestId`、`code`（`CERTIFICATE_INVALID`、`WRITE_FAILED`）、`message` |
+| `host_facts` | Agent→Core | 主機資訊：`collectedAt`、`facts`（見下方「主機資訊與指標」） |
+| `metrics_report` | Agent→Core | Core 還沒確認的樣本，由舊到新：`samples`、`droppedSamples` |
+| `metrics_ack` | Core→Agent | `seq` 以前的樣本都已保存 |
 
 ### 能力
 
@@ -149,6 +152,7 @@ Agent 主動連到 Core 的 Agent 入口（預設 `:9801`，路徑 `/agent/v1/co
 | `host.health` | 1 | 唯讀動作：`collectedAt`、`uptimeSeconds`、`load`（`one`、`five`、`fifteen`）、`memory`（`totalBytes`、`availableBytes`）、`rootFilesystem`（`totalBytes`、`freeBytes`）；讀不到的值是 `null`，不補值。Core 在節點離開維護後的 `node.recheck` 工作用它 |
 | `host.ledger` | 1 | `ledger_pull`、`ledger_page`、`ledger_unavailable` |
 | `node.certificate` | 1 | `certificate_renew`、`certificate_installed`、`certificate_refused` |
+| `host.metrics` | 1 | `host_facts`、`metrics_report`、`metrics_ack`。雙方都宣告時 Agent 才送；Core 沒宣告時 Agent 不送 |
 
 Core 派送前先比對能力；Agent 沒宣告或版本較低的動作，Core 不送出，直接讓步驟失敗為 `CAPABILITY_UNSUPPORTED`。Agent 收到未宣告的動作、多餘參數欄位、別的節點、已過期、控制世代倒退或碰到工作沒保留的資源的步驟，一律回 `step_rejected`，不執行。
 
@@ -227,6 +231,23 @@ hazelminx-grant-v1
 | `EXECUTOR_UNREACHABLE` | Agent 連不上執行器的 socket |
 | `EXECUTOR_REFUSED` | 執行器拒絕匯出（憑證、權限或參數不對），`message` 帶執行器的錯誤碼 |
 | `EXPORT_FAILED` | 執行器接受了但匯出失敗，例如帳本沒有開啟，或 `afterSeq` 超過主機帳本的最後一行（主機帳本比 Core 副本短） |
+
+### 主機資訊與指標
+
+型別在 `agent/crates/protocol/src/metrics.rs` 與 `core/internal/protocol/metrics.go`，樣本見 `fixtures/messages/host_facts.json`、`metrics_report.json`。
+
+- 讀不到的值一律是 `null`，意思是「未提供」，不是 0。
+- `host_facts` 的每個欄位是 `{"value", "source"}`，`source` 是讀取的檔案或介面（例如 `/etc/os-release`、`adjtimex`）。連線後送一次，之後只在值改變時再送。
+- 樣本每 10 秒一筆（`intervalSeconds`），`seq` 在 Agent 執行期間每筆加 1，重啟後從 1 開始。Core 以節點與 `collectedAt` 判定重複，同一筆重送不會被算兩次。
+- 第一筆樣本沒有前一筆可比，CPU 比例與各種速率是 `null`、`cpu.cores` 是空陣列。
+- 記憶體的 `usedBytes` 是 `totalBytes - availableBytes`，頁快取與可回收 slab 算可用。沒有 `MemAvailable` 時兩者都是 `null`，不用 `MemFree` 代替。
+- `pressure.state`：`ok`、`unsupported`（沒有 `/proc/pressure`）、`disabled`（核心有 PSI 但被關掉，讀取回 EOPNOTSUPP）、`unreadable`。
+- 檔案系統 `state`：`ok`、`unresponsive`（`statvfs` 2 秒沒回）、`unreadable`；`inodes`：`ok` 或 `notApplicable`（btrfs、ZFS、bcachefs，或 inode 總數為 0 的檔案系統）。
+- 磁碟 `class`：`physical`、`raid`、`mapper`、`virtual`、`loop`、`network`；網路介面 `class`：`physical`、`virtual`、`loopback`。
+- Agent 最多暫存 360 筆（Core 連不上時約一小時），滿了丟最舊的，下一則 `metrics_report` 的 `droppedSamples` 帶出丟掉的筆數。一則報告的樣本編碼後不超過 192 KiB，超過就分成多則。
+- 每條會話一次只有一則 `metrics_report` 在等確認，收到 `metrics_ack` 才送下一則，所以確認的 `seq`（報告裡最大的值）一定涵蓋它回答的那一則。Core 存好整則才確認，存失敗不回；Agent 30 秒沒收到確認就重送同一批，新連線也從最舊的未確認樣本送起。
+- Core 用不了的樣本（`intervalSeconds` 不在 1 到 3600、`collectedAt` 比 Core 的時鐘快 5 分鐘以上或早於 48 小時）不保存，但照樣確認，因為重送也不會變好。比 Core 快 5 分鐘以上的 `host_facts` 也不保存。
+- `droppedSamples` 是還沒被確認的丟棄筆數，帶它的那一則被確認才歸零；沒被確認就隨重送再帶一次，所以 Core 可能多算，不會少算。報告裡的樣本全都用不了時，筆數照樣加進節點的統計（節點還沒有任何樣本時除外）。
 
 ### 憑證輪替
 
