@@ -54,6 +54,9 @@ const (
 	// CapHostMetrics: host_facts / metrics_report / metrics_ack, host facts
 	// and resource samples (ticket 020.1).
 	CapHostMetrics = "host.metrics"
+	// CapHostEngines: engines_probe / engines_report / engines_unavailable,
+	// the container engines on the host (ticket 039.1).
+	CapHostEngines = "host.engines"
 )
 
 // certificate_refused codes.
@@ -133,6 +136,9 @@ const (
 	TypeHostFacts            = "host_facts"
 	TypeMetricsReport        = "metrics_report"
 	TypeMetricsAck           = "metrics_ack"
+	TypeEnginesProbe         = "engines_probe"
+	TypeEnginesReport        = "engines_report"
+	TypeEnginesUnavailable   = "engines_unavailable"
 )
 
 // Durable event kinds.
@@ -451,6 +457,9 @@ var sessionTypes = map[string]func() any{
 	TypeHostFacts:            func() any { return &HostFacts{} },
 	TypeMetricsReport:        func() any { return &MetricsReport{} },
 	TypeMetricsAck:           func() any { return &MetricsAck{} },
+	TypeEnginesProbe:         func() any { return &EnginesProbe{} },
+	TypeEnginesReport:        func() any { return &EnginesReport{} },
+	TypeEnginesUnavailable:   func() any { return &EnginesUnavailable{} },
 }
 
 func decode(data []byte, types map[string]func() any, strict bool) (any, error) {
