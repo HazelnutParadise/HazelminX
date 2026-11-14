@@ -203,6 +203,11 @@ jobs:
         run: go test ./internal/nodes -run Interop -count=1 -v
         env:
           HAZELMINX_AGENT_BIN: ${{ github.workspace }}/agent/target/debug/hazelminx-agent
+      - name: Host facts and metrics, end to end
+        working-directory: core
+        run: go test ./internal/hostmetrics -run Interop -count=1 -v
+        env:
+          HAZELMINX_AGENT_BIN: ${{ github.workspace }}/agent/target/debug/hazelminx-agent
       - name: Host change ledger copy, end to end (root)
         working-directory: core
         run: |
