@@ -425,6 +425,16 @@ func setup(t *testing.T, agentBin, privBin string) *interop {
 		time.Sleep(20 * time.Millisecond)
 	}
 
+	// The agent runs as nobody, which cannot reach a binary under the CI
+	// runner's home directory: run a copy from the work directory.
+	b, err := os.ReadFile(agentBin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	agentBin = filepath.Join(work, "hazelminx-agent")
+	if err := os.WriteFile(agentBin, b, 0o755); err != nil {
+		t.Fatal(err)
+	}
 	asAgent := func(args ...string) *exec.Cmd {
 		c := exec.Command(agentBin, args...)
 		c.SysProcAttr = &syscall.SysProcAttr{Credential: &syscall.Credential{Uid: agentUID, Gid: agentUID}}
