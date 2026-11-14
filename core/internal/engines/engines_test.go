@@ -65,6 +65,8 @@ func TestValidateRefusesWhatTheDecoderLetsThrough(t *testing.T) {
 		"repeated env id":   func(r *protocol.EngineReport) { r.Environments[1].ID = r.Environments[0].ID },
 		"env not installed": func(r *protocol.EngineReport) { r.Environments[0].State = protocol.EngineNotInstalled },
 		"env mode":          func(r *protocol.EngineReport) { r.Environments[0].Mode = "root" },
+		"bidi in version":   func(r *protocol.EngineReport) { v := "27\u202e1"; r.Environments[0].Version = &v },
+		"long error":        func(r *protocol.EngineReport) { v := strings.Repeat("e", 600); r.Environments[0].Error = &v },
 		"env kind k8s":      func(r *protocol.EngineReport) { r.Environments[0].Kind = "kubernetes" },
 	}
 	for name, mutate := range cases {

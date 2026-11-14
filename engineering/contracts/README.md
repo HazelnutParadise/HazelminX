@@ -259,7 +259,7 @@ hazelminx-grant-v1
 
 - 報告由高權限執行器的唯讀動作 `engine_inspect`（權限 `host.engines.read`）產生，因為 rootful 引擎的 socket 與各使用者的 `/run/user/<uid>` 只有 root 讀得到。Agent 只檢查格式後轉送。
 - `engines` 固定列出 `docker`、`podman`、`k3s` 三種，沒裝也列。`state`：`running`、`stopped`、`not_installed`、`incompatible`（版本低於 Docker API 1.41 或 Podman 4.0）、`permission_denied`、`not_responding`、`unknown`（裝了，但讀不到 systemd，不猜是否在跑）。
-- `environments` 每個端點一列，同種引擎多個不合併。`kind` 以端點對 `GET /version` 的回答判斷（`podman-docker` 的 `docker.sock` 是 `podman`），`kindConfirmed` 為 false 表示端點沒回答，`kind` 只是該路徑慣例上的引擎。同一個 socket 經不同路徑（`/var/run` 連到 `/run`）只列一次，`endpoint` 是看的路徑，`endpointResolved` 是解析連結後的路徑。
+- `environments` 每個端點一列，同種引擎多個不合併；`id` 是 `env:` 加解析後的端點，端點上換了引擎或停了也不變。`kind` 以端點對 `GET /version` 的回答判斷（`podman-docker` 的 `docker.sock` 是 `podman`），`kindConfirmed` 為 false 表示端點沒回答，`kind` 只是該路徑慣例上的引擎。同一個 socket 經不同路徑（`/var/run` 連到 `/run`）只列一次，`endpoint` 是看的路徑，`endpointResolved` 是解析連結後的路徑。
 - `mode` 與 `ownerUid` 取自 socket 檔案的擁有者，`ownerName` 取自 `/etc/passwd`，查不到是 `null`。`/run/user/<uid>/` 底下的路徑連到別處或不屬於該使用者時不連線，列在 `uninspected`。
 - 讀不到的值一律是 `null`。看不到的範圍（沒有 systemd、使用者目錄太多、沒開 API socket 的 rootless 引擎）列在 `uninspected`，讀者不能把「沒列出」當成「沒有」。
 - 每個 socket 的一次往返最多 5 秒、回答最多 1 MiB，字串最多 256 字元。

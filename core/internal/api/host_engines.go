@@ -58,7 +58,7 @@ func (s *Server) RegisterHostEngines(reg *nodereg.Registry, store *engines.Store
 		Responses: []Response{{Status: 200, Body: hostEnginesResponse{}}}}, s.RequireScoped(iam.ActionNodesRead, nodeScope), h.get)
 	s.handle(s.protected, base, Operation{Method: "POST", Path: base + "/nodes/{id}/engines/refresh", ID: "refreshNodeEngines",
 		Auth: true, Tag: "nodes", Permission: "nodes:write on the node",
-		Summary:   "asks the node for a new report now and answers with the result (as GET); waits up to a minute; when the node is offline or the probe fails, the previous report is returned with lastError saying why (offline is NODE_OFFLINE)",
+		Summary:   "asks the node for a new report now and answers with the result (as GET); waits for the probe (up to a minute, two when one is already running); when the node is offline (NODE_OFFLINE), not active (NODE_NOT_ACTIVE) or the probe fails, the previous report is returned with lastError saying why",
 		Responses: []Response{{Status: 200, Body: hostEnginesResponse{}}}}, s.RequireScoped(iam.ActionNodesWrite, nodeScope), h.refresh)
 }
 
@@ -68,7 +68,7 @@ type hostEnginesRoutes struct {
 	prober EngineProber
 }
 
-func (h *hostEnginesRoutes) respond(c *gin.Context, offline bool) {
+func (h *hostEnginesRoutes) respond(c *gin.Context, why *engines.Failure) {
 	v, err := h.store.Get(c.Request.Context(), c.Param("id"))
 	if err != nil {
 		fail(c, CodeInternal, "internal error")
@@ -78,13 +78,13 @@ func (h *hostEnginesRoutes) respond(c *gin.Context, offline bool) {
 	if v != nil {
 		out = hostEnginesResponse{Reported: v.Report != nil, CollectedAt: v.CollectedAt, ReceivedAt: v.ReceivedAt, Report: v.Report, LastError: v.LastError}
 	}
-	if offline {
-		out.LastError = &engines.Failure{Code: "NODE_OFFLINE", Message: "the node is not connected; this is the last report it sent", At: time.Now().UTC().Truncate(time.Second)}
+	if why != nil {
+		out.LastError = why
 	}
 	c.JSON(http.StatusOK, out)
 }
 
-func (h *hostEnginesRoutes) get(c *gin.Context) { h.respond(c, false) }
+func (h *hostEnginesRoutes) get(c *gin.Context) { h.respond(c, nil) }
 
 func (h *hostEnginesRoutes) refresh(c *gin.Context) {
 	n, err := h.reg.GetNode(c.Request.Context(), c.Param("id"))
@@ -96,7 +96,24 @@ func (h *hostEnginesRoutes) refresh(c *gin.Context) {
 	if c.Request.Context().Err() != nil {
 		return
 	}
-	h.respond(c, perr != nil && isOffline(perr))
+	now := time.Now().UTC().Truncate(time.Second)
+	switch {
+	case perr == nil:
+		h.respond(c, nil)
+	case isOffline(perr):
+		h.respond(c, &engines.Failure{Code: "NODE_OFFLINE", Message: "the node is not connected; this is the last report it sent", At: now})
+	case errors.Is(perr, engines.ErrNoNode):
+		h.respond(c, &engines.Failure{Code: "NODE_NOT_ACTIVE", Message: "the node is pending, in maintenance or revoked; it is not asked", At: now})
+	default:
+		// The prober recorded its failure as lastError; anything it could
+		// not record (a database error) is a 500.
+		v, err := h.store.Get(c.Request.Context(), c.Param("id"))
+		if err != nil || v == nil || v.LastError == nil || v.LastError.At.Before(now.Add(-2*time.Minute)) {
+			fail(c, CodeInternal, "internal error")
+			return
+		}
+		h.respond(c, nil)
+	}
 }
 
 func isOffline(err error) bool {

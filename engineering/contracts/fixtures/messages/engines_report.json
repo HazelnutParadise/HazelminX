@@ -94,7 +94,7 @@
     ],
     "environments": [
       {
-        "id": "docker:/run/docker.sock",
+        "id": "env:/run/docker.sock",
         "kind": "docker",
         "kindConfirmed": true,
         "endpoint": "/var/run/docker.sock",
@@ -113,7 +113,7 @@
         "error": null
       },
       {
-        "id": "podman:/run/podman/podman.sock",
+        "id": "env:/run/podman/podman.sock",
         "kind": "podman",
         "kindConfirmed": true,
         "endpoint": "/run/podman/podman.sock",
@@ -132,7 +132,7 @@
         "error": null
       },
       {
-        "id": "podman:/run/user/1000/podman/podman.sock",
+        "id": "env:/run/user/1000/podman/podman.sock",
         "kind": "podman",
         "kindConfirmed": true,
         "endpoint": "/run/user/1000/podman/podman.sock",
@@ -151,7 +151,7 @@
         "error": null
       },
       {
-        "id": "podman:/run/user/1001/podman/podman.sock",
+        "id": "env:/run/user/1001/podman/podman.sock",
         "kind": "podman",
         "kindConfirmed": false,
         "endpoint": "/run/user/1001/podman/podman.sock",

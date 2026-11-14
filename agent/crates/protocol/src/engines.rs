@@ -102,7 +102,8 @@ pub struct Plugin {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Environment {
-    /// `<kind>:<resolved endpoint>`; stable while the endpoint stays.
+    /// `env:<resolved endpoint>`; stable while the endpoint stays, whatever
+    /// answers on it.
     pub id: String,
     /// Decided by what the endpoint answered, not by its path (ENV-002):
     /// a `docker.sock` served by Podman is `podman`. When the endpoint did

@@ -176,7 +176,7 @@ fn engine_states_are_told_apart() {
         "no systemd: not guessed"
     );
     let mut env = Environment {
-        id: "docker:/run/docker.sock".into(),
+        id: "env:/run/docker.sock".into(),
         kind: kind::DOCKER.into(),
         kind_confirmed: true,
         endpoint: "/run/docker.sock".into(),
@@ -383,11 +383,20 @@ async fn a_users_link_to_another_socket_is_not_followed() {
     serve(root.path(), "/run/docker.sock", DOCKER_VERSION, DOCKER_INFO);
     let dir = root.path().join("run/user/4242");
     std::fs::create_dir_all(&dir).unwrap();
-    std::os::unix::fs::symlink(root.path().join("run/docker.sock"), dir.join("docker.sock"))
+    serve(root.path(), "/run/other.sock", DOCKER_VERSION, DOCKER_INFO);
+    std::os::unix::fs::symlink(root.path().join("run/other.sock"), dir.join("docker.sock"))
         .unwrap();
+    // A link to a socket already listed is the same environment, not a finding.
+    std::fs::create_dir_all(dir.join("podman")).unwrap();
+    std::os::unix::fs::symlink(
+        root.path().join("run/docker.sock"),
+        dir.join("podman/podman.sock"),
+    )
+    .unwrap();
     let fake = Fake::new(vec![]);
     let r = inspect(fake, root.path()).await;
     assert_eq!(r.environments.len(), 1);
+    assert!(!r.uninspected.iter().any(|u| u.path.contains("podman.sock")));
     assert!(
         r.uninspected
             .iter()
@@ -429,4 +438,74 @@ async fn huge_or_endless_answers_are_bounded() {
         "{:?}",
         e.error
     );
+}
+
+#[tokio::test]
+async fn a_socket_served_by_another_uid_is_not_believed() {
+    if uid() != 0 {
+        return; // needs chown; runs in the Linux CI container as root
+    }
+    let root = tempfile::tempdir().unwrap();
+    let p = serve(root.path(), "/run/docker.sock", DOCKER_VERSION, DOCKER_INFO);
+    // The file says uid 4242, but root answers: what a swapped link looks like.
+    std::os::unix::fs::chown(&p, Some(4242), None).unwrap();
+    let r = inspect(Fake::new(vec![]), root.path()).await;
+    let e = &r.environments[0];
+    assert_eq!(e.state, state::NOT_RESPONDING);
+    assert!(
+        e.error.as_deref().unwrap().contains("not the socket owner"),
+        "{:?}",
+        e.error
+    );
+    assert_eq!(e.version, None);
+}
+
+#[test]
+fn invisible_and_bidi_characters_are_dropped() {
+    assert_eq!(cut("27.3\u{202E}1.\u{200B}x\u{0007}"), "27.31.x");
+}
+
+#[tokio::test]
+async fn podman_docker_wrapper_is_not_docker_and_ids_stay_put() {
+    let root = tempfile::tempdir().unwrap();
+    touch_exe(root.path(), "/usr/bin/docker");
+    touch_exe(root.path(), "/usr/bin/podman");
+    std::fs::create_dir_all(root.path().join("run/podman")).unwrap();
+    let real = serve(
+        root.path(),
+        "/run/podman/podman.sock",
+        PODMAN_VERSION,
+        PODMAN_INFO,
+    );
+    std::os::unix::fs::symlink(&real, root.path().join("run/docker.sock")).unwrap();
+    let fake = || {
+        Fake::new(vec![
+            (
+                "systemctl",
+                "show",
+                output(
+                    0,
+                    "Id=docker.service\nLoadState=not-found\nActiveState=inactive\n",
+                ),
+            ),
+            ("docker", "--version", output(0, "podman version 5.4.2\n")),
+            ("podman", "--version", output(0, "podman version 5.4.2\n")),
+        ])
+    };
+    let r = inspect(fake(), root.path()).await;
+    assert_eq!(r.environments.len(), 1, "one socket, two paths");
+    assert_eq!(r.environments[0].id, "env:/run/podman/podman.sock");
+    assert_eq!(
+        r.engines[0].state,
+        state::NOT_INSTALLED,
+        "the wrapper is not Docker"
+    );
+    // The service stops: same id, kind still Podman, not reported as Docker.
+    std::fs::remove_file(&real).unwrap();
+    let _l = std::os::unix::net::UnixListener::bind(&real).unwrap();
+    drop(_l);
+    let r = inspect(fake(), root.path()).await;
+    assert_eq!(r.environments[0].id, "env:/run/podman/podman.sock");
+    assert_eq!(r.environments[0].kind, kind::PODMAN);
+    assert_eq!(r.environments[0].state, state::NOT_RESPONDING);
 }

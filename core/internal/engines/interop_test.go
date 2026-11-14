@@ -96,7 +96,8 @@ func stopProc(cmd *exec.Cmd) {
 	}
 }
 
-// fakeEngine serves /version and /info on a Unix socket owned by uid.
+// fakeEngine serves /version and /info on a Unix socket at path, from a
+// child process running as uid (the executor checks who answers).
 func fakeEngine(t *testing.T, path string, uid int, version, info string) {
 	t.Helper()
 	if _, err := os.Lstat(path); err == nil {
@@ -105,23 +106,79 @@ func fakeEngine(t *testing.T, path string, uid int, version, info string) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		t.Fatal(err)
 	}
+	for d := filepath.Dir(path); strings.HasPrefix(d, "/run/user/"); d = filepath.Dir(d) {
+		if err := os.Chown(d, uid, uid); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cmd := exec.Command(helperBinary(t), "-test.run=^TestFakeEngineProcess$")
+	cmd.Env = append(os.Environ(), "HZX_FAKE_ENGINE="+path, "HZX_FAKE_VERSION="+version, "HZX_FAKE_INFO="+info)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Credential: &syscall.Credential{Uid: uint32(uid), Gid: uint32(uid)}}
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = cmd.Process.Kill(); _ = cmd.Wait(); _ = os.Remove(path) })
+	for deadline := time.Now().Add(10 * time.Second); ; {
+		if _, err := os.Stat(path); err == nil {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("fake engine at %s did not start", path)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+}
+
+var helperOnce struct {
+	sync.Once
+	path string
+	err  error
+}
+
+// helperBinary is a copy of this test binary another uid may run (the go
+// build cache is root-only).
+func helperBinary(t *testing.T) string {
+	helperOnce.Do(func() {
+		dir, err := os.MkdirTemp("", "hzx-engines-helper")
+		if err != nil {
+			helperOnce.err = err
+			return
+		}
+		_ = os.Chmod(dir, 0o755)
+		b, err := os.ReadFile(os.Args[0])
+		if err != nil {
+			helperOnce.err = err
+			return
+		}
+		helperOnce.path = filepath.Join(dir, "engines.test")
+		helperOnce.err = os.WriteFile(helperOnce.path, b, 0o755)
+	})
+	if helperOnce.err != nil {
+		t.Fatal(helperOnce.err)
+	}
+	return helperOnce.path
+}
+
+// TestFakeEngineProcess is the child of fakeEngine; it does nothing in a
+// normal run.
+func TestFakeEngineProcess(t *testing.T) {
+	path := os.Getenv("HZX_FAKE_ENGINE")
+	if path == "" {
+		t.Skip("helper process")
+	}
 	l, err := net.Listen("unix", path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chown(path, uid, uid); err != nil {
-		t.Fatal(err)
-	}
-	srv := &http.Server{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	version, info := os.Getenv("HZX_FAKE_VERSION"), os.Getenv("HZX_FAKE_INFO")
+	_ = http.Serve(l, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if r.URL.Path == "/version" {
 			_, _ = io.WriteString(w, version)
 			return
 		}
 		_, _ = io.WriteString(w, info)
-	})}
-	go func() { _ = srv.Serve(l) }()
-	t.Cleanup(func() { _ = srv.Close(); _ = os.Remove(path) })
+	}))
 }
 
 func TestInteropRealAgentReportsEnvironmentsApart(t *testing.T) {

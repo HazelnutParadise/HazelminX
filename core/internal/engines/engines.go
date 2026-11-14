@@ -12,8 +12,11 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"reflect"
 	"sync"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/HazelnutParadise/hazelminx/core/internal/nodes"
 	"github.com/HazelnutParadise/hazelminx/core/internal/protocol"
@@ -25,6 +28,10 @@ const (
 	GrantPermission = "host.engines.read"
 	GrantLifetime   = 5 * time.Minute
 )
+
+// ErrNoNode: the fingerprint belongs to no active node (pending,
+// maintenance or revoked); nothing was asked or recorded.
+var ErrNoNode = errors.New("engines: no active node for this session")
 
 // Codes RecordError stores, besides the agent's engines_unavailable codes.
 const (
@@ -121,6 +128,12 @@ func Validate(r *protocol.EngineReport) error {
 			return fmt.Errorf("%w: engine %s state %q", ErrValidation, e.Kind, e.State)
 		}
 	}
+	if len(r.Environments) > maxListItems || len(r.Uninspected) > maxListItems {
+		return fmt.Errorf("%w: more than %d environments or uninspected entries", ErrValidation, maxListItems)
+	}
+	if err := checkStrings(reflect.ValueOf(r)); err != nil {
+		return err
+	}
 	ids := map[string]bool{}
 	for _, e := range r.Environments {
 		if e.ID == "" || ids[e.ID] {
@@ -135,6 +148,50 @@ func Validate(r *protocol.EngineReport) error {
 		}
 		if e.Mode != "rootful" && e.Mode != "rootless" {
 			return fmt.Errorf("%w: environment %s mode %q", ErrValidation, e.ID, e.Mode)
+		}
+	}
+	return nil
+}
+
+// Limits on agent-supplied data (the executor cuts strings to 256
+// characters; Core does not rely on it).
+const (
+	maxListItems  = 1024
+	maxStringRune = 512
+)
+
+// checkStrings refuses over-long strings and control or invisible
+// formatting characters anywhere in the report.
+func checkStrings(v reflect.Value) error {
+	switch v.Kind() {
+	case reflect.Pointer:
+		if !v.IsNil() {
+			return checkStrings(v.Elem())
+		}
+	case reflect.Struct:
+		for i := 0; i < v.NumField(); i++ {
+			if err := checkStrings(v.Field(i)); err != nil {
+				return err
+			}
+		}
+	case reflect.Slice:
+		if v.Len() > maxListItems {
+			return fmt.Errorf("%w: list of %d items", ErrValidation, v.Len())
+		}
+		for i := 0; i < v.Len(); i++ {
+			if err := checkStrings(v.Index(i)); err != nil {
+				return err
+			}
+		}
+	case reflect.String:
+		s := v.String()
+		if utf8.RuneCountInString(s) > maxStringRune {
+			return fmt.Errorf("%w: string longer than %d characters", ErrValidation, maxStringRune)
+		}
+		for _, c := range s {
+			if unicode.Is(unicode.Cc, c) || unicode.Is(unicode.Cf, c) {
+				return fmt.Errorf("%w: control or formatting character U+%04X", ErrValidation, c)
+			}
 		}
 	}
 	return nil
@@ -244,7 +301,7 @@ func (p *Prober) Probe(ctx context.Context, fingerprint string) error {
 	defer m.Unlock()
 	nodeID, err := p.NodeID(ctx, fingerprint)
 	if err != nil {
-		return fmt.Errorf("engines: no node for %s: %w", fingerprint, err)
+		return fmt.Errorf("%w: %s: %v", ErrNoNode, fingerprint, err)
 	}
 	grant, err := p.Grants.Issue(GrantSubject, []string{GrantPermission}, GrantLifetime)
 	if err != nil {
@@ -292,9 +349,14 @@ func (p *Prober) Run(ctx context.Context, fingerprints func() []string, interval
 		case <-ctx.Done():
 			return
 		case <-t.C:
+			// Each node on its own: a silent node must not delay the
+			// others (Probe serializes probes of one node).
+			var wg sync.WaitGroup
 			for _, fp := range fingerprints() {
-				_ = p.Probe(ctx, fp)
+				wg.Add(1)
+				go func() { defer wg.Done(); _ = p.Probe(ctx, fp) }()
 			}
+			wg.Wait()
 		}
 	}
 }

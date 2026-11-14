@@ -36,7 +36,10 @@ pub const MAX_TEXT: usize = 256;
 /// Largest HTTP answer read from a socket.
 pub const MAX_ANSWER_BYTES: usize = 1 << 20;
 /// Bound of one socket round trip and of one program run.
-pub const PROBE_TIMEOUT: Duration = Duration::from_secs(5);
+pub const PROBE_TIMEOUT: Duration = Duration::from_secs(2);
+/// Bound of all socket probes together, under the Core's 60 s wait;
+/// sockets not reached in time are listed in `uninspected`.
+pub const SOCKETS_DEADLINE: Duration = Duration::from_secs(30);
 /// Most user runtime directories looked at.
 pub const MAX_USERS: usize = 256;
 
@@ -107,7 +110,18 @@ pub async fn inspect(runner: Arc<dyn CommandRunner>, sysroot: &Path) -> EngineRe
 
     let mut seen = HashSet::new();
     let mut environments = Vec::new();
+    let started = std::time::Instant::now();
     for (endpoint, usual) in candidates {
+        if started.elapsed() > SOCKETS_DEADLINE {
+            uninspected.push(Uninspected {
+                path: endpoint.clone(),
+                reason: format!(
+                    "not reached within {}s of socket probes",
+                    SOCKETS_DEADLINE.as_secs()
+                ),
+            });
+            continue;
+        }
         let host_path = sysroot.join(endpoint.trim_start_matches('/'));
         let Ok(resolved) = std::fs::canonicalize(&host_path) else {
             continue; // absent (or a dangling link): nothing there
@@ -118,6 +132,9 @@ pub async fn inspect(runner: Arc<dyn CommandRunner>, sysroot: &Path) -> EngineRe
         };
         if !meta.file_type().is_socket() {
             continue;
+        }
+        if seen.contains(&resolved) {
+            continue; // already listed through another path (rootful first)
         }
         let shown = shown_path(sysroot, &resolved);
         // A user's path must stay that user's: a link out of their runtime
@@ -135,9 +152,14 @@ pub async fn inspect(runner: Arc<dyn CommandRunner>, sysroot: &Path) -> EngineRe
             });
             continue;
         }
-        if !seen.insert(resolved.clone()) {
-            continue;
-        }
+        seen.insert(resolved.clone());
+        // The usual kind follows the socket the path leads to, so a link
+        // does not change it between reports.
+        let usual = if shown.ends_with("podman.sock") {
+            kind::PODMAN
+        } else {
+            usual
+        };
         environments
             .push(probe_socket(&endpoint, &shown, &resolved, usual, meta.uid(), &users).await);
     }
@@ -151,7 +173,7 @@ pub async fn inspect(runner: Arc<dyn CommandRunner>, sysroot: &Path) -> EngineRe
     {
         let active = k3s_units.as_ref().map(|u| any_active(u));
         environments.push(Environment {
-            id: format!("{}:{K3S_CONTAINERD}", kind::K3S),
+            id: format!("env:{K3S_CONTAINERD}"),
             kind: kind::K3S.into(),
             kind_confirmed: false,
             endpoint: K3S_CONTAINERD.into(),
@@ -271,7 +293,12 @@ async fn engine(
         Some(b) => first_line(runner, sysroot, b, "--version").await,
         None => None,
     };
-    let state = engine_state(k, binary.is_some(), units.as_deref(), envs);
+    // podman-docker installs a `docker` that is Podman: not Docker.
+    let is_other = k == kind::DOCKER
+        && binary_version
+            .as_deref()
+            .is_some_and(|v| v.to_ascii_lowercase().contains("podman"));
+    let state = engine_state(k, binary.is_some() && !is_other, units.as_deref(), envs);
     Engine {
         kind: k.into(),
         state: state.into(),
@@ -342,7 +369,7 @@ async fn probe_socket(
     users: &[(u32, String)],
 ) -> Environment {
     let mut env = Environment {
-        id: format!("{usual}:{shown}"),
+        id: format!("env:{shown}"),
         kind: usual.into(),
         kind_confirmed: false,
         endpoint: endpoint.into(),
@@ -363,7 +390,7 @@ async fn probe_socket(
         containers_running: None,
         error: None,
     };
-    let version = match get_json(resolved, "/version").await {
+    let version = match get_json(resolved, "/version", uid).await {
         Ok(v) => v,
         Err(ProbeError::Denied(m)) => {
             env.state = state::PERMISSION_DENIED.into();
@@ -379,12 +406,10 @@ async fn probe_socket(
         env.kind = kind::UNKNOWN.into();
         env.kind_confirmed = true;
         env.error = Some("the endpoint answered /version without an engine version".into());
-        env.id = format!("{}:{shown}", kind::UNKNOWN);
         return env;
     };
     env.kind = answered.into();
     env.kind_confirmed = true;
-    env.id = format!("{answered}:{shown}");
     env.version = text(&version, "Version");
     env.api_version = text(&version, "ApiVersion");
     let supported = match answered {
@@ -404,7 +429,7 @@ async fn probe_socket(
         _ => state::RUNNING,
     }
     .into();
-    match get_json(resolved, "/info").await {
+    match get_json(resolved, "/info", uid).await {
         Ok(info) => {
             env.cgroup_driver = text(&info, "CgroupDriver");
             env.cgroup_version = text(&info, "CgroupVersion");
@@ -472,7 +497,10 @@ enum ProbeError {
 
 /// One HTTP/1.0 request over the socket; the body when the status is 200
 /// and it is JSON.
-async fn get_json(sock: &Path, path: &str) -> Result<serde_json::Value, ProbeError> {
+/// `owner` is the uid the socket file belonged to when it was checked; the
+/// process that accepts must run as that uid, so a path swapped for a link
+/// after the check cannot lead root to another socket.
+async fn get_json(sock: &Path, path: &str, owner: u32) -> Result<serde_json::Value, ProbeError> {
     let fut = async {
         let mut s = tokio::net::UnixStream::connect(sock).await.map_err(|e| {
             if e.kind() == std::io::ErrorKind::PermissionDenied {
@@ -483,6 +511,15 @@ async fn get_json(sock: &Path, path: &str) -> Result<serde_json::Value, ProbeErr
         })?;
         let req =
             format!("GET {path} HTTP/1.0\r\nHost: localhost\r\nAccept: application/json\r\n\r\n");
+        let peer = s
+            .peer_cred()
+            .map_err(|e| ProbeError::Other(format!("peer credentials: {e}")))?;
+        if peer.uid() != owner {
+            return Err(ProbeError::Other(format!(
+                "the process answering runs as uid {}, not the socket owner {owner}",
+                peer.uid()
+            )));
+        }
         s.write_all(req.as_bytes())
             .await
             .map_err(|e| ProbeError::Other(format!("write: {e}")))?;
@@ -648,9 +685,15 @@ pub fn passwd(sysroot: &Path) -> Vec<(u32, String)> {
 
 fn cut(s: &str) -> String {
     s.chars()
-        .filter(|c| !c.is_control())
+        .filter(|c| !c.is_control() && !is_format(*c))
         .take(MAX_TEXT)
         .collect()
+}
+
+/// Invisible and direction-changing characters (Unicode Cf) that would let
+/// a user's socket make a value look like something else.
+fn is_format(c: char) -> bool {
+    matches!(c, '\u{00AD}' | '\u{061C}' | '\u{180E}' | '\u{200B}'..='\u{200F}' | '\u{202A}'..='\u{202E}' | '\u{2060}'..='\u{2064}' | '\u{2066}'..='\u{206F}' | '\u{FEFF}' | '\u{FFF9}'..='\u{FFFB}')
 }
 
 #[cfg(test)]
