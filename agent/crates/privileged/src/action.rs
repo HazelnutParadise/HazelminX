@@ -76,9 +76,7 @@ impl Action {
             Action::SystemInfo {}
             | Action::ListPackageUpdates {}
             | Action::LedgerExport { .. }
-            | Action::EngineInspect {} => {
-                LedgerDecl::ReadOnly
-            }
+            | Action::EngineInspect {} => LedgerDecl::ReadOnly,
             Action::RestartService { unit } => LedgerDecl::Changes(vec![Declared {
                 target: Target::SystemdUnit { unit: unit.clone() },
                 change: ChangeKind::Restart,
