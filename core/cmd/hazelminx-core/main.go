@@ -31,6 +31,7 @@ import (
 	"github.com/HazelnutParadise/hazelminx/core/internal/nodereg"
 	"github.com/HazelnutParadise/hazelminx/core/internal/nodes"
 	"github.com/HazelnutParadise/hazelminx/core/internal/plans"
+	"github.com/HazelnutParadise/hazelminx/core/internal/projects"
 	"github.com/HazelnutParadise/hazelminx/core/internal/secrets"
 	"github.com/HazelnutParadise/hazelminx/core/internal/store"
 	"github.com/HazelnutParadise/hazelminx/core/web"
@@ -214,6 +215,9 @@ func run(args []string) error {
 		return err
 	}
 	router.MountGitHub(sources)
+	// Projects, environments and Compose units (ticket 044.1). Secret
+	// files stay in the secret store; previews read the engine reports.
+	router.MountProjects(projects.New(projects.Options{DB: st.DB, Vault: sec, Audit: identity}), engineStore)
 	if err := announceSetup(ctx, identity, os.Stdout); err != nil {
 		return err
 	}

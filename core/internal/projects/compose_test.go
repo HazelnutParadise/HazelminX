@@ -31,7 +31,7 @@ func finding(a Analysis, code string) *Finding {
 	return nil
 }
 
-func service(a Analysis, name string) *Service {
+func service(a Analysis, name string) *ServicePreview {
 	for i := range a.Services {
 		if a.Services[i].Name == name {
 			return &a.Services[i]
@@ -111,7 +111,7 @@ func TestMergesFilesInOrderWithProfilesBuildAndRelativePaths(t *testing.T) {
 	}
 
 	b := analyze(t, SourceSpec{
-		Files: files("deploy/compose.yaml", baseCompose, "deploy/web/Dockerfile", "FROM scratch\n", "deploy/nginx.conf", "x"),
+		Files:    files("deploy/compose.yaml", baseCompose, "deploy/web/Dockerfile", "FROM scratch\n", "deploy/nginx.conf", "x"),
 		MainFile: "deploy/compose.yaml", Profiles: []string{"debug"},
 	})
 	if d := service(b, "debug"); d == nil || !d.Enabled {

@@ -55,10 +55,10 @@ type Finding struct {
 
 // Variable states.
 const (
-	VariableMissing    = "missing"     // required (${X:?}) and no value: blocks
-	VariableDefault    = "default"     // no value; the default in the file is used
-	VariableEmpty      = "empty"       // no value and no default: Compose uses ""
-	VariableProvided   = "provided"    // a value is set (ticket 045)
+	VariableMissing  = "missing"  // required (${X:?}) and no value: blocks
+	VariableDefault  = "default"  // no value; the default in the file is used
+	VariableEmpty    = "empty"    // no value and no default: Compose uses ""
+	VariableProvided = "provided" // a value is set (ticket 045)
 )
 
 // Variable is one ${NAME} used by the files.
@@ -110,8 +110,8 @@ type Build struct {
 	Inline     bool   `json:"inline"`
 }
 
-// Service is what one service would become.
-type Service struct {
+// ServicePreview is what one service would become.
+type ServicePreview struct {
 	Name        string   `json:"name"`
 	Enabled     bool     `json:"enabled"`
 	Profiles    []string `json:"profiles"`
@@ -139,18 +139,18 @@ type Resource struct {
 // Analysis is the result of checking a unit's Compose files.
 type Analysis struct {
 	// Valid: compose-go loaded the files and no finding is an error.
-	Valid          bool       `json:"valid"`
-	ComposeProject string     `json:"composeProject"`
-	ProjectDir     string     `json:"projectDir"`
-	Files          []string   `json:"files"`
-	Profiles       []string   `json:"profiles"`
-	Findings       []Finding  `json:"findings"`
-	Variables      []Variable `json:"variables"`
-	Services       []Service  `json:"services"`
-	Volumes        []Resource `json:"volumes"`
-	Networks       []Resource `json:"networks"`
-	Secrets        []Resource `json:"secrets"`
-	Configs        []Resource `json:"configs"`
+	Valid          bool             `json:"valid"`
+	ComposeProject string           `json:"composeProject"`
+	ProjectDir     string           `json:"projectDir"`
+	Files          []string         `json:"files"`
+	Profiles       []string         `json:"profiles"`
+	Findings       []Finding        `json:"findings"`
+	Variables      []Variable       `json:"variables"`
+	Services       []ServicePreview `json:"services"`
+	Volumes        []Resource       `json:"volumes"`
+	Networks       []Resource       `json:"networks"`
+	Secrets        []Resource       `json:"secrets"`
+	Configs        []Resource       `json:"configs"`
 }
 
 // SourceFile is one file of a unit as the analysis sees it. Content is nil
@@ -192,7 +192,7 @@ const analyzeTimeout = 10 * time.Second
 // returns an error for bad input: problems are findings.
 func Analyze(ctx context.Context, spec SourceSpec) Analysis {
 	a := Analysis{ComposeProject: spec.ComposeProject, Profiles: nonNil(spec.Profiles),
-		Findings: []Finding{}, Variables: []Variable{}, Services: []Service{},
+		Findings: []Finding{}, Variables: []Variable{}, Services: []ServicePreview{},
 		Volumes: []Resource{}, Networks: []Resource{}, Secrets: []Resource{}, Configs: []Resource{}}
 	files := map[string]SourceFile{}
 	for _, f := range spec.Files {
@@ -373,7 +373,7 @@ func (a *Analysis) describe(p *types.Project, files map[string]SourceFile) {
 
 	add := func(name string, s types.ServiceConfig, enabled bool) {
 		at := "services." + name
-		sv := Service{Name: name, Enabled: enabled, Profiles: nonNil(s.Profiles), Image: s.Image,
+		sv := ServicePreview{Name: name, Enabled: enabled, Profiles: nonNil(s.Profiles), Image: s.Image,
 			Ports: []Port{}, Mounts: []Mount{}, Networks: []string{}, DependsOn: []string{}, EnvFiles: []string{},
 			NetworkMode: s.NetworkMode, Healthcheck: s.HealthCheck != nil && !s.HealthCheck.Disable}
 		if !enabled {
@@ -482,6 +482,9 @@ func (a *Analysis) describe(p *types.Project, files map[string]SourceFile) {
 			case !exists(r):
 				a.add(SeverityWarning, "env-file-optional-missing", "", ea, "the optional env file "+r+" is not among the unit's files")
 			}
+		}
+		for k := range s.Extensions {
+			a.add(SeverityKept, "extension", "", at+"."+k, "extension kept as written; HazelminX does not read it")
 		}
 		a.serviceRisks(at, s)
 		a.Services = append(a.Services, sv)
