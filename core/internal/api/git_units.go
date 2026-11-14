@@ -91,6 +91,10 @@ func (h *gitRoutes) fail(c *gin.Context, err error, current func() int64) {
 		e := newError(CodeGitSourceRefused, re.Error())
 		e.Details = map[string]any{"refusals": re.Refusals}
 		respond(c, e)
+	case errors.Is(err, gitsource.ErrInvalidTree):
+		e := newError(CodeGitSourceRefused, strings.TrimPrefix(err.Error(), "gitsource: "))
+		e.Details = map[string]any{"refusals": []gitunits.Refusal{{Code: "invalid-tree", Path: ".", Message: err.Error()}}}
+		respond(c, e)
 	case errors.Is(err, gitsource.ErrAuth), errors.Is(err, gitsource.ErrHostKey):
 		fail(c, CodeGitAuthFailed, strings.TrimPrefix(err.Error(), "gitsource: "))
 	case errors.Is(err, gitsource.ErrNotFound):

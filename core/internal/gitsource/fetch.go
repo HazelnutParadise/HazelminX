@@ -44,6 +44,7 @@ var (
 	ErrHostKey       = errors.New("gitsource: the SSH host key does not match the one configured")
 	ErrUnavailable   = errors.New("gitsource: the repository could not be reached")
 	ErrCommitChanged = errors.New("gitsource: the fetched commit is not the one asked for")
+	ErrInvalidTree   = errors.New("gitsource: the commit's tree holds a path Git does not allow")
 )
 
 // Limits of one fetch.
@@ -582,7 +583,9 @@ func (f Fetcher) Fetch(ctx context.Context, r Remote, sha string) (*Snapshot, er
 			break
 		}
 		if err != nil {
-			return nil, fmt.Errorf("%w: reading the tree: %v", ErrUnavailable, err)
+			// go-git refuses entries such as ".." or ".git": the commit is
+			// unusable as it is, not unreachable.
+			return nil, fmt.Errorf("%w: %v", ErrInvalidTree, err)
 		}
 		if te.Mode == filemode.Dir {
 			continue

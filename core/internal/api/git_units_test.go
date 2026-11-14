@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -382,6 +384,17 @@ func TestGitUnitTakesWholeMountedDirectories(t *testing.T) {
 	if r.Code != 200 || fmt.Sprint(obj(r.Body["source"])["files"]) != "[compose.yaml css/site.css index.html]" {
 		t.Fatalf("root mount: %d %s", r.Code, r.Raw)
 	}
+	// GH-T09: a URL with no credential deploys like the others.
+	if r := h.owner.do(http.MethodPost, h.gbase, b, nil); r.Code != 201 || obj(r.Body["source"])["auth"] != "none" {
+		t.Fatalf("import without a credential: %d %s", r.Code, r.Raw)
+	}
+	if _, j := h.execute(t); j["state"] != "succeeded" {
+		t.Fatalf("deploy without a credential: %v", j)
+	}
+	cur := h.owner.do(http.MethodGet, h.ubase, nil, nil)
+	if r := h.owner.do(http.MethodDelete, h.ubase, nil, etag(cur)); r.Code != 204 {
+		t.Fatalf("delete: %d", r.Code)
+	}
 	extra := repo.Commit("extra", "extra", map[string]string{
 		"compose.yaml":    "services:\n  web:\n    image: nginx:1.27\n    volumes: [\"./deploy:/etc/deploy:ro\"]\n",
 		"deploy/prod.yml": "services: {}\n", "deploy/app.conf": "x=1\n"})
@@ -397,5 +410,49 @@ func TestGitUnitTakesWholeMountedDirectories(t *testing.T) {
 	b["ref"] = legacy
 	if r := h.owner.do(http.MethodPost, h.gbase+"/check", b, nil); r.Code != 422 || !strings.Contains(string(r.Raw), `"code":"lfs"`) {
 		t.Fatalf("legacy LFS pointer: %d %s", r.Code, r.Raw)
+	}
+}
+
+// A hand-made tree with an entry Git does not allow (".git" inside data/)
+// is refused as content, not reported as an unreachable server, and never
+// becomes unit files.
+func TestGitUnitRefusesATreeWithPathsGitDoesNotAllow(t *testing.T) {
+	h := newGitHarness(t)
+	repo := gittest.NewRepo(t, "evil")
+	repo.Commit("main", "one", map[string]string{"compose.yaml": gitCompose, "conf/app.conf": "v1\n"})
+	bare := filepath.Join(repo.Root, "evil.git")
+	run := func(stdin string, args ...string) string {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir = bare
+		cmd.Stdin = strings.NewReader(stdin)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %v: %v %s", args, err, out)
+		}
+		return strings.TrimSpace(string(out))
+	}
+	blob := run("pwned\n", "hash-object", "-w", "--stdin")
+	compose := run(gitCompose, "hash-object", "-w", "--stdin")
+	conf := run("v1\n", "hash-object", "-w", "--stdin")
+	inner := run("100644 blob "+blob+"\tescape.txt\n", "mktree")
+	// data/ holds an entry named ".." (a tree) and ".git" (a tree).
+	data := run("040000 tree "+inner+"\t.git\n100644 blob "+blob+"\tok.txt\n", "mktree")
+	confT := run("100644 blob "+conf+"\tapp.conf\n", "mktree")
+	root := run("100644 blob "+compose+"\tcompose.yaml\n040000 tree "+confT+"\tconf\n040000 tree "+data+"\tdata\n", "mktree")
+	commit := run("", "-c", "user.name=t", "-c", "user.email=t@x", "commit-tree", root, "-m", "evil")
+	run("", "update-ref", "refs/heads/evil", commit)
+	srv := repo.ServeHTTP("")
+
+	b := h.body(map[string]any{"url": srv.URL(repo)})
+	b["ref"] = commit
+	for _, path := range []string{h.gbase + "/check", h.gbase} {
+		r := h.owner.do(http.MethodPost, path, b, nil)
+		if r.Code != 422 || r.Body["code"] != CodeGitSourceRefused || r.Body["retryable"] == true {
+			t.Fatalf("%s: %d %s", path, r.Code, r.Raw)
+		}
+	}
+	if r := h.owner.do(http.MethodGet, h.ubase, nil, nil); r.Code != 404 {
+		t.Fatal("a refused tree saved a unit")
 	}
 }
