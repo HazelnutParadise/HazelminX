@@ -23,6 +23,7 @@ import (
 	"github.com/HazelnutParadise/hazelminx/core/internal/confirm"
 	"github.com/HazelnutParadise/hazelminx/core/internal/engines"
 	"github.com/HazelnutParadise/hazelminx/core/internal/github"
+	"github.com/HazelnutParadise/hazelminx/core/internal/gitunits"
 	"github.com/HazelnutParadise/hazelminx/core/internal/grants"
 	"github.com/HazelnutParadise/hazelminx/core/internal/hostledger"
 	"github.com/HazelnutParadise/hazelminx/core/internal/hostmetrics"
@@ -182,9 +183,18 @@ func run(args []string) error {
 	}
 	// Background list queries are a Core-side job kind; handlers register
 	// before Recover so an interrupted query is reconciled, not orphaned.
+	// GitHub Apps and connections (ticket 047.1). Their secrets stay in
+	// the secret store; only Core talks to GitHub.
+	sources, err := github.New(github.Options{DB: st.DB, Vault: sec, Audit: identity, Client: github.NewHTTPClient(), PublicOrigin: cfg.PublicOrigin})
+	if err != nil {
+		return err
+	}
 	projectSvc := projects.New(projects.Options{DB: st.DB, Vault: sec, Reveal: sec, Audit: identity})
+	// Units from Git (ticket 049.1): Core fetches one commit in memory; the
+	// node only ever receives file content (decision 0036).
+	gitUnits := &gitunits.Service{DB: st.DB, Units: projectSvc, GitHub: sources, Vault: sec}
 	deployer := &composedeploy.Deployer{Units: projectSvc, Views: engineStore, Store: composedeploy.NewStore(st.DB, nil),
-		Grants: issuer, Steps: runner, Nodes: composedeploy.RegistryNodes{Get: registry.GetNode}}
+		Grants: issuer, Steps: runner, Nodes: composedeploy.RegistryNodes{Get: registry.GetNode}, Sources: gitUnits}
 	if err := engine.Register(composedeploy.DeployHandler{D: deployer}); err != nil {
 		return err
 	}
@@ -222,12 +232,6 @@ func run(args []string) error {
 		return err
 	}
 	router.MountChangePlans(changePlans)
-	// GitHub Apps and connections (ticket 047.1). Their secrets stay in
-	// the secret store; only Core talks to GitHub.
-	sources, err := github.New(github.Options{DB: st.DB, Vault: sec, Audit: identity, Client: github.NewHTTPClient(), PublicOrigin: cfg.PublicOrigin})
-	if err != nil {
-		return err
-	}
 	router.MountGitHub(sources)
 	// Projects, environments and Compose units (ticket 044.1). Secret
 	// files stay in the secret store; previews read the engine reports.
@@ -235,6 +239,7 @@ func run(args []string) error {
 	// Deploying units (ticket 044.2): a compose.deploy change plan runs as
 	// a job through the agent and the privileged executor.
 	router.MountComposeDeploy(projectSvc, deployer, engine)
+	router.MountGitUnits(gitUnits, sources)
 	if err := announceSetup(ctx, identity, os.Stdout); err != nil {
 		return err
 	}

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/HazelnutParadise/hazelminx/core/internal/gitunits"
 	"github.com/HazelnutParadise/hazelminx/core/internal/iam"
 	"github.com/HazelnutParadise/hazelminx/core/internal/jobs"
 	"github.com/HazelnutParadise/hazelminx/core/internal/nodereg"
@@ -61,6 +62,14 @@ type Nodes interface {
 	Node(ctx context.Context, id string) (fingerprint, name string, err error)
 }
 
+// Sources rechecks a Git unit's source before it is planned or deployed
+// (gitunits.Service): nil, nil for a unit that does not come from Git; an
+// error when the source changed or its connection can no longer read the
+// repository.
+type Sources interface {
+	Recheck(ctx context.Context, u *projects.Unit) (*gitunits.Source, error)
+}
+
 // Deployer is the compose.deploy plan kind and the compose.deploy and
 // compose.check job handlers.
 type Deployer struct {
@@ -70,6 +79,20 @@ type Deployer struct {
 	Grants Grants
 	Steps  Steps
 	Nodes  Nodes
+	// Sources is required once Git units exist; nil refuses to plan or
+	// deploy a Git unit.
+	Sources Sources
+}
+
+// gitSource rechecks u's source; nil for a unit that does not come from Git.
+func (d *Deployer) gitSource(ctx context.Context, u *projects.Unit) (*gitunits.Source, error) {
+	if u.Source != projects.SourceGit {
+		return nil, nil
+	}
+	if d.Sources == nil {
+		return nil, errors.New("composedeploy: Git units cannot be deployed: no source checker configured")
+	}
+	return d.Sources.Recheck(ctx, u)
 }
 
 // Params of the plan and of both jobs.
@@ -141,6 +164,15 @@ func (k PlanKind) Draft(ctx context.Context, raw json.RawMessage) (*plans.Draft,
 				Detail: "only the root-owned Docker or Podman engine of a host can be deployed to; this environment belongs to a user"})
 		}
 	}
+	src, err := k.D.gitSource(ctx, u)
+	switch {
+	case err != nil:
+		checks = append(checks, plans.Check{ID: "git-source", Status: plans.CheckFailed, Title: "Git source", Detail: err.Error(), Target: t.Key})
+	case src != nil:
+		checks = append(checks, plans.Check{ID: "git-source", Status: plans.CheckPass, Title: "Git source",
+			Detail: fmt.Sprintf("%s at commit %s (%s); the files were taken from this commit and are deployed as previewed", src.Repo(), src.Commit, src.Ref),
+			Target: t.Key, Evidence: []string{"commit " + src.Commit, "source digest " + src.Digest}})
+	}
 	for _, b := range pv.Blockers {
 		checks = append(checks, plans.Check{ID: b.Code, Status: plans.CheckFailed, Title: b.Code, Detail: b.Message, Target: t.Key, Evidence: evidence(b)})
 	}
@@ -159,6 +191,10 @@ func (k PlanKind) Draft(ctx context.Context, raw json.RawMessage) (*plans.Draft,
 	var changes []plans.Change
 	for _, f := range u.Files {
 		changes = append(changes, plans.Change{Target: t.Key, Path: "files/" + f.Path, After: map[string]any{"size": f.Size, "sha256": f.SHA256}, Secret: f.Secret, Op: "add"})
+	}
+	if src != nil {
+		changes = append(changes, plans.Change{Target: t.Key, Path: "source", Op: "change", After: map[string]any{"kind": src.Kind, "repo": src.Repo(),
+			"repoId": src.RepoID, "host": src.Host, "ref": src.Ref, "commit": src.Commit, "digest": src.Digest}})
 	}
 	changes = append(changes, plans.Change{Target: t.Key, Path: "compose", Op: "change",
 		After: map[string]any{"mainFile": u.MainFile, "extraFiles": u.ExtraFiles, "profiles": u.Profiles, "workingDir": u.WorkingDir}})
@@ -341,6 +377,7 @@ func (h DeployHandler) Verify(ctx context.Context, job *jobs.Job) (jobs.Completi
 
 type prepared struct {
 	unit     *projects.Unit
+	source   *gitunits.Source
 	manifest Manifest
 	staged   []StagedFile
 	redact   *redactor
@@ -357,6 +394,13 @@ func (d *Deployer) prepare(ctx context.Context, job *jobs.Job) (*prepared, error
 		return nil, &jobs.StepError{Code: "UNIT_GONE", NothingChanged: true, Summary: "the Compose unit no longer exists"}
 	case err != nil:
 		return nil, err
+	}
+	// GIT-038: the source this version was taken from must still be the
+	// one saved with it, and its connection must still read the repository.
+	src, err := d.gitSource(ctx, u)
+	if err != nil {
+		return nil, &jobs.StepError{Code: "GIT_SOURCE_CHANGED", NothingChanged: true,
+			Summary: "the unit's Git source must be checked again before deploying: " + err.Error()}
 	}
 	if u.Target == nil {
 		return nil, &jobs.StepError{Code: "TARGET_NOT_SET", NothingChanged: true, Summary: "the unit has no target engine"}
@@ -384,7 +428,7 @@ func (d *Deployer) prepare(ctx context.Context, job *jobs.Job) (*prepared, error
 		}
 		m.HostRiskApproved = slices.ContainsFunc(an.Findings, func(f projects.Finding) bool { return f.Severity == projects.SeverityHighRisk })
 	}
-	return &prepared{unit: u, manifest: m, staged: staged, redact: r}, nil
+	return &prepared{unit: u, source: src, manifest: m, staged: staged, redact: r}, nil
 }
 
 func (d *Deployer) run(ctx context.Context, job *jobs.Job, step *jobs.Step, rep jobs.Reporter, pr *prepared, deploy bool) (json.RawMessage, error) {
@@ -466,9 +510,14 @@ func (d *Deployer) deploy(ctx context.Context, job *jobs.Job, step *jobs.Step, r
 		return err
 	}
 	u := pr.unit
-	if _, err := d.Store.Begin(ctx, Deployment{ID: "dep_" + strings.TrimPrefix(job.ID, "job_"), UnitID: u.ID, UnitVersion: u.Version,
+	dep := Deployment{ID: "dep_" + strings.TrimPrefix(job.ID, "job_"), UnitID: u.ID, UnitVersion: u.Version,
 		ComposeProject: u.ComposeProject, Revision: pr.manifest.Revision, ManifestDigest: pr.manifest.Digest(), NodeID: u.Target.NodeID,
-		EngineEnvironmentID: u.Target.EngineEnvironmentID, JobID: job.ID, PlanID: job.ChangePlanID, CreatedBy: job.Requester}); err != nil {
+		EngineEnvironmentID: u.Target.EngineEnvironmentID, JobID: job.ID, PlanID: job.ChangePlanID, CreatedBy: job.Requester}
+	if pr.source != nil {
+		dep.SourceRepo, dep.SourceRef, dep.SourceCommit = pr.source.Repo(), pr.source.Ref, pr.source.Commit
+		rep.Log("deploying " + pr.source.Repo() + " at commit " + pr.source.Commit)
+	}
+	if _, err := d.Store.Begin(ctx, dep); err != nil {
 		return err
 	}
 	res, err := d.run(ctx, job, step, rep, pr, true)

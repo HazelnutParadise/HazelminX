@@ -1412,26 +1412,78 @@
         "044",
         "012"
       ],
+      "requirements": [],
+      "acceptance_tests": [],
+      "issue": 49
+    },
+    {
+      "id": "049.1",
+      "file": "done/049.1-git-source-deploy.md",
+      "title": "專案管理員可以讓 Compose 單元的來源是 Git，固定到 Core 解析的 commit 抓取並經既有預檢與批准部署",
+      "epic": "github",
+      "milestone": "M2",
+      "blocked_by": [
+        "048.1",
+        "044.1",
+        "044.2",
+        "047.1",
+        "011"
+      ],
       "requirements": [
         "CMP-002",
         "CMP-003",
-        "CMP-013",
         "GIT-009",
-        "GIT-010",
         "GIT-011",
-        "GIT-025",
-        "GIT-027",
         "GIT-038"
+      ],
+      "acceptance_tests": [
+        "GH-T09"
+      ],
+      "issue": 185,
+      "parent": "049"
+    },
+    {
+      "id": "049.2",
+      "file": "049.2-git-build-isolation.md",
+      "title": "專案管理員可以從 Git 來源在主機上隔離建置，submodule 與 Git LFS 逐項驗權抓取",
+      "epic": "github",
+      "milestone": "M2",
+      "blocked_by": [
+        "049.1",
+        "044.2"
+      ],
+      "requirements": [
+        "CMP-013",
+        "GIT-025",
+        "GIT-027"
       ],
       "acceptance_tests": [
         "T-063",
         "T-066",
-        "GH-T09",
-        "GH-T10",
         "GH-T24",
         "GH-T26"
       ],
-      "issue": 49
+      "issue": 186,
+      "parent": "049"
+    },
+    {
+      "id": "049.3",
+      "file": "049.3-git-platform-settings.md",
+      "title": "使用者可以為 Git 來源的單元套用平台 .env 與客製設定，新 commit 不覆寫",
+      "epic": "github",
+      "milestone": "M2",
+      "blocked_by": [
+        "049.1",
+        "045"
+      ],
+      "requirements": [
+        "GIT-010"
+      ],
+      "acceptance_tests": [
+        "GH-T10"
+      ],
+      "issue": 187,
+      "parent": "049"
     },
     {
       "id": "050",

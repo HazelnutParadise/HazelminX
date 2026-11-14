@@ -34,6 +34,11 @@ type Deployment struct {
 	CreatedBy           string          `json:"createdBy"`
 	StartedAt           time.Time       `json:"startedAt"`
 	FinishedAt          *time.Time      `json:"finishedAt,omitempty"`
+	// Source* name the commit a Git unit's deployment ran (ticket 049.1);
+	// empty for other units.
+	SourceRepo   string `json:"sourceRepo,omitempty"`
+	SourceRef    string `json:"sourceRef,omitempty"`
+	SourceCommit string `json:"sourceCommit,omitempty"`
 }
 
 // ErrNotFound: no such deployment.
@@ -56,14 +61,15 @@ func NewStore(db *sql.DB, now func() time.Time) *Store {
 func ts(t time.Time) string { return t.UTC().Truncate(time.Second).Format(time.RFC3339) }
 
 const cols = `id, unit_id, unit_version, compose_project, revision, manifest_digest, node_id, engine_env_id, job_id, plan_id, state, result,
-	error_code, error_message, created_by, started_at, finished_at`
+	error_code, error_message, created_by, started_at, finished_at, source_repo, source_ref, source_commit`
 
 func scan(r interface{ Scan(...any) error }) (*Deployment, error) {
 	var d Deployment
 	var result, started string
 	var finished sql.NullString
 	err := r.Scan(&d.ID, &d.UnitID, &d.UnitVersion, &d.ComposeProject, &d.Revision, &d.ManifestDigest, &d.NodeID, &d.EngineEnvironmentID,
-		&d.JobID, &d.PlanID, &d.State, &result, &d.ErrorCode, &d.ErrorMessage, &d.CreatedBy, &started, &finished)
+		&d.JobID, &d.PlanID, &d.State, &result, &d.ErrorCode, &d.ErrorMessage, &d.CreatedBy, &started, &finished,
+		&d.SourceRepo, &d.SourceRef, &d.SourceCommit)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -83,10 +89,11 @@ func scan(r interface{ Scan(...any) error }) (*Deployment, error) {
 // (the step retried) returns the existing row.
 func (s *Store) Begin(ctx context.Context, d Deployment) (*Deployment, error) {
 	_, err := s.db.ExecContext(ctx, `INSERT INTO compose_deployments (id, unit_id, unit_version, compose_project, revision, manifest_digest, node_id,
-		engine_env_id, job_id, plan_id, state, created_by, started_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?, ?)
+		engine_env_id, job_id, plan_id, state, created_by, started_at, source_repo, source_ref, source_commit)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?, ?, ?, ?, ?)
 		ON CONFLICT (job_id) DO NOTHING`,
 		d.ID, d.UnitID, d.UnitVersion, d.ComposeProject, d.Revision, d.ManifestDigest, d.NodeID, d.EngineEnvironmentID, d.JobID, d.PlanID,
-		d.CreatedBy, ts(s.now()))
+		d.CreatedBy, ts(s.now()), d.SourceRepo, d.SourceRef, d.SourceCommit)
 	if err != nil {
 		return nil, err
 	}
