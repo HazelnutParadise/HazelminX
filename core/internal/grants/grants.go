@@ -153,6 +153,31 @@ func (i *Issuer) PublicKeyPEM() []byte {
 // Ed25519 signature over Canonical; a subject or permission that is not a
 // token, no permissions, or a lifetime outside 1 s..MaxLifetime is ErrInvalid.
 func (i *Issuer) Issue(subject string, perms []string, lifetime time.Duration) (protocol.ExecutorGrant, error) {
+	return i.issue(subject, perms, lifetime, "")
+}
+
+// IssueBound issues a grant for exactly one action: binding is the hex
+// SHA-256 the action's handler computes over its parameters (decision 0035).
+func (i *Issuer) IssueBound(subject string, perms []string, lifetime time.Duration, binding string) (protocol.ExecutorGrant, error) {
+	if !isHexDigest(binding) {
+		return protocol.ExecutorGrant{}, ErrInvalid
+	}
+	return i.issue(subject, perms, lifetime, binding)
+}
+
+func isHexDigest(s string) bool {
+	if len(s) != 64 {
+		return false
+	}
+	for _, c := range []byte(s) {
+		if !(c >= '0' && c <= '9' || c >= 'a' && c <= 'f') {
+			return false
+		}
+	}
+	return true
+}
+
+func (i *Issuer) issue(subject string, perms []string, lifetime time.Duration, binding string) (protocol.ExecutorGrant, error) {
 	if !IsToken(subject) || len(perms) == 0 || lifetime < time.Second || lifetime > MaxLifetime {
 		return protocol.ExecutorGrant{}, ErrInvalid
 	}
@@ -172,6 +197,7 @@ func (i *Issuer) Issue(subject string, perms []string, lifetime time.Duration) (
 		Permissions: append([]string(nil), perms...),
 		NotBefore:   nb.Format(time.RFC3339),
 		ExpiresAt:   nb.Add(lifetime.Truncate(time.Second)).Format(time.RFC3339),
+		Binding:     binding,
 	}
 	i.Sign(&g)
 	return g, nil
@@ -184,8 +210,12 @@ func (i *Issuer) Sign(g *protocol.ExecutorGrant) {
 
 // Canonical is the executor's signed form of g.
 func Canonical(g protocol.ExecutorGrant) []byte {
-	return []byte(canonicalPrefix + "\n" + g.ID + "\n" + g.Subject + "\n" + g.NotBefore + "\n" +
-		g.ExpiresAt + "\n" + strings.Join(g.Permissions, ",") + "\n")
+	s := canonicalPrefix + "\n" + g.ID + "\n" + g.Subject + "\n" + g.NotBefore + "\n" +
+		g.ExpiresAt + "\n" + strings.Join(g.Permissions, ",") + "\n"
+	if g.Binding != "" {
+		s += "binding:" + g.Binding + "\n"
+	}
+	return []byte(s)
 }
 
 // IsToken matches the executor's charset for id, subject and permissions:

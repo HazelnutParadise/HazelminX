@@ -51,6 +51,7 @@ pub struct HostExecutor {
     sysroot: PathBuf,
     /// For `ledger_export`; `None` when the ledger could not be opened.
     ledger: Option<Arc<Ledger>>,
+    compose: handlers::compose::ComposeConfig,
 }
 
 impl HostExecutor {
@@ -63,7 +64,17 @@ impl HostExecutor {
             runner,
             sysroot: sysroot.into(),
             ledger,
+            compose: handlers::compose::ComposeConfig {
+                spool_dir: PathBuf::from(crate::config::DEFAULT_COMPOSE_SPOOL_DIR),
+                agent_uid: None,
+            },
         }
+    }
+
+    /// Where `compose_*` actions read the agent's spool and whose it is.
+    pub fn with_compose(mut self, compose: handlers::compose::ComposeConfig) -> Self {
+        self.compose = compose;
+        self
     }
 }
 
@@ -76,6 +87,7 @@ impl Executor for HostExecutor {
         let runner = self.runner.clone();
         let sysroot = self.sysroot.clone();
         let ledger = self.ledger.clone();
+        let compose = self.compose.clone();
         Box::pin(async move {
             match action {
                 Action::SystemInfo {} => handlers::system_info::run(&sysroot).await,
@@ -87,6 +99,12 @@ impl Executor for HostExecutor {
                 }
                 Action::EngineInspect {} => handlers::engines::run(runner, &sysroot).await,
                 Action::StorageUsage {} => handlers::storage_usage::run(&sysroot).await,
+                Action::ComposeCheck { manifest } => {
+                    handlers::compose::check_only(runner, &sysroot, &compose, manifest).await
+                }
+                Action::ComposeDeploy { manifest } => {
+                    handlers::compose::deploy(runner, &sysroot, &compose, manifest, sink).await
+                }
                 Action::LedgerExport {
                     after_seq,
                     limit,

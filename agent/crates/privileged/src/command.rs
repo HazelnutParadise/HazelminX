@@ -31,6 +31,10 @@ pub struct CommandSpec {
     pub program: PathBuf,
     pub args: Vec<OsString>,
     pub env: Vec<(OsString, OsString)>,
+    /// Start with an empty environment: no PATH or locale is added. For
+    /// programs that substitute environment variables into user content
+    /// (Compose), so they see exactly what Core analysed.
+    pub bare_env: bool,
 }
 
 impl CommandSpec {
@@ -39,7 +43,12 @@ impl CommandSpec {
             program: program.into(),
             args: Vec::new(),
             env: Vec::new(),
+            bare_env: false,
         }
+    }
+    pub fn bare_env(mut self) -> Self {
+        self.bare_env = true;
+        self
     }
     pub fn arg(mut self, a: impl AsRef<OsStr>) -> Self {
         self.args.push(a.as_ref().to_os_string());
@@ -134,12 +143,13 @@ impl CommandRunner for HostRunner {
     ) -> BoxFuture<'static, io::Result<CommandOutput>> {
         Box::pin(async move {
             let mut cmd = tokio::process::Command::new(&spec.program);
-            cmd.args(&spec.args)
-                .env_clear()
-                .env("PATH", BASE_PATH)
-                .env("LANG", "C.UTF-8")
-                .env("LC_ALL", "C.UTF-8")
-                .envs(spec.env.iter().map(|(k, v)| (k.as_os_str(), v.as_os_str())))
+            cmd.args(&spec.args).env_clear();
+            if !spec.bare_env {
+                cmd.env("PATH", BASE_PATH)
+                    .env("LANG", "C.UTF-8")
+                    .env("LC_ALL", "C.UTF-8");
+            }
+            cmd.envs(spec.env.iter().map(|(k, v)| (k.as_os_str(), v.as_os_str())))
                 .stdin(Stdio::null())
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped())

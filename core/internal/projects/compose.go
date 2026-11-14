@@ -615,6 +615,12 @@ var sensitiveHostPaths = []string{"/", "/etc", "/root", "/proc", "/sys", "/dev",
 var engineSockets = []string{"docker.sock", "podman.sock", "containerd.sock"}
 
 func (a *Analysis) hostPathRisk(at, p string, ro bool) {
+	// The executor runs Compose without HOME (044.2, decision 0035), so ~
+	// would not mean anyone's home directory on the host.
+	if p == "~" || strings.HasPrefix(p, "~/") {
+		a.add(SeverityError, "home-path", "", at, "~ is not expanded when HazelminX deploys: write the absolute host path")
+		return
+	}
 	clean := path.Clean(p)
 	for _, s := range engineSockets {
 		if strings.HasSuffix(clean, "/"+s) {

@@ -2,6 +2,9 @@ package projects
 
 import (
 	"context"
+	"os"
+	"regexp"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -261,5 +264,43 @@ func TestLabelFilesStayInsideTheUnit(t *testing.T) {
 	ok := analyze(t, SourceSpec{Files: files("compose.yaml", "services:\n  web:\n    image: nginx\n    label_file: ./labels\n", "labels", "a=b\n"), MainFile: "compose.yaml"})
 	if !ok.Valid {
 		t.Fatalf("unit label file: %+v", ok.Findings)
+	}
+}
+
+// The executor runs Compose without HOME, so ~ is refused (044.2 review).
+func TestHomePathsAreRefused(t *testing.T) {
+	a := analyze(t, SourceSpec{Files: files("compose.yaml", `
+services:
+  web:
+    image: busybox:1.37
+    volumes: ["~/.ssh:/keys"]
+`), MainFile: "compose.yaml"})
+	if f := finding(a, "home-path"); f == nil || f.Severity != SeverityError || a.Valid {
+		t.Fatalf("~/.ssh: %+v", a.Findings)
+	}
+}
+
+// The executor re-applies these rules on the host (handlers/compose.rs);
+// both lists must stay the same.
+func TestSensitivePathsMatchTheExecutor(t *testing.T) {
+	b, err := os.ReadFile("../../../agent/crates/privileged/src/handlers/compose.rs")
+	if err != nil {
+		t.Fatal(err)
+	}
+	src := string(b)
+	list := func(name string) []string {
+		i := strings.Index(src, "pub const "+name)
+		j := strings.Index(src[i:], "];")
+		var out []string
+		for _, m := range regexp.MustCompile(`"([^"]+)"`).FindAllStringSubmatch(src[i:i+j], -1) {
+			out = append(out, m[1])
+		}
+		return out
+	}
+	if got := list("SENSITIVE_HOST_PATHS"); !slices.Equal(got, sensitiveHostPaths) {
+		t.Fatalf("executor %v, Core %v", got, sensitiveHostPaths)
+	}
+	if got := list("ENGINE_SOCKETS"); !slices.Equal(got, engineSockets) {
+		t.Fatalf("executor %v, Core %v", got, engineSockets)
 	}
 }

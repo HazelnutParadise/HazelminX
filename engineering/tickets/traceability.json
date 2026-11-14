@@ -408,7 +408,7 @@
     },
     {
       "id": "019",
-      "file": "019-node-enrollment.md",
+      "file": "done/019-node-enrollment.md",
       "title": "管理員可以用一次性註冊碼加入節點，並看到離線、過期、維護與撤銷狀態",
       "epic": "nodes",
       "milestone": "M1",
@@ -1195,7 +1195,7 @@
     },
     {
       "id": "044.2",
-      "file": "044.2-compose-deploy.md",
+      "file": "done/044.2-compose-deploy.md",
       "title": "專案管理員可以在預檢與批准後，由工作透過高權限執行器建置並部署整個 Compose 專案",
       "epic": "compose",
       "milestone": "M2",
@@ -1210,7 +1210,9 @@
         "CMP-008",
         "CMP-012"
       ],
-      "acceptance_tests": [],
+      "acceptance_tests": [
+        "T-052"
+      ],
       "issue": 177,
       "parent": "044"
     },

@@ -23,4 +23,4 @@ CMP-001 的 Git 來源由 049 交付、商店來源由 052 交付，兩者都使
 
 ### 票 019 交過來的項目
 
-- NOD-008「節點進入維護時列出受影響服務」等本票有服務的資料模型後補上（使用者 2026-11-12 決定）。目前 `PUT /management/v1/nodes/{id}/maintenance` 的 `affectedJobs` 只列節點上未完成的工作，產生的地方是 `core/internal/nodereg/nodes.go` 的 `SetMaintenance`。服務要部署後才在節點上執行，所以列出受影響服務在 044.2 做；補上後回到票 019 勾 NOD-008，019 才能移到 `done/`。
+- NOD-008「節點進入維護時列出受影響服務」等本票有服務的資料模型後補上（使用者 2026-11-12 決定）。目前 `PUT /management/v1/nodes/{id}/maintenance` 的 `affectedJobs` 只列節點上未完成的工作，產生的地方是 `core/internal/nodereg/nodes.go` 的 `SetMaintenance`。服務要部署後才在節點上執行，所以列出受影響服務在 044.2 做；補上後回到票 019 勾 NOD-008，019 才能移到 `done/`。**已完成（044.2）：** 維護回應的 `affectedServices`，019 已移到 `done/`。

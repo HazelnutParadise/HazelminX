@@ -10,6 +10,7 @@
 //! Module map:
 //! - [`params`]   validated parameter types (unit names, paths, users, env)
 //! - [`command`]  argv-only command execution seam (`CommandRunner`)
+//! - [`compose_manifest`] what one Compose revision is (044.2)
 //! - [`action`]   the closed set of named actions and their permissions
 //! - [`grant`]    signed authorization grants and the revocation list
 //! - [`audit`]    security events (never contain secrets)
@@ -23,6 +24,7 @@ pub mod action;
 pub mod audit;
 pub mod client;
 pub mod command;
+pub mod compose_manifest;
 pub mod config;
 pub mod executor;
 pub mod grant;

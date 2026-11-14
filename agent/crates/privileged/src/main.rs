@@ -262,7 +262,12 @@ async fn run(cfg: Config) -> Result<()> {
         "/",
         ledger.as_ref().ok().map(|l| l.backup_dir()),
     );
-    let executor = HostExecutor::new(runner, "/", ledger.as_ref().ok().cloned());
+    let executor = HostExecutor::new(runner, "/", ledger.as_ref().ok().cloned()).with_compose(
+        hazelminx_privileged::handlers::compose::ComposeConfig {
+            spool_dir: cfg.compose_spool_dir.clone(),
+            agent_uid: cfg.allowed_uid,
+        },
+    );
     let recorder = Recorder::new(ledger, Arc::new(probe));
     let server = Server::new(
         ServerConfig {

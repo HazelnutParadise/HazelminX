@@ -9,6 +9,8 @@ package api
 
 import (
 	"context"
+
+	"github.com/HazelnutParadise/hazelminx/core/internal/composedeploy"
 	"io/fs"
 	"net/http"
 	"strings"
@@ -48,6 +50,12 @@ type Server struct {
 	jobs      *jobs.Engine     // set by RegisterJobs
 	confirm   *confirm.Service // set by MountConfirmations
 	plans     *plans.Service   // set by MountChangePlans
+	// reservedKinds are job kinds POST /jobs refuses: kind → the endpoint
+	// that submits them after checking the resource's permissions.
+	reservedKinds map[string]string
+	// nodeServices lists the Compose projects deployed to a node (set by
+	// MountComposeDeploy).
+	nodeServices func(ctx context.Context, nodeID string) ([]composedeploy.OnNode, error)
 	// platform reports platform-level degradation (addendum 03 機制四);
 	// ticket 017 wires the detectors. Nil means not degraded.
 	platform func() *PlatformDegradation
