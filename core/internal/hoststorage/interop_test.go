@@ -303,8 +303,10 @@ func TestInteropRootHelperMeasuresWhatAgentCannotRead(t *testing.T) {
 	}
 	const nobody = 65534
 	ctx := context.Background()
-	// /var/lib/docker must be its own local filesystem (an overlay root is
-	// not measured): the CI job and the container recipe mount one there.
+	// /var/lib/docker must be on a local filesystem (an overlay root is not
+	// measured): on a CI runner it is on the root disk, in a container a
+	// volume is mounted there. The walk covers the whole host, so the CI
+	// step allows 30 minutes.
 	if out, err := exec.Command("findmnt", "-n", "-o", "FSTYPE", "-T", "/var/lib/docker").Output(); err != nil || len(out) == 0 || strings.TrimSpace(string(out)) == "overlay" {
 		t.Skip("/var/lib/docker is on an overlay root, which is not measured")
 	}

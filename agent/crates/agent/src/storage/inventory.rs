@@ -50,7 +50,12 @@ impl Inventory {
         for c in configs.iter_mut() {
             c.resolves_to = ids.resolve(&c.spec);
         }
-        let mounts = match self.read("/proc/self/mountinfo") {
+        // The agent's unit hides /home (ProtectHome) in its own mount
+        // namespace; PID 1's mountinfo is the host's, when readable.
+        let mounts = match self
+            .read("/proc/1/mountinfo")
+            .or_else(|| self.read("/proc/self/mountinfo"))
+        {
             Some(t) => mounts(&t, &devices, &configs),
             None => {
                 unreadable.push("/proc/self/mountinfo".into());

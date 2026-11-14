@@ -234,7 +234,7 @@ jobs:
         working-directory: core
         run: |
           sudo --preserve-env=HAZELMINX_AGENT_BIN,HAZELMINX_PRIVILEGED_BIN,GOCACHE,GOMODCACHE,GOFLAGS \
-            HAZELMINX_DISPOSABLE_HOST=1 "$(command -v go)" test ./internal/hoststorage -run Interop -count=1 -v
+            HAZELMINX_DISPOSABLE_HOST=1 "$(command -v go)" test ./internal/hoststorage -run Interop -count=1 -timeout 30m -v
         env:
           HAZELMINX_AGENT_BIN: ${{ github.workspace }}/agent/target/debug/hazelminx-agent
           HAZELMINX_PRIVILEGED_BIN: ${{ github.workspace }}/agent/target/debug/hazelminx-privileged

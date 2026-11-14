@@ -88,6 +88,18 @@ func TestProberRecordsMeasurementOrWhyNot(t *testing.T) {
 	if due, _ := p.Due(ctx, node); !due {
 		t.Fatal("due again after the interval")
 	}
+	// An agent clock 10 hours behind: the measurement is still stored
+	// (latest answer wins) and the node is not due again right away.
+	p.Now = func() time.Time { return now }
+	hub.err = nil
+	hub.u.Usage.Filesystems[0].OtherBytes = u64(4)
+	hub.u.Usage.StartedAt = now.Add(-10 * time.Hour)
+	if err := p.Probe(ctx, "fp"); err != nil {
+		t.Fatal(err)
+	}
+	if due, _ := p.Due(ctx, node); due {
+		t.Fatal("due is judged by when Core received it, not the agent's clock")
+	}
 }
 
 type nilMetrics struct{}

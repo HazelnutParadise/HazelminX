@@ -136,7 +136,7 @@ impl Walk<'_> {
         let mut stack = vec![top.to_path_buf()];
         let mut complete = true;
         while let Some(dir) = stack.pop() {
-            let it = match std::fs::read_dir(&dir) {
+            let it = match open_dir(&dir) {
                 Ok(it) => it,
                 Err(_) => {
                     *unreadable += 1;
@@ -320,6 +320,69 @@ fn under(path: &str, mount_point: &str) -> bool {
             .is_some_and(|rest| rest.starts_with('/'))
 }
 
+/// Lists a directory without following a symlink at its own path, so a
+/// directory swapped for a link to `/` after it was seen (a container
+/// writing into a volume) is not walked as root. On Linux the directory is
+/// opened with `O_NOFOLLOW | O_DIRECTORY` and read through that descriptor.
+#[cfg(target_os = "linux")]
+fn open_dir(dir: &Path) -> std::io::Result<std::fs::ReadDir> {
+    use std::os::unix::fs::OpenOptionsExt;
+    use std::os::unix::io::AsRawFd;
+    let f = std::fs::OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_NOFOLLOW | libc::O_DIRECTORY)
+        .open(dir)?;
+    // read_dir opens its own descriptor of the directory f refers to.
+    std::fs::read_dir(format!("/proc/self/fd/{}", f.as_raw_fd()))
+}
+
+#[cfg(not(target_os = "linux"))]
+fn open_dir(dir: &Path) -> std::io::Result<std::fs::ReadDir> {
+    if std::fs::symlink_metadata(dir)?.file_type().is_symlink() {
+        return Err(std::io::Error::other("a symlink, not a directory"));
+    }
+    std::fs::read_dir(dir)
+}
+
+/// One walk at a time: a request whose caller went away keeps running (the
+/// blocking thread cannot be cancelled), so another must not start beside
+/// it and hold a second action slot for many minutes.
+static RUNNING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+struct RunningGuard;
+
+impl RunningGuard {
+    fn take() -> Option<RunningGuard> {
+        use std::sync::atomic::Ordering;
+        RUNNING
+            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+            .ok()
+            .map(|_| RunningGuard)
+    }
+}
+
+impl Drop for RunningGuard {
+    fn drop(&mut self) {
+        RUNNING.store(false, std::sync::atomic::Ordering::Release);
+    }
+}
+
+/// The host's own view: the executor's unit hides `/home` (`ProtectHome`)
+/// and `/tmp` in its mount namespace, so it reads PID 1's mountinfo and
+/// walks through `/proc/1/root` when it can, and its own otherwise.
+fn host_view(sysroot: &Path) -> (PathBuf, std::io::Result<String>) {
+    let init = sysroot.join("proc/1/root");
+    if let Ok(t) = std::fs::read_to_string(sysroot.join("proc/1/mountinfo"))
+        && std::fs::read_dir(&init).is_ok()
+    {
+        return (init, Ok(t));
+    }
+    (
+        sysroot.to_path_buf(),
+        std::fs::read_to_string(sysroot.join("proc/self/mountinfo")),
+    )
+}
+
 /// A local mount as the walk needs it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Mount {
@@ -425,13 +488,19 @@ fn lowest_priority() {}
 /// blocking thread at the lowest priority.
 pub async fn run(sysroot: &Path) -> ActionResult {
     let sysroot = sysroot.to_path_buf();
+    let Some(guard) = RunningGuard::take() else {
+        return Err(ActionError::new(
+            "a storage usage measurement is already running",
+        ));
+    };
     let usage = tokio::task::spawn_blocking(move || {
+        let _guard = guard;
         lowest_priority();
-        let text = std::fs::read_to_string(sysroot.join("proc/self/mountinfo"))
-            .map_err(|e| ActionError::new(format!("cannot read mountinfo: {e}")))?;
+        let (root, text) = host_view(&sysroot);
+        let text = text.map_err(|e| ActionError::new(format!("cannot read mountinfo: {e}")))?;
         let (mounts, points) = mounts_from(&text);
         Ok::<_, ActionError>(measure(
-            &sysroot,
+            &root,
             &mounts,
             &points,
             Budget::default(),

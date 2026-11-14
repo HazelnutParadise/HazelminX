@@ -87,7 +87,10 @@ func (s *Store) RecordInventory(ctx context.Context, nodeID string, m *protocol.
 	return err
 }
 
-// RecordUsage replaces a node's usage measurement, under the same rules.
+// RecordUsage replaces a node's usage measurement. Measurements arrive
+// one at a time, each answering Core's own request, so the latest answer
+// wins even when the agent's clock went back; a clock too far ahead is
+// still ErrValidation.
 func (s *Store) RecordUsage(ctx context.Context, nodeID string, m *protocol.StorageUsage) error {
 	u := m.Usage
 	if u.StartedAt.After(s.now().Add(maxClockAhead)) {
@@ -122,8 +125,7 @@ func (s *Store) RecordUsage(ctx context.Context, nodeID string, m *protocol.Stor
 	}
 	_, err = s.db.ExecContext(ctx, `INSERT INTO host_storage_usage (node_id, usage, started_at, received_at) VALUES (?, ?, ?, ?)
 		ON CONFLICT (node_id) DO UPDATE SET usage = excluded.usage, started_at = excluded.started_at, received_at = excluded.received_at,
-			error_code = NULL, error_message = NULL, error_at = NULL
-		WHERE host_storage_usage.started_at IS NULL OR excluded.started_at >= host_storage_usage.started_at`,
+			error_code = NULL, error_message = NULL, error_at = NULL`,
 		nodeID, string(b), ts(u.StartedAt), ts(s.now()))
 	return err
 }

@@ -234,3 +234,42 @@ fn mounts_from_mountinfo_keep_points_and_skip_pseudo() {
         ]
     );
 }
+
+/// A directory swapped for a symlink is not listed through the link.
+#[cfg(unix)]
+#[test]
+fn open_dir_refuses_a_symlink() {
+    let t = tempfile::tempdir().unwrap();
+    fs::create_dir(t.path().join("real")).unwrap();
+    std::os::unix::fs::symlink(t.path().join("real"), t.path().join("link")).unwrap();
+    assert!(open_dir(&t.path().join("real")).is_ok());
+    assert!(open_dir(&t.path().join("link")).is_err());
+}
+
+/// One walk at a time.
+#[test]
+fn only_one_measurement_runs() {
+    let a = RunningGuard::take().expect("first");
+    assert!(RunningGuard::take().is_none());
+    drop(a);
+    assert!(RunningGuard::take().is_some());
+}
+
+/// The host's view comes from PID 1 when it is readable.
+#[test]
+fn host_view_prefers_pid_1() {
+    let t = tempfile::tempdir().unwrap();
+    write(t.path(), "/proc/self/mountinfo", "self");
+    let (root, text) = host_view(t.path());
+    assert_eq!(
+        (root, text.unwrap()),
+        (t.path().to_path_buf(), "self".to_string())
+    );
+    write(t.path(), "/proc/1/mountinfo", "init");
+    fs::create_dir_all(t.path().join("proc/1/root")).unwrap();
+    let (root, text) = host_view(t.path());
+    assert_eq!(
+        (root, text.unwrap()),
+        (t.path().join("proc/1/root"), "init".to_string())
+    );
+}

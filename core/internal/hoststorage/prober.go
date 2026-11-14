@@ -150,8 +150,9 @@ func (p *Prober) fail(ctx context.Context, nodeID, code string, err error) error
 }
 
 // Due reports whether the node needs a new measurement: none yet, or the
-// latest started more than Interval ago, or the latest request failed
-// more than Interval ago. A failure does not retry sooner, so a host
+// latest was received more than Interval ago, or the latest request failed
+// more than Interval ago, all by Core's clock (an agent clock running
+// behind must not make a node due on every tick). A failure does not retry sooner, so a host
 // without the executor is not asked every few minutes.
 func (p *Prober) Due(ctx context.Context, nodeID string) (bool, error) {
 	p.once.Do(p.defaults)
@@ -161,7 +162,7 @@ func (p *Prober) Due(ctx context.Context, nodeID string) (bool, error) {
 	}
 	last := time.Time{}
 	if u.Measured {
-		last = u.Usage.StartedAt
+		last = u.ReceivedAt
 	}
 	if u.Error != nil && u.Error.At.After(last) {
 		last = u.Error.At
