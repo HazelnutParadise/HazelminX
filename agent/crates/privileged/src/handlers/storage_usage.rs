@@ -152,7 +152,9 @@ impl Walk<'_> {
                     complete = false;
                     continue;
                 };
-                let p = e.path();
+                // The entry's name under the real path: listed through
+                // /proc/self/fd, e.path() would name the descriptor.
+                let p = dir.join(e.file_name());
                 if self.roots.contains(&p) || self.points.contains(&p) {
                     continue;
                 }
