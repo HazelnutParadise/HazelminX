@@ -121,6 +121,7 @@ func (r *Repo) Tag(name string) {
 type HTTPServer struct {
 	*httptest.Server
 	mu      sync.Mutex
+	token   string
 	Seen    []string // request URIs
 	Headers []string // Authorization headers
 }
@@ -134,11 +135,12 @@ func (r *Repo) ServeHTTP(token string) *HTTPServer {
 	}
 	h := &cgi.Handler{Path: filepath.Join(strings.TrimSpace(string(backend)), "git-http-backend"),
 		Env: []string{"GIT_PROJECT_ROOT=" + r.Root, "GIT_HTTP_EXPORT_ALL=1", "GIT_CONFIG_NOSYSTEM=1", "GIT_CONFIG_GLOBAL=/dev/null"}}
-	s := &HTTPServer{}
+	s := &HTTPServer{token: token}
 	s.Server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		s.mu.Lock()
 		s.Seen = append(s.Seen, req.RequestURI)
 		s.Headers = append(s.Headers, req.Header.Get("Authorization"))
+		token := s.token
 		s.mu.Unlock()
 		if token != "" {
 			if _, pw, ok := req.BasicAuth(); !ok || pw != token {
@@ -152,6 +154,9 @@ func (r *Repo) ServeHTTP(token string) *HTTPServer {
 	r.t.Cleanup(s.Close)
 	return s
 }
+
+// SetToken changes the password the server accepts, as a revocation would.
+func (s *HTTPServer) SetToken(t string) { s.mu.Lock(); s.token = t; s.mu.Unlock() }
 
 // URL of the repository on s.
 func (s *HTTPServer) URL(r *Repo) string { return s.Server.URL + "/" + r.Name + ".git" }

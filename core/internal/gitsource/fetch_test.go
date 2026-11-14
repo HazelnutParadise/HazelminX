@@ -3,9 +3,12 @@ package gitsource_test
 import (
 	"context"
 	"errors"
+	"net"
 	"net/netip"
+	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/HazelnutParadise/hazelminx/core/internal/gitsource"
 	"github.com/HazelnutParadise/hazelminx/core/internal/gitsource/gittest"
@@ -87,13 +90,32 @@ func TestFetchReportsTreeEntryKinds(t *testing.T) {
 	}
 }
 
-func TestFetchStopsAtTheMemoryLimit(t *testing.T) {
+func TestFetchStopsAtTheMemoryLimitBeforeInflating(t *testing.T) {
 	r := gittest.NewRepo(t, "big")
-	sha := r.Commit("main", "big", map[string]string{"zeros": strings.Repeat("\x00", 4<<20)})
+	// 64 MiB of zeros compresses to about 64 KiB: the pack is small, the
+	// blob is not. The fetch must stop without holding the blob.
+	sha := r.Commit("main", "big", map[string]string{"zeros": strings.Repeat("\x00", 64<<20), "a": "b"})
 	srv := r.ServeHTTP("")
 	f := gitsource.Fetcher{AllowLocal: true, MaxBytes: 1 << 20}
-	if _, err := f.Fetch(context.Background(), gitsource.Remote{URL: srv.URL(r)}, sha); !errors.Is(err, gitsource.ErrTooLarge) {
+	runtime.GC()
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
+	_, err := f.Fetch(context.Background(), gitsource.Remote{URL: srv.URL(r)}, sha)
+	runtime.ReadMemStats(&after)
+	if !errors.Is(err, gitsource.ErrTooLarge) {
 		t.Fatalf("got %v, want ErrTooLarge", err)
+	}
+	if alloc := after.TotalAlloc - before.TotalAlloc; alloc > 32<<20 {
+		t.Fatalf("allocated %d MiB while refusing a 64 MiB blob with a 1 MiB limit", alloc>>20)
+	}
+	// Within the limit the same store still reads every object.
+	small := r.Commit("small", "small", map[string]string{"compose.yaml": strings.Repeat("x: 1\n", 1000)})
+	snap, err := f.Fetch(context.Background(), gitsource.Remote{URL: srv.URL(r)}, small)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if b, err := snap.Read(snap.Entries["compose.yaml"], 1<<20); err != nil || len(b) != 5000 {
+		t.Fatalf("read back %d bytes, %v", len(b), err)
 	}
 }
 
@@ -182,5 +204,67 @@ func TestRedirectsAreNotFollowed(t *testing.T) {
 		if a != "" {
 			t.Fatalf("credential reached the redirect target: %q", a)
 		}
+	}
+}
+
+// A server that accepts the connection and never speaks must not hold an
+// SSH fetch past its timeout (go-git handshakes without a deadline).
+func TestSSHHandshakeIsBoundedByTheTimeout(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ln.Close()
+	go func() {
+		for {
+			c, err := ln.Accept()
+			if err != nil {
+				return
+			}
+			defer c.Close()
+		}
+	}()
+	key, host, _ := gittest.NewKey(t)
+	f := gitsource.Fetcher{AllowLocal: true, Timeout: 2 * time.Second}
+	start := time.Now()
+	_, err = f.Fetch(context.Background(), gitsource.Remote{URL: "ssh://git@" + ln.Addr().String() + "/r.git",
+		Auth: gitsource.Auth{PrivateKey: key, HostKey: host}}, strings.Repeat("ab", 20))
+	if err == nil || time.Since(start) > 6*time.Second {
+		t.Fatalf("fetch returned after %v: %v", time.Since(start), err)
+	}
+}
+
+// Connection failures say only that the repository could not be reached:
+// an open, a closed and a non-TLS port answer alike.
+func TestConnectionErrorsDoNotTellPortsApart(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	go func() {
+		for {
+			c, err := ln.Accept()
+			if err != nil {
+				return
+			}
+			c.Write([]byte("SSH-2.0-not-http\r\n"))
+			c.Close()
+		}
+	}()
+	open := ln.Addr().String()
+	closed, _ := net.Listen("tcp", "127.0.0.1:0")
+	closedAddr := closed.Addr().String()
+	closed.Close()
+	defer ln.Close()
+	var msgs []string
+	for _, a := range []string{open, closedAddr} {
+		_, err := local.Resolve(context.Background(), gitsource.Remote{URL: "https://" + a + "/r.git"}, "main")
+		if !errors.Is(err, gitsource.ErrUnavailable) {
+			t.Fatalf("%s: %v", a, err)
+		}
+		msgs = append(msgs, err.Error())
+	}
+	if msgs[0] != msgs[1] {
+		t.Fatalf("answers differ: %q vs %q", msgs[0], msgs[1])
 	}
 }

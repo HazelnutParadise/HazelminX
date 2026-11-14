@@ -470,10 +470,33 @@ func (s *Service) Recheck(ctx context.Context, u *projects.Unit) (*Source, error
 	if digest(src) != src.Digest {
 		return nil, fmt.Errorf("%w: the stored source does not match its digest", ErrChanged)
 	}
-	if src.Kind == KindGitHub {
+	switch src.Kind {
+	case KindGitHub:
 		if err := s.GitHub.SourceUsable(ctx, src.ConnectionID, src.RepoID); err != nil {
 			return nil, err
+		}
+	case KindURL:
+		// The unit's own credential may have been revoked since: list the
+		// remote's refs with it. A branch that moved does not matter; the
+		// files are the saved commit's.
+		var auth gitsource.Auth
+		if src.secretID != "" {
+			v, _, err := s.Vault.Reveal(ctx, secrets.RevealRequest{ID: src.secretID, Consumer: projects.Consumer(src.UnitID)})
+			if err != nil {
+				return nil, fmt.Errorf("gitunits: read the stored credential: %w", err)
+			}
+			auth = authOf(src.Auth, src.Username, v, src.HostKey)
+		}
+		ref := src.Ref
+		if IsSHA(ref) {
+			ref = "HEAD"
+		}
+		if _, err := s.Fetcher.Resolve(ctx, gitsource.Remote{URL: src.URL, Auth: auth}, ref); err != nil && !errors.Is(err, gitsource.ErrNotFound) {
+			return nil, fmt.Errorf("the repository can no longer be read with the stored credential: %w", err)
 		}
 	}
 	return src, nil
 }
+
+// IsSHA says whether ref is a full commit SHA.
+func IsSHA(ref string) bool { return gitsource.IsCommit(ref) }

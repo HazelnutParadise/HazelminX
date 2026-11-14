@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"slices"
 	"sort"
 	"strings"
 	"unicode/utf8"
@@ -33,7 +34,9 @@ func (e *RefusedError) Error() string {
 	return b.String()
 }
 
-var lfsPointer = []byte("version https://git-lfs.github.com/spec/v1")
+// LFS pointer files start with one of these (the second is the format's
+// original name, still read by git-lfs).
+var lfsPointers = [][]byte{[]byte("version https://git-lfs.github.com/spec/v1"), []byte("version https://hawser.github.com/spec/v1")}
 
 // layout is what the extraction needs from the input.
 type layout struct {
@@ -95,7 +98,7 @@ func extract(ctx context.Context, snap *gitsource.Snapshot, l layout) (*extracte
 			refuse("file-too-large", p, fmt.Sprintf("is larger than %d bytes", projects.MaxFileBytes))
 			return
 		}
-		if bytes.HasPrefix(b, lfsPointer) {
+		if slices.ContainsFunc(lfsPointers, func(p []byte) bool { return bytes.HasPrefix(b, p) }) {
 			refuse("lfs", p, "is a Git LFS pointer; LFS objects are fetched in ticket 049.2")
 			return
 		}
@@ -110,7 +113,7 @@ func extract(ctx context.Context, snap *gitsource.Snapshot, l layout) (*extracte
 	addTree := func(dir string) {
 		var under []string
 		for p, e := range snap.Entries {
-			if strings.HasPrefix(p, dir+"/") {
+			if dir == "." || strings.HasPrefix(p, dir+"/") {
 				if !e.Regular() {
 					add(p, false) // records why
 					continue
@@ -128,6 +131,9 @@ func extract(ctx context.Context, snap *gitsource.Snapshot, l layout) (*extracte
 		}
 	}
 	isDir := func(p string) bool {
+		if p == "." {
+			return len(snap.Entries) > 0
+		}
 		for q := range snap.Entries {
 			if strings.HasPrefix(q, p+"/") {
 				return true
@@ -163,7 +169,10 @@ func extract(ctx context.Context, snap *gitsource.Snapshot, l layout) (*extracte
 			refuse("build", "services."+s.Name+".build", "builds from Git come in ticket 049.2; use an image for now")
 		}
 		for _, m := range s.Mounts {
-			if m.Kind != projects.MountDataDir || !inTree(m.Source) {
+			// A source-file mount found only the Compose files themselves
+			// (they are all the analysis was given): a directory holding
+			// them is taken whole, as a checkout would have it.
+			if (m.Kind != projects.MountDataDir && m.Kind != projects.MountSourceFile) || !inTree(m.Source) {
 				continue
 			}
 			if _, ok := snap.Entries[m.Source]; ok || !isDir(m.Source) {

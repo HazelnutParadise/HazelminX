@@ -195,6 +195,15 @@ func TestGitUnitDeploysTheCommitCoreFixedThroughThePlan(t *testing.T) {
 		t.Fatalf("second deployment: %v", j)
 	}
 
+	// The token is revoked on the server: a new plan shows the source check
+	// failing, so nothing deploys with a credential that no longer works.
+	srv.SetToken("rotated")
+	pl := h.plan(t)
+	if raw, _ := json.Marshal(pl); !strings.Contains(string(raw), "can no longer be read with the stored credential") {
+		t.Fatalf("plan after revocation: %s", raw)
+	}
+	srv.SetToken(gitToken)
+
 	// The stored token is kept only for the same URL.
 	cur = h.owner.do(http.MethodGet, h.ubase, nil, nil)
 	other := map[string]any{"url": "https://example.com/other.git", "credential": map[string]any{"unchanged": true}}
@@ -355,5 +364,38 @@ func TestGitUnitOverSSHNeedsThePinnedHostKey(t *testing.T) {
 	}
 	if strings.Contains(dump(t, h.st.DB), "PRIVATE KEY") {
 		t.Fatal("the private key is stored in clear")
+	}
+}
+
+// A directory mounted from the repository is taken whole even when it holds
+// the Compose files themselves (they were all the first analysis saw).
+func TestGitUnitTakesWholeMountedDirectories(t *testing.T) {
+	h := newGitHarness(t)
+	repo := gittest.NewRepo(t, "dirs")
+	srv := repo.ServeHTTP("")
+	root := repo.Commit("root", "root", map[string]string{
+		"compose.yaml": "services:\n  web:\n    image: nginx:1.27\n    volumes: [\"./:/usr/share/nginx/html:ro\"]\n",
+		"index.html":   "<h1>hi</h1>\n", "css/site.css": "body{}\n"})
+	b := h.body(map[string]any{"url": srv.URL(repo)})
+	b["ref"] = root
+	r := h.owner.do(http.MethodPost, h.gbase+"/check", b, nil)
+	if r.Code != 200 || fmt.Sprint(obj(r.Body["source"])["files"]) != "[compose.yaml css/site.css index.html]" {
+		t.Fatalf("root mount: %d %s", r.Code, r.Raw)
+	}
+	extra := repo.Commit("extra", "extra", map[string]string{
+		"compose.yaml":    "services:\n  web:\n    image: nginx:1.27\n    volumes: [\"./deploy:/etc/deploy:ro\"]\n",
+		"deploy/prod.yml": "services: {}\n", "deploy/app.conf": "x=1\n"})
+	b = h.body(map[string]any{"url": srv.URL(repo), "extraFiles": []string{"deploy/prod.yml"}})
+	b["ref"] = extra
+	r = h.owner.do(http.MethodPost, h.gbase+"/check", b, nil)
+	if r.Code != 200 || fmt.Sprint(obj(r.Body["source"])["files"]) != "[compose.yaml deploy/app.conf deploy/prod.yml]" {
+		t.Fatalf("directory holding an extra file: %d %s", r.Code, r.Raw)
+	}
+	legacy := repo.Commit("legacy", "legacy", map[string]string{"compose.yaml": gitCompose,
+		"conf/app.conf": "version https://hawser.github.com/spec/v1\noid sha256:00\nsize 1\n"})
+	b = h.body(map[string]any{"url": srv.URL(repo)})
+	b["ref"] = legacy
+	if r := h.owner.do(http.MethodPost, h.gbase+"/check", b, nil); r.Code != 422 || !strings.Contains(string(r.Raw), `"code":"lfs"`) {
+		t.Fatalf("legacy LFS pointer: %d %s", r.Code, r.Raw)
 	}
 }

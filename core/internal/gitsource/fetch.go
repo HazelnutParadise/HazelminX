@@ -31,6 +31,7 @@ import (
 	gitssh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/net/proxy"
 )
 
 // Errors a caller tells apart.
@@ -221,13 +222,99 @@ func installTransport() {
 				TLSHandshakeTimeout: 15 * time.Second, ResponseHeaderTimeout: 30 * time.Second},
 			CheckRedirect: func(*http.Request, []*http.Request) error { return errRedirect },
 		}
+		hc.Transport = limitBodies{hc.Transport}
 		t := githttp.NewClient(hc)
 		client.InstallProtocol("https", t)
 		client.InstallProtocol("http", t)
 		for _, s := range []string{"git", "file"} {
 			client.InstallProtocol(s, nil)
 		}
+		// Never let the Core host's ~/.ssh/config or /etc/ssh/ssh_config
+		// rename the host the address check approved.
+		gitssh.DefaultSSHConfig = nil
+		proxy.RegisterDialerType(sshDialScheme, func(u *url.URL, _ proxy.Dialer) (proxy.Dialer, error) {
+			ns, err := strconv.ParseInt(u.Query().Get("deadline"), 10, 64)
+			if err != nil {
+				return nil, err
+			}
+			return sshDialer{deadline: time.Unix(0, ns), local: u.Query().Get("local") == "1"}, nil
+		})
 	})
+}
+
+// maxResponse bounds any one HTTP response body (ref advertisements
+// included); packs are bounded again by the object store.
+const maxResponse = 2 * DefaultMaxBytes
+
+type limitBodies struct{ rt http.RoundTripper }
+
+func (l limitBodies) RoundTrip(r *http.Request) (*http.Response, error) {
+	res, err := l.rt.RoundTrip(r)
+	if err == nil {
+		res.Body = &limitedBody{rc: res.Body, left: maxResponse}
+	}
+	return res, err
+}
+
+type limitedBody struct {
+	rc   io.ReadCloser
+	left int64
+}
+
+func (b *limitedBody) Read(p []byte) (int, error) {
+	if b.left <= 0 {
+		return 0, ErrTooLarge
+	}
+	if int64(len(p)) > b.left {
+		p = p[:b.left]
+	}
+	n, err := b.rc.Read(p)
+	b.left -= int64(n)
+	return n, err
+}
+
+func (b *limitedBody) Close() error { return b.rc.Close() }
+
+// sshDialScheme is a dialer go-git's SSH transport reaches through its
+// proxy option: go-git dials and handshakes without the caller's context,
+// so this dialer checks the address and puts the fetch's deadline on the
+// connection, which bounds the SSH handshake too.
+const sshDialScheme = "hazelminx-ssh"
+
+type sshDialer struct {
+	deadline time.Time
+	local    bool
+}
+
+func (d sshDialer) Dial(network, addr string) (net.Conn, error) {
+	return d.DialContext(context.Background(), network, addr)
+}
+
+func (d sshDialer) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
+	ctx, cancel := context.WithDeadline(ctx, d.deadline)
+	defer cancel()
+	c, err := dial(context.WithValue(ctx, policyKey{}, d.local), network, addr)
+	if err != nil {
+		return nil, err
+	}
+	c.SetDeadline(d.deadline)
+	return c, nil
+}
+
+// proxyFor routes an SSH connection through sshDialer; HTTPS needs none.
+func proxyFor(ctx context.Context, ssh bool, local bool) transport.ProxyOptions {
+	if !ssh {
+		return transport.ProxyOptions{}
+	}
+	dl, ok := ctx.Deadline()
+	if !ok {
+		dl = time.Now().Add(DefaultTimeout)
+	}
+	l := "0"
+	if local {
+		l = "1"
+	}
+	return transport.ProxyOptions{URL: sshDialScheme + "://dial?deadline=" + strconv.FormatInt(dl.UnixNano(), 10) + "&local=" + l}
 }
 
 // ---- fetching --------------------------------------------------------------
@@ -294,6 +381,11 @@ func (f Fetcher) prepare(ctx context.Context, r Remote) (string, transport.AuthM
 		return ErrHostKey
 	}
 	auth.HostKeyAlgorithms = []string{want.Type()}
+	if want.Type() == ssh.KeyAlgoRSA {
+		// The key type of an RSA key names SHA-1 signatures, which
+		// current OpenSSH servers refuse; the key is the same.
+		auth.HostKeyAlgorithms = []string{ssh.KeyAlgoRSASHA512, ssh.KeyAlgoRSASHA256, ssh.KeyAlgoRSA}
+	}
 	return u.String(), auth, e, nil
 }
 
@@ -309,7 +401,15 @@ func clean(err error, r Remote) error {
 			msg = strings.ReplaceAll(msg, v, "[redacted]")
 		}
 	}
-	return &cleanErr{kind: classify(err, msg), msg: msg}
+	kind := classify(err, msg)
+	switch kind {
+	case ErrUnavailable, ErrAuth:
+		// What the server or network said stays out of the answer: it would
+		// tell a caller which internal ports are open (and could echo
+		// something sensitive). The kind is enough to act on.
+		msg = ""
+	}
+	return &cleanErr{kind: kind, msg: msg}
 }
 
 func classify(err error, msg string) error {
@@ -336,6 +436,9 @@ type cleanErr struct {
 }
 
 func (e *cleanErr) Error() string {
+	if e.msg == "" {
+		return e.kind.Error()
+	}
 	if strings.HasPrefix(e.msg, "gitsource:") {
 		return e.msg
 	}
@@ -359,12 +462,12 @@ func (f Fetcher) Resolve(ctx context.Context, r Remote, ref string) (string, err
 	timeout, _ := f.limits()
 	ctx, cancel := context.WithTimeout(context.WithValue(ctx, policyKey{}, f.AllowLocal), timeout)
 	defer cancel()
-	u, auth, _, err := f.prepare(ctx, r)
+	u, auth, ep, err := f.prepare(ctx, r)
 	if err != nil {
 		return "", err
 	}
 	rem := git.NewRemote(memory.NewStorage(), &config.RemoteConfig{Name: "origin", URLs: []string{u}})
-	refs, err := rem.ListContext(ctx, &git.ListOptions{Auth: auth, PeelingOption: git.AppendPeeled})
+	refs, err := rem.ListContext(ctx, &git.ListOptions{Auth: auth, PeelingOption: git.AppendPeeled, ProxyOptions: proxyFor(ctx, ep.SSH, f.AllowLocal)})
 	if err != nil {
 		return "", clean(err, r)
 	}
@@ -443,14 +546,15 @@ func (f Fetcher) Fetch(ctx context.Context, r Remote, sha string) (*Snapshot, er
 	timeout, max := f.limits()
 	ctx, cancel := context.WithTimeout(context.WithValue(ctx, policyKey{}, f.AllowLocal), timeout)
 	defer cancel()
-	u, auth, _, err := f.prepare(ctx, r)
+	u, auth, ep, err := f.prepare(ctx, r)
 	if err != nil {
 		return nil, err
 	}
 	st := &capped{Storage: memory.NewStorage(), max: max}
 	rem := git.NewRemote(st, &config.RemoteConfig{Name: "origin", URLs: []string{u}})
 	err = rem.FetchContext(ctx, &git.FetchOptions{RemoteName: "origin", Auth: auth, Depth: 1, Tags: git.NoTags,
-		RefSpecs: []config.RefSpec{config.RefSpec(sha + ":refs/hazelminx/pin")}})
+		ProxyOptions: proxyFor(ctx, ep.SSH, f.AllowLocal),
+		RefSpecs:     []config.RefSpec{config.RefSpec(sha + ":refs/hazelminx/pin")}})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
 		if st.over() {
 			return nil, fmt.Errorf("%w (%d bytes)", ErrTooLarge, max)
