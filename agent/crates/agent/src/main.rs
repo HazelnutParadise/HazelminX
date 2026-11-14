@@ -4,6 +4,7 @@
 //! journaling each one before reporting it.
 
 mod actions;
+mod compose;
 mod config;
 mod connection;
 mod engines;
@@ -203,6 +204,7 @@ async fn run(cfg: Config) -> Result<()> {
         id,
         opts.agent_version.clone(),
         hazelminx_privileged::client::Client::new(&cfg.privileged_socket),
+        cfg.state_dir.join("compose-spool"),
     );
     {
         let waker = shared.clone();

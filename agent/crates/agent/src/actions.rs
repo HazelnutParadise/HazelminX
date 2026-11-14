@@ -42,6 +42,7 @@ pub fn sample_params(name: &str) -> Option<Map<String, Value>> {
         test_actions::SLEEP => json!({"millis": 1, "counterFile": "/tmp/c"})
             .as_object()
             .cloned(),
+        crate::compose::CHECK | crate::compose::DEPLOY => Some(crate::compose::sample_params()),
         _ => None,
     }
 }
@@ -67,6 +68,18 @@ pub fn specs() -> &'static [ActionSpec] {
             version: 1,
             validate: no_params,
             touches: touches_nothing,
+        },
+        ActionSpec {
+            name: crate::compose::CHECK,
+            version: 1,
+            validate: crate::compose::validate,
+            touches: crate::compose::touches,
+        },
+        ActionSpec {
+            name: crate::compose::DEPLOY,
+            version: 1,
+            validate: crate::compose::validate,
+            touches: crate::compose::touches,
         },
         #[cfg(feature = "test-actions")]
         ActionSpec {
