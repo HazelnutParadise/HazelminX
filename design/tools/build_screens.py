@@ -3444,7 +3444,7 @@ def host_services(part: str | None = None) -> str:
       <div class="row hd mrow"><span>模組</span><span class="c3">版本</span><span>服務</span><span class="c4">開機啟動</span><span></span></div>
       {mrow("BIND DNS", "hazel-tw-01 · named", "9.18.28", U.status("ok", "執行中"), "開", '<a class="btn sm" href="HostServiceBind.dc.html">設定</a>' + mb("停止") + mb("重新啟動") + mm)}
       {mrow("BIND DNS", "hazel-jp-02 · named", "9.18.28", U.status("dng", "設定驗證失敗"), "開", mb("看輸出", True) + mm)}
-      {mrow("Postfix／Dovecot", "hazel-tw-01 · postfix、dovecot", "3.7.11 · 2.3.19", U.status("ok", "執行中"), "開", mb("停止") + mb("重新啟動") + mm)}
+      {mrow("Postfix／Dovecot", "hazel-tw-01 · postfix、dovecot", "3.7.11 · 2.3.19", U.status("ok", "執行中"), "開", '<a class="btn sm" href="HostServiceMail.dc.html">設定</a>' + mb("停止") + mb("重新啟動") + mm)}
       {mrow("Samba", "hazel-tw-01 · smbd、nmbd", "4.19.5", U.status("ok", "執行中"), "開", mb("停止") + mb("重新啟動") + mm)}
       {mrow("Nginx（原生）", "hazel-tw-01 · nginx", "1.26.2", U.status("ok", "執行中"), "開", mb("停止") + mb("重新啟動") + mm)}
       {mrow("Nginx（原生）", "lab-mini · nginx", "1.26.2", U.status("info", "已停止"), "關", mb("啟動", True) + mb("重新安裝") + mb("移除") + mm)}
@@ -3462,6 +3462,65 @@ def host_services(part: str | None = None) -> str:
         <div class="field"><label for="rmc">輸入 <span class="mono">bind@hazel-tw-01</span> 以確認</label><div class="inp"><input id="rmc" style="background:transparent;border:0;flex:1"></div></div>
         <div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">取消</button><button type="button" class="btn dng" disabled aria-disabled="true" style="opacity:.6">移除</button></div>
       </div></div></section>"""
+    if part == "mail":
+        mhead = _form_head([("主機", "Nodes.dc.html"), ("服務模組", "HostServices.dc.html")], "郵件伺服器 · hazel-tw-01",
+                           U.status("ok", "執行中") + '<button type="button" class="btn">重新啟動</button><a class="btn" href="HostServices.dc.html">回模組清單</a>')
+        mtiles = '<div class="tiles">' + "".join([
+            U.stat_tile("網域", "2", "", "example.tw、hazelnut.tw", None),
+            U.stat_tile("信箱", "14", "", "3.1 / 20 GiB", None),
+            U.stat_tile("佇列", "50", "", "最久的卡了 6 小時", False),
+            U.stat_tile("24 小時", "1,204", "封", "寄出 388 · 收進 816 · 退信 9", None),
+        ]) + "</div>"
+        def dom(name, boxes, spf, dkim, dmarc, ptr):
+            return f'<div class="row cols-6"><span class="mono">{name}</span><span class="mono">{boxes}</span><span>{spf}</span><span>{dkim}</span><span>{dmarc}</span><span>{ptr}</span></div>'
+        domains = _fp("網域與寄信檢查", f"""
+      <div class="row hd cols-6"><span>網域</span><span>信箱</span><span>SPF</span><span>DKIM</span><span>DMARC</span><span>反解</span></div>
+      {dom("example.tw", "11", U.status("ok", "正確"), U.status("ok", "已簽章"), U.status("ok", "quarantine"), U.status("ok", "相符"))}
+      {dom("hazelnut.tw", "3", U.status("ok", "正確"), U.status("dng", "DNS 沒有公鑰"), U.status("warn", "沒有設定"), U.status("ok", "相符"))}
+      <div class="wrap" style="padding:10px 14px"><button type="button" class="btn sm">{U.icon("plus", 14)}新增網域</button><a class="btn sm" href="HostServiceBind.dc.html">到 BIND 補上 DKIM 紀錄</a>{U.status("warn", "hazelnut.tw 寄出的信可能被當成垃圾信")}</div>""", extra=f'<span class="note mono" style="margin-left:auto">檢查 03:40:02</span>')
+        def box_(addr, used, kind, last, st):
+            return f'<div class="row cols-5"><span class="mono">{addr}</span><span class="mono">{used}</span><span>{kind}</span><span class="mono">{last}</span><span>{st}{U.actions(["rename", "trash"])}</span></div>'
+        boxes = _fp("信箱與別名 · example.tw", f"""
+      <div class="row hd cols-5"><span>位址</span><span>用量</span><span>種類</span><span>最後登入</span><span></span></div>
+      {box_("tim@example.tw", "1.2 / 2 GiB", "信箱", "03:12", "")}
+      {box_("ann@example.tw", "0.4 / 2 GiB", "信箱", "昨天 22:10", "")}
+      {box_("shop@example.tw", "1.9 / 2 GiB", "信箱", "03:41", U.status("warn", "快滿"))}
+      {box_("support@example.tw", "—", "別名 → tim、ann", "—", "")}
+      {box_("billing@example.tw", "—", "轉寄 → acct@partner.tw", "—", U.status("info", "轉到外部"))}
+      <div class="wrap" style="padding:10px 14px"><button type="button" class="btn sm">{U.icon("plus", 14)}新增信箱</button><button type="button" class="btn sm">{U.icon("plus", 14)}新增別名或轉寄</button>{U.status("info", "密碼存在機密庫，不進變更紀錄")}</div>""", extra='<span style="margin-left:auto">' + _dd("example.tw", True) + "</span>")
+        def q(qid, frm, to, age, why):
+            return f'<div class="row cols-5"><span class="wrap" style="flex-wrap:nowrap"><input type="checkbox" aria-label="選取 {qid}"><span class="mono">{qid}</span></span><span class="mono">{frm}</span><span class="mono">{to}</span><span class="mono">{age}</span><span class="note">{why}</span></div>'
+        queue = _fp("佇列 · 50", f"""
+      <div class="wrap" style="padding:10px 14px">{U.status("dng", "47 封卡在同一個原因：連不到 gmail.com 的 25 Port")}<button type="button" class="btn sm">全部重送</button><button type="button" class="btn sm">刪除選取</button></div>
+      <div class="row hd cols-5"><span>編號</span><span>寄件人</span><span>收件人</span><span>等了多久</span><span>原因</span></div>
+      {q("4F2A91C0B7", "shop@example.tw", "mei@gmail.com", "6 小時", "連線逾時 · 已試 9 次")}
+      {q("4F2A91C0B8", "shop@example.tw", "bob@gmail.com", "6 小時", "連線逾時 · 已試 9 次")}
+      {q("5A0019DD21", "tim@example.tw", "ops@partner.tw", "12 分", "對方暫時拒收（451）")}
+      {_pager("顯示 1–3 / 50", "")}""", extra='<a class="more" href="Logs.dc.html" style="margin-left:auto">郵件日誌 →</a>')
+        tls = _fp("加密與連接埠", f"""
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:10px 16px;padding:12px 16px;font-size:13px">
+        {kv("憑證", '<span class="mono">mail.example.tw</span> · 沿用 Zentinel 的憑證')}
+        {kv("到期", '<span class="mono">58 天後</span> · 自動續期')}
+        {kv("寄信（25、587）", U.status("ok", "強制加密"))}
+        {kv("收信（993、995）", U.status("ok", "只開加密的"))}
+        {kv("對外的 25 Port", U.status("dng", "被主機商擋住"))}
+      </div>
+      <div class="wrap" style="padding:0 16px 12px"><button type="button" class="btn sm">改用轉送服務寄信</button>{U.status("info", "很多主機商預設擋 25，要申請解除或改走轉送")}</div>""")
+        relay = _fp("寄信方式", _grid(
+            _fld("怎麼寄出去", _seg(["直接寄", "透過轉送服務"], 0, "寄信方式")),
+            _fld("轉送伺服器", _in("選透過轉送服務時才要填", ph=True)),
+            _fld("每小時最多寄幾封", _in("500", mono=True), "超過就排隊，避免帳號被盜時大量寄信")))
+        card = "background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0"
+        def sbox(title, body):
+            return f'<section style="{card}"><h2 style="font-size:14px">{title}</h2>{body}</section>'
+        states = ('<h2 style="font-size:13px;color:var(--muted);letter-spacing:.04em">各種狀態</h2><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:16px">'
+                  + sbox("還沒安裝", f'<div class="wrap">{U.status("info", "這台沒有 Postfix 與 Dovecot")}</div><div style="font-size:13px">安裝會開 25、587、993，並建立變更計畫</div><div class="wrap"><button type="button" class="btn pri">安裝郵件伺服器</button></div>')
+                  + sbox("新增信箱", _grid(_fld("位址", _in("mei@example.tw", mono=True)), _fld("容量上限", _dd("2 GiB")), minw=200) + f'<div class="wrap"><button type="button" class="btn pri">建立</button><button type="button" class="btn">取消</button></div><div style="font-size:12px;color:var(--muted)">密碼只顯示一次，之後由使用者自己改</div>')
+                  + sbox("設定檢查沒通過", f'<div class="wrap">{U.status("dng", "postfix check 沒通過，沒有套用")}</div><div class="term" style="white-space:pre-wrap;overflow-wrap:anywhere">postfix: fatal: /etc/postfix/main.cf, line 41: missing = after attribute name</div><div class="wrap"><button type="button" class="btn sm">看差異</button></div>')
+                  + sbox("刪除網域", f'<div class="wrap">{U.status("warn", "hazelnut.tw 還有 3 個信箱 · 412 MiB 信件")}</div><div style="font-size:13px">信件不會刪除，移到封存資料夾保留 30 天</div><div class="wrap"><button type="button" class="btn">取消</button><button type="button" class="btn dng">刪除網域</button></div>')
+                  + "</div>")
+        main = mhead + mtiles + domains + boxes + queue + f'<div class="cg">{tls}{relay}</div>' + states
+        return U.shell("svcmod", main)
     if part == "bind":
         bhead = _form_head([("主機", "Nodes.dc.html"), ("服務模組", "HostServices.dc.html")], "BIND DNS · hazel-tw-01",
                            U.status("ok", "執行中") + '<button type="button" class="btn">重新啟動</button><a class="btn" href="HostServices.dc.html">回模組清單</a>')
@@ -4901,6 +4960,7 @@ SCREENS = {
     "AppInstall": ("安裝應用（1Panel 市集）", app_install, 1440, 1800),
     "HostServices": ("服務模組（Webmin 等價）", host_services, 1440, 1900),
     "HostServiceBind": ("服務模組 › BIND DNS", lambda: host_services("bind"), 1440, 1900),
+    "HostServiceMail": ("服務模組 › 郵件伺服器", lambda: host_services("mail"), 1440, 1900),
     "ContainersEmpty": ("容器引擎未安裝", containers_empty, 1440, 1900),
     "KubernetesEmpty": ("Kubernetes 未連接", kubernetes_empty, 1440, 1500),
     "Login": ("登入", login, 1440, 900),
