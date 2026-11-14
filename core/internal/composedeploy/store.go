@@ -93,13 +93,14 @@ func (s *Store) Begin(ctx context.Context, d Deployment) (*Deployment, error) {
 	return s.ByJob(ctx, d.JobID)
 }
 
-// Finish ends the deployment of job. result must not contain secrets.
+// Finish ends the deployment of job if it is still running; an ended
+// deployment is never rewritten. result must not contain secrets.
 func (s *Store) Finish(ctx context.Context, jobID, state string, result json.RawMessage, code, message string) error {
 	if len(result) == 0 {
 		result = json.RawMessage("{}")
 	}
 	_, err := s.db.ExecContext(ctx, `UPDATE compose_deployments SET state = ?, result = ?, error_code = ?, error_message = ?, finished_at = ?
-		WHERE job_id = ?`, state, string(result), code, message, ts(s.now()), jobID)
+		WHERE job_id = ? AND state = 'running'`, state, string(result), code, message, ts(s.now()), jobID)
 	return err
 }
 
