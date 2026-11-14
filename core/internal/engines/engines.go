@@ -48,7 +48,7 @@ const timeLayout = "2006-01-02T15:04:05Z"
 
 func ts(t time.Time) string { return t.UTC().Truncate(time.Second).Format(timeLayout) }
 
-// Store reads and writes host_engines (migration 0013).
+// Store reads and writes host_engines (migration 0014).
 type Store struct {
 	db  *sql.DB
 	now func() time.Time
