@@ -76,6 +76,8 @@ type composeDeployHarness struct {
 	ubase  string
 	node   string
 	fp     string
+	d      *composedeploy.Deployer
+	units  *projects.Service
 }
 
 func newComposeDeployHarness(t *testing.T, compose string) *composeDeployHarness {
@@ -122,13 +124,16 @@ func newComposeDeployHarness(t *testing.T, compose string) *composeDeployHarness
 	if err := ph.es.RecordReport(ctx, node, rep); err != nil {
 		t.Fatal(err)
 	}
-	body := unitBody(map[string]any{"nodeId": node, "engineEnvironmentId": "env:/run/docker.sock"})
-	body["files"].([]map[string]any)[0]["content"] = compose
-	if r := owner.do(http.MethodPost, ubase, body, nil); r.Code != 201 {
-		t.Fatalf("create unit: %d %s", r.Code, r.Raw)
+	// An empty compose leaves the environment without a unit.
+	if compose != "" {
+		body := unitBody(map[string]any{"nodeId": node, "engineEnvironmentId": "env:/run/docker.sock"})
+		body["files"].([]map[string]any)[0]["content"] = compose
+		if r := owner.do(http.MethodPost, ubase, body, nil); r.Code != 201 {
+			t.Fatalf("create unit: %d %s", r.Code, r.Raw)
+		}
 	}
 	n, _ := ph.reg.GetNode(ctx, node)
-	return &composeDeployHarness{projectsHarness: ph, engine: e, agent: agent, pub: pub, pid: pid, ubase: ubase, node: node, fp: n.Fingerprint}
+	return &composeDeployHarness{projectsHarness: ph, engine: e, agent: agent, pub: pub, pid: pid, ubase: ubase, node: node, fp: n.Fingerprint, d: d, units: svc}
 }
 
 func (h *composeDeployHarness) plan(t *testing.T) map[string]any {

@@ -1035,25 +1035,36 @@ func (s *Service) CreateUnit(ctx context.Context, a Actor, projectID, envID stri
 	if in.Source == SourceGit {
 		return nil, invalid("source", "a Git unit is imported through its Git source")
 	}
-	return s.createUnit(ctx, a, projectID, envID, in, nil)
+	return s.createUnit(ctx, a, projectID, envID, "", in, nil)
 }
 
-// SaveGitUnit creates (ifVersion 0) or replaces a unit whose files come from
-// Git; hook writes the Git source in the same transaction.
-func (s *Service) SaveGitUnit(ctx context.Context, a Actor, projectID, envID string, ifVersion int64, in UnitInput, hook GitHook) (*Unit, error) {
+// NewUnitID returns an id for a unit about to be created, so a caller can
+// scope secrets to it first.
+func NewUnitID() string { return newID("cu") }
+
+// Consumer is the secret store consumer of a unit's secrets.
+func Consumer(unitID string) string { return consumer(unitID) }
+
+// SaveGitUnit creates (ifVersion 0, with the id from NewUnitID) or replaces
+// a unit whose files come from Git; hook writes the Git source in the same
+// transaction. Every file carries its content: nothing is kept unchanged.
+func (s *Service) SaveGitUnit(ctx context.Context, a Actor, projectID, envID, unitID string, ifVersion int64, in UnitInput, hook GitHook) (*Unit, error) {
 	in.Source = SourceGit
 	for _, f := range in.Files {
-		if f.Secret || f.Unchanged {
-			return nil, invalid("files", "files from Git are never secret")
+		if f.Unchanged {
+			return nil, invalid("files", "files from Git always carry their content")
 		}
 	}
 	if ifVersion == 0 {
-		return s.createUnit(ctx, a, projectID, envID, in, hook)
+		return s.createUnit(ctx, a, projectID, envID, unitID, in, hook)
 	}
 	return s.replaceUnit(ctx, a, projectID, envID, ifVersion, in, hook)
 }
 
-func (s *Service) createUnit(ctx context.Context, a Actor, projectID, envID string, in UnitInput, hook GitHook) (*Unit, error) {
+func (s *Service) createUnit(ctx context.Context, a Actor, projectID, envID, id string, in UnitInput, hook GitHook) (*Unit, error) {
+	if id == "" {
+		id = newID("cu")
+	}
 	if err := checkName("name", in.Name); err != nil {
 		return nil, err
 	}
@@ -1066,7 +1077,7 @@ func (s *Service) createUnit(ctx context.Context, a Actor, projectID, envID stri
 		return nil, err
 	}
 	now := s.now()
-	u := &Unit{ID: newID("cu"), EnvironmentID: envID, ProjectID: projectID, Name: in.Name, ComposeProject: composeName(proj.Name, env.Name, in.Name),
+	u := &Unit{ID: id, EnvironmentID: envID, ProjectID: projectID, Name: in.Name, ComposeProject: composeName(proj.Name, env.Name, in.Name),
 		Source: in.Source, MainFile: in.MainFile, ExtraFiles: nonNil(in.ExtraFiles), WorkingDir: in.WorkingDir, Profiles: nonNil(in.Profiles),
 		Target: in.Target, Version: 1, CreatedBy: a.UserID, CreatedAt: pt(ts(now)), UpdatedAt: pt(ts(now))}
 	created, err := s.storeSecrets(ctx, a, u.ID, p)

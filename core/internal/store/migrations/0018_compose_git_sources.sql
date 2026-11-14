@@ -105,6 +105,8 @@ CREATE TABLE compose_unit_git_sources (
     host_key       TEXT    NOT NULL DEFAULT '',  -- the SSH host key accepted, authorized_keys form
     ref            TEXT    NOT NULL,             -- as asked: branch, tag or commit
     commit_sha     TEXT    NOT NULL,
+    files          TEXT    NOT NULL DEFAULT '[]', -- JSON: the paths taken from the commit
+    unit_version   INTEGER NOT NULL,             -- the unit version these files are
     digest         TEXT    NOT NULL,             -- sha256 of the source binding (decision 0036)
     fetched_by     TEXT    NOT NULL,
     fetched_at     TEXT    NOT NULL,             -- UTC RFC 3339

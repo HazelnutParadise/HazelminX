@@ -62,8 +62,11 @@ type Options struct {
 	// GitHub back to PublicOrigin+CallbackPath and nowhere else; with no
 	// origin they are not available (PAT connections still are).
 	PublicOrigin string
-	Now          func() time.Time
-	Logger       *slog.Logger
+	// CloneBase is where repositories are fetched from with Git
+	// ("https://github.com" when empty; tests point it at a local server).
+	CloneBase string
+	Now       func() time.Time
+	Logger    *slog.Logger
 }
 
 // CallbackPath is the web page GitHub sends the browser back to. The page
@@ -80,6 +83,7 @@ type Service struct {
 	audit   Auditor
 	client  Client
 	origin  string
+	clone   string
 	now     func() time.Time
 	log     *slog.Logger
 	pkceKey []byte
@@ -117,7 +121,10 @@ func New(o Options) (*Service, error) {
 	if _, err := rand.Read(key); err != nil {
 		return nil, err
 	}
-	return &Service{db: o.DB, vault: o.Vault, audit: o.Audit, client: o.Client, origin: strings.TrimSuffix(o.PublicOrigin, "/"),
+	if o.CloneBase == "" {
+		o.CloneBase = "https://github.com"
+	}
+	return &Service{db: o.DB, vault: o.Vault, audit: o.Audit, client: o.Client, origin: strings.TrimSuffix(o.PublicOrigin, "/"), clone: strings.TrimSuffix(o.CloneBase, "/"),
 		now: o.Now, log: o.Logger, pkceKey: key, backoff: map[string]backoffState{}, installTokens: map[string]Token{}}, nil
 }
 

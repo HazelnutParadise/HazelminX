@@ -65,9 +65,16 @@ func NewRepo(t *testing.T, name string) *Repo {
 
 // Commit writes files (path → content; a value "->target" makes a
 // symbolic link), commits them on branch and pushes. It returns the SHA.
+// A branch that does not exist yet starts from an empty tree.
 func (r *Repo) Commit(branch, msg string, files map[string]string) string {
 	r.t.Helper()
-	Git(r.t, r.work, "checkout", "-q", "-B", branch)
+	if exec.Command("git", "-C", r.work, "rev-parse", "--verify", "-q", "refs/heads/"+branch).Run() == nil {
+		Git(r.t, r.work, "checkout", "-q", branch)
+	} else {
+		Git(r.t, r.work, "checkout", "-q", "--orphan", branch)
+		Git(r.t, r.work, "rm", "-rqf", "--ignore-unmatch", ".")
+		Git(r.t, r.work, "clean", "-qfdx")
+	}
 	for p, c := range files {
 		full := filepath.Join(r.work, filepath.FromSlash(p))
 		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
@@ -93,7 +100,7 @@ func (r *Repo) Commit(branch, msg string, files map[string]string) string {
 // Gitlink adds a submodule entry pointing at sha without fetching it.
 func (r *Repo) Gitlink(branch, path, sha string) string {
 	r.t.Helper()
-	Git(r.t, r.work, "checkout", "-q", "-B", branch)
+	Git(r.t, r.work, "checkout", "-q", branch)
 	Git(r.t, r.work, "update-index", "--add", "--cacheinfo", "160000,"+sha+","+path)
 	Git(r.t, r.work, "commit", "-q", "-m", "gitlink")
 	Git(r.t, r.work, "push", "-q", "-f", "origin", branch)

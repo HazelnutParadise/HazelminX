@@ -76,6 +76,9 @@ const (
 	CodeGitHubAuthInvalid    = "GITHUB_AUTHORIZATION_INVALID"
 	CodeGitHubReauthRequired = "GITHUB_REAUTHORIZATION_REQUIRED"
 	CodeGitHubRepoEmpty      = "GITHUB_REPOSITORY_EMPTY"
+	CodeGitSourceRefused     = "GIT_SOURCE_REFUSED"
+	CodeGitAuthFailed        = "GIT_AUTHENTICATION_FAILED"
+	CodeGitUnavailable       = "GIT_UNAVAILABLE"
 	CodeInternal             = "INTERNAL"
 	CodeUINotEmbedded        = "UI_NOT_EMBEDDED"
 	CodeUIIndexMissing       = "UI_INDEX_MISSING"
@@ -127,6 +130,9 @@ var errorTable = []ErrorCode{
 	{CodeGitHubAuthInvalid, http.StatusConflict, false, "這次 GitHub 授權回呼不被接受；details.reason 寫出原因（unknown、expired、used、session-mismatch、wrong-account、installation-mismatch、app-mismatch、cancelled-by-github）。原有連線沒有改變，請重新開始授權。"},
 	{CodeGitHubReauthRequired, http.StatusConflict, false, "這份 GitHub 連線需要重新授權（Token 到期、被撤銷或安裝已移除）；平台不會自動延長或換用其他連線。"},
 	{CodeGitHubRepoEmpty, http.StatusConflict, false, "這個 Repo 還沒有任何 commit，沒有分支、檔案可選，也不能部署；推送第一個 commit 後再試。"},
+	{CodeGitSourceRefused, http.StatusUnprocessableEntity, false, "這個 commit 用到目前還不能部署的內容（符號連結、submodule、Git LFS、在主機上建置或超過單元大小）；details.refusals 逐項寫出檔案與原因，沒有儲存任何東西。"},
+	{CodeGitAuthFailed, http.StatusUnprocessableEntity, false, "Git 伺服器不接受這個憑證，或 SSH 主機金鑰和設定的不同；沒有儲存任何東西。"},
+	{CodeGitUnavailable, http.StatusBadGateway, true, "連不到 Git 伺服器、抓取逾時或超過抓取上限；沒有儲存任何東西。"},
 	{CodeInternal, http.StatusInternalServerError, true, "伺服器內部錯誤；traceId 可用來查日誌。"},
 	{CodeUINotEmbedded, http.StatusServiceUnavailable, false, "這個版本沒有內嵌網頁介面，請使用管理 API。"},
 	{CodeUIIndexMissing, http.StatusInternalServerError, false, "內嵌介面缺少 index.html。"},
