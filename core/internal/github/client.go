@@ -40,6 +40,10 @@ type Client interface {
 	// UserInstallations lists the installations of this App the user can
 	// access with a user access token (GET /user/installations, every page).
 	UserInstallations(ctx context.Context, userToken string) ([]Installation, error)
+	// UserInstallationRepositories lists the ids of the repositories of an
+	// installation the user can reach with a user access token
+	// (GET /user/installations/{id}/repositories, every page).
+	UserInstallationRepositories(ctx context.Context, userToken string, installationID int64) ([]int64, error)
 	// CanListRepositories reports whether the token can list at least the
 	// repositories endpoint (GET /user/repos?per_page=1).
 	CanListRepositories(ctx context.Context, token string) (bool, error)

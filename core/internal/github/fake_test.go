@@ -43,6 +43,7 @@ type fakeGitHub struct {
 	refreshErr   error
 	installs     map[int64]Installation
 	userInstalls map[string][]int64 // user token → installation ids visible
+	instRepos    map[int64][]int64  // installation → repositories the user reaches; unset = [100]
 	instTokens   []Token            // next installation tokens, in order
 	hook         HookConfig
 	delivery     *HookDelivery
@@ -63,7 +64,7 @@ type codeGrant struct {
 func newFake() *fakeGitHub {
 	return &fakeGitHub{users: map[string]User{}, facts: map[string]TokenFacts{}, canList: map[string]bool{}, apps: map[int64]AppInfo{},
 		appKeys: map[int64]*rsa.PublicKey{}, manifests: map[string]ManifestApp{}, codes: map[string]codeGrant{}, refresh: map[string]UserToken{},
-		installs: map[int64]Installation{}, userInstalls: map[string][]int64{}, calls: map[string]int{}}
+		installs: map[int64]Installation{}, userInstalls: map[string][]int64{}, instRepos: map[int64][]int64{}, calls: map[string]int{}}
 }
 
 func (f *fakeGitHub) count(name string) int {
@@ -260,6 +261,18 @@ func (f *fakeGitHub) UserInstallations(_ context.Context, token string) ([]Insta
 		out = append(out, f.installs[id])
 	}
 	return out, nil
+}
+
+func (f *fakeGitHub) UserInstallationRepositories(_ context.Context, _ string, id int64) ([]int64, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if err := f.enter("UserInstallationRepositories"); err != nil {
+		return nil, err
+	}
+	if ids, ok := f.instRepos[id]; ok {
+		return ids, nil
+	}
+	return []int64{100}, nil
 }
 
 func (f *fakeGitHub) CanListRepositories(_ context.Context, token string) (bool, error) {

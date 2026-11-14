@@ -80,6 +80,9 @@ func (f *apiFakeGitHub) GetUser(_ context.Context, token string) (github.User, g
 func (f *apiFakeGitHub) UserInstallations(context.Context, string) ([]github.Installation, error) {
 	return nil, nil
 }
+func (f *apiFakeGitHub) UserInstallationRepositories(context.Context, string, int64) ([]int64, error) {
+	return nil, nil
+}
 func (f *apiFakeGitHub) CanListRepositories(context.Context, string) (bool, error) { return true, nil }
 
 type githubHarness struct {
@@ -171,7 +174,13 @@ func TestGitHubPATConnectionAPI(t *testing.T) {
 	}
 	// Rotation to another account's token is refused with the reason.
 	g.gh.users["ghp_other"] = github.User{ID: 78, Login: "octo"}
-	r = g.owner.do(http.MethodPut, "/management/v1/github/connections/"+id+"/credential", map[string]string{"token": "ghp_other"}, nil)
+	if r := g.owner.do(http.MethodPut, "/management/v1/github/connections/"+id+"/credential", map[string]string{"token": "ghp_other"}, nil); r.Code != http.StatusPreconditionRequired {
+		t.Fatalf("rotate without If-Match: %+v", r)
+	}
+	etag := func() map[string]string {
+		return map[string]string{"If-Match": g.owner.do(http.MethodGet, "/management/v1/github/connections/"+id, nil, nil).Hdr.Get("ETag")}
+	}
+	r = g.owner.do(http.MethodPut, "/management/v1/github/connections/"+id+"/credential", map[string]string{"token": "ghp_other"}, etag())
 	if r.Code != http.StatusConflict || r.Body["code"] != CodeGitHubAuthInvalid || r.Body["details"].(map[string]any)["reason"] != "wrong-account" {
 		t.Fatalf("rotate to another account: %+v", r)
 	}
@@ -189,7 +198,10 @@ func TestGitHubPATConnectionAPI(t *testing.T) {
 		t.Fatalf("refused token: %+v", r)
 	}
 	mustNotLeak(t, r, "ghp_wrong_value")
-	if r := g.owner.do(http.MethodDelete, "/management/v1/github/connections/"+id, nil, nil); r.Code != http.StatusNoContent {
+	if r := g.owner.do(http.MethodDelete, "/management/v1/github/connections/"+id, nil, nil); r.Code != http.StatusPreconditionRequired {
+		t.Fatalf("delete without If-Match: %+v", r)
+	}
+	if r := g.owner.do(http.MethodDelete, "/management/v1/github/connections/"+id, nil, etag()); r.Code != http.StatusNoContent {
 		t.Fatalf("delete: %+v", r)
 	}
 	if r := g.owner.do(http.MethodGet, "/management/v1/github/connections/"+id, nil, nil); r.Code != http.StatusNotFound {
@@ -311,4 +323,3 @@ func TestGitHubBrowserAuthorizationAPI(t *testing.T) {
 		t.Fatalf("delete used app: %+v", r)
 	}
 }
-

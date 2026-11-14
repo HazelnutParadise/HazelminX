@@ -47,6 +47,10 @@ CREATE TABLE IF NOT EXISTS github_connections (
     account_type         TEXT    NOT NULL DEFAULT '',
     installation_id      INTEGER,
     repository_selection TEXT    NOT NULL DEFAULT '',
+    -- app-installation: the repositories the authorizing user could reach
+    -- when the connection was made; every installation token is narrowed
+    -- to them, so a connection never reads more than its maker could.
+    repository_ids       TEXT    NOT NULL DEFAULT '[]',
     token_type           TEXT    NOT NULL DEFAULT '',  -- classic | fine-grained | app-user | app-installation
     scopes               TEXT    NOT NULL DEFAULT '[]', -- JSON, classic PAT OAuth scopes
     permissions          TEXT    NOT NULL DEFAULT '{}', -- JSON, App permissions

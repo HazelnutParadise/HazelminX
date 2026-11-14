@@ -61,28 +61,31 @@ type Connection struct {
 	AppID string `json:"appId,omitempty"` // HazelminX App id
 	// Account is who GitHub says is behind the authorization: the token's
 	// user, or the account the App is installed on. Its id is stable.
-	Account             Account           `json:"account"`
-	InstallationID      int64             `json:"installationId,omitempty"`
-	RepositorySelection string            `json:"repositorySelection,omitempty"`
-	TokenType           string            `json:"tokenType"`
-	Scopes              []string          `json:"scopes"`
-	Permissions         map[string]string `json:"permissions"`
-	Events              []string          `json:"events"`
-	Capabilities        Capabilities      `json:"capabilities"`
-	State               string            `json:"state"`
-	StateReason         string            `json:"stateReason,omitempty"`
-	AccessExpiresAt     *time.Time        `json:"accessExpiresAt,omitempty"`
-	RefreshExpiresAt    *time.Time        `json:"refreshExpiresAt,omitempty"`
-	LastCheckedAt       *time.Time        `json:"lastCheckedAt,omitempty"`
-	OwnerUserID         string            `json:"ownerUserId"`
-	Version             int64             `json:"version"`
-	CreatedAt           time.Time         `json:"createdAt"`
-	UpdatedAt           time.Time         `json:"updatedAt"`
+	Account             Account `json:"account"`
+	InstallationID      int64   `json:"installationId,omitempty"`
+	RepositorySelection string  `json:"repositorySelection,omitempty"`
+	// RepositoryIDs (app-installation): the repositories the authorizing
+	// user could reach; installation tokens never cover more.
+	RepositoryIDs    []int64           `json:"repositoryIds,omitempty"`
+	TokenType        string            `json:"tokenType"`
+	Scopes           []string          `json:"scopes"`
+	Permissions      map[string]string `json:"permissions"`
+	Events           []string          `json:"events"`
+	Capabilities     Capabilities      `json:"capabilities"`
+	State            string            `json:"state"`
+	StateReason      string            `json:"stateReason,omitempty"`
+	AccessExpiresAt  *time.Time        `json:"accessExpiresAt,omitempty"`
+	RefreshExpiresAt *time.Time        `json:"refreshExpiresAt,omitempty"`
+	LastCheckedAt    *time.Time        `json:"lastCheckedAt,omitempty"`
+	OwnerUserID      string            `json:"ownerUserId"`
+	Version          int64             `json:"version"`
+	CreatedAt        time.Time         `json:"createdAt"`
+	UpdatedAt        time.Time         `json:"updatedAt"`
 
 	accessSecret, refreshSecret string
 }
 
-const connColumns = `id, owner_user_id, name, kind, host, app_ref, account_id, account_login, account_type, installation_id, repository_selection,
+const connColumns = `id, owner_user_id, name, kind, host, app_ref, account_id, account_login, account_type, installation_id, repository_selection, repository_ids,
 	token_type, scopes, permissions, events, state, state_reason, access_secret, refresh_secret, access_expires_at, refresh_expires_at,
 	last_checked_at, version, created_at, updated_at`
 
@@ -90,8 +93,8 @@ func scanConn(r scanner) (Connection, error) {
 	var c Connection
 	var app, access, refresh, accessExp, refreshExp, checked sql.NullString
 	var inst sql.NullInt64
-	var scopes, perms, events, created, updated string
-	err := r.Scan(&c.ID, &c.OwnerUserID, &c.Name, &c.Kind, &c.Host, &app, &c.Account.ID, &c.Account.Login, &c.Account.Type, &inst, &c.RepositorySelection,
+	var scopes, perms, events, created, updated, repoIDs string
+	err := r.Scan(&c.ID, &c.OwnerUserID, &c.Name, &c.Kind, &c.Host, &app, &c.Account.ID, &c.Account.Login, &c.Account.Type, &inst, &c.RepositorySelection, &repoIDs,
 		&c.TokenType, &scopes, &perms, &events, &c.State, &c.StateReason, &access, &refresh, &accessExp, &refreshExp, &checked, &c.Version, &created, &updated)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Connection{}, ErrNotFound
@@ -101,6 +104,7 @@ func scanConn(r scanner) (Connection, error) {
 	}
 	c.AppID, c.InstallationID = app.String, inst.Int64
 	c.accessSecret, c.refreshSecret = access.String, refresh.String
+	_ = json.Unmarshal([]byte(repoIDs), &c.RepositoryIDs)
 	_ = json.Unmarshal([]byte(scopes), &c.Scopes)
 	_ = json.Unmarshal([]byte(perms), &c.Permissions)
 	_ = json.Unmarshal([]byte(events), &c.Events)
@@ -289,6 +293,13 @@ func (s *Service) CreatePAT(ctx context.Context, in PATInput, actor Actor) (Conn
 	return s.GetConnection(ctx, id, actor)
 }
 
+func nonNilIDs(v []int64) []int64 {
+	if v == nil {
+		return []int64{}
+	}
+	return v
+}
+
 func jsonOf(v any) string {
 	b, _ := json.Marshal(v)
 	return string(b)
@@ -317,10 +328,10 @@ func (s *Service) insertConnTx(ctx context.Context, tx *sql.Tx, c Connection, ac
 		refresh = c.refreshSecret
 	}
 	if _, err := tx.ExecContext(ctx, `INSERT INTO github_connections(id, owner_user_id, name, kind, host, app_ref, account_id, account_login, account_type,
-		installation_id, repository_selection, token_type, scopes, permissions, events, state, state_reason, access_secret, refresh_secret,
+		installation_id, repository_selection, repository_ids, token_type, scopes, permissions, events, state, state_reason, access_secret, refresh_secret,
 		access_expires_at, refresh_expires_at, last_checked_at, version, created_at, updated_at)
-		VALUES(?, ?, ?, ?, 'github.com', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', '', ?, ?, ?, ?, ?, 1, ?, ?)`,
-		c.ID, actor.UserID, c.Name, c.Kind, app, c.Account.ID, c.Account.Login, c.Account.Type, inst, c.RepositorySelection, c.TokenType,
+		VALUES(?, ?, ?, ?, 'github.com', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', '', ?, ?, ?, ?, ?, 1, ?, ?)`,
+		c.ID, actor.UserID, c.Name, c.Kind, app, c.Account.ID, c.Account.Login, c.Account.Type, inst, c.RepositorySelection, jsonOf(nonNilIDs(c.RepositoryIDs)), c.TokenType,
 		jsonOf(nonNilSlice(c.Scopes)), jsonOf(nonNilMap(c.Permissions)), jsonOf(nonNilSlice(c.Events)), access, refresh,
 		tsOrNil(ptrTime(c.AccessExpiresAt)), tsOrNil(ptrTime(c.RefreshExpiresAt)), now, now, now); err != nil {
 		return fmt.Errorf("github: save connection: %w", err)
@@ -424,10 +435,14 @@ func (s *Service) mutate(ctx context.Context, id string, version int64, actor Ac
 // RotatePAT replaces the token of one PAT connection (GIT-004: no other
 // connection changes). The new token must belong to the same GitHub
 // account, so a rotation can never switch identities quietly.
-func (s *Service) RotatePAT(ctx context.Context, id, token string, actor Actor) (Connection, error) {
+// version 0 skips the version condition.
+func (s *Service) RotatePAT(ctx context.Context, id string, version int64, token string, actor Actor) (Connection, error) {
 	c, err := s.GetConnection(ctx, id, actor)
 	if err != nil {
 		return Connection{}, err
+	}
+	if version != 0 && c.Version != version {
+		return Connection{}, ErrVersionMismatch
 	}
 	if c.Kind != KindPAT {
 		return Connection{}, invalid("token", "only PAT connections take a token; authorize App connections again instead")
@@ -452,7 +467,7 @@ func (s *Service) RotatePAT(ctx context.Context, id, token string, actor Actor) 
 	if _, err := s.vault.Rotate(ctx, c.accessSecret, []byte(token), actor.UserID); err != nil {
 		return Connection{}, fmt.Errorf("github: store token: %w", err)
 	}
-	return s.mutate(ctx, id, 0, actor, "github.connection.rotate", func(Connection) (map[string]any, string, []any, error) {
+	return s.mutate(ctx, id, version, actor, "github.connection.rotate", func(Connection) (map[string]any, string, []any, error) {
 		return map[string]any{"accountLogin": user.Login, "tokenType": tokenType, "scopes": nonNilSlice(scopes), "expiresAt": facts.ExpiresAt},
 			"account_login=?, token_type=?, scopes=?, permissions=?, access_expires_at=?, state=CASE WHEN state='disabled' THEN 'disabled' ELSE 'active' END, state_reason=CASE WHEN state='disabled' THEN state_reason ELSE '' END, last_checked_at=?",
 			[]any{user.Login, tokenType, jsonOf(nonNilSlice(scopes)), jsonOf(perms), tsOrNil(ptrTime(facts.ExpiresAt)), s.ts()}, nil
@@ -461,7 +476,8 @@ func (s *Service) RotatePAT(ctx context.Context, id, token string, actor Actor) 
 
 // DeleteConnection removes a connection and its stored credentials. Nothing
 // on GitHub is revoked; the PAT or App authorization stays valid there.
-func (s *Service) DeleteConnection(ctx context.Context, id string, actor Actor) error {
+// version 0 skips the version condition.
+func (s *Service) DeleteConnection(ctx context.Context, id string, version int64, actor Actor) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -473,6 +489,9 @@ func (s *Service) DeleteConnection(ctx context.Context, id string, actor Actor) 
 	}
 	if c.OwnerUserID != actor.UserID {
 		return ErrNotFound
+	}
+	if version != 0 && c.Version != version {
+		return ErrVersionMismatch
 	}
 	if _, err := tx.ExecContext(ctx, `DELETE FROM github_auth_requests WHERE connection_id=?`, id); err != nil {
 		return err
@@ -496,8 +515,27 @@ func (s *Service) DeleteConnection(ctx context.Context, id string, actor Actor) 
 // active) without an actor-driven change; it keeps a disabled connection
 // disabled.
 func (s *Service) setState(ctx context.Context, id, state, reason string) {
-	_, err := s.db.ExecContext(context.WithoutCancel(ctx), `UPDATE github_connections SET state=?, state_reason=?, last_checked_at=?, updated_at=?, version=version+1
-		WHERE id=? AND state<>'disabled' AND (state<>? OR state_reason<>?)`, state, reason, s.ts(), s.ts(), id, state, reason)
+	ctx = context.WithoutCancel(ctx)
+	err := func() error {
+		tx, err := s.db.BeginTx(ctx, nil)
+		if err != nil {
+			return err
+		}
+		defer tx.Rollback()
+		res, err := tx.ExecContext(ctx, `UPDATE github_connections SET state=?, state_reason=?, last_checked_at=?, updated_at=?, version=version+1
+			WHERE id=? AND state<>'disabled' AND (state<>? OR state_reason<>?)`, state, reason, s.ts(), s.ts(), id, state, reason)
+		if err != nil {
+			return err
+		}
+		if n, _ := res.RowsAffected(); n == 0 {
+			return nil
+		}
+		if err := s.auditTx(ctx, tx, Actor{Username: "system"}, "github.connection.state", "github-connection", id, nil,
+			map[string]any{"state": state, "reason": reason}); err != nil {
+			return err
+		}
+		return tx.Commit()
+	}()
 	if err != nil {
 		s.log.Error("github: connection state could not be saved", "connection", id, "state", state, "error", err)
 	}

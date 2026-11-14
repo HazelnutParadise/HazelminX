@@ -349,6 +349,7 @@ func (s *Service) complete(ctx context.Context, r authRequest, cb Callback, acto
 	}
 
 	var inst *Installation
+	var repoIDs []int64
 	if r.purpose == PurposeInstall {
 		// The id in the callback is only a claim: the App must own the
 		// installation, and the user who authorized must be able to see it.
@@ -379,9 +380,50 @@ func (s *Service) complete(ctx context.Context, r authRequest, cb Callback, acto
 		if !seen {
 			return Completed{}, &AuthorizationError{Reason: "installation-mismatch"}
 		}
+		// GitHub lists an installation for anyone who can reach one of its
+		// repositories; the connection is limited to what this user reaches.
+		repoIDs, err = s.client.UserInstallationRepositories(ctx, tok.AccessToken, got.ID)
+		if err != nil {
+			return Completed{}, err
+		}
+		if len(repoIDs) == 0 {
+			return Completed{}, &AuthorizationError{Reason: "installation-mismatch"}
+		}
 		inst = &got
 	}
 
+	// The same GitHub account authorizing the same App again (installing
+	// once more, for instance) renews its existing user connection.
+	if existing, err := s.findUserConn(ctx, actor, app.ID, user.ID); err != nil {
+		return Completed{}, err
+	} else if existing != "" {
+		c, err := s.reauthorize(ctx, authRequest{id: r.id, connID: existing}, app, user, tok, actor)
+		if err != nil {
+			return Completed{}, err
+		}
+		out := Completed{Purpose: r.purpose, Connections: []Connection{c}}
+		if inst == nil {
+			return out, nil
+		}
+		tx, err := s.db.BeginTx(ctx, nil)
+		if err != nil {
+			return Completed{}, err
+		}
+		defer tx.Rollback()
+		id, err := s.bindInstallationTx(ctx, tx, app, inst, repoIDs, actor)
+		if err != nil {
+			return Completed{}, err
+		}
+		if err := tx.Commit(); err != nil {
+			return Completed{}, err
+		}
+		ic, err := s.GetConnection(ctx, id, actor)
+		if err != nil {
+			return Completed{}, err
+		}
+		out.Connections = append(out.Connections, ic)
+		return out, nil
+	}
 	userConn := Connection{ID: newID("ghc_"), Name: r.name, Kind: KindAppUser, AppID: app.ID, Account: user, TokenType: "app-user",
 		Permissions: app.Permissions, Events: app.Events}
 	if userConn.Name == "" {
@@ -409,31 +451,11 @@ func (s *Service) complete(ctx context.Context, r authRequest, cb Callback, acto
 	}
 	ids := []string{userConn.ID}
 	if inst != nil {
-		var existing string
-		err := tx.QueryRowContext(ctx, `SELECT id FROM github_connections WHERE owner_user_id=? AND app_ref=? AND installation_id=?`, actor.UserID, app.ID, inst.ID).Scan(&existing)
-		switch {
-		case errors.Is(err, sql.ErrNoRows):
-			ic := Connection{ID: newID("ghc_"), Name: inst.Account.Login + " (" + app.Name + ")", Kind: KindAppInstallation, AppID: app.ID, Account: inst.Account,
-				InstallationID: inst.ID, RepositorySelection: inst.RepositorySelection, TokenType: "app-installation", Permissions: inst.Permissions, Events: inst.Events}
-			if err := s.insertConnTx(ctx, tx, ic, actor, "github.connection.create"); err != nil {
-				return fail(err)
-			}
-			ids = append(ids, ic.ID)
-		case err != nil:
+		id, err := s.bindInstallationTx(ctx, tx, app, inst, repoIDs, actor)
+		if err != nil {
 			return fail(err)
-		default:
-			// Installing again (e.g. to change repositories) refreshes what
-			// GitHub granted on the existing connection.
-			if _, err := tx.ExecContext(ctx, `UPDATE github_connections SET account_login=?, repository_selection=?, permissions=?, events=?, version=version+1, updated_at=? WHERE id=?`,
-				inst.Account.Login, inst.RepositorySelection, jsonOf(nonNilMap(inst.Permissions)), jsonOf(nonNilSlice(inst.Events)), s.ts(), existing); err != nil {
-				return fail(err)
-			}
-			if err := s.auditTx(ctx, tx, actor, "github.connection.refresh", "github-connection", existing, nil,
-				map[string]any{"installationId": inst.ID, "permissions": inst.Permissions, "repositorySelection": inst.RepositorySelection}); err != nil {
-				return fail(err)
-			}
-			ids = append(ids, existing)
 		}
+		ids = append(ids, id)
 	}
 	if err := tx.Commit(); err != nil {
 		return fail(err)
@@ -504,9 +526,7 @@ func (s *Service) reauthorize(ctx context.Context, r authRequest, app App, user 
 // writeUserToken saves new user tokens over a connection's stored ones:
 // the secret values first, then the expiry columns.
 func (s *Service) writeUserToken(ctx context.Context, c Connection, tok UserToken, actor Actor) error {
-	if _, err := s.vault.Rotate(ctx, c.accessSecret, []byte(tok.AccessToken), actor.UserID); err != nil {
-		return fmt.Errorf("github: store access token: %w", err)
-	}
+	ctx = context.WithoutCancel(ctx)
 	refresh := c.refreshSecret
 	switch {
 	case tok.RefreshToken != "" && refresh != "":
@@ -519,6 +539,11 @@ func (s *Service) writeUserToken(ctx context.Context, c Connection, tok UserToke
 			return err
 		}
 		refresh = id
+	}
+	// The access token after the refresh token: a failure between them
+	// leaves a stored refresh token GitHub still accepts.
+	if _, err := s.vault.Rotate(ctx, c.accessSecret, []byte(tok.AccessToken), actor.UserID); err != nil {
+		return fmt.Errorf("github: store access token: %w", err)
 	}
 	var refreshCol any
 	if refresh != "" {
@@ -555,4 +580,39 @@ func (s *Service) completeManifest(ctx context.Context, r authRequest, cb Callba
 		return Completed{}, err
 	}
 	return Completed{Purpose: PurposeManifest, App: &app, Connections: []Connection{}}, nil
+}
+
+func (s *Service) findUserConn(ctx context.Context, actor Actor, appRef string, accountID int64) (string, error) {
+	var id string
+	err := s.db.QueryRowContext(ctx, `SELECT id FROM github_connections WHERE owner_user_id=? AND app_ref=? AND kind='app-user' AND account_id=? ORDER BY created_at LIMIT 1`,
+		actor.UserID, appRef, accountID).Scan(&id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	return id, err
+}
+
+// bindInstallationTx creates the installation connection, or refreshes the
+// existing one (installing again, e.g. to change repositories), and makes
+// it usable again if it was waiting for authorization.
+func (s *Service) bindInstallationTx(ctx context.Context, tx *sql.Tx, app App, inst *Installation, repoIDs []int64, actor Actor) (string, error) {
+	var existing string
+	err := tx.QueryRowContext(ctx, `SELECT id FROM github_connections WHERE owner_user_id=? AND app_ref=? AND installation_id=?`, actor.UserID, app.ID, inst.ID).Scan(&existing)
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		ic := Connection{ID: newID("ghc_"), Name: inst.Account.Login + " (" + app.Name + ")", Kind: KindAppInstallation, AppID: app.ID, Account: inst.Account,
+			InstallationID: inst.ID, RepositorySelection: inst.RepositorySelection, RepositoryIDs: repoIDs, TokenType: "app-installation", Permissions: inst.Permissions, Events: inst.Events}
+		return ic.ID, s.insertConnTx(ctx, tx, ic, actor, "github.connection.create")
+	case err != nil:
+		return "", err
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE github_connections SET account_login=?, repository_selection=?, repository_ids=?, permissions=?, events=?,
+		state=CASE WHEN state='disabled' THEN 'disabled' ELSE 'active' END, state_reason=CASE WHEN state='disabled' THEN state_reason ELSE '' END,
+		version=version+1, updated_at=? WHERE id=?`,
+		inst.Account.Login, inst.RepositorySelection, jsonOf(nonNilIDs(repoIDs)), jsonOf(nonNilMap(inst.Permissions)), jsonOf(nonNilSlice(inst.Events)), s.ts(), existing); err != nil {
+		return "", err
+	}
+	s.forgetTokens(existing)
+	return existing, s.auditTx(ctx, tx, actor, "github.connection.refresh", "github-connection", existing, nil,
+		map[string]any{"installationId": inst.ID, "permissions": inst.Permissions, "repositorySelection": inst.RepositorySelection, "repositoryIds": nonNilIDs(repoIDs)})
 }

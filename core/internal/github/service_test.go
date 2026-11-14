@@ -140,7 +140,7 @@ func TestOneAccountManyPATsRotateIndependently(t *testing.T) {
 		ids = append(ids, c.ID)
 	}
 	e.gh.users["ghp_org1_new"] = User{ID: 42, Login: "same"}
-	if _, err := e.svc.RotatePAT(ctx, ids[1], "ghp_org1_new", e.alice); err != nil {
+	if _, err := e.svc.RotatePAT(ctx, ids[1], 0, "ghp_org1_new", e.alice); err != nil {
 		t.Fatal(err)
 	}
 	want := []string{"ghp_personal", "ghp_org1_new", "ghp_org2"}
@@ -152,7 +152,7 @@ func TestOneAccountManyPATsRotateIndependently(t *testing.T) {
 	}
 	// A token of another account is refused; the stored one stays.
 	e.gh.users["ghp_intruder"] = User{ID: 43, Login: "same"}
-	_, err := e.svc.RotatePAT(ctx, ids[2], "ghp_intruder", e.alice)
+	_, err := e.svc.RotatePAT(ctx, ids[2], 0, "ghp_intruder", e.alice)
 	asAuthErr(t, err, "wrong-account")
 	if cr, _ := e.svc.Credential(ctx, ids[2], Scope{}, e.alice); cr.Value != "ghp_org2" {
 		t.Fatal("refused rotation changed the token")
@@ -176,7 +176,7 @@ func TestPATExpiryNeedsReauthorizationNotRenewal(t *testing.T) {
 	}
 	// Rotating in a new token of the same account brings it back.
 	e.gh.users["ghp_y"] = User{ID: 1, Login: "x"}
-	if got, err := e.svc.RotatePAT(ctx, c.ID, "ghp_y", e.alice); err != nil || got.State != StateActive || got.AccessExpiresAt != nil {
+	if got, err := e.svc.RotatePAT(ctx, c.ID, 0, "ghp_y", e.alice); err != nil || got.State != StateActive || got.AccessExpiresAt != nil {
 		t.Fatalf("rotation: %+v %v", got, err)
 	}
 }
@@ -189,8 +189,8 @@ func TestConnectionsBelongToTheirCreator(t *testing.T) {
 		"get":        func() error { _, err := e.svc.GetConnection(ctx, c.ID, e.bob); return err }(),
 		"credential": func() error { _, err := e.svc.Credential(ctx, c.ID, Scope{}, e.bob); return err }(),
 		"disable":    func() error { _, err := e.svc.SetEnabled(ctx, c.ID, false, e.bob); return err }(),
-		"rotate":     func() error { _, err := e.svc.RotatePAT(ctx, c.ID, "ghp_a", e.bob); return err }(),
-		"delete":     e.svc.DeleteConnection(ctx, c.ID, e.bob),
+		"rotate":     func() error { _, err := e.svc.RotatePAT(ctx, c.ID, 0, "ghp_a", e.bob); return err }(),
+		"delete":     e.svc.DeleteConnection(ctx, c.ID, 0, e.bob),
 	} {
 		if !errors.Is(err, ErrNotFound) {
 			t.Fatalf("%s by another account: %v", name, err)
@@ -214,7 +214,7 @@ func TestDisableEnableAndDelete(t *testing.T) {
 	if got, _ := e.svc.SetEnabled(ctx, c.ID, true, e.alice); got.State != StateActive {
 		t.Fatal("enable")
 	}
-	if err := e.svc.DeleteConnection(ctx, c.ID, e.alice); err != nil {
+	if err := e.svc.DeleteConnection(ctx, c.ID, 0, e.alice); err != nil {
 		t.Fatal(err)
 	}
 	var live int
@@ -368,7 +368,7 @@ func TestDeleteAppRefusedWhileUsed(t *testing.T) {
 	if err := e.svc.DeleteApp(ctx, app.ID, e.alice); !errors.As(err, &ref) || ref.Connections != 1 {
 		t.Fatalf("app in use: %v", err)
 	}
-	e.svc.DeleteConnection(ctx, done.Connections[0].ID, e.alice)
+	e.svc.DeleteConnection(ctx, done.Connections[0].ID, 0, e.alice)
 	if err := e.svc.DeleteApp(ctx, app.ID, e.alice); err != nil {
 		t.Fatal(err)
 	}
@@ -452,7 +452,7 @@ func TestMaliciousCallbacksAreRefusedAndChangeNothing(t *testing.T) {
 	if _, err := e.svc.Complete(ctx, Callback{State: st.State, Code: "c-session"}, e.alice); err != nil {
 		t.Fatalf("the owner's request must survive others' attempts: %v", err)
 	}
-	base++
+	// The same GitHub account authorizing again renews its connection.
 
 	// Forged state.
 	_, err = e.svc.Complete(ctx, Callback{State: "forged", Code: "x"}, e.alice)
@@ -706,6 +706,7 @@ func installationConn(t *testing.T, e *env) Connection {
 	e.gh.installs[700] = Installation{ID: 700, AppID: 5, Account: Account{ID: 8000, Login: "acme"}, Permissions: map[string]string{"contents": "read"}}
 	e.gh.users["ghu_i"] = User{ID: 21, Login: "installer"}
 	e.gh.userInstalls["ghu_i"] = []int64{700}
+	e.gh.instRepos[700] = []int64{3, 9}
 	st := startAuth(t, e, app, AuthorizeInput{Mode: PurposeInstall}, e.alice, "ci", UserToken{AccessToken: "ghu_i"})
 	got, err := e.svc.Complete(ctx, Callback{State: st.State, Code: "ci", InstallationID: 700}, e.alice)
 	if err != nil {
@@ -784,5 +785,94 @@ func TestReachabilityChecksAreSeparate(t *testing.T) {
 	e.gh.down = true
 	if r, err = e.svc.CheckReachability(ctx, app.ID, "x"); err != nil || r.Webhook.Status != "unknown" || r.BrowserCallback.Status != "configured" {
 		t.Fatalf("GitHub down: %+v %v", r, err)
+	}
+}
+
+// --- Review regressions -------------------------------------------------------
+
+func TestCheckDuringOutageKeepsNeedsReauth(t *testing.T) {
+	e := newEnv(t, "")
+	e.gh.users["ghp_a"] = User{ID: 1, Login: "a"}
+	c, _ := e.svc.CreatePAT(ctx, PATInput{Token: "ghp_a"}, e.alice)
+	delete(e.gh.users, "ghp_a")
+	if got, _ := e.svc.Check(ctx, c.ID, e.alice); got.State != StateNeedsReauth {
+		t.Fatalf("refused token: %+v", got)
+	}
+	e.gh.down = true
+	if _, err := e.svc.Check(ctx, c.ID, e.alice); !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("outage: %v", err)
+	}
+	if got, _ := e.svc.GetConnection(ctx, c.ID, e.alice); got.State != StateNeedsReauth {
+		t.Fatalf("an unanswered check must not make the connection usable: %+v", got)
+	}
+	if _, err := e.svc.Credential(ctx, c.ID, Scope{}, e.alice); !errors.Is(err, ErrNeedsReauth) {
+		t.Fatalf("credential after outage: %v", err)
+	}
+	// GitHub accepts it again: the check brings it back.
+	e.gh.down = false
+	e.gh.users["ghp_a"] = User{ID: 1, Login: "a"}
+	if got, err := e.svc.Check(ctx, c.ID, e.alice); err != nil || got.State != StateActive {
+		t.Fatalf("recovered: %+v %v", got, err)
+	}
+	found := false
+	for _, a := range e.aud.actions() {
+		found = found || a == "github.connection.state"
+	}
+	if !found {
+		t.Fatal("state changes found by the system must be audited")
+	}
+}
+
+func TestInstallationTokensStayWithinTheUsersRepositories(t *testing.T) {
+	e := newEnv(t, origin)
+	app := e.addApp(5, map[string]string{"contents": "read"}, nil)
+	e.gh.installs[700] = Installation{ID: 700, AppID: 5, Account: Account{ID: 8000, Login: "acme"}, RepositorySelection: "all"}
+	e.gh.users["ghu_m"] = User{ID: 21, Login: "member"}
+	e.gh.userInstalls["ghu_m"] = []int64{700}
+	e.gh.instRepos[700] = []int64{11, 12}
+	st := startAuth(t, e, app, AuthorizeInput{Mode: PurposeInstall}, e.alice, "ci", UserToken{AccessToken: "ghu_m"})
+	got, err := e.svc.Complete(ctx, Callback{State: st.State, Code: "ci", InstallationID: 700}, e.alice)
+	if err != nil {
+		t.Fatal(err)
+	}
+	inst := got.Connections[1]
+	e.gh.instTokens = []Token{{Value: "ghs_1", ExpiresAt: e.clock.Add(time.Hour)}}
+	if _, err := e.svc.Credential(ctx, inst.ID, Scope{}, e.alice); err != nil {
+		t.Fatal(err)
+	}
+	if ids := e.gh.lastScope.RepositoryIDs; len(ids) != 2 || ids[0] != 11 || ids[1] != 12 {
+		t.Fatalf("an unscoped request must be narrowed to the member's repositories: %v", ids)
+	}
+	if _, err := e.svc.Credential(ctx, inst.ID, Scope{RepositoryIDs: []int64{99}}, e.alice); !errors.Is(err, ErrValidation) {
+		t.Fatalf("a repository the member cannot reach: %v", err)
+	}
+	// Nobody reaches any repository: no connection.
+	e.gh.instRepos[700] = []int64{}
+	st = startAuth(t, e, app, AuthorizeInput{Mode: PurposeInstall}, e.bob, "cb", UserToken{AccessToken: "ghu_m"})
+	e.bob.CanManageApps = false
+	_, err = e.svc.Complete(ctx, Callback{State: st.State, Code: "cb", InstallationID: 700}, e.bob)
+	asAuthErr(t, err, "installation-mismatch")
+}
+
+func TestReinstallRestoresTheConnectionWithoutDuplicates(t *testing.T) {
+	e := newEnv(t, origin)
+	c := installationConn(t, e)
+	delete(e.gh.installs, 700)
+	if _, err := e.svc.Credential(ctx, c.ID, Scope{}, e.alice); !errors.Is(err, ErrNeedsReauth) {
+		t.Fatal(err)
+	}
+	before := e.countConnections()
+	e.gh.installs[700] = Installation{ID: 700, AppID: 5, Account: Account{ID: 8000, Login: "acme"}}
+	app, _ := e.svc.GetApp(ctx, c.AppID)
+	st := startAuth(t, e, app, AuthorizeInput{Mode: PurposeInstall}, e.alice, "ci2", UserToken{AccessToken: "ghu_i"})
+	got, err := e.svc.Complete(ctx, Callback{State: st.State, Code: "ci2", InstallationID: 700}, e.alice)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if e.countConnections() != before {
+		t.Fatalf("installing again added connections: %d → %d", before, e.countConnections())
+	}
+	if got.Connections[1].ID != c.ID || got.Connections[1].State != StateActive {
+		t.Fatalf("reinstalled connection: %+v", got.Connections[1])
 	}
 }

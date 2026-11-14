@@ -73,14 +73,20 @@ func (sc Scope) key() string {
 //   - App installation: a short-lived installation token minted for the
 //     scope asked, cached in memory until close to its returned expiry.
 func (s *Service) Credential(ctx context.Context, id string, scope Scope, actor Actor) (Credential, error) {
+	return s.credential(ctx, id, scope, actor, false)
+}
+
+// credential is Credential; retry lets Check try a needs-reauth PAT or
+// installation again without first marking it usable.
+func (s *Service) credential(ctx context.Context, id string, scope Scope, actor Actor, retry bool) (Credential, error) {
 	c, err := s.GetConnection(ctx, id, actor)
 	if err != nil {
 		return Credential{}, err
 	}
-	switch c.State {
-	case StateDisabled:
+	switch {
+	case c.State == StateDisabled:
 		return Credential{}, ErrDisabled
-	case StateNeedsReauth:
+	case c.State == StateNeedsReauth && !(retry && c.Kind != KindAppUser):
 		return Credential{}, ErrNeedsReauth
 	}
 	switch c.Kind {
@@ -147,6 +153,9 @@ func (s *Service) userCredential(ctx context.Context, c Connection, actor Actor)
 	}
 	s.clearBackoff(c.ID)
 	if err := s.writeUserToken(ctx, c, tok, actor); err != nil {
+		// The old refresh token is spent; without the new one saved the
+		// connection can only be authorized again.
+		s.setState(ctx, c.ID, StateNeedsReauth, "renewed token could not be saved")
 		return Credential{}, err
 	}
 	var exp *time.Time
@@ -158,7 +167,22 @@ func (s *Service) userCredential(ctx context.Context, c Connection, actor Actor)
 }
 
 func (s *Service) installationCredential(ctx context.Context, c Connection, scope Scope) (Credential, error) {
+	if len(scope.RepositoryIDs) == 0 {
+		scope.RepositoryIDs = c.RepositoryIDs
+	} else {
+		allowed := map[int64]bool{}
+		for _, id := range c.RepositoryIDs {
+			allowed[id] = true
+		}
+		for _, id := range scope.RepositoryIDs {
+			if !allowed[id] {
+				return Credential{}, invalid("repositoryIds", "the connection does not cover repository "+strconv.FormatInt(id, 10))
+			}
+		}
+	}
 	key := c.ID + "#" + scope.key()
+	unlock := s.lockConn("install:" + c.ID)
+	defer unlock()
 	s.tokMu.Lock()
 	t, ok := s.installTokens[key]
 	s.tokMu.Unlock()
@@ -247,10 +271,9 @@ func (s *Service) Check(ctx context.Context, id string, actor Actor) (Connection
 	}
 	// A connection marked needs-reauth is checked again: a PAT renewed on
 	// GitHub with the same value, or an installation unsuspended, recovers.
-	if c.State == StateNeedsReauth && c.Kind != KindAppUser {
-		s.setState(ctx, c.ID, StateActive, "")
-	}
-	cred, err := s.Credential(ctx, id, Scope{}, actor)
+	// The state goes back to active only in recordCheck, after GitHub
+	// confirmed the credential.
+	cred, err := s.credential(ctx, id, Scope{}, actor, true)
 	if errors.Is(err, ErrNeedsReauth) {
 		return s.GetConnection(ctx, id, actor)
 	}

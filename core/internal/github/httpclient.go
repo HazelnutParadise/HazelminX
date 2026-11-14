@@ -260,6 +260,29 @@ func (c *HTTPClient) UserInstallations(ctx context.Context, userToken string) ([
 	return all, nil
 }
 
+func (c *HTTPClient) UserInstallationRepositories(ctx context.Context, userToken string, id int64) ([]int64, error) {
+	var ids []int64
+	for page := 1; page <= 50; page++ {
+		var out struct {
+			TotalCount   int `json:"total_count"`
+			Repositories []struct {
+				ID int64 `json:"id"`
+			} `json:"repositories"`
+		}
+		u := fmt.Sprintf("%s/user/installations/%d/repositories?per_page=100&page=%d", c.APIBase, id, page)
+		if _, err := c.call(ctx, http.MethodGet, u, bearer(userToken), nil, nil, &out); err != nil {
+			return nil, err
+		}
+		for _, r := range out.Repositories {
+			ids = append(ids, r.ID)
+		}
+		if len(out.Repositories) < 100 || len(ids) >= out.TotalCount {
+			return ids, nil
+		}
+	}
+	return nil, &APIError{Kind: ErrUnavailable, Reason: "more than 5000 repositories; list not complete"}
+}
+
 func (c *HTTPClient) CanListRepositories(ctx context.Context, token string) (bool, error) {
 	_, err := c.call(ctx, http.MethodGet, c.APIBase+"/user/repos?per_page=1", bearer(token), nil, nil, nil)
 	if err == nil {

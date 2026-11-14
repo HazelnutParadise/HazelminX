@@ -153,11 +153,11 @@ func (s *Server) MountGitHub(svc *github.Service) {
 		Permission: usePerm,
 		Responses:  []Response{{Status: 200, Body: githubConnectionResponse{}}}, Errors: gh}), use, h.check)
 	s.handle(g, base, op(Operation{Method: "PUT", Path: base + "/github/connections/{id}/credential", ID: "rotateGitHubConnectionCredential",
-		Summary:    "replace the token of a PAT connection; the new token must belong to the same GitHub account; other connections are not touched",
-		Permission: usePerm, Request: githubCredentialRequest{},
+		Summary:    "replace the token of a PAT connection; the new token must belong to the same GitHub account; other connections are not touched; requires If-Match",
+		Permission: usePerm, Request: githubCredentialRequest{}, Versioned: true,
 		Responses: []Response{{Status: 200, Body: githubConnectionResponse{}}}, Errors: append([]string{CodeValidationFailed, CodeGitHubAuthInvalid}, gh...)}), use, h.rotate)
 	s.handle(g, base, op(Operation{Method: "DELETE", Path: base + "/github/connections/{id}", ID: "deleteGitHubConnection",
-		Summary: "remove a connection and its stored credentials here; nothing is revoked on GitHub", Permission: usePerm,
+		Summary: "remove a connection and its stored credentials here; nothing is revoked on GitHub; requires If-Match", Permission: usePerm, Versioned: true,
 		Responses: []Response{{Status: 204}}}), use, h.deleteConnection)
 }
 
@@ -460,13 +460,21 @@ func (h *githubRoutes) check(c *gin.Context) {
 }
 
 func (h *githubRoutes) rotate(c *gin.Context) {
+	if _, err := h.svc.GetConnection(c.Request.Context(), c.Param("id"), githubActor(c)); err != nil {
+		h.fail(c, err)
+		return
+	}
+	version, ok := requireIfMatch(c)
+	if !ok {
+		return
+	}
 	var in githubCredentialRequest
 	if !bindJSON(c, &in, "body must be JSON with token") {
 		return
 	}
 	ctx, cancel := githubCtx(c)
 	defer cancel()
-	conn, err := h.svc.RotatePAT(ctx, c.Param("id"), in.Token, githubActor(c))
+	conn, err := h.svc.RotatePAT(ctx, c.Param("id"), version, in.Token, githubActor(c))
 	if err != nil {
 		h.fail(c, err)
 		return
@@ -476,9 +484,17 @@ func (h *githubRoutes) rotate(c *gin.Context) {
 }
 
 func (h *githubRoutes) deleteConnection(c *gin.Context) {
+	if _, err := h.svc.GetConnection(c.Request.Context(), c.Param("id"), githubActor(c)); err != nil {
+		h.fail(c, err)
+		return
+	}
+	version, ok := requireIfMatch(c)
+	if !ok {
+		return
+	}
 	ctx, cancel := githubCtx(c)
 	defer cancel()
-	if err := h.svc.DeleteConnection(ctx, c.Param("id"), githubActor(c)); err != nil {
+	if err := h.svc.DeleteConnection(ctx, c.Param("id"), version, githubActor(c)); err != nil {
 		h.fail(c, err)
 		return
 	}
