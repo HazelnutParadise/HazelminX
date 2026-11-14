@@ -41,4 +41,5 @@ GitHub Actions：Go／Rust／前端的 lint、test、build；Linux x86_64 與 AR
 - 讓 Core 改用 `scripts/embed-web.sh` 以 `-tags embedweb` 建置，冒煙測試從「`/` 回 503」改成「`/` 回 `index.html`」。
 - main 分支還沒設定「CI 通過才能合併」的保護規則，要由 repo 管理者在 GitHub 設定。
 - 2026-11-14：CI 只有 Core、Agent 與互通測試的工作，沒有 `web/` 的工作。PR #181（票 020.4）的型別檢查、270 個單元測試與 133 個 e2e 都只有本機結果。要補一個前端的工作：`vp check`、`vp test`，以及對這個分支建置的 Core 跑 e2e（含版面與無障礙掃描）。
+- 2026-11-15：前端的完整 e2e 有順序相依的不穩定，兩張票各自回報過。票 030.2：`/nodes` 在 360 寬英文的版面掃描，三次完整執行失敗兩次。票 044.3（PR #190）：加了 `projects.spec` 之後完整執行 135 過、3 失敗（`shell-flows` 的語言切換子選單打不開、`shell-scan` 的 `/nodes` 360 寬英文列動作跑到畫面外）；三條單獨跑都過，不含 `projects.spec` 的完整執行 136/136，`main` 136/136。根因沒有確認。補前端 CI 工作之前要先查清楚，否則 CI 會時好時壞：先確認是測試之間共用了狀態（同一個 Core、語言設定、連線中的真 Agent 主機），還是主機清單在窄寬度真的會把列動作擠出畫面。
 
