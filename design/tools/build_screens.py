@@ -2032,6 +2032,30 @@ def shell_states() -> str:
       </div>"""
     menu = box("帳號選單 · 點頂列自己的名字", acct_menu() + '<div class="wrap">' + U.status("info", "按 Esc 或點外面關閉；主題切換留在頂列，不放進選單") + "</div>")
     menu_m = box("帳號選單 · 手機", f'<div style="max-width:360px;width:100%;margin-left:auto">{acct_menu(True)}</div><div class="wrap">' + U.status("info", "手機頂列放不下終端機，收進這個選單") + "</div>")
+    def att_row(tag, color, title, sub, act, href):
+        return (f'<div style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-top:1px solid var(--line)">'
+                f'<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:{color}">{tag}</div>'
+                f'<div style="font-size:13px;font-weight:500;overflow-wrap:anywhere">{title}</div><div style="font-size:12px;color:var(--muted);overflow-wrap:anywhere">{sub}</div></div>'
+                f'<a class="btn sm" href="{href}" style="flex:none">{act}</a></div>')
+    def att_panel(rows, count):
+        bell = f'<button type="button" class="ib" aria-label="需要處理 {count}" aria-expanded="true" aria-haspopup="dialog" style="border-color:var(--hazel);position:relative">{U.icon("events")}' + (f'<b class="badge dng">{count}</b>' if count else "") + "</button>"
+        body = rows or ('<div style="padding:20px 12px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:6px;align-items:flex-start">' + U.status("ok", "現在沒有需要處理的事") + '<span style="font-size:12px;color:var(--muted)">告警、待批准和安全提醒出現時會列在這裡</span></div>')
+        return f"""
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        {bell}
+        <div role="dialog" aria-label="需要處理" style="width:min(400px,100%);border:1px solid var(--line);border-radius:8px;background:var(--raised);display:flex;flex-direction:column;box-shadow:0 12px 32px rgb(0 0 0/.18)">
+          <div style="display:flex;align-items:center;gap:8px;padding:10px 12px"><strong>需要處理 · {count}</strong><a href="Events.dc.html" style="margin-left:auto;font-size:12px;color:var(--hazel)">事件與告警 →</a></div>
+          {body}
+          <div style="padding:8px 12px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)">只列要你動手的事，最嚴重的在最上面。處理完或靜音就會消失</div>
+        </div>
+      </div>"""
+    att_rows = (att_row("主機沒有回應 · 48 秒", "var(--danger)", "hazel-jp-02", "wiki.example.tw 仍可連", "處理", "NodeOffline.dc.html")
+                + att_row("對外開著 · 2 個 Port", "var(--danger)", "wiki-db 5432、ollama 11434", "從外部連得到，沒有防火牆擋", "處理", "Security.dc.html#exposure")
+                + att_row("資料碟 93%", "var(--danger)", "hazel-jp-02 /mnt/data", "剩 61 GiB · 預估 15 天後滿", "查看", "Storage.dc.html")
+                + att_row("待批准 · 計畫 #418", "var(--hazel)", "shop production", "新增宿主機掛載 · 自動部署已暫停", "檢視差異", "DeployCheck.dc.html")
+                + att_row("憑證到期 · 11 天", "var(--warn)", "shop.example.tw", "續期失敗 3 次", "重試", "Websites.dc.html"))
+    bell = box("需要處理 · 點頂列的鈴", att_panel(att_rows, 5) + '<div class="wrap">' + U.status("info", "和總覽右欄是同一份清單；在其他頁面不用回總覽就看得到") + "</div>")
+    bell0 = box("需要處理 · 沒有事的時候", att_panel("", 0) + '<div class="wrap">' + U.status("info", "鈴上沒有數字") + "</div>")
     signed_out = box("未登入時的頂列", f"""
       <div class="top" style="border:1px solid var(--line);border-radius:8px"><span class="brand"><span class="logo" aria-hidden="true"></span><span>HazelminX</span></span>
         <div class="tright"><button type="button" class="ib" aria-label="切換淺色或深色">{U.icon("sun")}</button><button type="button" class="ib" aria-label="語言">{U.icon("globe")}</button></div></div>
@@ -2081,7 +2105,7 @@ config check failed, refusing to start</div></details>""")
           <div class="wrap">{U.status("info", "群組標題換成分隔線")}</div><div class="wrap">{U.status("info", "計數變成圖示右上角的小徽章")}</div><div class="wrap">{U.status("info", "名稱在滑過或 Tab 移到時顯示")}</div>
         </div></div>""")
     grid = (f'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr));gap:16px;align-items:start">'
-            f'{menu}{menu_m}{signed_out}{obs}{collapsed}{empty}{nf}{err}{loading}{raw}</div>')
+            f'{bell}{bell0}{menu}{menu_m}{signed_out}{obs}{collapsed}{empty}{nf}{err}{loading}{raw}</div>')
     main = head + grid + f'<div class="cg">{cdown_states}{savebars}</div>'
     return U.shell("overview", main)
 
