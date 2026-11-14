@@ -163,6 +163,14 @@ func (h *jobsHandler) submit(c *gin.Context) {
 		respond(c, e)
 		return
 	}
+	// Kinds with their own endpoint check permissions on the resource they
+	// act on; POST /jobs cannot (ticket 044.2).
+	if ep, ok := h.srv.reservedKinds[req.Kind]; ok {
+		e := newError(CodeValidationFailed, "jobs of kind "+req.Kind+" are submitted through "+ep)
+		e.RequestID = req.RequestID
+		respond(c, e)
+		return
+	}
 	// The requester is always the signed-in account; a body cannot file a
 	// job under someone else's name.
 	if p := Principal(c); p != nil {

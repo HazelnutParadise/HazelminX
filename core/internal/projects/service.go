@@ -67,6 +67,11 @@ type Vault interface {
 	Delete(ctx context.Context, id, actor string) error
 }
 
+// Revealer reads a secret file's value for a deployment (ticket 044.2).
+type Revealer interface {
+	Reveal(ctx context.Context, req secrets.RevealRequest) ([]byte, int, error)
+}
+
 // Auditor writes audit rows inside the transaction of the change.
 type Auditor interface {
 	RecordTx(ctx context.Context, tx *sql.Tx, ev iam.AuditEvent) error
@@ -79,20 +84,23 @@ type Actor struct {
 
 // Options builds a Service.
 type Options struct {
-	DB     *sql.DB
-	Vault  Vault
-	Audit  Auditor
+	DB    *sql.DB
+	Vault Vault
+	Audit Auditor
+	// Reveal reads secret files for DeployContent; nil refuses it.
+	Reveal Revealer
 	Now    func() time.Time
 	Logger *slog.Logger
 }
 
 // Service stores projects.
 type Service struct {
-	db    *sql.DB
-	vault Vault
-	audit Auditor
-	now   func() time.Time
-	log   *slog.Logger
+	db     *sql.DB
+	vault  Vault
+	reveal Revealer
+	audit  Auditor
+	now    func() time.Time
+	log    *slog.Logger
 }
 
 // New builds a Service.
@@ -103,7 +111,7 @@ func New(o Options) *Service {
 	if o.Logger == nil {
 		o.Logger = slog.Default()
 	}
-	return &Service{db: o.DB, vault: o.Vault, audit: o.Audit, now: o.Now, log: o.Logger}
+	return &Service{db: o.DB, vault: o.Vault, reveal: o.Reveal, audit: o.Audit, now: o.Now, log: o.Logger}
 }
 
 // Limits on a unit's files. Bodies arrive as JSON of at most 1 MiB.
@@ -685,6 +693,56 @@ func (s *Service) GetUnit(ctx context.Context, projectID, envID string, withCont
 		u.Files = append(u.Files, out)
 	}
 	return u, nil
+}
+
+// GetUnitByID returns a unit without file contents.
+func (s *Service) GetUnitByID(ctx context.Context, id string) (*Unit, error) {
+	u, err := scanUnit(s.db.QueryRowContext(ctx, `SELECT `+unitCols+unitFrom+`WHERE u.id = ?`, id))
+	if err != nil {
+		return nil, err
+	}
+	files, err := s.loadFiles(ctx, s.db, u.ID)
+	if err != nil {
+		return nil, err
+	}
+	for _, f := range files {
+		u.Files = append(u.Files, f.File)
+	}
+	return u, nil
+}
+
+// DeployContent returns every file of the unit at version, secret files
+// revealed to the unit's own consumer, for a deployment (ticket 044.2). It
+// fails with ErrVersionMismatch when the unit moved on. Callers clear the
+// returned bytes after use and never log them.
+func (s *Service) DeployContent(ctx context.Context, unitID string, version int64) (*Unit, map[string][]byte, error) {
+	if s.reveal == nil {
+		return nil, nil, errors.New("projects: no secret reader configured")
+	}
+	u, err := s.GetUnitByID(ctx, unitID)
+	if err != nil {
+		return nil, nil, err
+	}
+	if u.Version != version {
+		return u, nil, ErrVersionMismatch
+	}
+	files, err := s.loadFiles(ctx, s.db, unitID)
+	if err != nil {
+		return nil, nil, err
+	}
+	out := make(map[string][]byte, len(files))
+	for _, f := range files {
+		if !f.Secret {
+			out[f.Path] = f.content
+			continue
+		}
+		v, _, err := s.reveal.Reveal(ctx, secrets.RevealRequest{ID: f.secretID, Consumer: consumer(unitID)})
+		if err != nil {
+			return nil, nil, fmt.Errorf("projects: read secret file %s: %w", f.Path, err)
+		}
+		out[f.Path] = v
+	}
+	return u, out, nil
 }
 
 // spec of a stored unit for Analyze.

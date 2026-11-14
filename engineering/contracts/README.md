@@ -162,6 +162,8 @@ Agent 主動連到 Core 的 Agent 入口（預設 `:9801`，路徑 `/agent/v1/co
 | `host.metrics` | 1 | `host_facts`、`metrics_report`、`metrics_ack`。雙方都宣告時 Agent 才送；Core 沒宣告時 Agent 不送 |
 | `host.storage` | 1 | `host_storage`、`storage_usage_request`、`storage_usage`、`storage_usage_unavailable`。Core 宣告時 Agent 才送 `host_storage`；Agent 宣告時 Core 才送 `storage_usage_request` |
 | `host.engines` | 1 | `engines_probe`、`engines_report`、`engines_unavailable`。Agent 宣告時 Core 才送 `engines_probe` |
+| `compose.check` | 1 | 步驟動作：檢查一個 Compose 修訂版在主機上能不能部署，不改主機。參數與結果見下方「Compose 部署」 |
+| `compose.deploy` | 1 | 步驟動作：寫入修訂版並執行 `docker compose up`。參數同 `compose.check` |
 
 Core 派送前先比對能力；Agent 沒宣告或版本較低的動作，Core 不送出，直接讓步驟失敗為 `CAPABILITY_UNSUPPORTED`。Agent 收到未宣告的動作、多餘參數欄位、別的節點、已過期、控制世代倒退或碰到工作沒保留的資源的步驟，一律回 `step_rejected`，不執行。
 
@@ -220,6 +222,8 @@ hazelminx-grant-v1
 ```
 
 時間是 RFC 3339 UTC、只到整秒。`fixtures/grant.json` 是 Rust 端用固定金鑰簽的一張憑證，Go 端要算出同一個簽章。
+
+憑證可以多一個 `binding` 欄位（64 個小寫十六進位字元），表示這張憑證只能用在一個內容固定的動作上。有 `binding` 時，簽章內容最後多一行 `binding:{binding}`；沒有時簽章內容和上面一樣。`compose_check` 與 `compose_deploy` 要求 `binding` 等於該動作算出的值，其他動作不看這個欄位。
 
 `lines` 的每一行和主機檔案裡的那一行逐位元組相同：`{"hash":"<hex>","entry":{…}}`。Core 照下面的規則驗證，任何一條不符，整頁都不保存：
 
@@ -303,6 +307,31 @@ Core 在節點憑證剩不到 30 天時自動輪替，管理員也可以手動�
 
 同一節點的第二條連線完成簽章驗證時，Core 對舊連線送一次 WebSocket ping。3 秒內沒有回應，Core 直接切斷舊連線（不等關閉交握），讓新連線進來（Agent 重開或網路中斷後重連都是這種情況）。有回應，就表示同一把金鑰有兩份在運作：Core 有節點名冊時關掉兩邊、把節點標成身分衝突並回 `IDENTITY_CONFLICT`，沒有名冊時只拒絕新連線並回 `DUPLICATE_SESSION`。
 
+### Compose 部署
+
+票 044.2，決策 0035。步驟參數有三個欄位，多一個或少一個 Agent 都回 `step_rejected`：
+
+- `grant`：給執行器的憑證，帶 `binding`，權限是 `host.compose.check` 或 `host.compose.deploy`。
+- `manifest`：執行器的格式（snake_case）：`project`、`revision`、`environment`（只收 `env:/var/run/docker.sock`、`env:/run/docker.sock`、`env:/run/podman/podman.sock`）、`main_file`、`extra_files`、`profiles`、`working_dir`（可省略）、`files`（每個 `{path, size, sha256}`）、`host_risk_approved`（擁有者在計畫裡批准了高風險設定；false 時執行器拒絕部署任何高風險設定）。
+- `files`：每份內容一個 `{sha256, content}`，`content` 是 UTF-8 文字；內容相同的檔案只送一次。
+
+`binding` 是 `sha256("{執行器動作}:" + manifest 摘要)`，執行器動作是 `compose_check` 或 `compose_deploy`。manifest 摘要是下面這段文字的 SHA-256，`file` 依路徑的位元組順序排列：
+
+```text
+hazelminx-compose-manifest-v1
+project:{project}
+revision:{revision}
+environment:{environment}
+main:{main_file}
+extra:{每個 extra_files，依序一行}
+profile:{每個 profiles，依序一行}
+workdir:{working_dir，省略時是空字串}
+hostrisk:{host_risk_approved 為 true 時是 approved，否則 none}
+file:{sha256} {size} {path}
+```
+
+步驟資源是 `{kind: "compose-project", id: project}`。Agent 把內容寫成 `<state_dir>/compose-spool/<revision>/<sha256>`，交給執行器後刪除；執行器的 `compose_spool_dir` 設定要指到同一個位置。`compose.check` 的結果是 `{ready, checks, services, dataDirs}`，`checks` 每項是 `{severity: error|warning, code, service?, detail}`；`compose.deploy` 的結果是 `{revision, directory, checks, services, containers}`。單一步驟訊息上限 1 MiB，Core 在參數超過 900 KiB 時不送，步驟失敗為 `UNIT_TOO_LARGE_TO_SEND`。
+
 ## 樣本
 
 - `fixtures/messages/*.json`：每種訊息一則合法樣本，兩邊解碼後再編碼要得到同樣的 JSON 值。
@@ -311,6 +340,7 @@ Core 在節點憑證剩不到 30 天時自動輪替，管理員也可以手動�
 - `fixtures/signature.json`：固定種子的節點、Core 與 X25519 金鑰，hello 原文與兩個雜湊、簽章內容、預期簽章、共同秘密與兩方向的會話金鑰（Ed25519 是確定性簽章，兩邊必須算出同一個值）。
 - `fixtures/frames.json`：用上面的會話金鑰封好的訊框。兩邊要算出同一個 `mac`、還原出同一個 `body`；訊框的 JSON 文字本身可能不同（Go 會把 `<`、`&` 這類字元跳脫），所以不比對整段文字。改任何一處都要被拒絕。
 - `fixtures/grant.json`：給高權限執行器的授權憑證，用固定種子（公開，只供測試）簽，含簽章內容與公鑰 PEM。
+- `fixtures/compose-manifest.json`：一份 Compose manifest、它的摘要文字、摘要、兩個 `binding`，以及一張綁定 `compose_deploy` 的憑證（與 `grant.json` 同一把測試金鑰）。由 `core/internal/composedeploy/fixturegen` 產生，Rust 端要算出同樣的值。
 - `fixtures/host-ledger-batch.json`：執行器 `ledger_export` 回的一頁真實帳本行，`messages/ledger_page.json` 用的是同一組行。
 - `fixtures/enrollment.json`：固定的註冊碼、正規化結果、`key`、一張 CA 的 PEM 與預期的 `mac`，兩邊要算出同樣的值；另含必須被拒絕的碼。
 - `fixtures/pki/`：測試用 CA、Core 與節點憑證（僅供測試，私鑰公開，不得用於任何部署）。

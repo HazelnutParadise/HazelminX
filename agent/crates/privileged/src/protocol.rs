@@ -14,6 +14,9 @@ use serde::{Deserialize, Serialize};
 pub const MAX_REQUEST_BYTES: usize = 64 * 1024;
 pub const PROTOCOL_VERSION: u32 = 1;
 
+// One request per connection: the size of the largest variant does not
+// matter.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Request {

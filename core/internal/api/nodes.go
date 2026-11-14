@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"github.com/HazelnutParadise/hazelminx/core/internal/composedeploy"
 	"log/slog"
 	"net/http"
 	"sort"
@@ -69,6 +70,9 @@ type maintenanceResponse struct {
 	// AffectedJobs are the node's unfinished jobs when maintenance began;
 	// they continue, new ones are refused.
 	AffectedJobs []affectedJob `json:"affectedJobs"`
+	// AffectedServices are the Compose projects last deployed to the node
+	// (NOD-008, ticket 044.2); empty when maintenance ends.
+	AffectedServices []composedeploy.OnNode `json:"affectedServices"`
 }
 
 type removeNodeRequest struct {
@@ -416,11 +420,19 @@ func (h *nodeRoutes) maintenance(c *gin.Context) {
 	if !h.changed(c, err) {
 		return
 	}
-	out := maintenanceResponse{Node: n, AffectedJobs: []affectedJob{}}
+	out := maintenanceResponse{Node: n, AffectedJobs: []affectedJob{}, AffectedServices: []composedeploy.OnNode{}}
 	for _, j := range affected {
 		out.AffectedJobs = append(out.AffectedJobs, affectedJob{ID: j.ID, Kind: j.Kind, State: j.State})
 	}
-	h.auditChange(c, err, "nodes.maintenance", "node", n.ID, nodeScopeOf(n.ID), map[string]any{"enabled": in.Enabled, "reason": in.Reason, "affectedJobs": len(out.AffectedJobs)})
+	if in.Enabled && err == nil && h.s.nodeServices != nil {
+		svcs, serr := h.s.nodeServices(ctx, n.ID)
+		if serr != nil {
+			err = serr
+		} else {
+			out.AffectedServices = svcs
+		}
+	}
+	h.auditChange(c, err, "nodes.maintenance", "node", n.ID, nodeScopeOf(n.ID), map[string]any{"enabled": in.Enabled, "reason": in.Reason, "affectedJobs": len(out.AffectedJobs), "affectedServices": len(out.AffectedServices)})
 	if h.failedAfter(c, err) {
 		return
 	}

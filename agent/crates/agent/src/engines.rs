@@ -112,6 +112,7 @@ mod tests {
             not_before: "2026-01-01T00:00:00Z".into(),
             expires_at: "2026-01-01T00:05:00Z".into(),
             permissions: vec!["host.engines.read".into()],
+            binding: None,
             signature: "00".into(),
         };
         match answer(&c, "r1".into(), g).await {

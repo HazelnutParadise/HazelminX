@@ -95,6 +95,12 @@ impl Probe for HostProbe {
                 Target::Group { name } => {
                     read_accounts(&sysroot).map(|a| TargetState::Group(a.group(name.as_str())))
                 }
+                Target::ComposeProject {
+                    project,
+                    environment,
+                } => crate::handlers::compose::project_state(&sysroot, &environment, &project)
+                    .await
+                    .map(TargetState::ComposeProject),
             }
         })
     }

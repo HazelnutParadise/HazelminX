@@ -325,7 +325,10 @@ type ExecutorGrant struct {
 	Permissions []string `json:"permissions"`
 	NotBefore   string   `json:"not_before"`
 	ExpiresAt   string   `json:"expires_at"`
-	Signature   string   `json:"signature"`
+	// Binding is the hex SHA-256 of the one action the grant is for
+	// (decision 0035); signed when present.
+	Binding   string `json:"binding,omitempty"`
+	Signature string `json:"signature"`
 }
 
 // LedgerHead is the last line of a host ledger.

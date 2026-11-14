@@ -7,10 +7,12 @@
 //! added it must require [`PERM_SHELL`], which no container-level grant
 //! carries (SEC-005).
 
+use crate::compose_manifest::ComposeManifest;
 use crate::ledger::entry::{ChangeKind, Target};
 use crate::ledger::recorder::{Declared, LedgerDecl};
-use crate::params::UnitName;
+use crate::params::{HostPath, UnitName};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 pub const PERM_HOST_INFO_READ: &str = "host.info.read";
 pub const PERM_HOST_PACKAGES_READ: &str = "host.packages.read";
@@ -18,6 +20,11 @@ pub const PERM_HOST_SERVICES_MANAGE: &str = "host.services.manage";
 pub const PERM_HOST_LEDGER_READ: &str = "host.ledger.read";
 pub const PERM_HOST_ENGINES_READ: &str = "host.engines.read";
 pub const PERM_HOST_STORAGE_READ: &str = "host.storage.read";
+pub const PERM_HOST_COMPOSE_CHECK: &str = "host.compose.check";
+pub const PERM_HOST_COMPOSE_DEPLOY: &str = "host.compose.deploy";
+/// The platform's Compose directory: `<project>/revisions/<revision>/` per
+/// deployment and `<project>/data/` for persistent data (decision 0035).
+pub const COMPOSE_ROOT: &str = "/var/lib/hazelminx/compose";
 /// Reserved for a future terminal/script action; listed so grant issuers and
 /// reviewers treat it as a separate high-risk permission (spec 32.2).
 pub const PERM_SHELL: &str = "host.shell";
@@ -49,6 +56,13 @@ pub enum Action {
     /// How much of each local filesystem a fixed set of directories holds,
     /// by category (ticket 030.1). No parameters: roots and limits are fixed.
     StorageUsage {},
+    /// Host pre-checks of one Compose revision (ticket 044.2): the files are
+    /// laid out in a private temporary directory, read with the native
+    /// `docker compose config`, and checked; nothing on the host changes.
+    ComposeCheck { manifest: ComposeManifest },
+    /// Writes the revision under [`COMPOSE_ROOT`] and runs
+    /// `docker compose up` for it, after the same checks.
+    ComposeDeploy { manifest: ComposeManifest },
 }
 
 impl Action {
@@ -61,6 +75,8 @@ impl Action {
         "ledger_export",
         "engine_inspect",
         "storage_usage",
+        "compose_check",
+        "compose_deploy",
     ];
 
     pub fn kind(&self) -> &'static str {
@@ -71,6 +87,8 @@ impl Action {
             Action::LedgerExport { .. } => "ledger_export",
             Action::EngineInspect {} => "engine_inspect",
             Action::StorageUsage {} => "storage_usage",
+            Action::ComposeCheck { .. } => "compose_check",
+            Action::ComposeDeploy { .. } => "compose_deploy",
         }
     }
 
@@ -83,11 +101,58 @@ impl Action {
             | Action::ListPackageUpdates {}
             | Action::LedgerExport { .. }
             | Action::EngineInspect {}
-            | Action::StorageUsage {} => LedgerDecl::ReadOnly,
+            | Action::StorageUsage {}
+            | Action::ComposeCheck { .. } => LedgerDecl::ReadOnly,
+            Action::ComposeDeploy { manifest } => {
+                let project = manifest.project.as_str();
+                let path = |p: String| Target::Path {
+                    path: HostPath::try_from(p).expect("validated names make a valid host path"),
+                };
+                LedgerDecl::Changes(vec![
+                    Declared {
+                        target: path(COMPOSE_ROOT.to_string()),
+                        change: ChangeKind::Create,
+                    },
+                    Declared {
+                        target: path(format!("{COMPOSE_ROOT}/{project}")),
+                        change: ChangeKind::Create,
+                    },
+                    Declared {
+                        target: path(format!(
+                            "{COMPOSE_ROOT}/{project}/revisions/{}",
+                            manifest.revision.as_str()
+                        )),
+                        change: ChangeKind::Create,
+                    },
+                    Declared {
+                        target: path(format!("{COMPOSE_ROOT}/{project}/data")),
+                        change: ChangeKind::Create,
+                    },
+                    Declared {
+                        target: Target::ComposeProject {
+                            project: manifest.project.clone(),
+                            environment: manifest.environment.clone(),
+                        },
+                        change: ChangeKind::Modify,
+                    },
+                ])
+            }
             Action::RestartService { unit } => LedgerDecl::Changes(vec![Declared {
                 target: Target::SystemdUnit { unit: unit.clone() },
                 change: ChangeKind::Restart,
             }]),
+        }
+    }
+
+    /// The digest a grant's `binding` must equal for this action, when the
+    /// action is bound to its content (decision 0035).
+    pub fn binding(&self) -> Option<String> {
+        match self {
+            Action::ComposeCheck { manifest } | Action::ComposeDeploy { manifest } => {
+                let text = format!("{}:{}", self.kind(), manifest.digest());
+                Some(hex::encode(Sha256::digest(text.as_bytes())))
+            }
+            _ => None,
         }
     }
 
@@ -105,6 +170,8 @@ impl Action {
             "ledger_export" => Some(PERM_HOST_LEDGER_READ),
             "engine_inspect" => Some(PERM_HOST_ENGINES_READ),
             "storage_usage" => Some(PERM_HOST_STORAGE_READ),
+            "compose_check" => Some(PERM_HOST_COMPOSE_CHECK),
+            "compose_deploy" => Some(PERM_HOST_COMPOSE_DEPLOY),
             _ => None,
         }
     }

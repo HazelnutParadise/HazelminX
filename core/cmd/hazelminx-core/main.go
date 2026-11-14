@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/HazelnutParadise/hazelminx/core/internal/composedeploy"
 	"io"
 	"log/slog"
 	"net"
@@ -181,6 +182,15 @@ func run(args []string) error {
 	}
 	// Background list queries are a Core-side job kind; handlers register
 	// before Recover so an interrupted query is reconciled, not orphaned.
+	projectSvc := projects.New(projects.Options{DB: st.DB, Vault: sec, Reveal: sec, Audit: identity})
+	deployer := &composedeploy.Deployer{Units: projectSvc, Views: engineStore, Store: composedeploy.NewStore(st.DB, nil),
+		Grants: issuer, Steps: runner, Nodes: composedeploy.RegistryNodes{Get: registry.GetNode}}
+	if err := engine.Register(composedeploy.DeployHandler{D: deployer}); err != nil {
+		return err
+	}
+	if err := engine.Register(composedeploy.CheckHandler{D: deployer}); err != nil {
+		return err
+	}
 	listQueries := api.NewListQueries(st.DB, identity, engine)
 	if err := engine.Register(listQueries); err != nil {
 		return err
@@ -207,7 +217,11 @@ func run(args []string) error {
 	router.MountConfirmations(confirm.New(st.DB, nil))
 	// Change plans (ticket 016.1). Resource tickets register their plan
 	// kinds on this service; until then it has none.
-	router.MountChangePlans(plans.New(plans.Options{DB: st.DB, Audit: identity, Jobs: engine}))
+	changePlans := plans.New(plans.Options{DB: st.DB, Audit: identity, Jobs: engine})
+	if err := changePlans.Register(composedeploy.PlanKind{D: deployer}); err != nil {
+		return err
+	}
+	router.MountChangePlans(changePlans)
 	// GitHub Apps and connections (ticket 047.1). Their secrets stay in
 	// the secret store; only Core talks to GitHub.
 	sources, err := github.New(github.Options{DB: st.DB, Vault: sec, Audit: identity, Client: github.NewHTTPClient(), PublicOrigin: cfg.PublicOrigin})
@@ -217,7 +231,10 @@ func run(args []string) error {
 	router.MountGitHub(sources)
 	// Projects, environments and Compose units (ticket 044.1). Secret
 	// files stay in the secret store; previews read the engine reports.
-	router.MountProjects(projects.New(projects.Options{DB: st.DB, Vault: sec, Audit: identity}), engineStore)
+	router.MountProjects(projectSvc, engineStore)
+	// Deploying units (ticket 044.2): a compose.deploy change plan runs as
+	// a job through the agent and the privileged executor.
+	router.MountComposeDeploy(projectSvc, deployer, engine)
 	if err := announceSetup(ctx, identity, os.Stdout); err != nil {
 		return err
 	}

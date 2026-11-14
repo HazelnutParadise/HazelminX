@@ -361,6 +361,23 @@ impl Server {
             }
         };
 
+        // Actions bound to their content (decision 0035) need a grant
+        // signed for exactly these parameters.
+        if let Some(want) = action.binding()
+            && grant.binding.as_deref() != Some(want.as_str())
+        {
+            return Err(Refusal {
+                code: ErrorCode::PermissionDenied,
+                message: "grant is not bound to this action's content".into(),
+                event: Some(SecurityEvent::PermissionDenied {
+                    grant_id: grant.id.clone(),
+                    subject: grant.subject.clone(),
+                    action: kind,
+                    required: "binding".into(),
+                }),
+            });
+        }
+
         if job_id.as_deref().is_some_and(|j| !is_token(j)) {
             return Err(Refusal {
                 code: ErrorCode::InvalidParam,

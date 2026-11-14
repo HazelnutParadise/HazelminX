@@ -142,6 +142,7 @@ mod tests {
             permissions: vec!["host.ledger.read".into()],
             not_before: "2026-11-08T00:00:00Z".into(),
             expires_at: "2026-11-08T00:05:00Z".into(),
+            binding: None,
             signature: "00".into(),
         };
         match answer(&client, "r1".into(), 0, 10, g.clone()).await {

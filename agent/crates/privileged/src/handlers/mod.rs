@@ -2,6 +2,7 @@
 //! [`crate::command::CommandRunner`]; they build [`crate::command::CommandSpec`]s
 //! and parse outputs. None of them formats a shell string.
 
+pub mod compose;
 pub mod engines;
 pub mod packages;
 pub mod storage_usage;

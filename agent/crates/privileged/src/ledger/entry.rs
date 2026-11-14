@@ -3,6 +3,7 @@
 //! target. Every type here is part of the on-disk format and of the batch
 //! Core keeps a copy of, so fields are only ever added, never renamed.
 
+use crate::compose_manifest::{ComposeProjectName, EnvironmentId};
 use crate::params::{HostPath, PackageName, UnitName, UserName};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -32,6 +33,13 @@ pub enum Target {
     Group {
         name: UserName,
     },
+    /// The containers of one Compose project in one engine environment,
+    /// found by the `com.docker.compose.project` label (ticket 044.2).
+    /// Removal: `docker compose -p <project> down` against that engine.
+    ComposeProject {
+        project: ComposeProjectName,
+        environment: EnvironmentId,
+    },
 }
 
 impl Target {
@@ -42,6 +50,14 @@ impl Target {
             Target::Package { name } => format!("package {}", name.as_str()),
             Target::User { name } => format!("user {}", name.as_str()),
             Target::Group { name } => format!("group {}", name.as_str()),
+            Target::ComposeProject {
+                project,
+                environment,
+            } => format!(
+                "compose project {} on {}",
+                project.as_str(),
+                environment.as_str()
+            ),
         }
     }
 }
@@ -142,6 +158,36 @@ pub struct PathState {
     pub backup: Option<Backup>,
 }
 
+/// The containers carrying a Compose project's label, sorted by name.
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub struct ComposeState {
+    /// `false` when no container carries the label.
+    pub exists: bool,
+    pub containers: Vec<ComposeContainer>,
+    /// Named volumes and networks with the project's label, sorted.
+    #[serde(default)]
+    pub volumes: Vec<String>,
+    #[serde(default)]
+    pub networks: Vec<String>,
+    /// How to remove what the platform created (55.1).
+    #[serde(default)]
+    pub removal: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub struct ComposeContainer {
+    /// Full container id.
+    pub id: String,
+    pub name: String,
+    /// `com.docker.compose.service`.
+    pub service: String,
+    pub image: String,
+    /// Image id the container runs (`sha256:…`).
+    pub image_id: String,
+    /// `running`, `exited`, `created`, …
+    pub state: String,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct UnitState {
     /// `false` when systemd reports `LoadState=not-found`.
@@ -192,6 +238,7 @@ pub enum TargetState {
     Package(PackageState),
     User(UserState),
     Group(GroupState),
+    ComposeProject(ComposeState),
 }
 
 impl TargetState {
@@ -202,6 +249,7 @@ impl TargetState {
             TargetState::Package(s) => s.installed,
             TargetState::User(s) => s.exists,
             TargetState::Group(s) => s.exists,
+            TargetState::ComposeProject(s) => s.exists,
         }
     }
 

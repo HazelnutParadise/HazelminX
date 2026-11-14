@@ -26,6 +26,7 @@ type projectsHarness struct {
 	st    *store.Store
 	reg   *nodereg.Registry
 	es    *engines.Store
+	vault *secrets.Service
 	owner *client
 }
 
@@ -66,7 +67,7 @@ func newProjectsHarness(t *testing.T) *projectsHarness {
 	es := engines.NewStore(st.DB, nil)
 	srv.MountProjects(projects.New(projects.Options{DB: st.DB, Vault: vault, Audit: svc, Logger: slog.New(slog.NewTextHandler(io.Discard, nil))}), es)
 	hs.h, hs.svc, hs.srv = srv.Handler(), svc, srv
-	return &projectsHarness{harness: hs, st: st, reg: reg, es: es, owner: hs.bootstrap()}
+	return &projectsHarness{harness: hs, st: st, reg: reg, es: es, vault: vault, owner: hs.bootstrap()}
 }
 
 func (ph *projectsHarness) audit(t *testing.T, resourceID string) []string {

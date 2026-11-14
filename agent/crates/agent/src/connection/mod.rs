@@ -56,6 +56,8 @@ pub struct Shared {
     identity: Identity,
     /// The privileged executor, for `ledger_pull`.
     privileged: hazelminx_privileged::client::Client,
+    /// Where Compose steps stage a revision's files for the executor.
+    compose_spool: std::path::PathBuf,
     /// Set when a renewed certificate was stored: the session ends so the
     /// next connection proves it.
     renewed: std::sync::atomic::AtomicBool,
@@ -79,6 +81,7 @@ impl Shared {
         identity: Identity,
         agent_version: String,
         privileged: hazelminx_privileged::client::Client,
+        compose_spool: std::path::PathBuf,
     ) -> Arc<Shared> {
         let facts = AgentFacts {
             agent_version,
@@ -93,6 +96,7 @@ impl Shared {
             facts,
             identity,
             privileged,
+            compose_spool,
             renewed: std::sync::atomic::AtomicBool::new(false),
             next_failures: std::sync::atomic::AtomicU32::new(0),
             monitor: Arc::default(),
@@ -950,9 +954,33 @@ fn renew_certificate(shared: &Arc<Shared>, request_id: &str, certificate: &str) 
 fn spawn_action(shared: Arc<Shared>, ticket: RunTicket) {
     tokio::spawn(async move {
         debug!(job = %ticket.job_id, step = ticket.step, action = %ticket.action, "running step");
-        let outcome = actions::run(&shared.facts, &ticket.action, &ticket.params)
+        let outcome = if crate::compose::is_compose(&ticket.action) {
+            let progress = shared.clone();
+            let (job_id, step) = (ticket.job_id.clone(), ticket.step);
+            crate::compose::run(
+                &shared.privileged,
+                &shared.compose_spool,
+                &ticket.request_id,
+                &ticket.job_id,
+                &ticket.action,
+                &ticket.params,
+                move |log| {
+                    progress.outbox.lock().unwrap().push(Message::StepProgress {
+                        job_id: job_id.clone(),
+                        step,
+                        at: OffsetDateTime::now_utc(),
+                        progress: None,
+                        log,
+                        logs_dropped: 0,
+                    });
+                    progress.changed.notify_one();
+                },
+            )
             .await
-            .and_then(limit_result);
+        } else {
+            actions::run(&shared.facts, &ticket.action, &ticket.params).await
+        }
+        .and_then(limit_result);
         let mut answers = Vec::new();
         {
             let mut steps = shared.steps.lock().unwrap();

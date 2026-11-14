@@ -490,7 +490,7 @@ pub fn major_minor(s: &str) -> Option<(u32, u32)> {
     Some((major, minor))
 }
 
-enum ProbeError {
+pub(crate) enum ProbeError {
     Denied(String),
     Other(String),
 }
@@ -500,7 +500,11 @@ enum ProbeError {
 /// `owner` is the uid the socket file belonged to when it was checked; the
 /// process that accepts must run as that uid, so a path swapped for a link
 /// after the check cannot lead root to another socket.
-async fn get_json(sock: &Path, path: &str, owner: u32) -> Result<serde_json::Value, ProbeError> {
+pub(crate) async fn get_json(
+    sock: &Path,
+    path: &str,
+    owner: u32,
+) -> Result<serde_json::Value, ProbeError> {
     let fut = async {
         let mut s = tokio::net::UnixStream::connect(sock).await.map_err(|e| {
             if e.kind() == std::io::ErrorKind::PermissionDenied {
