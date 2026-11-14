@@ -315,7 +315,7 @@ func TestManifestCompletionCreatesTheApp(t *testing.T) {
 	k, pemText := rsaKey(t)
 	_ = k
 	e.gh.manifests["mcode"] = ManifestApp{AppInfo: AppInfo{ID: 31, Slug: "hx-deploy", ClientID: "Iv1.m", Name: "HX deploy",
-		Permissions: map[string]string{"contents": "read", "metadata": "read"}}, ClientSecret: "mcs", WebhookSecret: "mwh", PEM: pemText}
+		Permissions: map[string]string{"contents": "read", "metadata": "read"}}, ClientSecret: "manifest-client-secret", WebhookSecret: "manifest-webhook-secret", PEM: pemText}
 	st, _ := e.svc.StartManifest(ctx, ManifestInput{Name: "HX deploy"}, e.alice)
 	// Someone without App rights in the same session cannot finish it.
 	noAdmin := e.alice
@@ -331,7 +331,7 @@ func TestManifestCompletionCreatesTheApp(t *testing.T) {
 	if got.App == nil || got.App.AppID != 31 || got.App.Source != "manifest" || !got.App.HasWebhookSecret {
 		t.Fatalf("app: %+v", got.App)
 	}
-	e.mustNotContain(got, "mcs", "mwh", strings.Split(pemText, "\n")[1])
+	e.mustNotContain(got, "manifest-client-secret", "manifest-webhook-secret", strings.Split(pemText, "\n")[1])
 	if _, err := e.svc.Complete(ctx, Callback{State: st.State, Code: "mcode"}, e.alice); err == nil {
 		t.Fatal("replayed manifest callback accepted")
 	}
@@ -620,7 +620,7 @@ func TestUserTokenIsRefreshedByItsRealExpiry(t *testing.T) {
 	// A new token of a different length and format, with a short life.
 	long := "ghu_" + strings.Repeat("Z", 300)
 	wantExp := e.clock.Add(58 * time.Minute)
-	e.gh.refresh["ghr_1"] = UserToken{AccessToken: long, ExpiresAt: wantExp, RefreshToken: "ghr_2", RefreshExpiresAt: e.clock.Add(96 * time.Hour)}
+	e.gh.refresh["ghr_1"] = UserToken{AccessToken: long, ExpiresAt: wantExp, RefreshToken: "ghr_second", RefreshExpiresAt: e.clock.Add(96 * time.Hour)}
 	e.advance(57 * time.Minute)
 	cr, err := e.svc.Credential(ctx, c.ID, Scope{}, e.alice)
 	if err != nil || cr.Value != long {
@@ -631,12 +631,14 @@ func TestUserTokenIsRefreshedByItsRealExpiry(t *testing.T) {
 		t.Fatalf("expiry from GitHub's answer: %v", got.AccessExpiresAt)
 	}
 	// The used refresh token is gone; the new one is stored.
-	e.gh.refresh["ghr_2"] = UserToken{AccessToken: "ghu_3", ExpiresAt: e.clock.Add(10 * time.Hour)}
+	e.gh.refresh["ghr_second"] = UserToken{AccessToken: "ghu_3", ExpiresAt: e.clock.Add(10 * time.Hour)}
 	e.advance(time.Hour)
 	if cr, err := e.svc.Credential(ctx, c.ID, Scope{}, e.alice); err != nil || cr.Value != "ghu_3" {
 		t.Fatalf("second refresh: %v", err)
 	}
-	e.mustNotContain(got, long, "ghr_2")
+	// The needle must not be a prefix a random id can start with: authorization
+	// request ids are "ghr_" plus hex, so "ghr_2" matched one in 16 runs.
+	e.mustNotContain(got, long, "ghr_second")
 }
 
 func TestConcurrentCallersRefreshOnce(t *testing.T) {
