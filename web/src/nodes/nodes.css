@@ -439,3 +439,33 @@
     border-top: 0;
   }
 }
+
+/* Host workspace tabs (board NodeDetail): one row that scrolls sideways when it does not fit. */
+.hx-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--color-kumo-line);
+  scrollbar-width: thin;
+}
+.hx-tabs a {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  min-height: 36px;
+  padding: 0 12px;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  color: var(--text-color-kumo-subtle);
+  font-size: 14px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.hx-tabs a:hover {
+  color: var(--text-color-kumo-default);
+}
+.hx-tabs a[aria-current="page"] {
+  border-bottom-color: var(--color-kumo-brand);
+  color: var(--text-color-kumo-default);
+  font-weight: 600;
+}

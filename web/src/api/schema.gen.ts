@@ -204,6 +204,109 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/management/v1/change-plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** list the change plans whose every target the caller can see; state filters by effective state (past the deadline counts as expired) */
+        get: operations["listChangePlans"];
+        put?: never;
+        /** compute a change plan: targets with real names and versions, diff, affected services, prechecks, risk, required approval and deadline; nothing is changed */
+        post: operations["createChangePlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/change-plans/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** a change plan with its approval, decision, execution or invalidation */
+        get: operations["getChangePlan"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/change-plans/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** approve the plan with the digest you reviewed; the plan is computed again and a changed content or target version invalidates it (CHANGE_PLAN_CHANGED with the difference) */
+        post: operations["approveChangePlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/change-plans/{id}/execute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** run an approved plan as a job; the same requestId answers the same job, another is REQUEST_ID_CONFLICT; a target changed since approval stops the run (CHANGE_PLAN_CHANGED) */
+        post: operations["executeChangePlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/change-plans/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** reject a waiting or approved plan with a reason */
+        post: operations["rejectChangePlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/change-plans/{id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** withdraw your own waiting or approved plan */
+        post: operations["withdrawChangePlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/management/v1/confirmations/{id}": {
         parameters: {
             query?: never;
@@ -216,6 +319,386 @@ export interface paths {
         put?: never;
         /** keep a change by confirming it from a connection opened after the change (through the new entry when the entry moved); without it the change is reverted when the window ends. Behind a reverse proxy Core cannot tell connections apart, so this assumes direct access to Core. */
         post: operations["confirmChange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/github/app-manifests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** start the guided App creation: a manifest asking for contents and metadata read only, plus the capabilities named (webhook, status-write); the browser POSTs it to authorization.url; needs the panel's public origin */
+        post: operations["startGitHubAppManifest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/github/apps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** GitHub Apps registered in this HazelminX (no secrets), with their permissions, events and install address */
+        get: operations["listGitHubApps"];
+        put?: never;
+        /** register an App created on GitHub by hand: App ID, client ID and secret, private key and optional webhook secret; GitHub is asked which App the key signs for, a mismatch is refused; the secrets stay encrypted in Core */
+        post: operations["createGitHubApp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/github/apps/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** one registered App */
+        get: operations["getGitHubApp"];
+        put?: never;
+        post?: never;
+        /** remove a registered App and its secrets here (the App stays on GitHub); refused while connections use it */
+        delete: operations["deleteGitHubApp"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/github/apps/{id}/reachability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** two separate checks: whether GitHub sends the browser back to a configured panel address, and what GitHub reports about delivering the App's webhook; periodic checks work without either; nothing is opened or published */
+        get: operations["checkGitHubReachability"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/github/authorizations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** start a browser authorization with a registered App: mode authorize (user authorization with PKCE) or install (install on an account, then authorize); connectionId authorizes an existing connection again; the state is one-time, bound to this session and valid for 10 minutes */
+        post: operations["startGitHubAuthorization"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/github/authorizations/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** abandon a browser authorization; nothing else changes */
+        post: operations["cancelGitHubAuthorization"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/github/authorizations/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** finish a browser authorization with what GitHub sent to the callback page; the code is exchanged and the account, App and installation are checked with GitHub before anything is saved; a refused callback changes no connection */
+        post: operations["completeGitHubAuthorization"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/github/connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** the caller's GitHub connections: GitHub account (stable id and current login), kind, granted scopes or permissions, capabilities, state and expiry; never a token */
+        get: operations["listGitHubConnections"];
+        put?: never;
+        /** save a personal access token as a reusable connection; GitHub is asked who it is, whether it can list repositories and when it expires; the token is stored encrypted and never shown again */
+        post: operations["createGitHubPATConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/github/connections/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** one connection; ETag carries its version */
+        get: operations["getGitHubConnection"];
+        put?: never;
+        post?: never;
+        /** remove a connection and its stored credentials here; nothing is revoked on GitHub; requires If-Match */
+        delete: operations["deleteGitHubConnection"];
+        options?: never;
+        head?: never;
+        /** rename a connection; the GitHub identity is not changed; requires If-Match */
+        patch: operations["updateGitHubConnection"];
+        trace?: never;
+    };
+    "/management/v1/github/connections/{id}/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** ask GitHub about the connection now: identity (a renamed account keeps its id; another id marks the connection needs-reauth), expiry and, for installations, permissions and suspension; renews an App user token close to expiry */
+        post: operations["checkGitHubConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/github/connections/{id}/credential": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** replace the token of a PAT connection; the new token must belong to the same GitHub account; other connections are not touched; requires If-Match */
+        put: operations["rotateGitHubConnectionCredential"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/github/connections/{id}/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** stop using a connection until it is enabled again; nothing is revoked on GitHub */
+        post: operations["disableGitHubConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/github/connections/{id}/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** use a disabled connection again */
+        post: operations["enableGitHubConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/github/connections/{id}/repositories/{repoId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** read the repository through this connection now (current name, default branch, archive state) and update the inventory; only repositories in this connection's inventory are reachable */
+        get: operations["getGitHubRepository"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/github/connections/{id}/repositories/{repoId}/branches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** branches with the commit each points to now; an empty repository has none */
+        get: operations["listGitHubBranches"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/github/connections/{id}/repositories/{repoId}/commits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** commits reachable from ref, newest first */
+        get: operations["listGitHubCommits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/github/connections/{id}/repositories/{repoId}/compose-files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Compose projects at ref (fixed to a commit): state empty-repository, none, one or several; each project gives its working directory and the files docker compose reads there by default, in order (base, then override), and the base files it would ignore */
+        get: operations["findGitHubComposeFiles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/github/connections/{id}/repositories/{repoId}/contents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** one directory at ref (fixed to a commit first), directories first */
+        get: operations["listGitHubDirectory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/github/connections/{id}/repositories/{repoId}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** fix ref to the commit it points to now; a deployment keeps this SHA, so a branch that moves later does not change it */
+        get: operations["resolveGitHubRef"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/github/connections/{id}/repositories/{repoId}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** tags with their commits */
+        get: operations["listGitHubTags"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/github/connections/{id}/repositories/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** inventory state of one connection: complete only when every source (own and collaborator repositories, each organization, or the installation) was read to its end; partial, rate-limited and syncing are told apart, per source, with retryAt */
+        get: operations["getGitHubRepositorySync"];
+        put?: never;
+        /** run one sync step: read at most 10 GitHub pages from the sources not finished, each from its own cursor, reusing ETags; when all are finished, start a new round; repeat while state is syncing; while rate-limited no call is made before retryAt and no other connection is used */
+        post: operations["syncGitHubRepositories"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/github/repositories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** repositories of the caller's connections as last synced: each entry names its connection, visibility, archive state and what the connection may do there; the same repository through two connections is two entries; read each connection's sync to know whether the list is complete */
+        get: operations["listGitHubRepositories"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -636,6 +1119,57 @@ export interface paths {
         patch: operations["updateNode"];
         trace?: never;
     };
+    "/management/v1/nodes/{id}/engines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Docker, Podman and K3s on the host, read by the privileged executor: engines lists every kind with its state (running, stopped, not_installed, incompatible, permission_denied, not_responding, unknown), program, version, systemd units and Docker CLI plugins; environments lists every endpoint separately with its owner, mode (rootful or rootless) and the kind the endpoint answered as (kindConfirmed false when it did not answer); uninspected says what could not be looked at, so a missing environment is not read as absent; null is not provided */
+        get: operations["getNodeEngines"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/nodes/{id}/engines/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** asks the node for a new report now and answers with the result (as GET); waits for the probe (up to a minute, two when one is already running); when the node is offline (NODE_OFFLINE), not active (NODE_NOT_ACTIVE) or the probe fails, the previous report is returned with lastError saying why */
+        post: operations["refreshNodeEngines"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/nodes/{id}/host": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** what the host is: OS, kernel, architecture, boot time, time zone, clock synchronization, CPU model and count, memory; every field is {value, source} and value is null when the host did not provide it (never a guess); collectedAt is when the agent read them */
+        get: operations["getNodeHost"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/management/v1/nodes/{id}/maintenance": {
         parameters: {
             query?: never;
@@ -646,6 +1180,40 @@ export interface paths {
         get?: never;
         /** turn maintenance on (jobs created from now on are refused; unfinished ones are listed and continue) or off (the agent reconnects and declares its capabilities again, then a node.recheck job checks its identity and reads the host's basic values; see maintenance.recheck) */
         put: operations["setNodeMaintenance"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/nodes/{id}/metrics/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** one series over time, oldest first; times without samples have no point (nothing is filled with zeros) and the first point after a missing stretch has gapBefore true; resolutionSeconds says what each point covers; a window longer than the resolution keeps is VALIDATION_FAILED */
+        get: operations["listNodeMetricsHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/nodes/{id}/metrics/latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** the latest sample: per-core CPU, memory (used is total minus available, so cache is not counted as used), swap, load, pressure, PID and file handle use, filesystems with inodes, disks with latency and I/O, interfaces, temperature sensors; null is not provided; exhaustion flags limits that run out before space does (PIDs over 90%, file handles over 90%, memory pressure some avg60 over 10%, inodes exhausted, read-only filesystems); stale when no sample arrived for three intervals */
+        get: operations["getNodeMetricsLatest"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -721,6 +1289,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/management/v1/nodes/{id}/storage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** the node's disks and partitions (with filesystem UUID and label), mounts with how each is referenced (uuid, label, partuuid, partlabel, id, path, mapper, device, network, virtual, other) and where it is configured (fstab line or systemd unit; none means mounted by hand), capacity and inodes from the latest sample, the 7-day growth trend, the usage breakdown and the capacity alerts with the rule that produced them; problems lists duplicate mount points, entries whose device is missing, boot-time entries not mounted and local mounts named by kernel device name (deviceName, which can point at another disk after a re-plug); usage categories are appData, database, backupStaging, containerImages, osAndLogs and other, in that order, listing only those with bytes: when usage.state is complete they add up to usage.usedBytes and no path counts twice; partial means the bytes are lower bounds and other is left out; disk health is notCollected until SMART is read (ticket 020.3), never healthy by default; null is not provided */
+        get: operations["getNodeStorage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/management/v1/openapi.json": {
         parameters: {
             query?: never;
@@ -768,6 +1353,25 @@ export interface paths {
         /** create the first owner with the one-time setup code and sign them in (held to second-factor enrolment) */
         post: operations["completeSetup"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/storage/alert-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** capacity alert rules: the default (nodeId and mountPoint empty; builtIn when none was stored) first, then rules for a node, a mount point on every node, or a node's mount point; the most specific rule applies; a null threshold is off */
+        get: operations["listStorageAlertRules"];
+        /** store the rule of one scope (nodeId empty for every node, mountPoint empty for every filesystem), replacing the one there; percentages are 0–100 of the filesystem size or inode count, criticalAvailableBytes is a byte floor for filesystems at least ten times that size, warnFullWithinDays warns when the 7-day trend fills the filesystem sooner */
+        put: operations["putStorageAlertRule"];
+        post?: never;
+        /** remove the rule of one scope; the next less specific rule applies (the built-in default when the default rule is removed) */
+        delete: operations["deleteStorageAlertRule"];
         options?: never;
         head?: never;
         patch?: never;
@@ -847,6 +1451,23 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        Account: {
+            /** Format: int64 */
+            id: number;
+            login: string;
+            type: string;
+        };
+        Actor: {
+            id: string;
+            name: string;
+        };
+        Affected: {
+            effect: string;
+            id: string;
+            kind: string;
+            name: string;
+            relation: string;
+        };
         affectedJob: {
             id: string;
             kind: string;
@@ -857,10 +1478,15 @@ export interface components {
             coreProtocol: components["schemas"]["Range"];
             rejections: components["schemas"]["Rejection"][];
         };
+        Alert: {
+            kind: string;
+            level: string;
+            message: string;
+        };
         apiError: {
             alsoBlockedBy?: string[];
             /** @enum {string} */
-            code: "ALREADY_EXISTS" | "CONFIRMATION_EXPIRED" | "CONFIRMATION_NEW_CONNECTION_REQUIRED" | "CONFIRMATION_REQUIRED" | "CONTROLLER_CONFLICT" | "CSRF_TOKEN_MISMATCH" | "DRY_RUN_UNSUPPORTED" | "FORBIDDEN" | "INTERNAL" | "INVALID_CREDENTIALS" | "JOB_NOT_CANCELLABLE" | "LAST_SECOND_FACTOR" | "LIST_QUERY_EXPIRED" | "LIST_QUERY_LIMIT_REACHED" | "LIST_QUERY_NOT_READY" | "LOGIN_CHALLENGE_INVALID" | "NOT_AVAILABLE" | "NOT_FOUND" | "ORIGIN_MISMATCH" | "PAYLOAD_TOO_LARGE" | "PLATFORM_DEGRADED" | "PRECHECK_FAILED" | "QUERY_LIMIT_EXCEEDED" | "REAUTHENTICATION_REQUIRED" | "REQUEST_ID_CONFLICT" | "RESOURCE_READ_ONLY" | "RESOURCE_REFERENCED" | "SCOPE_DEGRADED" | "SECOND_FACTOR_ENROLLMENT_REQUIRED" | "SECOND_FACTOR_INVALID" | "SETUP_CODE_INVALID" | "SETUP_DONE" | "TOO_MANY_ATTEMPTS" | "UI_INDEX_MISSING" | "UI_NOT_EMBEDDED" | "UNAUTHENTICATED" | "VALIDATION_FAILED" | "VERSION_MISMATCH" | "VERSION_REQUIRED";
+            code: "ALREADY_EXISTS" | "CHANGE_PLAN_CHANGED" | "CHANGE_PLAN_EXPIRED" | "CHANGE_PLAN_REQUIRED" | "CHANGE_PLAN_STATE" | "CONFIRMATION_EXPIRED" | "CONFIRMATION_NEW_CONNECTION_REQUIRED" | "CONFIRMATION_REQUIRED" | "CONTROLLER_CONFLICT" | "CSRF_TOKEN_MISMATCH" | "DRY_RUN_UNSUPPORTED" | "FORBIDDEN" | "GITHUB_AUTHORIZATION_INVALID" | "GITHUB_REAUTHORIZATION_REQUIRED" | "GITHUB_REJECTED" | "GITHUB_REPOSITORY_EMPTY" | "GITHUB_UNAVAILABLE" | "INTERNAL" | "INVALID_CREDENTIALS" | "JOB_NOT_CANCELLABLE" | "LAST_SECOND_FACTOR" | "LIST_QUERY_EXPIRED" | "LIST_QUERY_LIMIT_REACHED" | "LIST_QUERY_NOT_READY" | "LOGIN_CHALLENGE_INVALID" | "NOT_AVAILABLE" | "NOT_FOUND" | "ORIGIN_MISMATCH" | "PAYLOAD_TOO_LARGE" | "PLATFORM_DEGRADED" | "PRECHECK_FAILED" | "QUERY_LIMIT_EXCEEDED" | "REAUTHENTICATION_REQUIRED" | "REQUEST_ID_CONFLICT" | "RESOURCE_READ_ONLY" | "RESOURCE_REFERENCED" | "SCOPE_DEGRADED" | "SECOND_FACTOR_ENROLLMENT_REQUIRED" | "SECOND_FACTOR_INVALID" | "SETUP_CODE_INVALID" | "SETUP_DONE" | "TOO_MANY_ATTEMPTS" | "UI_INDEX_MISSING" | "UI_NOT_EMBEDDED" | "UNAUTHENTICATED" | "VALIDATION_FAILED" | "VERSION_MISMATCH" | "VERSION_REQUIRED";
             details?: Record<string, never>;
             evidence?: string[];
             fields?: components["schemas"]["FieldError"][];
@@ -873,9 +1499,49 @@ export interface components {
             suggestedActions?: string[];
             traceId?: string;
         };
+        App: {
+            /** Format: int64 */
+            appId: number;
+            clientId: string;
+            /** Format: date-time */
+            createdAt: string;
+            createdBy: string;
+            events: string[];
+            hasWebhookSecret: boolean;
+            host: string;
+            htmlUrl: string;
+            id: string;
+            installUrl: string;
+            name: string;
+            owner: components["schemas"]["Account"];
+            permissions: {
+                [key: string]: string;
+            };
+            slug: string;
+            source: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: int64 */
+            version: number;
+        };
+        Approval: {
+            action: string;
+            /** Format: date-time */
+            approvedAt?: string;
+            approvedBy?: components["schemas"]["Actor"];
+            autoApproved: boolean;
+            digest?: string;
+            /** Format: date-time */
+            expiresAt?: string;
+            ownerRequired: boolean;
+            required: boolean;
+        };
         approveEnrollmentRequest: {
             asNewNode: boolean;
             replaceNodeId: string;
+        };
+        approveRequest: {
+            digest: string;
         };
         Assignment: {
             /** Format: date-time */
@@ -914,6 +1580,12 @@ export interface components {
             sourceIp?: string;
             traceId?: string;
         };
+        AuthorizeInput: {
+            appId: string;
+            connectionId: string;
+            mode: string;
+            name: string;
+        };
         BackgroundQuery: {
             filters?: {
                 [key: string]: string[];
@@ -926,9 +1598,50 @@ export interface components {
             /** Format: int64 */
             reserveBytes: number;
         };
+        Callback: {
+            code: string;
+            error: string;
+            /** Format: int64 */
+            installationId: number;
+            setupAction: string;
+            state: string;
+        };
+        CallbackCheck: {
+            callbackUrl?: string;
+            message: string;
+            requestHostMatches: boolean;
+            status: string;
+        };
+        Capabilities: {
+            contentsWrite: string;
+            orgAdmin: string;
+            polling: boolean;
+            repoRead: string;
+            statusWrite: string;
+            webhook: string;
+        };
         Capability: {
             name: string;
             version: number;
+        };
+        Capacity: {
+            /** Format: int64 */
+            availableBytes: number;
+            /** Format: int64 */
+            inodesFree: number;
+            /** Format: int64 */
+            inodesTotal: number;
+            readOnly: boolean;
+            /** Format: int64 */
+            totalBytes: number;
+            /** Format: int64 */
+            usedBytes: number;
+        };
+        CategoryBytes: {
+            /** Format: int64 */
+            bytes: number;
+            category: string;
+            paths: string[];
         };
         Certificate: {
             expiresInDays: number;
@@ -940,6 +1653,23 @@ export interface components {
         };
         challengeRequest: {
             challengeToken: string;
+        };
+        Change: {
+            after?: unknown;
+            before?: unknown;
+            op: string;
+            path: string;
+            secret?: boolean;
+            target: string;
+        };
+        ChangedError: {
+            current: components["schemas"]["Change"][];
+            currentDigest?: string;
+            invalidated: boolean;
+            planDigest: string;
+            planned: components["schemas"]["Change"][];
+            sentDigest?: string;
+            targets: components["schemas"]["TargetMove"][];
         };
         Check: {
             detail?: string;
@@ -961,6 +1691,19 @@ export interface components {
             os: string;
             sourceAddr: string;
         };
+        Commit: {
+            author: string;
+            /** Format: date-time */
+            date: string;
+            htmlUrl?: string;
+            message: string;
+            sha: string;
+        };
+        Completed: {
+            app?: components["schemas"]["App"];
+            connections: components["schemas"]["github.Connection"][];
+            purpose: string;
+        };
         CompletionReport: {
             checks: components["schemas"]["Check"][];
         };
@@ -971,6 +1714,19 @@ export interface components {
             source: string;
             state: string;
             version: string;
+        };
+        ComposeProject: {
+            directory: string;
+            files: string[];
+            ignored?: string[];
+        };
+        ComposeScan: {
+            commit: components["schemas"]["Commit"];
+            defaultBranch: string;
+            projects: components["schemas"]["ComposeProject"][];
+            ref: string;
+            state: string;
+            truncated: boolean;
         };
         Confirmation: {
             /** Format: date-time */
@@ -1023,16 +1779,63 @@ export interface components {
             sessionId: string;
             transport: string;
         };
+        CoreUsage: {
+            id: number;
+            usage: components["schemas"]["CPUUsage"];
+        };
+        CPU: {
+            cores: components["schemas"]["CoreUsage"][];
+            total: components["schemas"]["CPUUsage"];
+        };
+        CPUUsage: {
+            iowait: number;
+            steal: number;
+            system: number;
+            usage: number;
+            user: number;
+        };
         createEnrollmentRequest: {
             group: string;
             name: string;
             tags: string[];
             ttlSeconds: number;
         };
+        createPlanRequest: {
+            kind: string;
+            params: unknown;
+        };
         CreateUserInput: {
             displayName: string;
             password: string;
             username: string;
+        };
+        Decision: {
+            /** Format: date-time */
+            at: string;
+            by?: components["schemas"]["Actor"];
+            reason: string;
+        };
+        Device: {
+            class: string;
+            dev: string;
+            fsLabel: string;
+            fsType: string;
+            fsUuid: string;
+            health: components["schemas"]["Health"];
+            holders: string[];
+            kind: string;
+            model: string;
+            name: string;
+            parent: string;
+            partLabel: string;
+            partUuid: string;
+            readOnly: boolean;
+            removable: boolean;
+            rotational: boolean;
+            serial: string;
+            /** Format: int64 */
+            sizeBytes: number;
+            transport: string;
         };
         Diagnostics: {
             cause?: string;
@@ -1046,6 +1849,30 @@ export interface components {
             systemState?: {
                 [key: string]: string;
             };
+        };
+        Directory: {
+            commit: components["schemas"]["Commit"];
+            defaultBranch: string;
+            entries: components["schemas"]["Entry"][];
+            path: string;
+            ref: string;
+        };
+        Disk: {
+            class: string;
+            model: string;
+            name: string;
+            readBytesPerSecond: number;
+            readLatencyMs: number;
+            readsPerSecond: number;
+            removable: boolean;
+            rotational: boolean;
+            /** Format: int64 */
+            sizeBytes: number;
+            transport: string;
+            utilization: number;
+            writeBytesPerSecond: number;
+            writeLatencyMs: number;
+            writesPerSecond: number;
         };
         DomainImpact: {
             domain: string;
@@ -1063,6 +1890,19 @@ export interface components {
             impact: components["schemas"]["Impact"];
             ok: boolean;
             preview?: unknown;
+        };
+        Engine: {
+            binary: string;
+            binaryVersion: string;
+            kind: string;
+            plugins: components["schemas"]["Plugin"][];
+            state: string;
+            units: components["schemas"]["Unit"][];
+        };
+        EngineReport: {
+            engines: components["schemas"]["Engine"][];
+            environments: components["schemas"]["Environment"][];
+            uninspected: components["schemas"]["Uninspected"][];
         };
         Enrollment: {
             codeId: string;
@@ -1099,6 +1939,34 @@ export interface components {
             passkey?: components["schemas"]["PasskeyInfo"];
             recoveryCodes?: string[];
         };
+        Entry: {
+            name: string;
+            path: string;
+            /** Format: int64 */
+            size: number;
+            type: string;
+        };
+        Environment: {
+            apiVersion: string;
+            cgroupDriver: string;
+            cgroupVersion: string;
+            /** Format: int64 */
+            containers: number;
+            /** Format: int64 */
+            containersRunning: number;
+            endpoint: string;
+            endpointResolved: string;
+            error: string;
+            id: string;
+            kind: string;
+            kindConfirmed: boolean;
+            mode: string;
+            ownerName: string;
+            ownerUid: number;
+            state: string;
+            swarm: string;
+            version: string;
+        };
         Event: {
             /** Format: date-time */
             at: string;
@@ -1110,6 +1978,40 @@ export interface components {
             step?: number;
             type: string;
         };
+        executeRequest: {
+            digest: string;
+            requestId: string;
+        };
+        Execution: {
+            /** Format: date-time */
+            at: string;
+            by: components["schemas"]["Actor"];
+            jobId?: string;
+            requestId: string;
+        };
+        Exhaustion: {
+            fileHandles: components["schemas"]["Usage"];
+            filesystems: components["schemas"]["FilesystemState"][];
+            memoryPressure: components["schemas"]["MemoryPressure"];
+            pids: components["schemas"]["Usage"];
+        };
+        Fact_bool: {
+            source: string;
+            value: boolean;
+        };
+        Fact_string: {
+            source: string;
+            value: string;
+        };
+        Fact_uint32: {
+            source: string;
+            value: number;
+        };
+        Fact_uint64: {
+            source: string;
+            /** Format: int64 */
+            value: number;
+        };
         FactorSummary: {
             enrollmentRequired: boolean;
             passkeys: components["schemas"]["PasskeyInfo"][];
@@ -1117,9 +2019,140 @@ export interface components {
             required: boolean;
             totp: components["schemas"]["TOTPInfo"];
         };
+        Failure: {
+            /** Format: date-time */
+            at: string;
+            code: string;
+            message: string;
+        };
         FieldError: {
             field: string;
             message: string;
+        };
+        Filesystem: {
+            /** Format: int64 */
+            availableBytes: number;
+            class: string;
+            device: string;
+            /** Format: int64 */
+            freeBytes: number;
+            fsType: string;
+            inodes: string;
+            /** Format: int64 */
+            inodesFree: number;
+            /** Format: int64 */
+            inodesTotal: number;
+            mountPoint: string;
+            readOnly: boolean;
+            state: string;
+            /** Format: int64 */
+            totalBytes: number;
+            /** Format: int64 */
+            usedBytes: number;
+        };
+        FilesystemState: {
+            inodes: string;
+            inodesExhausted: boolean;
+            inodeUsedPercent: number;
+            mountPoint: string;
+            readOnly: boolean;
+            state: string;
+        };
+        FSUsage: {
+            categories: components["schemas"]["CategoryBytes"][];
+            /** Format: date-time */
+            measuredAt: string;
+            state: string;
+            /** Format: int64 */
+            unreadableDirs: number;
+            /** Format: int64 */
+            usedBytes: number;
+        };
+        "github.Connection": {
+            /** Format: date-time */
+            accessExpiresAt?: string;
+            account: components["schemas"]["Account"];
+            appId?: string;
+            capabilities: components["schemas"]["Capabilities"];
+            /** Format: date-time */
+            createdAt: string;
+            events: string[];
+            host: string;
+            id: string;
+            /** Format: int64 */
+            installationId?: number;
+            kind: string;
+            /** Format: date-time */
+            lastCheckedAt?: string;
+            name: string;
+            ownerUserId: string;
+            permissions: {
+                [key: string]: string;
+            };
+            /** Format: date-time */
+            refreshExpiresAt?: string;
+            repositoryIds?: number[];
+            repositorySelection?: string;
+            scopes: string[];
+            state: string;
+            stateReason?: string;
+            tokenType: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: int64 */
+            version: number;
+        };
+        githubAppResponse: {
+            app: components["schemas"]["App"];
+        };
+        githubCancelRequest: {
+            state: string;
+        };
+        githubCompleteResponse: {
+            result: components["schemas"]["Completed"];
+        };
+        githubComposeResponse: {
+            compose: components["schemas"]["ComposeScan"];
+        };
+        githubConnectionResponse: {
+            connection: components["schemas"]["github.Connection"];
+        };
+        githubCredentialRequest: {
+            token: string;
+        };
+        githubDirectoryResponse: {
+            directory: components["schemas"]["Directory"];
+        };
+        githubPagedPageMeta: {
+            limit: number;
+            nextCursor?: string;
+        };
+        "githubPagedResponse_github.Commit": {
+            items: components["schemas"]["Commit"][];
+            page: components["schemas"]["githubPagedPageMeta"];
+        };
+        "githubPagedResponse_github.Ref": {
+            items: components["schemas"]["Ref"][];
+            page: components["schemas"]["githubPagedPageMeta"];
+        };
+        githubReachabilityResponse: {
+            reachability: components["schemas"]["Reachability"];
+        };
+        githubRepositoryResponse: {
+            repository: components["schemas"]["RepoItem"];
+        };
+        githubResolvedResponse: {
+            resolved: components["schemas"]["Resolved"];
+        };
+        githubStartResponse: {
+            authorization: components["schemas"]["Started"];
+        };
+        githubSyncResponse: {
+            sync: components["schemas"]["SyncStatus"];
+        };
+        Health: {
+            reason: string;
+            state: string;
         };
         healthResponse: {
             checks: {
@@ -1128,6 +2161,44 @@ export interface components {
             status: string;
             time: string;
             version: string;
+        };
+        HookDelivery: {
+            /** Format: date-time */
+            delivered_at: string;
+            event: string;
+            status_code: number;
+        };
+        hostEnginesResponse: {
+            /** Format: date-time */
+            collectedAt: string;
+            lastError: components["schemas"]["Failure"];
+            /** Format: date-time */
+            receivedAt: string;
+            report: components["schemas"]["EngineReport"];
+            reported: boolean;
+        };
+        HostFactsData: {
+            arch: components["schemas"]["Fact_string"];
+            bootTime: components["schemas"]["Fact_string"];
+            cpuModel: components["schemas"]["Fact_string"];
+            hostname: components["schemas"]["Fact_string"];
+            kernel: components["schemas"]["Fact_string"];
+            logicalCpus: components["schemas"]["Fact_uint32"];
+            memoryTotalBytes: components["schemas"]["Fact_uint64"];
+            osName: components["schemas"]["Fact_string"];
+            osPrettyName: components["schemas"]["Fact_string"];
+            osVersion: components["schemas"]["Fact_string"];
+            timeMaxErrorMicros: components["schemas"]["Fact_uint64"];
+            timeSynchronized: components["schemas"]["Fact_bool"];
+            timezone: components["schemas"]["Fact_string"];
+        };
+        hostFactsResponse: {
+            /** Format: date-time */
+            collectedAt: string;
+            facts: components["schemas"]["HostFactsData"];
+            /** Format: date-time */
+            receivedAt: string;
+            reported: boolean;
         };
         Impact: {
             direct: components["schemas"]["ImpactItem"][];
@@ -1145,6 +2216,8 @@ export interface components {
             budget: components["schemas"]["Budget"];
             cancellable: boolean;
             cancelRequested: boolean;
+            changePlanDigest?: string;
+            changePlanId?: string;
             completion?: components["schemas"]["CompletionReport"];
             /** Format: int64 */
             controlGeneration: number;
@@ -1207,6 +2280,29 @@ export interface components {
         jobResponse: {
             job: components["schemas"]["Job"];
         };
+        latestMetricsResponse: {
+            /** Format: date-time */
+            collectedAt: string;
+            /** Format: int64 */
+            droppedSamples: number;
+            exhaustion: components["schemas"]["Exhaustion"];
+            intervalSeconds: number;
+            /** Format: date-time */
+            receivedAt: string;
+            reported: boolean;
+            sample: components["schemas"]["MetricsSample"];
+            stale: boolean;
+        };
+        Limits: {
+            /** Format: int64 */
+            fileHandles: number;
+            /** Format: int64 */
+            fileMax: number;
+            /** Format: int64 */
+            pidMax: number;
+            /** Format: int64 */
+            tasks: number;
+        };
         ListQueryRequest: {
             filters?: {
                 [key: string]: string[];
@@ -1227,6 +2323,22 @@ export interface components {
             stored: number;
             total: number;
             truncated: boolean;
+        };
+        "ListResponse_github.App": {
+            items: components["schemas"]["App"][];
+            page: components["schemas"]["PageMeta"];
+        };
+        "ListResponse_github.Connection": {
+            items: components["schemas"]["github.Connection"][];
+            page: components["schemas"]["PageMeta"];
+        };
+        "ListResponse_github.RepoItem": {
+            items: components["schemas"]["RepoItem"][];
+            page: components["schemas"]["PageMeta"];
+        };
+        "ListResponse_hostmetrics.Point": {
+            items: components["schemas"]["Point"][];
+            page: components["schemas"]["PageMeta"];
         };
         "ListResponse_iam.AuditEvent": {
             items: components["schemas"]["AuditEvent"][];
@@ -1251,6 +2363,15 @@ export interface components {
         "ListResponse_nodereg.Node": {
             items: components["schemas"]["Node"][];
             page: components["schemas"]["PageMeta"];
+        };
+        "ListResponse_plans.Plan": {
+            items: components["schemas"]["Plan"][];
+            page: components["schemas"]["PageMeta"];
+        };
+        Load: {
+            fifteen: number;
+            five: number;
+            one: number;
         };
         loginRequest: {
             password: string;
@@ -1295,6 +2416,115 @@ export interface components {
         maintenanceResponse: {
             affectedJobs: components["schemas"]["affectedJob"][];
             node: components["schemas"]["Node"];
+        };
+        ManifestInput: {
+            capabilities: string[];
+            name: string;
+            organization: string;
+            webhookUrl: string;
+        };
+        ManualApp: {
+            /** Format: int64 */
+            appId: number;
+            clientId: string;
+            clientSecret: string;
+            name: string;
+            privateKey: string;
+            webhookSecret: string;
+        };
+        Memory: {
+            /** Format: int64 */
+            availableBytes: number;
+            /** Format: int64 */
+            buffersBytes: number;
+            /** Format: int64 */
+            cachedBytes: number;
+            /** Format: int64 */
+            freeBytes: number;
+            /** Format: int64 */
+            reclaimableSlabBytes: number;
+            /** Format: int64 */
+            shmemBytes: number;
+            /** Format: int64 */
+            totalBytes: number;
+            /** Format: int64 */
+            usedBytes: number;
+        };
+        MemoryPressure: {
+            exceeded: boolean;
+            someAvg60: number;
+            state: string;
+            thresholdPercent: number;
+        };
+        MetricsSample: {
+            /** Format: date-time */
+            collectedAt: string;
+            cpu: components["schemas"]["CPU"];
+            disks: components["schemas"]["Disk"][];
+            filesystems: components["schemas"]["Filesystem"][];
+            intervalSeconds: number;
+            limits: components["schemas"]["Limits"];
+            load: components["schemas"]["Load"];
+            memory: components["schemas"]["Memory"];
+            networks: components["schemas"]["Network"][];
+            pressure: components["schemas"]["Pressure"];
+            /** Format: int64 */
+            seq: number;
+            swap: components["schemas"]["Swap"];
+            temperatures: components["schemas"]["Temperature"][];
+        };
+        MountConfig: {
+            boot: string;
+            file: string;
+            fsType: string;
+            line: number;
+            mountPoint: string;
+            options: string;
+            origin: string;
+            reference: string;
+            resolvesTo: string;
+            spec: string;
+        };
+        MountProblem: {
+            configs: number[];
+            kind: string;
+            mountPoint: string;
+        };
+        MountView: {
+            alerts: components["schemas"]["Alert"][];
+            capacity: components["schemas"]["Capacity"];
+            class: string;
+            configs: number[];
+            dev: string;
+            device: string;
+            fsType: string;
+            growthBytesPerDay: number;
+            mountPoint: string;
+            options: string;
+            readOnly: boolean;
+            reference: string;
+            rule: components["schemas"]["Rule"];
+            source: string;
+            usage: components["schemas"]["FSUsage"];
+        };
+        Network: {
+            class: string;
+            name: string;
+            operState: string;
+            rxBytesPerSecond: number;
+            /** Format: int64 */
+            rxDrops: number;
+            /** Format: int64 */
+            rxErrors: number;
+            rxPacketsPerSecond: number;
+            /** Format: int64 */
+            speedMbps: number;
+            txBytesPerSecond: number;
+            /** Format: int64 */
+            txDrops: number;
+            /** Format: int64 */
+            txErrors: number;
+            txPacketsPerSecond: number;
         };
         Node: {
             arch: string;
@@ -1347,6 +2577,7 @@ export interface components {
         };
         overviewResponse: {
             build: string;
+            changePlanKinds?: string[];
             jobKinds?: string[];
             name: string;
             openapi: string;
@@ -1377,9 +2608,89 @@ export interface components {
             credential: unknown;
             name?: string;
         };
+        Patch: {
+            name: string;
+        };
+        PATInput: {
+            name: string;
+            token: string;
+        };
+        Plan: {
+            affected: components["schemas"]["Affected"][];
+            approval: components["schemas"]["Approval"];
+            changes: components["schemas"]["Change"][];
+            checks: components["schemas"]["plans.Check"][];
+            /** Format: date-time */
+            createdAt: string;
+            decision?: components["schemas"]["Decision"];
+            digest: string;
+            executable: boolean;
+            execution?: components["schemas"]["Execution"];
+            /** Format: date-time */
+            expiresAt: string;
+            id: string;
+            invalidation?: components["schemas"]["ChangedError"];
+            kind: string;
+            params: unknown;
+            requestedBy: components["schemas"]["Actor"];
+            risk: string;
+            state: string;
+            summary: string;
+            targets: components["schemas"]["Target"][];
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        planResponse: {
+            plan: components["schemas"]["Plan"];
+        };
+        "plans.Check": {
+            detail?: string;
+            evidence?: string[];
+            id: string;
+            status: string;
+            target?: string;
+            title: string;
+        };
+        Plugin: {
+            name: string;
+            path: string;
+            version: string;
+        };
+        Point: {
+            /** Format: date-time */
+            at: string;
+            gapBefore: boolean;
+            max: number;
+            min: number;
+            resolutionSeconds: number;
+            samples: number;
+            value: number;
+        };
+        Pressure: {
+            cpu: components["schemas"]["PressureLine"];
+            io: components["schemas"]["PressureLine"];
+            memory: components["schemas"]["PressureLine"];
+            state: string;
+        };
+        PressureLine: {
+            fullAvg10: number;
+            fullAvg60: number;
+            fullAvg300: number;
+            someAvg10: number;
+            someAvg60: number;
+            someAvg300: number;
+        };
         Range: {
             max: number;
             min: number;
+        };
+        Reachability: {
+            browserCallback: components["schemas"]["CallbackCheck"];
+            pollingAvailable: boolean;
+            webhook: components["schemas"]["WebhookCheck"];
+        };
+        reasonRequest: {
+            reason: string;
         };
         reauthRequest: {
             code?: string;
@@ -1401,6 +2712,11 @@ export interface components {
         recoveryCodesResponse: {
             recoveryCodes: string[];
         };
+        Ref: {
+            name: string;
+            protected?: boolean;
+            sha: string;
+        };
         Rejection: {
             agentProtocol?: components["schemas"]["Range"];
             agentVersion?: string;
@@ -1421,6 +2737,38 @@ export interface components {
         };
         removeNodeRequest: {
             mode: string;
+        };
+        RepoItem: {
+            admin: boolean;
+            archived: boolean;
+            connectionId: string;
+            connectionKind: string;
+            connectionName: string;
+            connectionState: string;
+            defaultBranch: string;
+            disabled: boolean;
+            fork: boolean;
+            fullName: string;
+            htmlUrl: string;
+            /** Format: int64 */
+            id: number;
+            name: string;
+            owner: components["schemas"]["Account"];
+            private: boolean;
+            push: boolean;
+            /** Format: date-time */
+            pushedAt?: string;
+            /** Format: date-time */
+            seenAt: string;
+            /** Format: int64 */
+            sizeKb: number;
+            stale?: boolean;
+            visibility: string;
+        };
+        Resolved: {
+            commit: components["schemas"]["Commit"];
+            defaultBranch: string;
+            ref: string;
         };
         ResourceRef: {
             device?: string;
@@ -1465,6 +2813,22 @@ export interface components {
             newSerial: string;
             /** Format: date-time */
             requestedAt: string;
+        };
+        Rule: {
+            builtIn: boolean;
+            /** Format: int64 */
+            criticalAvailableBytes: number;
+            criticalAvailablePercent: number;
+            criticalInodesFreePercent: number;
+            mountPoint: string;
+            nodeId: string;
+            /** Format: date-time */
+            updatedAt: string;
+            updatedBy: string;
+            warnAvailablePercent: number;
+            /** Format: int64 */
+            warnFullWithinDays: number;
+            warnInodesFreePercent: number;
         };
         Scope: {
             id: string;
@@ -1531,6 +2895,31 @@ export interface components {
         setupStatusResponse: {
             needsSetup: boolean;
         };
+        SourceStatus: {
+            error?: string;
+            key: string;
+            kind: string;
+            login?: string;
+            nextPage?: number;
+            repositories: number;
+            /** Format: date-time */
+            retryAt?: string;
+            stale?: boolean;
+            state: string;
+            /** Format: date-time */
+            syncedAt?: string;
+        };
+        Started: {
+            /** Format: date-time */
+            expiresAt: string;
+            id: string;
+            manifest?: unknown;
+            method: string;
+            purpose: string;
+            redirectUri: string;
+            state: string;
+            url: string;
+        };
         Step: {
             attempts?: number;
             cancellable: boolean;
@@ -1563,6 +2952,21 @@ export interface components {
             suggestedActions?: string[];
             summary: string;
         };
+        storageRuleRequest: {
+            /** Format: int64 */
+            criticalAvailableBytes: number;
+            criticalAvailablePercent: number;
+            criticalInodesFreePercent: number;
+            mountPoint: string;
+            nodeId: string;
+            warnAvailablePercent: number;
+            /** Format: int64 */
+            warnFullWithinDays: number;
+            warnInodesFreePercent: number;
+        };
+        storageRulesResponse: {
+            items: components["schemas"]["Rule"][];
+        };
         SubmitRequest: {
             kind: string;
             node?: string;
@@ -1572,6 +2976,61 @@ export interface components {
             /** Format: int64 */
             requiredBytes?: number;
             resources?: components["schemas"]["ResourceRef"][];
+        };
+        Swap: {
+            /** Format: int64 */
+            freeBytes: number;
+            /** Format: int64 */
+            totalBytes: number;
+            /** Format: int64 */
+            usedBytes: number;
+        };
+        SwapArea: {
+            configs: number[];
+            kind: string;
+            name: string;
+            /** Format: int32 */
+            priority: number;
+            /** Format: int64 */
+            sizeBytes: number;
+        };
+        SyncStatus: {
+            complete: boolean;
+            connectionId: string;
+            repositories: number;
+            /** Format: date-time */
+            retryAt?: string;
+            sources: components["schemas"]["SourceStatus"][];
+            state: string;
+        };
+        Target: {
+            device?: string;
+            environment?: string;
+            id: string;
+            key: string;
+            kind: string;
+            name: string;
+            node?: string;
+            nodeName?: string;
+            scope: components["schemas"]["Scope"];
+            /** Format: int64 */
+            version: number;
+        };
+        TargetMove: {
+            /** Format: int64 */
+            currentVersion: number;
+            key: string;
+            name: string;
+            /** Format: int64 */
+            plannedVersion: number;
+        };
+        Temperature: {
+            celsius: number;
+            chip: string;
+            criticalCelsius: number;
+            highCelsius: number;
+            label: string;
+            source: string;
         };
         totpConfirmRequest: {
             code: string;
@@ -1595,8 +3054,34 @@ export interface components {
             /** Format: date-time */
             lastUsedAt?: string;
         };
+        Uninspected: {
+            path: string;
+            reason: string;
+        };
+        Unit: {
+            activeState: string;
+            loadState: string;
+            name: string;
+            subState: string;
+            unitFileState: string;
+        };
         UpdateUserInput: {
             displayName?: string;
+        };
+        Usage: {
+            exceeded: boolean;
+            /** Format: int64 */
+            limit: number;
+            percent: number;
+            thresholdPercent: number;
+            /** Format: int64 */
+            used: number;
+        };
+        UsageError: {
+            /** Format: date-time */
+            at: string;
+            code: string;
+            message: string;
         };
         User: {
             /** Format: date-time */
@@ -1638,6 +3123,29 @@ export interface components {
         };
         userResponse: {
             user: components["schemas"]["User"];
+        };
+        View: {
+            backupStaging: string;
+            /** Format: date-time */
+            collectedAt: string;
+            configs: components["schemas"]["MountConfig"][];
+            devices: components["schemas"]["Device"][];
+            mounts: components["schemas"]["MountView"][];
+            problems: components["schemas"]["MountProblem"][];
+            /** Format: date-time */
+            receivedAt: string;
+            reported: boolean;
+            swaps: components["schemas"]["SwapArea"][];
+            unreadable: string[];
+            usageError: components["schemas"]["UsageError"];
+            /** Format: date-time */
+            usageMeasuredAt: string;
+        };
+        WebhookCheck: {
+            lastDelivery?: components["schemas"]["HookDelivery"];
+            message: string;
+            status: string;
+            url?: string;
         };
     };
     responses: never;
@@ -2455,6 +3963,611 @@ export interface operations {
             };
         };
     };
+    listChangePlans: {
+        parameters: {
+            query?: {
+                /** @description page.nextCursor of the previous page; continues the same query */
+                cursor?: string;
+                /** @description only plans of this kind */
+                kind?: string;
+                /** @description rows per page */
+                limit?: number;
+                /** @description only plans requested by this account id */
+                requestedBy?: string;
+                /** @description comma-separated fields, '-' for descending; default -createdAt */
+                sort?: string;
+                /** @description only plans in these effective states */
+                state?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListResponse_plans.Plan"];
+                };
+            };
+            /** @description Bad Request: QUERY_LIMIT_EXCEEDED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    createChangePlan: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["createPlanRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["planResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    getChangePlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["planResponse"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    approveChangePlan: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["approveRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["planResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: CHANGE_PLAN_CHANGED, CHANGE_PLAN_EXPIRED, CHANGE_PLAN_STATE, PRECHECK_FAILED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    executeChangePlan: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["executeRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAccepted"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: CHANGE_PLAN_CHANGED, CHANGE_PLAN_EXPIRED, CHANGE_PLAN_STATE, CONFIRMATION_REQUIRED, CONTROLLER_CONFLICT, NOT_AVAILABLE, REQUEST_ID_CONFLICT, RESOURCE_READ_ONLY, SCOPE_DEGRADED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Service Unavailable: PLATFORM_DEGRADED */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    rejectChangePlan: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["reasonRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["planResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: CHANGE_PLAN_EXPIRED, CHANGE_PLAN_STATE */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    withdrawChangePlan: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["reasonRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["planResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: CHANGE_PLAN_EXPIRED, CHANGE_PLAN_STATE */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
     getConfirmation: {
         parameters: {
             query?: never;
@@ -2601,6 +4714,2405 @@ export interface operations {
             };
             /** @description Service Unavailable: PLATFORM_DEGRADED */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    startGitHubAppManifest: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManifestInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["githubStartResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: NOT_AVAILABLE */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    listGitHubApps: {
+        parameters: {
+            query?: {
+                /** @description page.nextCursor of the previous page; continues the same query */
+                cursor?: string;
+                /** @description rows per page */
+                limit?: number;
+                /** @description comma-separated fields, '-' for descending; default name */
+                sort?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListResponse_github.App"];
+                };
+            };
+            /** @description Bad Request: QUERY_LIMIT_EXCEEDED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    createGitHubApp: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManualApp"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["githubAppResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: GITHUB_REJECTED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Bad Gateway: GITHUB_UNAVAILABLE */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    getGitHubApp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["githubAppResponse"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    deleteGitHubApp: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: RESOURCE_REFERENCED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    checkGitHubReachability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["githubReachabilityResponse"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    startGitHubAuthorization: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthorizeInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["githubStartResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: NOT_AVAILABLE */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    cancelGitHubAuthorization: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["githubCancelRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: GITHUB_AUTHORIZATION_INVALID */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    completeGitHubAuthorization: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Callback"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["githubCompleteResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: GITHUB_AUTHORIZATION_INVALID, GITHUB_REJECTED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Bad Gateway: GITHUB_UNAVAILABLE */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    listGitHubConnections: {
+        parameters: {
+            query?: {
+                /** @description only connections of this GitHub account id */
+                accountId?: string;
+                /** @description page.nextCursor of the previous page; continues the same query */
+                cursor?: string;
+                /** @description only connections of this kind */
+                kind?: "pat" | "app-user" | "app-installation";
+                /** @description rows per page */
+                limit?: number;
+                /** @description comma-separated fields, '-' for descending; default createdAt */
+                sort?: string;
+                /** @description only connections in this state */
+                state?: "active" | "disabled" | "needs-reauth";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListResponse_github.Connection"];
+                };
+            };
+            /** @description Bad Request: QUERY_LIMIT_EXCEEDED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    createGitHubPATConnection: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PATInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["githubConnectionResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: GITHUB_REJECTED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Bad Gateway: GITHUB_UNAVAILABLE */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    getGitHubConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["githubConnectionResponse"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    deleteGitHubConnection: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description "v<version>" from the ETag of the resource as you read it */
+                "If-Match": string;
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Precondition Failed: VERSION_MISMATCH */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Precondition Required: VERSION_REQUIRED */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    updateGitHubConnection: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description "v<version>" from the ETag of the resource as you read it */
+                "If-Match": string;
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Patch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["githubConnectionResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Precondition Failed: VERSION_MISMATCH */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Precondition Required: VERSION_REQUIRED */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    checkGitHubConnection: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["githubConnectionResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: GITHUB_REJECTED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Bad Gateway: GITHUB_UNAVAILABLE */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    rotateGitHubConnectionCredential: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description "v<version>" from the ETag of the resource as you read it */
+                "If-Match": string;
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["githubCredentialRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["githubConnectionResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: GITHUB_AUTHORIZATION_INVALID, GITHUB_REJECTED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Precondition Failed: VERSION_MISMATCH */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Precondition Required: VERSION_REQUIRED */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Bad Gateway: GITHUB_UNAVAILABLE */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    disableGitHubConnection: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["githubConnectionResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    enableGitHubConnection: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["githubConnectionResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    getGitHubRepository: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                repoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["githubRepositoryResponse"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: GITHUB_REAUTHORIZATION_REQUIRED, GITHUB_REJECTED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Bad Gateway: GITHUB_UNAVAILABLE */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    listGitHubBranches: {
+        parameters: {
+            query?: {
+                /** @description page.nextCursor of the previous answer; GitHub pages hold 100 items */
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+                repoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["githubPagedResponse_github.Ref"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: GITHUB_REAUTHORIZATION_REQUIRED, GITHUB_REJECTED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Bad Gateway: GITHUB_UNAVAILABLE */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    listGitHubCommits: {
+        parameters: {
+            query?: {
+                /** @description page.nextCursor of the previous answer; GitHub pages hold 100 items */
+                cursor?: string;
+                /** @description branch, tag or commit SHA; empty means the repository's current default branch */
+                ref?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+                repoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["githubPagedResponse_github.Commit"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: GITHUB_REAUTHORIZATION_REQUIRED, GITHUB_REJECTED, GITHUB_REPOSITORY_EMPTY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Bad Gateway: GITHUB_UNAVAILABLE */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    findGitHubComposeFiles: {
+        parameters: {
+            query?: {
+                /** @description branch, tag or commit SHA; empty means the repository's current default branch */
+                ref?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+                repoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["githubComposeResponse"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: GITHUB_REAUTHORIZATION_REQUIRED, GITHUB_REJECTED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Bad Gateway: GITHUB_UNAVAILABLE */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    listGitHubDirectory: {
+        parameters: {
+            query?: {
+                /** @description directory relative to the repository root; empty for the root */
+                path?: string;
+                /** @description branch, tag or commit SHA; empty means the repository's current default branch */
+                ref?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+                repoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["githubDirectoryResponse"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: GITHUB_REAUTHORIZATION_REQUIRED, GITHUB_REJECTED, GITHUB_REPOSITORY_EMPTY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Bad Gateway: GITHUB_UNAVAILABLE */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    resolveGitHubRef: {
+        parameters: {
+            query?: {
+                /** @description branch, tag or commit SHA; empty means the repository's current default branch */
+                ref?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+                repoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["githubResolvedResponse"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: GITHUB_REAUTHORIZATION_REQUIRED, GITHUB_REJECTED, GITHUB_REPOSITORY_EMPTY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Bad Gateway: GITHUB_UNAVAILABLE */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    listGitHubTags: {
+        parameters: {
+            query?: {
+                /** @description page.nextCursor of the previous answer; GitHub pages hold 100 items */
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+                repoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["githubPagedResponse_github.Ref"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: GITHUB_REAUTHORIZATION_REQUIRED, GITHUB_REJECTED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Bad Gateway: GITHUB_UNAVAILABLE */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    getGitHubRepositorySync: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["githubSyncResponse"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    syncGitHubRepositories: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["githubSyncResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: GITHUB_REAUTHORIZATION_REQUIRED, GITHUB_REJECTED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Bad Gateway: GITHUB_UNAVAILABLE */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    listGitHubRepositories: {
+        parameters: {
+            query?: {
+                /** @description only archived (true) or not archived (false) repositories */
+                archived?: "true" | "false";
+                /** @description only repositories read through this connection */
+                connectionId?: string;
+                /** @description page.nextCursor of the previous page; continues the same query */
+                cursor?: string;
+                /** @description rows per page */
+                limit?: number;
+                /** @description only repositories of this owner login */
+                owner?: string;
+                /** @description owner/name contains this text, ignoring case */
+                q?: string;
+                /** @description comma-separated fields, '-' for descending; default fullName */
+                sort?: string;
+                /** @description only repositories with this visibility */
+                visibility?: "public" | "private" | "internal";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListResponse_github.RepoItem"];
+                };
+            };
+            /** @description Bad Request: QUERY_LIMIT_EXCEEDED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2762,7 +7274,7 @@ export interface operations {
                     "application/json": components["schemas"]["apiError"];
                 };
             };
-            /** @description Conflict: CONFIRMATION_REQUIRED, REQUEST_ID_CONFLICT */
+            /** @description Conflict: CHANGE_PLAN_REQUIRED, CONFIRMATION_REQUIRED, REQUEST_ID_CONFLICT */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -4985,6 +9497,210 @@ export interface operations {
             };
         };
     };
+    getNodeEngines: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["hostEnginesResponse"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    refreshNodeEngines: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["hostEnginesResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    getNodeHost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["hostFactsResponse"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
     setNodeMaintenance: {
         parameters: {
             query?: never;
@@ -5059,6 +9775,157 @@ export interface operations {
             };
             /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
             413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    listNodeMetricsHistory: {
+        parameters: {
+            query?: {
+                /** @description page.nextCursor of the previous page; continues the same query */
+                cursor?: string;
+                /** @description RFC 3339 start (inclusive); default one hour (raw) or one day (5m) before to */
+                from?: string;
+                /** @description what the series belongs to: empty for host-wide series, the CPU number for cpu.core.usage, the mount point for filesystem.*, the block device name for disk.*, the interface name for network.*, chip/label for temperature.celsius */
+                key?: string;
+                /** @description rows per page */
+                limit?: number;
+                /** @description raw (the agent's sampling interval, kept 48 hours; default) or 5m (average, minimum and maximum per 5 minutes, kept 90 days) */
+                resolution?: "raw" | "5m";
+                /** @description required; the series to read (units: cpu.* and *.utilization and pressure.* percent, *Bytes bytes, *BytesPerSecond bytes per second, *PerSecond per second, *LatencyMs milliseconds, temperature.celsius °C, limits.* and filesystem.inodesUsed counts, load.* run-queue averages) */
+                series?: "cpu.usage" | "cpu.user" | "cpu.system" | "cpu.iowait" | "cpu.steal" | "cpu.core.usage" | "memory.usedBytes" | "memory.availableBytes" | "memory.cachedBytes" | "swap.usedBytes" | "load.one" | "load.five" | "load.fifteen" | "pressure.cpu.someAvg60" | "pressure.memory.someAvg60" | "pressure.io.someAvg60" | "limits.tasks" | "limits.fileHandles" | "filesystem.usedBytes" | "filesystem.availableBytes" | "filesystem.inodesUsed" | "disk.readBytesPerSecond" | "disk.writeBytesPerSecond" | "disk.readsPerSecond" | "disk.writesPerSecond" | "disk.readLatencyMs" | "disk.writeLatencyMs" | "disk.utilization" | "network.rxBytesPerSecond" | "network.txBytesPerSecond" | "temperature.celsius";
+                /** @description comma-separated fields, '-' for descending; default at */
+                sort?: string;
+                /** @description RFC 3339 end (exclusive); default now */
+                to?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListResponse_hostmetrics.Point"];
+                };
+            };
+            /** @description Bad Request: QUERY_LIMIT_EXCEEDED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    getNodeMetricsLatest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["latestMetricsResponse"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5419,6 +10286,73 @@ export interface operations {
             };
         };
     };
+    getNodeStorage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["View"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
     openapi: {
         parameters: {
             query?: never;
@@ -5619,6 +10553,223 @@ export interface operations {
             };
             /** @description Too Many Requests: TOO_MANY_ATTEMPTS */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    listStorageAlertRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["storageRulesResponse"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    putStorageAlertRule: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["storageRuleRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Rule"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    deleteStorageAlertRule: {
+        parameters: {
+            query?: {
+                /** @description the mount point; empty or omitted for every filesystem */
+                mountPoint?: string;
+                /** @description the node; empty or omitted for every node */
+                nodeId?: string;
+            };
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
