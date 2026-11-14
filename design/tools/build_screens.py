@@ -4038,14 +4038,14 @@ def connection_panel() -> str:
       </div>
     </section>
     <section class="panel" aria-labelledby="h-vars">
-      <div class="ph"><h2 id="h-vars">search 的變數</h2></div>
+      <div class="ph"><h2 id="h-vars">變數</h2></div>
       <div style="padding:8px 14px;font-size:12px;color:var(--muted)">同專案的其他服務可以直接引用這些變數，不用設定。只有機密要先勾「讓其他服務使用」</div>
       <div class="row hd"><span>變數</span><span>值</span><span class="c3">誰在用</span><span></span></div>
       {pub("SEARCH_URL", "http://${search.HZX_HOST}:${search.HZX_PORT_HTTP}", "", "web、worker")}
       {pub("SEARCH_ADMIN_TOKEN", "••••••••（機密）", '<label class="wrap" style="flex-wrap:nowrap"><input type="checkbox" aria-label="讓同專案的其他服務使用 SEARCH_ADMIN_TOKEN">讓其他服務使用</label>', "沒有人")}
     </section>
     <section class="panel" aria-labelledby="h-refs">
-      <div class="ph"><h2 id="h-refs">誰引用了 search</h2></div>
+      <div class="ph"><h2 id="h-refs">被誰引用</h2></div>
       <div class="row hd"><span>誰的哪個變數</span><span>寫法</span><span>解析結果</span><span>檢查</span></div>
       {ref("web · SEARCH_URL", "${search.SEARCH_URL}", "http://search.production.shop.internal:9200", U.status("ok", "連得到"))}
       {ref("worker · ADMIN_TOKEN", "${search.SEARCH_ADMIN_TOKEN}", "—", U.status("dng", "這是機密，search 沒有分享"))}
