@@ -120,7 +120,7 @@ export function TimeChart({
   const last = series.map((s) => s.points[s.points.length - 1]);
 
   return (
-    <section className="hx-chart" aria-labelledby={`${id}-t`}>
+    <figure className="hx-chart" aria-labelledby={`${id}-t`}>
       <div className="hx-chart-head">
         <h3 id={`${id}-t`}>{title}</h3>
         {extra}
@@ -212,7 +212,7 @@ export function TimeChart({
         )}
       </div>
       {table && !empty && <ChartTable title={title} series={series} format={format} withDate={withDate} />}
-    </section>
+    </figure>
   );
 }
 

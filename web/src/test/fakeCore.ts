@@ -4,6 +4,8 @@ import { vi } from "vite-plus/test";
 export interface FakeCall {
   method: string;
   path: string;
+  /** Query parameters of the request URL. */
+  query: URLSearchParams;
   body: unknown;
 }
 
@@ -30,7 +32,7 @@ export function fakeCore(routes: Record<string, Route> = {}) {
     const url = new URL(input instanceof Request ? input.url : input.toString(), "http://localhost");
     const method = init?.method ?? "GET";
     const body = typeof init?.body === "string" ? (JSON.parse(init.body) as unknown) : undefined;
-    const call = { method, path: url.pathname, body };
+    const call = { method, path: url.pathname, query: url.searchParams, body };
     calls.push(call);
     const route = table.get(`${method} ${url.pathname}`);
     const reply = route === undefined ? apiError(404, "NOT_FOUND") : typeof route === "function" ? route(call) : route;
