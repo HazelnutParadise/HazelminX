@@ -409,3 +409,42 @@ async fn output_is_streamed_and_failures_become_action_failed() {
         Some(SecurityEvent::ActionExecuted { ok: false, .. })
     ));
 }
+
+fn compose_manifest() -> hazelminx_privileged::compose_manifest::ComposeManifest {
+    serde_json::from_value(json!({
+        "project": "shop-prod-web", "revision": "r1", "environment": "env:/var/run/docker.sock",
+        "main_file": "compose.yaml",
+        "files": [{"path": "compose.yaml", "size": 1, "sha256": "a".repeat(64)}]
+    }))
+    .unwrap()
+}
+
+#[tokio::test]
+async fn compose_actions_need_a_grant_bound_to_their_content() {
+    use hazelminx_privileged::action::PERM_HOST_COMPOSE_CHECK;
+    let exec = FakeExecutor::default();
+    let started = exec.started.clone();
+    let h = Harness::start(exec, current_uid(), 2).await;
+    let check = Action::ComposeCheck {
+        manifest: compose_manifest(),
+    };
+    let deploy = Action::ComposeDeploy {
+        manifest: compose_manifest(),
+    };
+    let mut other = compose_manifest();
+    other.revision = "r2".to_string().try_into().unwrap();
+    let elsewhere = Action::ComposeCheck { manifest: other };
+    for (id, binding) in [
+        ("g-none", None),
+        ("g-deploy", deploy.binding()),
+        ("g-other", elsewhere.binding()),
+    ] {
+        let g = h.grant_bound(id, &[PERM_HOST_COMPOSE_CHECK], binding);
+        let e = h.client.execute("r", &g, &check, |_, _| {}).await.unwrap_err();
+        assert_eq!(rejected_code(e), ErrorCode::PermissionDenied, "{id}");
+    }
+    assert_eq!(started.load(Ordering::SeqCst), 0);
+    let g = h.grant_bound("g-ok", &[PERM_HOST_COMPOSE_CHECK], check.binding());
+    let v = h.client.execute("r", &g, &check, |_, _| {}).await.unwrap();
+    assert_eq!(v["kind"], "compose_check");
+}

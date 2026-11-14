@@ -185,6 +185,20 @@ impl Harness {
         self._dir.path().join("p.sock")
     }
 
+    /// A grant bound to one action's content (decision 0035).
+    pub fn grant_bound(&self, id: &str, perms: &[&str], binding: Option<String>) -> Grant {
+        let mut g = Grant::new(
+            id,
+            "user-1",
+            perms.iter().map(|s| s.to_string()).collect(),
+            OffsetDateTime::now_utc(),
+            Duration::minutes(5),
+        );
+        g.binding = binding;
+        g.sign(&self.issuer);
+        g
+    }
+
     pub fn grant(&self, id: &str, perms: &[&str]) -> Grant {
         let mut g = Grant::new(
             id,
