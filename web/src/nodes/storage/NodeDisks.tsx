@@ -228,7 +228,7 @@ function DevicesPanel({ view: v }: { view: StorageView }) {
           <p className="hx-note">{t("nodes.disks.noDevices")}</p>
         </div>
       ) : (
-        <div className="hx-table-wrap">
+        <div className="hx-table-wrap" tabIndex={0} role="group" aria-label={t("nodes.disks.scrollTable")}>
           <Table className="hx-table">
             <Table.Header>
               <Table.Row>
@@ -236,8 +236,8 @@ function DevicesPanel({ view: v }: { view: StorageView }) {
                 <Table.Head>{t("nodes.disks.col.size")}</Table.Head>
                 <Table.Head>{t("nodes.disks.col.fs")}</Table.Head>
                 <Table.Head>{t("nodes.disks.col.mountedAt")}</Table.Head>
-                <Table.Head>{t("nodes.disks.col.health")}</Table.Head>
-                <Table.Head className="hx-disk-c5">{t("nodes.disks.col.temp")}</Table.Head>
+                <Table.Head className="hx-disk-c3">{t("nodes.disks.col.health")}</Table.Head>
+                <Table.Head className="hx-disk-c3">{t("nodes.disks.col.temp")}</Table.Head>
               </Table.Row>
             </Table.Header>
             <Table.Body>
@@ -258,7 +258,7 @@ function DevicesPanel({ view: v }: { view: StorageView }) {
                   <Table.Row key={d.name ?? d.dev}>
                     <Table.Cell>
                       <div className={part ? "hx-disk-part" : undefined}>
-                        <div className="hx-name hx-mono">{d.name}</div>
+                        <div className="hx-name hx-mono hx-disk-nowrap">{d.name}</div>
                         {about && <div className="hx-sub hx-mono">{about}</div>}
                       </div>
                     </Table.Cell>
@@ -267,7 +267,7 @@ function DevicesPanel({ view: v }: { view: StorageView }) {
                       {d.fsType ?? (part ? "—" : t(`nodes.disks.class.${d.class}`, { defaultValue: d.class ?? "—" }))}
                     </Table.Cell>
                     <Table.Cell className="hx-mono">{m?.mountPoint ?? (swap ? "swap" : "—")}</Table.Cell>
-                    <Table.Cell>
+                    <Table.Cell className="hx-disk-c3">
                       {d.health ? (
                         d.health.state === "notCollected" ? (
                           <NotRead reason={d.health.reason} />
@@ -278,7 +278,7 @@ function DevicesPanel({ view: v }: { view: StorageView }) {
                         "—"
                       )}
                     </Table.Cell>
-                    <Table.Cell className="hx-disk-c5">{part ? "—" : <NotRead />}</Table.Cell>
+                    <Table.Cell className="hx-disk-c3">{part ? "—" : <NotRead />}</Table.Cell>
                   </Table.Row>
                 );
               })}
@@ -299,7 +299,8 @@ function NotProvided() {
 function Reference({ mount: m, spec }: { mount: MountView; spec: string }) {
   const { t } = useTranslation();
   const warn = isDeviceName(m.reference);
-  const label = t(`nodes.disks.ref.${m.reference}`, { defaultValue: m.reference ?? "" });
+  // The spec already says UUID=, LABEL=, /dev/disk/by-…; only a device name and a network share get a word.
+  const label = m.reference === "device" || m.reference === "network" ? t(`nodes.disks.ref.${m.reference}`) : null;
   return (
     <span className={warn ? "hx-disk-ref is-warn" : "hx-disk-ref"}>
       {warn && (
@@ -341,7 +342,7 @@ function MountsPanel({ view: v }: { view: StorageView }) {
           <p className="hx-note">{t("nodes.disks.noMounts")}</p>
         </div>
       ) : (
-        <div className="hx-table-wrap">
+        <div className="hx-table-wrap" tabIndex={0} role="group" aria-label={t("nodes.disks.scrollTable")}>
           <Table className="hx-table">
             <Table.Header>
               <Table.Row>
@@ -392,7 +393,7 @@ function MountsPanel({ view: v }: { view: StorageView }) {
                     <Table.Cell>
                       <StatusPill tone={BOOT_TONE[boot]}>{t(`nodes.disks.boot.${boot}`)}</StatusPill>
                     </Table.Cell>
-                    <Table.Cell className="hx-disk-c5 hx-mono">
+                    <Table.Cell className="hx-disk-c5 hx-mono hx-disk-nowrap">
                       {cs.length ? (
                         cs.map(configLocation).join(" · ")
                       ) : (
@@ -414,14 +415,14 @@ function MountsPanel({ view: v }: { view: StorageView }) {
                       <div className="hx-name hx-mono">swap</div>
                       <div className="hx-sub hx-mono">{s.name}</div>
                     </Table.Cell>
-                    <Table.Cell className="hx-mono">
+                    <Table.Cell className="hx-mono hx-disk-nowrap">
                       {t(`nodes.disks.swapKind.${s.kind}`, { defaultValue: s.kind ?? "" })}
                     </Table.Cell>
                     <Table.Cell className="hx-mono">{bytes(s.sizeBytes) ?? <NotProvided />}</Table.Cell>
                     <Table.Cell>
                       <StatusPill tone={BOOT_TONE[boot]}>{t(`nodes.disks.swapBoot.${boot}`)}</StatusPill>
                     </Table.Cell>
-                    <Table.Cell className="hx-disk-c5 hx-mono">
+                    <Table.Cell className="hx-disk-c5 hx-mono hx-disk-nowrap">
                       {cs.length ? (
                         cs.map(configLocation).join(" · ")
                       ) : (
@@ -479,7 +480,7 @@ function ConflictsPanel({ view: v }: { view: StorageView }) {
   if (list.length === 0) return null;
   return (
     <Panel id="hx-disks-conflicts" title={t("nodes.disks.conflictsTitle", { count: list.length })}>
-      <div className="hx-table-wrap">
+      <div className="hx-table-wrap" tabIndex={0} role="group" aria-label={t("nodes.disks.scrollTable")}>
         <Table className="hx-table">
           <Table.Header>
             <Table.Row>

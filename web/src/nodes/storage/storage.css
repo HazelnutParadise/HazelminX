@@ -153,3 +153,11 @@
   background: var(--hx-q1);
   box-shadow: inset 0 0 0 1px var(--color-kumo-line);
 }
+.hx-disk-nowrap {
+  white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .hx-disk-c3 {
+    display: none;
+  }
+}

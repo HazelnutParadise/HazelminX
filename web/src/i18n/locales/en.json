@@ -965,7 +965,8 @@
         "node": "Alert rule: this host",
         "mountPoint": "Alert rule: this mount point on every host",
         "nodeMountPoint": "Alert rule: this mount point on this host"
-      }
+      },
+      "scrollTable": "Table, scrolls sideways"
     }
   }
 }
