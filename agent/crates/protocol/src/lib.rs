@@ -13,6 +13,7 @@
 
 pub mod enroll;
 pub mod metrics;
+pub mod storage;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -45,6 +46,10 @@ pub const CAP_NODE_CERTIFICATE: &str = "node.certificate";
 /// samples (ticket 020.1). The agent sends them only when the Core declares
 /// this capability too.
 pub const CAP_HOST_METRICS: &str = "host.metrics";
+/// `host_storage` / `storage_usage`: block devices, mounts and their
+/// configuration, and per-category filesystem usage (ticket 030.1). Sent
+/// only when the Core declares this capability too.
+pub const CAP_HOST_STORAGE: &str = "host.storage";
 
 /// `certificate_refused` codes.
 pub mod certificate_refused_code {
@@ -354,6 +359,18 @@ pub enum Message {
     MetricsAck {
         seq: u64,
     },
+    /// Disks, partitions, mounts and mount configuration; sent after
+    /// `ready` and when any of it changes.
+    HostStorage {
+        #[serde(with = "time::serde::rfc3339")]
+        collected_at: OffsetDateTime,
+        storage: Box<storage::StorageInventory>,
+    },
+    /// The latest finished usage measurement; sent after `ready` and when
+    /// a new one finishes.
+    StorageUsage {
+        usage: Box<storage::StorageUsage>,
+    },
 }
 
 /// Why a message could not be decoded. `UnknownType` lets the receiver answer
@@ -459,6 +476,8 @@ const SESSION_TYPES: &[&str] = &[
     "host_facts",
     "metrics_report",
     "metrics_ack",
+    "host_storage",
+    "storage_usage",
 ];
 
 /// The string `type` of a JSON object, or `Malformed`.

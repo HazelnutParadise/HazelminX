@@ -1,0 +1,32 @@
+{
+  "type": "storage_usage",
+  "usage": {
+    "startedAt": "2026-11-14T03:05:00Z",
+    "durationMs": 41250,
+    "entries": 412880,
+    "filesystems": [
+      {
+        "mountPoint": "/",
+        "dev": "259:2",
+        "state": "complete",
+        "usedBytes": 38654705664,
+        "categories": [
+          {"category": "osAndLogs", "bytes": 18253611008, "paths": ["/usr", "/var/log", "/etc", "/boot", "/var/cache", "/var/lib/dpkg"]},
+          {"category": "containerImages", "bytes": 16106127360, "paths": ["/var/lib/docker"]},
+          {"category": "appData", "bytes": 214748364, "paths": ["/var/lib/docker/volumes"]}
+        ],
+        "otherBytes": 4080218932,
+        "unreadableDirs": 0
+      },
+      {
+        "mountPoint": "/mnt/data",
+        "dev": "8:1",
+        "state": "partial",
+        "usedBytes": 442381631488,
+        "categories": [],
+        "otherBytes": null,
+        "unreadableDirs": 2
+      }
+    ]
+  }
+}

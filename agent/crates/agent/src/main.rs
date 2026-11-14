@@ -12,6 +12,7 @@ mod journal;
 mod ledger;
 mod monitor;
 mod steps;
+mod storage;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
@@ -209,6 +210,8 @@ async fn run(cfg: Config) -> Result<()> {
             monitor::collect::Collector::new("/", monitor::INTERVAL.as_secs() as u32),
             move || waker.wake(),
         )?;
+        let waker = shared.clone();
+        storage::spawn(shared.storage.clone(), "/", move || waker.wake())?;
     }
     connection::run(opts, shared, shutdown_signal()).await;
     info!("shutting down");

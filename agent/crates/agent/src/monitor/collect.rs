@@ -21,7 +21,7 @@ const STATVFS_TIMEOUT: Duration = Duration::from_secs(2);
 
 /// Filesystem types that hold no user data (kernel interfaces, container
 /// layers, RAM). They are not reported.
-const PSEUDO_FS: &[&str] = &[
+pub const PSEUDO_FS: &[&str] = &[
     "proc",
     "sysfs",
     "cgroup",
@@ -52,7 +52,7 @@ const PSEUDO_FS: &[&str] = &[
     "nfsd",
 ];
 
-const NETWORK_FS: &[&str] = &[
+pub const NETWORK_FS: &[&str] = &[
     "nfs",
     "nfs4",
     "cifs",
@@ -686,6 +686,11 @@ fn statvfs(p: &Path) -> Option<Vfs> {
 #[cfg(not(unix))]
 fn statvfs(_: &Path) -> Option<Vfs> {
     None
+}
+
+/// `total - free` of the filesystem holding `p`.
+pub fn statvfs_used(p: &Path) -> Option<u64> {
+    statvfs(p).map(|v| v.total.saturating_sub(v.free))
 }
 
 #[cfg(unix)]
