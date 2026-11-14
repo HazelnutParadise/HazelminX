@@ -4026,8 +4026,9 @@ def connection_panel() -> str:
     def ref(k, expr, val, st):
         return f'<div class="row"><span class="mono">{k}</span><span class="wr"><span class="mono" style="overflow-wrap:anywhere;white-space:normal">{expr}</span></span><span class="wr"><span class="mono" style="overflow-wrap:anywhere;white-space:normal">{val}</span></span><span>{st}</span></div>'
     return f"""
+    <div class="lvl"><div class="lvl-h"><div class="panel"><div class="tabs" role="tablist"><span class="lbl">部署單元</span><button type="button" class="tab" role="tab" aria-selected="false">web</button><button type="button" class="tab" role="tab" aria-selected="false">worker</button><button type="button" class="tab on" role="tab" aria-selected="true">search</button></div></div></div><div class="lvl-b">
     <section class="panel" aria-labelledby="h-conn">
-      <div class="ph"><h2 id="h-conn">search · 連線</h2>{_seg(["web", "worker", "search"], 2, "單元")}</div>
+      <div class="ph"><h2 id="h-conn">連線</h2></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:12px 20px;padding:12px 14px;font-size:13px">
         {kv("內部位址", '<span class="wrap"><span class="mono" style="overflow-wrap:anywhere">search.production.shop.internal</span>' + eye + '</span><div style="margin-top:4px;font-size:12px;color:var(--muted)">其他服務用這個名字連 search。改名、搬主機都不會變</div>')}
         {kv("容器內的 Port", '<span class="mono">http 9200 · transport 9300</span><div style="margin-top:4px;font-size:12px;color:var(--muted)">服務在容器裡聽的 Port。用內部位址連的時候接這個號碼</div>')}
@@ -4035,16 +4036,21 @@ def connection_panel() -> str:
         {kv("對外網址", '<span class="note">未設定</span>')}
         {kv("從其他主機連入", "tw-01：私有網路 · jp-02：加密轉送，只開 9200")}
       </div>
-      <div class="ph" style="border-top:1px solid var(--line)"><h2>search 的變數</h2></div>
+    </section>
+    <section class="panel" aria-labelledby="h-vars">
+      <div class="ph"><h2 id="h-vars">search 的變數</h2></div>
       <div style="padding:8px 14px;font-size:12px;color:var(--muted)">同專案的其他服務可以直接引用這些變數，不用設定。只有機密要先勾「讓其他服務使用」</div>
       <div class="row hd"><span>變數</span><span>值</span><span class="c3">誰在用</span><span></span></div>
       {pub("SEARCH_URL", "http://${search.HZX_HOST}:${search.HZX_PORT_HTTP}", "", "web、worker")}
       {pub("SEARCH_ADMIN_TOKEN", "••••••••（機密）", '<label class="wrap" style="flex-wrap:nowrap"><input type="checkbox" aria-label="讓同專案的其他服務使用 SEARCH_ADMIN_TOKEN">讓其他服務使用</label>', "沒有人")}
-      <div class="ph" style="border-top:1px solid var(--line)"><h2>web 引用了誰</h2></div>
-      <div class="row hd"><span>變數</span><span>寫法</span><span>解析結果</span><span>檢查</span></div>
-      {ref("SEARCH_URL", "${search.SEARCH_URL}", "http://search.production.shop.internal:9200", U.status("ok", "連得到"))}
-      {ref("ADMIN_TOKEN", "${search.SEARCH_ADMIN_TOKEN}", "—", U.status("dng", "這是機密，search 沒有分享"))}
-    </section>"""
+    </section>
+    <section class="panel" aria-labelledby="h-refs">
+      <div class="ph"><h2 id="h-refs">誰引用了 search</h2></div>
+      <div class="row hd"><span>誰的哪個變數</span><span>寫法</span><span>解析結果</span><span>檢查</span></div>
+      {ref("web · SEARCH_URL", "${search.SEARCH_URL}", "http://search.production.shop.internal:9200", U.status("ok", "連得到"))}
+      {ref("worker · ADMIN_TOKEN", "${search.SEARCH_ADMIN_TOKEN}", "—", U.status("dng", "這是機密，search 沒有分享"))}
+    </section>
+    </div></div>"""
 
 
 # ---------- 單元設定 ----------
