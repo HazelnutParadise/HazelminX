@@ -4029,9 +4029,10 @@ def connection_panel() -> str:
     return f"""
     <section class="panel" aria-labelledby="h-conn">
       <div class="ph"><h2 id="h-conn">search · 連線</h2>{_seg(["web", "worker", "search"], 2, "單元")}</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:10px 16px;padding:12px 14px;font-size:13px">
-        {kv("內部位址（入口服務 search）", '<span class="wrap" style="flex-wrap:nowrap"><span class="mono">search.production.shop.internal</span>' + eye + "</span>")}
-        {kv("對內 Port", '<span class="mono">http 9200 · transport 9300</span>')}
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:12px 20px;padding:12px 14px;font-size:13px">
+        {kv("內部位址", '<span class="wrap"><span class="mono" style="overflow-wrap:anywhere">search.production.shop.internal</span>' + eye + '</span><div style="margin-top:4px;font-size:12px;color:var(--muted)">其他服務用這個名字連 search。改名、搬主機都不會變</div>')}
+        {kv("容器內的 Port", '<span class="mono">http 9200 · transport 9300</span><div style="margin-top:4px;font-size:12px;color:var(--muted)">服務在容器裡聽的 Port。用內部位址連的時候接這個號碼</div>')}
+        {kv("宿主機 Port", '<span class="note">沒有開</span><div style="margin-top:4px;font-size:12px;color:var(--muted)">宿主機上連不到，只有內部位址連得到</div>')}
         {kv("對外網址", '<span class="note">未設定</span>')}
         {kv("從其他主機連入", "tw-01：私有網路 · jp-02：加密轉送，只開 9200")}
       </div>
