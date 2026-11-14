@@ -307,7 +307,7 @@ fn buffer_drops_oldest_and_counts_once() {
         m.push(sample(i));
     }
     assert_eq!(m.len(), 3);
-    let (last, msg) = m.report_after(0).unwrap();
+    let (last, msg) = m.next_report().unwrap();
     assert_eq!(last, 5);
     match msg {
         Message::MetricsReport {
@@ -319,29 +319,35 @@ fn buffer_drops_oldest_and_counts_once() {
         }
         other => panic!("{other:?}"),
     }
-    // A second report while the first is unacknowledged does not carry the
-    // count again (both may be stored).
-    let dropped = |m: &Monitor, after: u64| match m.report_after(after).unwrap().1 {
+    let dropped = |m: &Monitor| match m.next_report().unwrap().1 {
         Message::MetricsReport {
             dropped_samples, ..
         } => dropped_samples,
         other => panic!("{other:?}"),
     };
-    assert_eq!(dropped(&m, 0), 0);
-    assert!(m.report_after(5).is_none());
-    // No acknowledgement: everything waiting, and the count, go again.
+    // Not acknowledged: the same samples and the count go again.
     assert!(m.unacked_through(5));
-    assert_eq!(m.rewind(), 0);
-    assert_eq!(dropped(&m, 0), 2);
-    // An acknowledgement short of that report keeps the count.
-    m.ack(4);
-    assert_eq!(m.len(), 1);
-    assert!(m.unacked_through(5));
-    assert!(!m.unacked_through(4));
-    m.ack(5);
-    assert_eq!(m.len(), 0);
+    assert_eq!(dropped(&m), 2);
+    // More drops while waiting: the resend carries all of them.
     m.push(sample(6));
-    assert_eq!(dropped(&m, 5), 0, "an acknowledged count is not sent again");
+    assert_eq!(dropped(&m), 3);
+    // The acknowledgement of that report (last seq 6) clears samples and
+    // count; a stale one for an earlier seq clears neither count nor later
+    // samples.
+    m.ack(5);
+    assert_eq!(m.len(), 1);
+    assert!(m.unacked_through(6));
+    assert!(!m.unacked_through(5));
+    assert_eq!(
+        dropped(&m),
+        3,
+        "the report carrying the count was not acknowledged"
+    );
+    m.ack(6);
+    assert_eq!(m.len(), 0);
+    assert!(m.next_report().is_none());
+    m.push(sample(7));
+    assert_eq!(dropped(&m), 0, "an acknowledged count is not sent again");
 }
 
 #[test]
@@ -371,9 +377,10 @@ fn report_is_split_by_size() {
         s.seq = seq;
         m.push(s);
     }
-    let (last, _) = m.report_after(0).unwrap();
+    let (last, _) = m.next_report().unwrap();
     assert!(last < 3, "three ~140 KiB samples do not fit one report");
-    let (next, _) = m.report_after(last).unwrap();
+    m.ack(last);
+    let (next, _) = m.next_report().unwrap();
     assert!(next > last);
 }
 

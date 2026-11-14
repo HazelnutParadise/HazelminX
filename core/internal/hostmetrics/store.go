@@ -168,7 +168,7 @@ func (s *Store) Record(ctx context.Context, nodeID string, m *protocol.MetricsRe
 			return Recorded{}, err
 		}
 	}
-	if m.DroppedSamples > 0 && len(keep) > 0 {
+	if m.DroppedSamples > 0 {
 		if _, err := tx.ExecContext(ctx, `UPDATE host_metric_latest SET dropped_samples = dropped_samples + ? WHERE node_id = ?`, m.DroppedSamples, nodeID); err != nil {
 			return Recorded{}, err
 		}

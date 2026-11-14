@@ -147,7 +147,10 @@ func TestInteropAgentReportsFactsAndSamples(t *testing.T) {
 		}
 		return "node-1", nil
 	}}
-	hub := nodes.NewHub(nodes.HubOptions{PKI: pki, CoreVersion: "test", Heartbeat: time.Second, HostReports: reporter,
+	// The first report fails to store: the agent must send it again in the
+	// same session (no acknowledgement within 30 s), not skip past it.
+	failing := &failFirst{Reporter: reporter}
+	hub := nodes.NewHub(nodes.HubOptions{PKI: pki, CoreVersion: "test", Heartbeat: time.Second, HostReports: failing,
 		Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
 	srv := httptest.NewUnstartedServer(hub)
 	srv.TLS = pki.ServerTLSConfig()
@@ -182,10 +185,13 @@ func TestInteropAgentReportsFactsAndSamples(t *testing.T) {
 	})
 	// The second sample (one interval later) has CPU shares and rates.
 	var latest *Latest
-	waitFor(t, logs, 25*time.Second, "two samples stored", func() bool {
+	waitFor(t, logs, 60*time.Second, "two samples stored", func() bool {
 		latest, _ = st.Latest(ctx, "node-1")
 		return latest != nil && latest.Sample.Seq >= 2
 	})
+	if !failing.resentAndStored() {
+		t.Fatalf("the report that failed to store was not sent again\n%s", logs.String())
+	}
 	if latest.IntervalSeconds != 10 || latest.ReceivedAt.Before(latest.CollectedAt.Add(-time.Minute)) {
 		t.Fatalf("latest %+v", latest)
 	}
@@ -246,4 +252,41 @@ func TestInteropAgentReportsFactsAndSamples(t *testing.T) {
 	if l, _ := st.Latest(ctx, "node-1"); l.Sample.Seq <= before {
 		t.Fatalf("latest seq %d, was %d", l.Sample.Seq, before)
 	}
+}
+
+// failFirst fails the first metrics report and records whether a later,
+// stored report carried its first sample again.
+type failFirst struct {
+	Reporter
+	mu     sync.Mutex
+	first  time.Time
+	resent bool
+}
+
+func (f *failFirst) MetricsReport(ctx context.Context, s *nodes.Session, m *protocol.MetricsReport) (uint64, error) {
+	f.mu.Lock()
+	if f.first.IsZero() {
+		f.first = m.Samples[0].CollectedAt
+		f.mu.Unlock()
+		return 0, errors.New("injected store failure")
+	}
+	first := f.first
+	f.mu.Unlock()
+	seq, err := f.Reporter.MetricsReport(ctx, s, m)
+	if err == nil {
+		for _, smp := range m.Samples {
+			if smp.CollectedAt.Equal(first) {
+				f.mu.Lock()
+				f.resent = true
+				f.mu.Unlock()
+			}
+		}
+	}
+	return seq, err
+}
+
+func (f *failFirst) resentAndStored() bool {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.resent
 }

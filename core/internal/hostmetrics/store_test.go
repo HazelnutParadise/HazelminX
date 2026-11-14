@@ -212,8 +212,8 @@ func TestRecordReportRejectsBadReports(t *testing.T) {
 	if r, err := st.Record(ctx, "node-1", &protocol.MetricsReport{Samples: []protocol.MetricsSample{future}, DroppedSamples: 7}); err != nil || r.Seq != 3 {
 		t.Fatalf("nothing usable: %+v %v", r, err)
 	}
-	if l, _ := st.Latest(ctx, "node-1"); l.Sample.Seq != 5 || l.DroppedSamples != 2 {
-		t.Fatalf("latest after an unusable report %+v", l)
+	if l, _ := st.Latest(ctx, "node-1"); l.Sample.Seq != 5 || l.DroppedSamples != 9 {
+		t.Fatalf("latest after an unusable report keeps its sample and adds the drops: %+v", l)
 	}
 	// Facts from a clock far ahead are refused.
 	if err := st.RecordFacts(ctx, "node-1", &protocol.HostFacts{CollectedAt: t0.Add(time.Hour)}); !errors.Is(err, ErrValidation) {

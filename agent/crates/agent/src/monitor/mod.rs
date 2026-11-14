@@ -108,16 +108,6 @@ impl Monitor {
             .is_some_and(|s| s.seq <= sent)
     }
 
-    /// Forgets what was sent without an acknowledgement, so the next
-    /// reports carry it again; returns the seq to send after (the buffer
-    /// holds only unacknowledged samples). A drop count whose report may
-    /// have been stored is sent again too: counting it twice is better
-    /// than losing it.
-    pub fn rewind(&self) -> u64 {
-        self.state.lock().unwrap().dropped_sent = None;
-        0
-    }
-
     /// The facts message when the session has not sent version `sent`.
     pub fn facts_after(&self, sent: u64) -> Option<(u64, Message)> {
         let st = self.state.lock().unwrap();
@@ -133,15 +123,16 @@ impl Monitor {
         })
     }
 
-    /// The next report: unacknowledged samples after `after`, oldest
-    /// first, at least one and at most `REPORT_BYTES` of them. The drop
-    /// count travels with the first report after it grew and is kept
-    /// until that report is acknowledged.
-    pub fn report_after(&self, after: u64) -> Option<(u64, Message)> {
+    /// The next report: the oldest unacknowledged samples, at least one
+    /// and at most `REPORT_BYTES` of them, with every drop not yet
+    /// acknowledged. A session has one report in flight at a time, so an
+    /// acknowledgement always covers the report it answers; a resend
+    /// after a lost acknowledgement may count drops twice, never zero.
+    pub fn next_report(&self) -> Option<(u64, Message)> {
         let mut st = self.state.lock().unwrap();
         let mut size = 0;
         let mut out = Vec::new();
-        for s in st.samples.iter().filter(|s| s.seq > after) {
+        for s in st.samples.iter() {
             let n = serde_json::to_vec(s)
                 .map(|v| v.len())
                 .unwrap_or(REPORT_BYTES);
@@ -152,12 +143,8 @@ impl Monitor {
             out.push(s.clone());
         }
         let last = out.last()?.seq;
-        let dropped = if st.dropped_sent.is_none() && st.dropped > 0 {
-            st.dropped_sent = Some((last, st.dropped));
-            st.dropped
-        } else {
-            0
-        };
+        let dropped = st.dropped;
+        st.dropped_sent = (dropped > 0).then_some((last, dropped));
         Some((
             last,
             Message::MetricsReport {

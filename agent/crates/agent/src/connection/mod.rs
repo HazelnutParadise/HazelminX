@@ -603,8 +603,7 @@ async fn serve(
     let mut host = HostSent {
         enabled: metrics,
         facts: 0,
-        samples: 0,
-        sent_at: None,
+        in_flight: None,
     };
     let mut tick = tokio::time::interval(heartbeat);
     tick.tick().await;
@@ -675,10 +674,9 @@ struct HostSent {
     enabled: bool,
     /// Facts version sent.
     facts: u64,
-    /// Highest sample seq sent.
-    samples: u64,
-    /// When the latest report went out.
-    sent_at: Option<std::time::Instant>,
+    /// The report waiting for its acknowledgement: its last seq and when
+    /// it went out. The next one is sent only after it is answered.
+    in_flight: Option<(u64, std::time::Instant)>,
 }
 
 /// Sends journal records after `sent_up_to`, queued answers, and host
@@ -712,21 +710,22 @@ async fn flush(
             ch.send(ws, &m).await?;
             host.facts = v;
         }
-        if host
-            .sent_at
-            .is_some_and(|t| t.elapsed() > crate::monitor::ACK_TIMEOUT)
-            && shared.monitor.unacked_through(host.samples)
-        {
-            warn!(
-                up_to = host.samples,
-                "core did not acknowledge host samples; sending them again"
-            );
-            host.samples = shared.monitor.rewind();
+        if let Some((last, at)) = host.in_flight {
+            if !shared.monitor.unacked_through(last) {
+                host.in_flight = None;
+            } else if at.elapsed() > crate::monitor::ACK_TIMEOUT {
+                warn!(
+                    up_to = last,
+                    "core did not acknowledge host samples; sending them again"
+                );
+                host.in_flight = None;
+            }
         }
-        while let Some((last, m)) = shared.monitor.report_after(host.samples) {
+        if host.in_flight.is_none()
+            && let Some((last, m)) = shared.monitor.next_report()
+        {
             ch.send(ws, &m).await?;
-            host.samples = last;
-            host.sent_at = Some(std::time::Instant::now());
+            host.in_flight = Some((last, std::time::Instant::now()));
         }
     }
     Ok(())
@@ -744,6 +743,8 @@ fn handle(shared: &Arc<Shared>, msg: Message) -> Vec<Message> {
         }
         Message::MetricsAck { seq } => {
             shared.monitor.ack(*seq);
+            // Send the next report, if any, now.
+            shared.wake();
             vec![]
         }
         Message::StepExecute { .. } => {
