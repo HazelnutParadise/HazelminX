@@ -4021,9 +4021,8 @@ def units_panel() -> str:
 
 def connection_panel() -> str:
     eye = f'<button type="button" class="ib" aria-label="複製">{U.icon("copy")}</button>'
-    def pub(k, v, on, refs):
-        tog = f'<label class="wrap" style="flex-wrap:nowrap"><input type="checkbox"{" checked" if on else ""} aria-label="公開 {k}">公開</label>'
-        return f'<div class="row"><span class="mono">{k}</span><span class="wr"><span class="mono" style="overflow-wrap:anywhere;white-space:normal">{v}</span></span><span>{tog}</span><span class="c3">{refs}</span></div>'
+    def pub(k, v, share, refs):
+        return f'<div class="row"><span class="mono">{k}</span><span class="wr"><span class="mono" style="overflow-wrap:anywhere;white-space:normal">{v}</span></span><span class="c3">{refs}</span><span>{share}</span></div>'
     def ref(k, expr, val, st):
         return f'<div class="row"><span class="mono">{k}</span><span class="wr"><span class="mono" style="overflow-wrap:anywhere;white-space:normal">{expr}</span></span><span class="wr"><span class="mono" style="overflow-wrap:anywhere;white-space:normal">{val}</span></span><span>{st}</span></div>'
     return f"""
@@ -4036,13 +4035,15 @@ def connection_panel() -> str:
         {kv("對外網址", '<span class="note">未設定</span>')}
         {kv("從其他主機連入", "tw-01：私有網路 · jp-02：加密轉送，只開 9200")}
       </div>
-      <div class="row hd"><span>公開的變數</span><span>值</span><span>公開</span><span class="c3">被誰引用</span></div>
-      {pub("SEARCH_URL", "http://${search.HZX_HOST}:${search.HZX_PORT_HTTP}", True, "web、worker")}
-      {pub("SEARCH_ADMIN_TOKEN", "••••••••（機密）", False, "—")}
+      <div class="ph" style="border-top:1px solid var(--line)"><h2>search 的變數</h2></div>
+      <div style="padding:8px 14px;font-size:12px;color:var(--muted)">同專案的其他服務可以直接引用這些變數，不用設定。只有機密要先勾「讓其他服務使用」</div>
+      <div class="row hd"><span>變數</span><span>值</span><span class="c3">誰在用</span><span></span></div>
+      {pub("SEARCH_URL", "http://${search.HZX_HOST}:${search.HZX_PORT_HTTP}", "", "web、worker")}
+      {pub("SEARCH_ADMIN_TOKEN", "••••••••（機密）", '<label class="wrap" style="flex-wrap:nowrap"><input type="checkbox" aria-label="讓同專案的其他服務使用 SEARCH_ADMIN_TOKEN">讓其他服務使用</label>', "沒有人")}
       <div class="ph" style="border-top:1px solid var(--line)"><h2>web 引用了誰</h2></div>
       <div class="row hd"><span>變數</span><span>寫法</span><span>解析結果</span><span>檢查</span></div>
       {ref("SEARCH_URL", "${search.SEARCH_URL}", "http://search.production.shop.internal:9200", U.status("ok", "連得到"))}
-      {ref("ADMIN_TOKEN", "${search.SEARCH_ADMIN_TOKEN}", "—", U.status("dng", "search 沒有公開這個變數"))}
+      {ref("ADMIN_TOKEN", "${search.SEARCH_ADMIN_TOKEN}", "—", U.status("dng", "這是機密，search 沒有分享"))}
     </section>"""
 
 
