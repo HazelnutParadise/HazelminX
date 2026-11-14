@@ -724,6 +724,15 @@ pub async fn deploy(
     let rev = revisions.join(m.revision.as_str());
     let data = project_root.join("data");
 
+    // The platform's own directory comes with the install; the Compose
+    // directories below it are created here (declared in the ledger).
+    let platform = root.parent().expect("COMPOSE_ROOT has a parent");
+    if !platform.is_dir() {
+        return Err(fail(format!(
+            "{} does not exist; the platform is not installed on this host",
+            platform.display()
+        )));
+    }
     for (d, mode) in [(&root, 0o755), (&project_root, 0o700), (&revisions, 0o700)] {
         root_dir(d, mode).map_err(fail)?;
     }

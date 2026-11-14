@@ -110,6 +110,14 @@ impl Action {
                 };
                 LedgerDecl::Changes(vec![
                     Declared {
+                        target: path(COMPOSE_ROOT.to_string()),
+                        change: ChangeKind::Create,
+                    },
+                    Declared {
+                        target: path(format!("{COMPOSE_ROOT}/{project}")),
+                        change: ChangeKind::Create,
+                    },
+                    Declared {
                         target: path(format!(
                             "{COMPOSE_ROOT}/{project}/revisions/{}",
                             manifest.revision.as_str()
