@@ -450,20 +450,81 @@
         "019",
         "017"
       ],
+      "requirements": [],
+      "acceptance_tests": [],
+      "issue": 20
+    },
+    {
+      "id": "020.1",
+      "file": "020.1-host-facts-metrics-api.md",
+      "title": "Agent 回報主機資訊與資源指標，Core 保存有解析度的歷史並以 API 提供",
+      "epic": "host",
+      "milestone": "M1",
+      "blocked_by": [
+        "019"
+      ],
       "requirements": [
         "SYS-001",
         "MON-001",
-        "MON-002",
-        "MON-003",
         "MON-005",
         "ROB-009"
       ],
       "acceptance_tests": [
+        "T-172"
+      ],
+      "issue": 155,
+      "parent": "020"
+    },
+    {
+      "id": "020.2",
+      "file": "020.2-gpu-monitoring.md",
+      "title": "使用者可以看 GPU 型號、顯示記憶體、使用率、溫度、功耗與使用中的程序",
+      "epic": "host",
+      "milestone": "M1",
+      "blocked_by": [
+        "020.1"
+      ],
+      "requirements": [
+        "MON-002"
+      ],
+      "acceptance_tests": [],
+      "issue": 156,
+      "parent": "020"
+    },
+    {
+      "id": "020.3",
+      "file": "020.3-disk-health.md",
+      "title": "使用者可以看磁碟健康與 SMART，讀不到時明示原因",
+      "epic": "host",
+      "milestone": "M1",
+      "blocked_by": [
+        "020.1",
+        "012"
+      ],
+      "requirements": [
+        "MON-003"
+      ],
+      "acceptance_tests": [],
+      "issue": 157,
+      "parent": "020"
+    },
+    {
+      "id": "020.4",
+      "file": "020.4-host-monitoring-screens.md",
+      "title": "維運者可以在主機頁看到主機資訊、硬體卡片與趨勢圖，耗盡狀態會被標出",
+      "epic": "host",
+      "milestone": "M1",
+      "blocked_by": [
+        "020.1",
+        "017"
+      ],
+      "requirements": [],
+      "acceptance_tests": [
         "T-165",
-        "T-172",
         "T-183"
       ],
-      "issue": 20
+      "issue": 158,
+      "parent": "020"
     },
     {
       "id": "021",
