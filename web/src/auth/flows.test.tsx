@@ -6,6 +6,7 @@ import { AppProviders } from "../app/App";
 import { routes } from "../app/routes";
 import { initI18n } from "../i18n";
 import { apiError, fakeCore, type FakeReply } from "../test/fakeCore";
+import { signOutRetry } from "./session";
 
 beforeAll(() => {
   initI18n("zh-TW");
@@ -25,6 +26,7 @@ beforeAll(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  signOutRetry.delaysMs = [1000, 3000, 6000];
 });
 
 const NOW = "2026-11-12T03:42:06Z";
@@ -418,7 +420,29 @@ describe("shell", () => {
     expect(router.state.location.search).toBe("?next=%2Faccount%2Fsecurity");
   });
 
-  it("a sign-out Core did not confirm says so and can be retried", async () => {
+  it("a sign-out Core did not confirm is retried without asking and then goes through", async () => {
+    signOutRetry.delaysMs = [150, 150];
+    const { core, state } = coreWithSession({ signedIn: true });
+    core.on("POST /management/v1/auth/logout", apiError(502, "PLATFORM_DEGRADED"));
+    renderAt("/settings");
+    await heading("平台設定");
+    const u = userEvent.setup();
+    await u.click(screen.getByRole("button", { name: "tim · 擁有者" }));
+    await u.click(await screen.findByRole("menuitem", { name: "登出" }));
+    expect(await screen.findByText("還沒確認登出成功，正在重試")).toBeInTheDocument();
+    core.on("POST /management/v1/auth/logout", () => {
+      state.signedIn = false;
+      return { status: 204 };
+    });
+    await waitFor(() => expect(screen.queryByText("還沒確認登出成功，正在重試")).toBeNull());
+    // The retry went through: no warning, no button to press.
+    expect(screen.queryByText("沒有確認登出成功，這台裝置可能還在登入狀態")).toBeNull();
+    expect(screen.getByRole("heading", { level: 1, name: "登入管理介面" })).toBeInTheDocument();
+    expect(core.callsTo("POST /management/v1/auth/logout")).toHaveLength(2);
+  });
+
+  it("a sign-out that keeps failing says so after the retries and can be retried by hand", async () => {
+    signOutRetry.delaysMs = [10, 10];
     const { core, state } = coreWithSession({ signedIn: true });
     core.on("POST /management/v1/auth/logout", apiError(502, "PLATFORM_DEGRADED"));
     renderAt("/settings");
@@ -437,7 +461,8 @@ describe("shell", () => {
     });
     await u.click(screen.getByRole("button", { name: "再登出一次" }));
     await waitFor(() => expect(screen.queryByText("沒有確認登出成功，這台裝置可能還在登入狀態")).toBeNull());
-    expect(core.callsTo("POST /management/v1/auth/logout")).toHaveLength(2);
+    // The first attempt, two automatic retries, then the one asked for by hand.
+    expect(core.callsTo("POST /management/v1/auth/logout")).toHaveLength(4);
   });
 
   it("explains when Core cannot be reached instead of showing a blank page", async () => {

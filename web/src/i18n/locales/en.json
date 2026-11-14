@@ -188,6 +188,7 @@
       "lostFactor": "Lost your second factor: choose \"Use a recovery code\" in the second step",
       "lostPassword": "Forgot your password: ask an admin to reset it, or run this on the host",
       "signOutFailed": "Sign-out was not confirmed; this device may still be signed in",
+      "signOutRetrying": "Sign-out is not confirmed yet; trying again",
       "signOutRetry": "Sign out again"
     },
     "second": {
