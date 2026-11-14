@@ -405,7 +405,7 @@ def projects() -> str:
       <div class="wrap" style="margin-left: auto"><a class="btn pri" href="DeployCheck.dc.html">檢視待批准 · 計畫 #418</a><button type="button" class="btn">重新部署目前版本</button><a class="btn" href="ProjectEnv.dc.html">環境變數</a><a class="btn" href="ProjectTriggers.dc.html">自動部署設定</a></div>
     </div>"""
     tabs = ('<div class="panel"><div class="tabs" role="tablist"><span class="lbl">環境</span><button type="button" class="tab on" role="tab" aria-selected="true">production</button>'
-            '<button type="button" class="tab" role="tab" aria-selected="false">staging</button><button type="button" class="tab" aria-label="新增環境">＋ 環境</button></div>'
+            '<button type="button" class="tab" role="tab" aria-selected="false">staging</button><button type="button" class="tab" role="tab" aria-selected="false">qa</button><button type="button" class="tab" role="tab" aria-selected="false">demo</button><button type="button" class="tab" role="tab" aria-selected="false">pr-412</button><button type="button" class="tab" role="tab" aria-selected="false">pr-415</button><button type="button" class="tab" role="tab" aria-selected="false">pr-418</button><button type="button" class="tab" role="tab" aria-selected="false">pr-421</button><button type="button" class="tab" role="tab" aria-selected="false">pr-424</button><button type="button" class="tab" role="tab" aria-selected="false">pr-430</button><button type="button" class="tab" role="tab" aria-selected="false">pr-433</button><button type="button" class="tab" role="tab" aria-selected="false">hotfix-1109</button><button type="button" class="tab" role="tab" aria-selected="false">load-test</button><button type="button" class="tab" role="tab" aria-selected="false">tim-sandbox</button><button type="button" class="tab" role="tab" aria-selected="false">ann-sandbox</button><span class="tabs-end"><button type="button" class="tab" aria-haspopup="listbox" aria-label="全部 15 個環境，開啟清單">全部 15 個' + U.icon("down", 14) + '</button><button type="button" class="tab" aria-label="新增環境">＋ 環境</button></span></div>'
             f'<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr)); gap: 10px 16px; padding: 12px 14px; font-size: 13px">'
             f'{kv("來源", "github.com/hazelnut/shop · main")}{kv("最近部署", "a3f9c1e · 02:57 · 成功 · Webhook")}{kv("部署單元", "3 個 · 2 台主機 · 1 個叢集")}{kv("web 單元", "hazel-tw-01")}{kv("入口", "shop.example.tw · 憑證 11 天後到期")}{kv("自動部署", PAUSE_LINK)}</div>' + U.res_strip("HazelminX", "正式", "03:42:06", drift="shop-redis 映像 redis:7.2 → redis:7.4（主機上手動改）") + '</div>')
     svc_topo = U.topology([
@@ -4021,27 +4021,29 @@ def units_panel() -> str:
 
 def connection_panel() -> str:
     eye = f'<button type="button" class="ib" aria-label="複製">{U.icon("copy")}</button>'
-    def pub(k, v, on, refs):
-        tog = f'<label class="wrap" style="flex-wrap:nowrap"><input type="checkbox"{" checked" if on else ""} aria-label="公開 {k}">公開</label>'
-        return f'<div class="row"><span class="mono">{k}</span><span class="wr"><span class="mono" style="overflow-wrap:anywhere;white-space:normal">{v}</span></span><span>{tog}</span><span class="c3">{refs}</span></div>'
+    def pub(k, v, share, refs):
+        return f'<div class="row"><span class="mono">{k}</span><span class="wr"><span class="mono" style="overflow-wrap:anywhere;white-space:normal">{v}</span></span><span class="c3">{refs}</span><span>{share}</span></div>'
     def ref(k, expr, val, st):
         return f'<div class="row"><span class="mono">{k}</span><span class="wr"><span class="mono" style="overflow-wrap:anywhere;white-space:normal">{expr}</span></span><span class="wr"><span class="mono" style="overflow-wrap:anywhere;white-space:normal">{val}</span></span><span>{st}</span></div>'
     return f"""
     <section class="panel" aria-labelledby="h-conn">
       <div class="ph"><h2 id="h-conn">search · 連線</h2>{_seg(["web", "worker", "search"], 2, "單元")}</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:10px 16px;padding:12px 14px;font-size:13px">
-        {kv("內部位址（入口服務 search）", '<span class="wrap" style="flex-wrap:nowrap"><span class="mono">search.production.shop.internal</span>' + eye + "</span>")}
-        {kv("對內 Port", '<span class="mono">http 9200 · transport 9300</span>')}
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:12px 20px;padding:12px 14px;font-size:13px">
+        {kv("內部位址", '<span class="wrap"><span class="mono" style="overflow-wrap:anywhere">search.production.shop.internal</span>' + eye + '</span><div style="margin-top:4px;font-size:12px;color:var(--muted)">其他服務用這個名字連 search。改名、搬主機都不會變</div>')}
+        {kv("容器內的 Port", '<span class="mono">http 9200 · transport 9300</span><div style="margin-top:4px;font-size:12px;color:var(--muted)">服務在容器裡聽的 Port。用內部位址連的時候接這個號碼</div>')}
+        {kv("宿主機 Port", '<span class="note">沒有開</span><div style="margin-top:4px;font-size:12px;color:var(--muted)">宿主機上連不到，只有內部位址連得到</div>')}
         {kv("對外網址", '<span class="note">未設定</span>')}
         {kv("從其他主機連入", "tw-01：私有網路 · jp-02：加密轉送，只開 9200")}
       </div>
-      <div class="row hd"><span>公開的變數</span><span>值</span><span>公開</span><span class="c3">被誰引用</span></div>
-      {pub("SEARCH_URL", "http://${search.HZX_HOST}:${search.HZX_PORT_HTTP}", True, "web、worker")}
-      {pub("SEARCH_ADMIN_TOKEN", "••••••••（機密）", False, "—")}
+      <div class="ph" style="border-top:1px solid var(--line)"><h2>search 的變數</h2></div>
+      <div style="padding:8px 14px;font-size:12px;color:var(--muted)">同專案的其他服務可以直接引用這些變數，不用設定。只有機密要先勾「讓其他服務使用」</div>
+      <div class="row hd"><span>變數</span><span>值</span><span class="c3">誰在用</span><span></span></div>
+      {pub("SEARCH_URL", "http://${search.HZX_HOST}:${search.HZX_PORT_HTTP}", "", "web、worker")}
+      {pub("SEARCH_ADMIN_TOKEN", "••••••••（機密）", '<label class="wrap" style="flex-wrap:nowrap"><input type="checkbox" aria-label="讓同專案的其他服務使用 SEARCH_ADMIN_TOKEN">讓其他服務使用</label>', "沒有人")}
       <div class="ph" style="border-top:1px solid var(--line)"><h2>web 引用了誰</h2></div>
       <div class="row hd"><span>變數</span><span>寫法</span><span>解析結果</span><span>檢查</span></div>
       {ref("SEARCH_URL", "${search.SEARCH_URL}", "http://search.production.shop.internal:9200", U.status("ok", "連得到"))}
-      {ref("ADMIN_TOKEN", "${search.SEARCH_ADMIN_TOKEN}", "—", U.status("dng", "search 沒有公開這個變數"))}
+      {ref("ADMIN_TOKEN", "${search.SEARCH_ADMIN_TOKEN}", "—", U.status("dng", "這是機密，search 沒有分享"))}
     </section>"""
 
 

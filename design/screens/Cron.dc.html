@@ -261,6 +261,7 @@ body{margin:0}
 .hb .dim{opacity:.45}
 .hb .banner{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:var(--raised);font-size:13px}
 .hb .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);padding:0 14px}
+.hb .tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin}.hb .tabs>.tab,.hb .tabs>.lbl{flex:none;white-space:nowrap}.hb .tabs-end{position:sticky;right:-14px;margin-left:auto;margin-right:-14px;padding:0 14px 0 6px;display:flex;flex:none;gap:2px;background:var(--panel);box-shadow:-14px 0 12px -8px var(--panel);border-left:1px solid var(--line)}.hb .tabs-end .tab{flex:none;white-space:nowrap;gap:4px}
 .hb .tab{min-height:40px;display:inline-flex;align-items:center;padding:0 10px;border-bottom:2px solid transparent;color:var(--muted);font-size:13px;background:transparent;border-top:0;border-left:0;border-right:0}
 .hb .tab.on{color:var(--hazel);border-bottom-color:var(--hazel);font-weight:600}
 .hb .diff{background:#14120F;color:var(--ink);overflow-x:auto;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;display:flex;flex-direction:column}
@@ -451,7 +452,7 @@ body{margin:0}
 .hb .btn.sm{color:var(--ink)}.hb .btn.sm.pri{color:var(--hazelink)}
 .hb .ib{border:1px solid color-mix(in srgb,var(--ink) 18%,transparent);background:var(--raised);color:var(--ink);cursor:pointer}.hb .ib:hover{border-color:var(--hazel);color:var(--hazel)}
 .hb .top .ib{background:transparent}
-.hb .range{display:inline-flex;gap:2px;padding:2px;border:1px solid color-mix(in srgb,var(--ink) 18%,transparent);border-radius:6px;background:var(--panel)}.hb .range .btn{border-color:transparent;box-shadow:none;background:transparent;color:var(--ink)}.hb .range .btn.on{background:var(--raised);border-color:var(--hazel)}
+.hb .range{display:inline-flex;width:fit-content;max-width:100%;align-self:flex-start;gap:2px;padding:2px;border:1px solid color-mix(in srgb,var(--ink) 18%,transparent);border-radius:6px;background:var(--panel)}.hb .range .btn{border-color:transparent;box-shadow:none;background:transparent;color:var(--ink)}.hb .range .btn.on{background:var(--raised);border-color:var(--hazel)}
 .hb .ph .more{border:1px solid color-mix(in srgb,var(--ink) 18%,transparent);border-radius:4px;padding:0 10px;background:var(--raised);cursor:pointer}.hb .ph .more:hover{border-color:var(--hazel)}
 .hb .chip{color:var(--ink);border-color:color-mix(in srgb,var(--ink) 25%,transparent);background:var(--raised);cursor:pointer}.hb .chip:hover{border-color:var(--hazel)}
 .hb .note a,.hb .foot a,.hb .check a,.hb p a{color:var(--hazel);text-decoration:underline;text-underline-offset:2px}
