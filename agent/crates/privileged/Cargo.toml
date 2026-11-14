@@ -21,6 +21,7 @@ base64.workspace = true
 clap.workspace = true
 ed25519-dalek.workspace = true
 hex.workspace = true
+hazelminx-protocol = { path = "../protocol" }
 serde.workspace = true
 serde_json = { workspace = true, features = ["raw_value"] }
 sha2.workspace = true

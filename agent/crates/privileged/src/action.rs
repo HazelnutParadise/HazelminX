@@ -16,6 +16,7 @@ pub const PERM_HOST_INFO_READ: &str = "host.info.read";
 pub const PERM_HOST_PACKAGES_READ: &str = "host.packages.read";
 pub const PERM_HOST_SERVICES_MANAGE: &str = "host.services.manage";
 pub const PERM_HOST_LEDGER_READ: &str = "host.ledger.read";
+pub const PERM_HOST_ENGINES_READ: &str = "host.engines.read";
 /// Reserved for a future terminal/script action; listed so grant issuers and
 /// reviewers treat it as a separate high-risk permission (spec 32.2).
 pub const PERM_SHELL: &str = "host.shell";
@@ -41,6 +42,9 @@ pub enum Action {
         #[serde(default)]
         max_bytes: Option<u32>,
     },
+    /// Which container engines the host has: programs, units, sockets and
+    /// what each socket answers (ticket 039.1).
+    EngineInspect {},
 }
 
 impl Action {
@@ -51,6 +55,7 @@ impl Action {
         "list_package_updates",
         "restart_service",
         "ledger_export",
+        "engine_inspect",
     ];
 
     pub fn kind(&self) -> &'static str {
@@ -59,6 +64,7 @@ impl Action {
             Action::ListPackageUpdates {} => "list_package_updates",
             Action::RestartService { .. } => "restart_service",
             Action::LedgerExport { .. } => "ledger_export",
+            Action::EngineInspect {} => "engine_inspect",
         }
     }
 
@@ -67,7 +73,10 @@ impl Action {
     /// executor records it in the host ledger before and after running.
     pub fn ledger_decl(&self) -> LedgerDecl {
         match self {
-            Action::SystemInfo {} | Action::ListPackageUpdates {} | Action::LedgerExport { .. } => {
+            Action::SystemInfo {}
+            | Action::ListPackageUpdates {}
+            | Action::LedgerExport { .. }
+            | Action::EngineInspect {} => {
                 LedgerDecl::ReadOnly
             }
             Action::RestartService { unit } => LedgerDecl::Changes(vec![Declared {
@@ -89,6 +98,7 @@ impl Action {
             "list_package_updates" => Some(PERM_HOST_PACKAGES_READ),
             "restart_service" => Some(PERM_HOST_SERVICES_MANAGE),
             "ledger_export" => Some(PERM_HOST_LEDGER_READ),
+            "engine_inspect" => Some(PERM_HOST_ENGINES_READ),
             _ => None,
         }
     }
@@ -145,6 +155,13 @@ mod tests {
         let e: Action =
             serde_json::from_value(json!({"kind": "ledger_export", "after_seq": 3})).unwrap();
         assert_eq!(e.required_permission(), PERM_HOST_LEDGER_READ);
+        assert_eq!(Action::EngineInspect {}.ledger_decl(), LedgerDecl::ReadOnly);
+        let i: Action = serde_json::from_value(json!({"kind": "engine_inspect"})).unwrap();
+        assert_eq!(i.required_permission(), PERM_HOST_ENGINES_READ);
+        assert!(
+            serde_json::from_value::<Action>(json!({"kind": "engine_inspect", "socket": "/x"}))
+                .is_err()
+        );
     }
 
     #[test]

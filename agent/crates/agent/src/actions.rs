@@ -3,7 +3,7 @@
 //! strict parameter check; anything else is refused before it runs.
 
 use hazelminx_protocol::{
-    CAP_AGENT_INFO, CAP_HOST_LEDGER, CAP_HOST_METRICS, CAP_JOBS, CAP_NODE_CERTIFICATE, Capability,
+    CAP_AGENT_INFO, CAP_HOST_ENGINES, CAP_HOST_LEDGER, CAP_HOST_METRICS, CAP_JOBS, CAP_NODE_CERTIFICATE, Capability,
     JOBS_VERSION, Resource, StepFailure,
 };
 use serde_json::{Map, Value, json};
@@ -96,6 +96,10 @@ pub fn capabilities() -> Vec<Capability> {
         },
         Capability {
             name: CAP_HOST_METRICS.to_string(),
+            version: 1,
+        },
+        Capability {
+            name: CAP_HOST_ENGINES.to_string(),
             version: 1,
         },
     ];

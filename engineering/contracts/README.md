@@ -140,6 +140,9 @@ Agent 主動連到 Core 的 Agent 入口（預設 `:9801`，路徑 `/agent/v1/co
 | `host_facts` | Agent→Core | 主機資訊：`collectedAt`、`facts`（見下方「主機資訊與指標」） |
 | `metrics_report` | Agent→Core | Core 還沒確認的樣本，由舊到新：`samples`、`droppedSamples` |
 | `metrics_ack` | Core→Agent | `seq` 以前的樣本都已保存 |
+| `engines_probe` | Core→Agent | 要主機上的容器引擎：`requestId`、`grant`（帶 `host.engines.read`），見下方「容器引擎」 |
+| `engines_report` | Agent→Core | 執行器的引擎報告原樣轉送：`requestId`、`collectedAt`、`report` |
+| `engines_unavailable` | Agent→Core | 拿不到報告：`requestId`、`code`（`EXECUTOR_UNREACHABLE`、`EXECUTOR_REFUSED`、`INSPECT_FAILED`）、`message` |
 
 ### 能力
 
@@ -153,6 +156,7 @@ Agent 主動連到 Core 的 Agent 入口（預設 `:9801`，路徑 `/agent/v1/co
 | `host.ledger` | 1 | `ledger_pull`、`ledger_page`、`ledger_unavailable` |
 | `node.certificate` | 1 | `certificate_renew`、`certificate_installed`、`certificate_refused` |
 | `host.metrics` | 1 | `host_facts`、`metrics_report`、`metrics_ack`。雙方都宣告時 Agent 才送；Core 沒宣告時 Agent 不送 |
+| `host.engines` | 1 | `engines_probe`、`engines_report`、`engines_unavailable`。Agent 宣告時 Core 才送 `engines_probe` |
 
 Core 派送前先比對能力；Agent 沒宣告或版本較低的動作，Core 不送出，直接讓步驟失敗為 `CAPABILITY_UNSUPPORTED`。Agent 收到未宣告的動作、多餘參數欄位、別的節點、已過期、控制世代倒退或碰到工作沒保留的資源的步驟，一律回 `step_rejected`，不執行。
 
@@ -248,6 +252,17 @@ hazelminx-grant-v1
 - 每條會話一次只有一則 `metrics_report` 在等確認，收到 `metrics_ack` 才送下一則，所以確認的 `seq`（報告裡最大的值）一定涵蓋它回答的那一則。Core 存好整則才確認，存失敗不回；Agent 30 秒沒收到確認就重送同一批，新連線也從最舊的未確認樣本送起。
 - Core 用不了的樣本（`intervalSeconds` 不在 1 到 3600、`collectedAt` 比 Core 的時鐘快 5 分鐘以上或早於 48 小時）不保存，但照樣確認，因為重送也不會變好。比 Core 快 5 分鐘以上的 `host_facts` 也不保存。
 - `droppedSamples` 是還沒被確認的丟棄筆數，帶它的那一則被確認才歸零；沒被確認就隨重送再帶一次，所以 Core 可能多算，不會少算。報告裡的樣本全都用不了時，筆數照樣加進節點的統計（節點還沒有任何樣本時除外）。
+
+### 容器引擎
+
+型別在 `agent/crates/protocol/src/engines.rs` 與 `core/internal/protocol/engines.go`，樣本見 `fixtures/messages/engines_report.json`。
+
+- 報告由高權限執行器的唯讀動作 `engine_inspect`（權限 `host.engines.read`）產生，因為 rootful 引擎的 socket 與各使用者的 `/run/user/<uid>` 只有 root 讀得到。Agent 只檢查格式後轉送。
+- `engines` 固定列出 `docker`、`podman`、`k3s` 三種，沒裝也列。`state`：`running`、`stopped`、`not_installed`、`incompatible`（版本低於 Docker API 1.41 或 Podman 4.0）、`permission_denied`、`not_responding`、`unknown`（裝了，但讀不到 systemd，不猜是否在跑）。
+- `environments` 每個端點一列，同種引擎多個不合併。`kind` 以端點對 `GET /version` 的回答判斷（`podman-docker` 的 `docker.sock` 是 `podman`），`kindConfirmed` 為 false 表示端點沒回答，`kind` 只是該路徑慣例上的引擎。同一個 socket 經不同路徑（`/var/run` 連到 `/run`）只列一次，`endpoint` 是看的路徑，`endpointResolved` 是解析連結後的路徑。
+- `mode` 與 `ownerUid` 取自 socket 檔案的擁有者，`ownerName` 取自 `/etc/passwd`，查不到是 `null`。`/run/user/<uid>/` 底下的路徑連到別處或不屬於該使用者時不連線，列在 `uninspected`。
+- 讀不到的值一律是 `null`。看不到的範圍（沒有 systemd、使用者目錄太多、沒開 API socket 的 rootless 引擎）列在 `uninspected`，讀者不能把「沒列出」當成「沒有」。
+- 每個 socket 的一次往返最多 5 秒、回答最多 1 MiB，字串最多 256 字元。
 
 ### 憑證輪替
 

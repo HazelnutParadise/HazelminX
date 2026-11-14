@@ -1,0 +1,6 @@
+{
+  "type": "engines_unavailable",
+  "requestId": "enp_01HXYZ",
+  "code": "EXECUTOR_UNREACHABLE",
+  "message": "cannot reach the privileged executor: No such file or directory (os error 2)"
+}
