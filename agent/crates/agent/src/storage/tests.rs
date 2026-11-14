@@ -228,15 +228,12 @@ fn unreadable_sources_are_listed() {
     assert!(inv.devices.is_empty() && inv.mounts.is_empty());
 }
 
-#[cfg(unix)]
-fn root_mount(t: &Path) -> Mount {
-    use std::os::unix::fs::MetadataExt;
-    let dev = fs::metadata(t).unwrap().dev();
+fn root_mount(_: &Path) -> Mount {
     Mount {
         mount_point: "/".into(),
         source: "/dev/test".into(),
         device: None,
-        dev: usage::dev_string(dev),
+        dev: "8:1".into(),
         fs_type: "ext4".into(),
         class: "local".into(),
         options: "rw".into(),
@@ -281,7 +278,7 @@ fn usage_counts_each_path_once_and_adds_up() {
     link(r, "/lib", "usr/lib");
     let m = root_mount(r);
     let used = 10 * 1024 * 1024;
-    let u = usage::measure(r, &[m], Budget::default(), |_| Some(used));
+    let u = usage::measure(r, &[m], &["/".into()], Budget::default(), |_| Some(used));
     assert_eq!(u.filesystems.len(), 1);
     let fs0 = &u.filesystems[0];
     assert_eq!(fs0.state, "complete");
@@ -323,7 +320,9 @@ fn usage_budget_makes_the_round_partial() {
         max_entries: 10,
         ..Budget::default()
     };
-    let u = usage::measure(r, &[root_mount(r)], budget, |_| Some(1 << 20));
+    let u = usage::measure(r, &[root_mount(r)], &["/".into()], budget, |_| {
+        Some(1 << 20)
+    });
     let fs0 = &u.filesystems[0];
     assert_eq!(fs0.state, "partial");
     assert_eq!(fs0.other_bytes, None, "a lower bound gives no honest rest");
@@ -334,9 +333,13 @@ fn usage_budget_makes_the_round_partial() {
 #[test]
 fn usage_without_statvfs_is_unmeasured() {
     let t = tempfile::tempdir().unwrap();
-    let u = usage::measure(t.path(), &[root_mount(t.path())], Budget::default(), |_| {
-        None
-    });
+    let u = usage::measure(
+        t.path(),
+        &[root_mount(t.path())],
+        &["/".into()],
+        Budget::default(),
+        |_| None,
+    );
     assert_eq!(u.filesystems[0].state, "unmeasured");
     assert_eq!(u.filesystems[0].used_bytes, None);
     assert_eq!(u.filesystems[0].other_bytes, None);
@@ -354,9 +357,13 @@ fn usage_skips_network_and_unreadable_dirs_mark_partial() {
     net.mount_point = "/mnt/nfs".into();
     net.dev = "0:99".into();
     fs::set_permissions(r.join("var/log/secret"), fs::Permissions::from_mode(0o000)).unwrap();
-    let u = usage::measure(r, &[root_mount(r), net], Budget::default(), |_| {
-        Some(1 << 20)
-    });
+    let u = usage::measure(
+        r,
+        &[root_mount(r), net],
+        &["/".into(), "/mnt/nfs".into()],
+        Budget::default(),
+        |_| Some(1 << 20),
+    );
     fs::set_permissions(r.join("var/log/secret"), fs::Permissions::from_mode(0o700)).unwrap();
     assert_eq!(u.filesystems.len(), 1, "network mounts are not walked");
     // Root can read a 0o000 directory.
@@ -381,4 +388,40 @@ fn versions_send_each_change_once() {
     assert!(matches!(m, Message::HostStorage { .. }));
     assert!(s.inventory_after(v).is_none());
     assert!(s.usage_after(0).is_none());
+}
+
+/// The walk stops at every mount point, and a root under a mount that is
+/// not local (a container's overlay root) is not measured at all.
+#[cfg(unix)]
+#[test]
+fn usage_stops_at_mount_points_and_skips_virtual_roots() {
+    let t = tempfile::tempdir().unwrap();
+    let r = t.path();
+    let big = vec![1u8; 64 * 1024];
+    write(r, "/var/log/a", "");
+    fs::write(r.join("var/log/a"), &big).unwrap();
+    // Another filesystem mounted inside /var/log.
+    write(r, "/var/log/mnt/b", "");
+    fs::write(r.join("var/log/mnt/b"), &big).unwrap();
+    write(r, "/var/lib/docker/x", "");
+    fs::write(r.join("var/lib/docker/x"), &big).unwrap();
+    let mut data = root_mount(r);
+    data.mount_point = "/var/lib/docker".into();
+    data.dev = "8:2".into();
+    // "/" is an overlay (not in the local list); /var/log/mnt is tmpfs.
+    let points = [
+        "/".to_string(),
+        "/var/log/mnt".into(),
+        "/var/lib/docker".into(),
+    ];
+    let mut root = root_mount(r);
+    root.class = "virtual".into();
+    let u = usage::measure(r, &[root, data], &points, Budget::default(), |_| {
+        Some(10 << 20)
+    });
+    assert_eq!(u.filesystems.len(), 1, "{:?}", u.filesystems);
+    let d = &u.filesystems[0];
+    assert_eq!(d.mount_point, "/var/lib/docker");
+    assert_eq!(d.categories.len(), 1);
+    assert_eq!(d.categories[0].category, category::CONTAINER_IMAGES);
 }

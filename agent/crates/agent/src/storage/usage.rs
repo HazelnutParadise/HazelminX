@@ -87,6 +87,8 @@ impl Default for Budget {
 
 #[derive(Default)]
 struct Tally {
+    /// The mount point the measured roots were found under.
+    mount_point: Option<String>,
     by_cat: BTreeMap<&'static str, (u64, Vec<String>)>,
     unreadable: u64,
     partial: bool,
@@ -99,6 +101,10 @@ struct Walk<'a> {
     links: HashSet<(u64, u64)>,
     /// Roots (joined to the tree root) that other walks own.
     roots: &'a HashSet<PathBuf>,
+    /// Every mount point of the host (joined to the tree root): the walk
+    /// does not cross into another mount. Device numbers cannot tell,
+    /// since btrfs gives each subvolume its own.
+    points: &'a HashSet<PathBuf>,
     out_of_budget: bool,
 }
 
@@ -116,9 +122,9 @@ impl Walk<'_> {
         true
     }
 
-    /// Allocated bytes under `top` on device `dev`; `None` when the walk
-    /// ran out of budget part way (the bytes so far go into `t`).
-    fn walk(&mut self, top: &Path, dev: u64, t: &mut u64, unreadable: &mut u64) -> bool {
+    /// Adds the allocated bytes under `top` to `t`; false when the walk
+    /// ran out of budget part way or could not read everything.
+    fn walk(&mut self, top: &Path, t: &mut u64, unreadable: &mut u64) -> bool {
         let mut stack = vec![top.to_path_buf()];
         let mut complete = true;
         while let Some(dir) = stack.pop() {
@@ -139,17 +145,13 @@ impl Walk<'_> {
                     continue;
                 };
                 let p = e.path();
-                if self.roots.contains(&p) {
+                if self.roots.contains(&p) || self.points.contains(&p) {
                     continue;
                 }
                 let Ok(md) = std::fs::symlink_metadata(&p) else {
                     continue;
                 };
                 let (d, ino, nlink, blocks) = meta(&md);
-                if d != dev {
-                    // Another filesystem mounted inside this one.
-                    continue;
-                }
                 if md.is_dir() {
                     stack.push(p);
                 } else if nlink > 1 {
@@ -182,24 +184,14 @@ fn meta(md: &std::fs::Metadata) -> (u64, u64, u64, u64) {
     (0, 0, 1, md.len())
 }
 
-/// `major:minor` of a device number, as mountinfo writes it.
-#[cfg(target_os = "linux")]
-pub fn dev_string(dev: u64) -> String {
-    format!("{}:{}", libc::major(dev), libc::minor(dev))
-}
-
-#[cfg(not(target_os = "linux"))]
-pub fn dev_string(dev: u64) -> String {
-    // Not Linux: no mountinfo to match; tests compare with the same form.
-    format!("{}:{}", (dev >> 24) & 0xff, dev & 0xff_ffff)
-}
-
 /// One measurement round over the local mounts of the inventory. `root`
-/// is joined to every path (tests use a fake tree); `used` reads a mount's
-/// `total - free` (statvfs).
+/// is joined to every path (tests use a fake tree); `points` are all mount
+/// points of the host, the virtual ones too (`/proc`, container overlays);
+/// `used` reads a mount's `total - free` (statvfs).
 pub fn measure(
     root: &Path,
     mounts: &[Mount],
+    points: &[String],
     budget: Budget,
     used: impl Fn(&Path) -> Option<u64>,
 ) -> StorageUsage {
@@ -207,12 +199,14 @@ pub fn measure(
     let started_at = started_at.replace_nanosecond(0).unwrap_or(started_at);
     let join = |p: &str| root.join(p.trim_start_matches('/'));
     let roots: HashSet<PathBuf> = ROOTS.iter().map(|(p, _)| join(p)).collect();
+    let point_set: HashSet<PathBuf> = points.iter().map(|p| join(p)).collect();
     let mut w = Walk {
         budget,
         started: Instant::now(),
         entries: 0,
         links: HashSet::new(),
         roots: &roots,
+        points: &point_set,
         out_of_budget: false,
     };
     let local: Vec<&Mount> = mounts.iter().filter(|m| m.class == "local").collect();
@@ -226,18 +220,24 @@ pub fn measure(
         if !md.is_dir() {
             continue;
         }
-        let (dev, ..) = meta(&md);
-        let key = dev_string(dev);
-        if !local.iter().any(|m| m.dev == key) {
+        // The filesystem a root is on is the mount with the longest mount
+        // point above it; a root under a network or virtual mount (a
+        // container's overlay root) is not measured.
+        let owner = points
+            .iter()
+            .filter(|mp| under(path, mp))
+            .max_by_key(|mp| mp.len());
+        let Some(m) = owner.and_then(|mp| local.iter().find(|m| &m.mount_point == mp)) else {
             continue;
-        }
-        let t = tallies.entry(key).or_default();
+        };
+        let t = tallies.entry(m.dev.clone()).or_default();
+        t.mount_point.get_or_insert_with(|| m.mount_point.clone());
         let mut bytes = meta(&md).3;
         if w.out_of_budget {
             t.partial = true;
             continue;
         }
-        if !w.walk(&p, dev, &mut bytes, &mut t.unreadable) {
+        if !w.walk(&p, &mut bytes, &mut t.unreadable) {
             t.partial = true;
         }
         let e = t.by_cat.entry(cat).or_default();
@@ -245,8 +245,8 @@ pub fn measure(
         e.1.push(path.to_string());
     }
     let mut filesystems = Vec::new();
-    // A device mounted at several points is measured once, under the
-    // shortest mount point.
+    // A filesystem mounted at several points (bind mounts) is listed once:
+    // under the mount point its roots were found under, else the shortest.
     let mut seen = HashSet::new();
     let mut ordered = local.clone();
     ordered.sort_by_key(|m| (m.mount_point.len(), m.mount_point.clone()));
@@ -254,8 +254,12 @@ pub fn measure(
         if !seen.insert(m.dev.clone()) {
             continue;
         }
-        let used_bytes = used(&join(&m.mount_point));
         let t = tallies.remove(&m.dev).unwrap_or_default();
+        let mount_point = t
+            .mount_point
+            .clone()
+            .unwrap_or_else(|| m.mount_point.clone());
+        let used_bytes = used(&join(&mount_point));
         let sum: u64 = t.by_cat.values().map(|(b, _)| *b).sum();
         let state = if used_bytes.is_none() {
             "unmeasured"
@@ -268,7 +272,7 @@ pub fn measure(
             .then(|| used_bytes.map(|u| u.saturating_sub(sum)))
             .flatten();
         filesystems.push(FilesystemUsage {
-            mount_point: m.mount_point.clone(),
+            mount_point,
             dev: m.dev.clone(),
             state: state.into(),
             used_bytes,
@@ -293,4 +297,13 @@ pub fn measure(
         entries: w.entries,
         filesystems,
     }
+}
+
+/// Whether `path` is `mount_point` or below it.
+fn under(path: &str, mount_point: &str) -> bool {
+    mount_point == "/"
+        || path == mount_point
+        || path
+            .strip_prefix(mount_point)
+            .is_some_and(|rest| rest.starts_with('/'))
 }

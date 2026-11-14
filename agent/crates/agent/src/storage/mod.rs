@@ -45,6 +45,10 @@ impl Storage {
         true
     }
 
+    pub fn has_inventory(&self) -> bool {
+        self.state.lock().unwrap().inventory.is_some()
+    }
+
     pub fn mounts(&self) -> Vec<hazelminx_protocol::storage::Mount> {
         let st = self.state.lock().unwrap();
         st.inventory
@@ -120,8 +124,14 @@ pub fn spawn(
             lowest_priority();
             std::thread::sleep(usage_first());
             loop {
+                // The walk measures the mounts of the inventory; without
+                // one yet it would measure nothing.
+                while !storage.has_inventory() {
+                    std::thread::sleep(Duration::from_secs(1));
+                }
                 let mounts = storage.mounts();
-                let u = usage::measure(&root, &mounts, usage::Budget::default(), |p| {
+                let points = all_mount_points(&root);
+                let u = usage::measure(&root, &mounts, &points, usage::Budget::default(), |p| {
                     crate::monitor::collect::statvfs_used(p)
                 });
                 tracing::info!(
@@ -135,6 +145,18 @@ pub fn spawn(
             }
         })
         .map(|_| ())
+}
+
+/// Every mount point of mountinfo, virtual ones included.
+fn all_mount_points(root: &std::path::Path) -> Vec<String> {
+    std::fs::read_to_string(root.join("proc/self/mountinfo"))
+        .map(|t| {
+            crate::monitor::parse::mountinfo_full(&t)
+                .into_iter()
+                .map(|m| m.mount_point)
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 /// The delay before the first usage round. Builds with `test-actions`

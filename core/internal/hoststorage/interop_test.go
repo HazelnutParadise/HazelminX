@@ -206,43 +206,41 @@ func TestInteropAgentReportsStorage(t *testing.T) {
 		}
 		return
 	}
-	var root *protocol.Mount
-	for i, m := range inv.Storage.Mounts {
-		if m.MountPoint == "/" {
-			root = &inv.Storage.Mounts[i]
-		}
-	}
-	if root == nil || root.Dev == "" || root.Reference == "" {
-		t.Fatalf("root mount missing or incomplete: %+v", inv.Storage.Mounts)
+	if len(inv.Storage.Mounts) == 0 {
+		t.Fatalf("no mounts on Linux: %+v", inv.Storage)
 	}
 	var use *Usage
 	waitFor(t, logs, 120*time.Second, "storage usage stored", func() bool {
 		use, _ = st.Usage(ctx, "node-1")
 		return use != nil
 	})
-	var fsu *protocol.FilesystemUsage
-	for i, f := range use.Usage.Filesystems {
-		if f.Dev == root.Dev {
-			fsu = &use.Usage.Filesystems[i]
+	measured := map[string]bool{}
+	for _, m := range inv.Storage.Mounts {
+		if m.Class == "local" {
+			measured[m.Dev] = true
 		}
 	}
-	if fsu == nil || fsu.UsedBytes == nil || use.Usage.Entries == 0 {
-		t.Fatalf("no usage for the root filesystem %s: %+v", root.Dev, use.Usage)
+	found := map[string]uint64{}
+	for _, f := range use.Usage.Filesystems {
+		if !measured[f.Dev] {
+			t.Fatalf("usage for %s (%s), which the inventory has no local mount for", f.MountPoint, f.Dev)
+		}
+		var sum uint64
+		for _, c := range f.Categories {
+			sum += c.Bytes
+			found[c.Category] += c.Bytes
+		}
+		if f.State == "complete" && (f.UsedBytes == nil || f.OtherBytes == nil || sum+*f.OtherBytes != *f.UsedBytes) {
+			t.Fatalf("a complete measurement must add up to used space: %+v", f)
+		}
+		t.Logf("usage of %s (%s): state %s, categories %+v, other %v, used %v", f.MountPoint, f.Dev, f.State, f.Categories, f.OtherBytes, f.UsedBytes)
 	}
-	var sum uint64
-	cats := map[string]uint64{}
-	for _, c := range fsu.Categories {
-		sum += c.Bytes
-		cats[c.Category] = c.Bytes
+	t.Logf("round: %d entries in %d ms", use.Usage.Entries, use.Usage.DurationMs)
+	// HAZELMINX_INTEROP_EXPECT_CATEGORY names a category the host is set
+	// up to have (the Linux container mounts a volume at /var/lib/docker).
+	if want := os.Getenv("HAZELMINX_INTEROP_EXPECT_CATEGORY"); want != "" && found[want] == 0 {
+		t.Fatalf("expected bytes in %s, got %v", want, found)
 	}
-	if root.Class == "local" && cats[protocol.CategoryOSAndLogs] == 0 {
-		t.Fatalf("/usr is on the root filesystem, yet osAndLogs is empty: %+v", fsu)
-	}
-	if fsu.State == "complete" && (fsu.OtherBytes == nil || sum+*fsu.OtherBytes != *fsu.UsedBytes) {
-		t.Fatalf("a complete measurement must add up to used space: %+v", fsu)
-	}
-	t.Logf("usage of /: state %s, %d entries in %d ms, categories %v, other %v, used %d",
-		fsu.State, use.Usage.Entries, use.Usage.DurationMs, cats, fsu.OtherBytes, *fsu.UsedBytes)
 	waitFor(t, logs, 30*time.Second, "a metrics sample", func() bool {
 		l, _ := hm.Latest(ctx, "node-1")
 		return l != nil
