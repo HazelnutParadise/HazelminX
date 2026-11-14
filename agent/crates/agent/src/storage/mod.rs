@@ -179,7 +179,8 @@ pub fn fit(mut inv: StorageInventory) -> StorageInventory {
     if size <= limit {
         return inv;
     }
-    let dev_rank = |d: &hazelminx_protocol::storage::BlockDevice| u8::from(d.class != "loop");
+    let dev_rank =
+        |d: &hazelminx_protocol::storage::BlockDevice| if d.class == "loop" { 0 } else { 2 };
     let mount_rank = |m: &hazelminx_protocol::storage::Mount| {
         if m.fs_type == "squashfs" || m.mount_point.starts_with("/snap/") {
             0
@@ -224,6 +225,9 @@ pub fn fit(mut inv: StorageInventory) -> StorageInventory {
     inv.devices.retain(|_| k.next().unwrap_or(true));
     let mut k = keep_mnt.into_iter();
     inv.mounts.retain(|_| k.next().unwrap_or(true));
+    if devices + mounts == 0 {
+        return inv;
+    }
     inv.unreadable.push(format!(
         "truncated: {devices} devices and {mounts} mounts left out (inventory over {INVENTORY_BYTES} bytes)"
     ));

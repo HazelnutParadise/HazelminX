@@ -411,7 +411,10 @@ pub fn redact_spec(spec: &str) -> String {
     let Some((scheme, rest)) = spec.split_once("://") else {
         return spec.to_string();
     };
-    let Some(at) = rest.find('@') else {
+    // The user part ends at the last `@` before the path, so an `@` in
+    // the password stays inside it.
+    let authority = rest.split('/').next().unwrap_or(rest);
+    let Some(at) = authority.rfind('@') else {
         return spec.to_string();
     };
     let (userinfo, host) = rest.split_at(at);
@@ -539,7 +542,7 @@ pub fn mounts(text: &str, devices: &[BlockDevice], configs: &[MountConfig]) -> V
                 dev: m.dev,
                 fs_type: m.fs_type,
                 class: class.into(),
-                options: m.options,
+                options: redact_options(&m.options),
                 read_only: m.read_only,
                 reference,
                 configs: cfg,

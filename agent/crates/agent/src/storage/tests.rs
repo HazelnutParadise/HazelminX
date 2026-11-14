@@ -439,6 +439,14 @@ fn mount_secrets_are_redacted() {
         "username=u,password=***,credentials=/etc/smb.cred,vers=3.0"
     );
     assert_eq!(c[1].spec, "https://u:***@dav.example/x");
+    assert_eq!(
+        inventory::redact_spec("https://u:p@ss@host/x"),
+        "https://u:***@host/x"
+    );
+    assert_eq!(
+        inventory::redact_spec("https://host/a@b"),
+        "https://host/a@b"
+    );
     assert_eq!(c[1].options, "pass=***");
     let u = inventory::unit(
         "[Mount]\nWhat=//nas/b\nWhere=/mnt/b\nType=cifs\nOptions=user=u,Password=hunter2\n",
