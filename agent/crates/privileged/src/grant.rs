@@ -30,6 +30,11 @@ pub struct Grant {
     pub not_before: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
     pub expires_at: OffsetDateTime,
+    /// Hex SHA-256 of the one action this grant is for (decision 0035).
+    /// Actions that require it (`compose_check`, `compose_deploy`) refuse a
+    /// grant without it or with another value; it is signed when present.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub binding: Option<String>,
     /// Hex Ed25519 signature over [`Grant::canonical_bytes`]. Never logged.
     #[serde(default)]
     pub signature: String,
@@ -61,6 +66,11 @@ impl std::fmt::Display for GrantRejection {
     }
 }
 
+/// 64 lowercase hex characters.
+pub fn is_hex_digest(s: &str) -> bool {
+    s.len() == 64 && s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+}
+
 /// Characters allowed in id, subject and permission names.
 pub fn is_token(s: &str) -> bool {
     !s.is_empty()
@@ -84,6 +94,7 @@ impl Grant {
             permissions,
             not_before: now,
             expires_at: now + lifetime,
+            binding: None,
             signature: String::new(),
         }
     }
@@ -102,13 +113,16 @@ impl Grant {
             .to_offset(time::UtcOffset::UTC)
             .format(fmt)
             .expect("rfc3339");
-        format!(
+        let mut s = format!(
             "{CANONICAL_PREFIX}\n{}\n{}\n{nb}\n{exp}\n{}\n",
             self.id,
             self.subject,
             self.permissions.join(",")
-        )
-        .into_bytes()
+        );
+        if let Some(b) = &self.binding {
+            s.push_str(&format!("binding:{b}\n"));
+        }
+        s.into_bytes()
     }
 
     pub fn sign(&mut self, key: &SigningKey) {
@@ -120,6 +134,7 @@ impl Grant {
         is_token(&self.id)
             && is_token(&self.subject)
             && self.permissions.iter().all(|p| is_token(p))
+            && self.binding.as_deref().is_none_or(is_hex_digest)
     }
 
     /// Checks field charset, signature, validity window and lifetime cap.

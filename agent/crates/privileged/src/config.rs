@@ -9,6 +9,9 @@ use std::path::{Path, PathBuf};
 
 pub const DEFAULT_CONFIG_PATH: &str = "/etc/hazelminx/privileged.toml";
 pub const DEFAULT_SOCKET_PATH: &str = "/run/hazelminx/privileged.sock";
+/// The agent's `<state_dir>/compose-spool` with the agent's default state
+/// directory; Compose revisions are read from here (decision 0035).
+pub const DEFAULT_COMPOSE_SPOOL_DIR: &str = "/var/lib/hazelminx/agent/compose-spool";
 pub const DEFAULT_ISSUER_KEY_PATH: &str = "/etc/hazelminx/privileged/issuer.pub";
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]
@@ -29,6 +32,9 @@ pub struct Config {
     /// Host change ledger (spec 55.1); root-only.
     #[serde(default = "default_ledger_dir")]
     pub ledger_dir: PathBuf,
+    /// Where the agent stages Compose revisions; must belong to `allowed_uid`.
+    #[serde(default = "default_compose_spool_dir")]
+    pub compose_spool_dir: PathBuf,
 }
 
 fn default_socket_path() -> PathBuf {
@@ -43,6 +49,9 @@ fn default_max_actions() -> usize {
 fn default_log_format() -> String {
     "json".into()
 }
+fn default_compose_spool_dir() -> PathBuf {
+    PathBuf::from(DEFAULT_COMPOSE_SPOOL_DIR)
+}
 fn default_ledger_dir() -> PathBuf {
     PathBuf::from(crate::ledger::store::DEFAULT_LEDGER_DIR)
 }
@@ -56,6 +65,7 @@ impl Default for Config {
             max_concurrent_actions: default_max_actions(),
             log_format: default_log_format(),
             ledger_dir: default_ledger_dir(),
+            compose_spool_dir: default_compose_spool_dir(),
         }
     }
 }
@@ -106,6 +116,10 @@ impl Config {
             "issuer_public_key must be absolute"
         );
         anyhow::ensure!(self.ledger_dir.is_absolute(), "ledger_dir must be absolute");
+        anyhow::ensure!(
+            self.compose_spool_dir.is_absolute(),
+            "compose_spool_dir must be absolute"
+        );
         anyhow::ensure!(
             self.max_concurrent_actions >= 1,
             "max_concurrent_actions must be at least 1"

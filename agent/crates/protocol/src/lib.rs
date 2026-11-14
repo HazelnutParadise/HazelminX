@@ -141,6 +141,9 @@ pub struct ExecutorGrant {
     /// RFC 3339 UTC, whole seconds.
     pub not_before: String,
     pub expires_at: String,
+    /// Hex SHA-256 of the one action the grant is for, when it is bound.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub binding: Option<String>,
     /// Hex Ed25519 signature over the executor's canonical grant bytes.
     pub signature: String,
 }
