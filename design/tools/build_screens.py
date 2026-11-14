@@ -562,7 +562,7 @@ def container_detail() -> str:
     <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px">
       <div class="name">{U.crumbs([("容器", "Containers.dc.html")])}<h1 class="mono">shop-api-1</h1></div>
       {U.status("ok", "執行中 · 46 分")}{U.attr("docker", "Docker（root）· hazel-tw-01", "tw-01")}<a class="note" href="ProjectDetail.dc.html" style="color:var(--hazel)">專案 shop · production</a>
-      <div class="wrap" style="margin-left: auto"><button type="button" class="btn">重啟這個副本</button><button type="button" class="btn">逐一重啟 2 個副本</button><button type="button" class="btn">停止</button><button type="button" class="ib" aria-label="更多動作">{U.icon("more")}</button></div>
+      <div class="wrap" style="margin-left: auto"><button type="button" class="btn">重啟這個副本</button><button type="button" class="btn">滾動重啟 2 個副本</button><button type="button" class="btn">停止</button><button type="button" class="ib" aria-label="更多動作">{U.icon("more")}</button></div>
     </div>"""
     tabs = ('<div class="panel"><div class="tabs" role="tablist">' + "".join(
         f'<a class="tab{" on" if i == 0 else ""}" role="tab" aria-selected="{"true" if i == 0 else "false"}" href="#{h}">{t}</a>'
@@ -700,7 +700,7 @@ def work_center() -> str:
       <div class="ph"><h2 id="h-run">進行中 · 3</h2><span class="sub">長操作都是工作：關掉瀏覽器也繼續；狀態不明的工作在重連後對帳</span></div>
       <div class="list" style="padding: 12px 14px">
         {job("部署 shop · staging（release/1.9 · e02b55f）", "lab-mini · 由 Webhook 觸發 · 開始 03:40:12 · 心跳 2 秒前 · production 的自動部署在等計畫 #418 批准", U.status("info", "驗證中"),
-             [("拉取 commit", "done", "12 秒", "7c21e0b"), ("預檢", "done", "18 秒", "磁碟、Port、憑證"), ("批准", "done", "自動", "無高風險變更"), ("建置", "done", "1 分 02 秒", "ghcr.io 推送完成"), ("逐一換成新版", "done", "40 秒", "舊版仍在服務"), ("驗證", "cur", "進行中", "健康檢查 2／3")],
+             [("拉取 commit", "done", "12 秒", "7c21e0b"), ("預檢", "done", "18 秒", "磁碟、Port、憑證"), ("批准", "done", "自動", "無高風險變更"), ("建置", "done", "1 分 02 秒", "ghcr.io 推送完成"), ("滾動替換", "done", "40 秒", "舊版仍在服務"), ("驗證", "cur", "進行中", "健康檢查 2／3")],
              "健康檢查 <span class='mono'>GET /healthz</span>：2／3 通過 · 失敗時回滾到 a3f9c1e",
              '<button type="button" class="btn sm">要求取消（回滾到 a3f9c1e）</button><button type="button" class="btn sm">看日誌</button>', pct=66)}
         {job("備份 shop-db → S3 tokyo-backups", "hazel-tw-01 · 計畫任務 03:00 · 心跳 1 秒前", U.status("info", "執行中"),
@@ -719,7 +719,7 @@ def work_center() -> str:
       <div class="list" style="padding: 12px 14px">
         {job("變更計畫 #418 · shop production · commit 9b3e7f1", "hazel-tw-01 · 由 Webhook 偵測 02:58:30 · 自動部署已暫停", U.status("warn", "等待批准"),
              [("預檢", "done", "18 秒", "1 個高風險變更"), ("批准", "wait", "等了 44 分", "需要擁有者"), ("執行", "todo", "還沒開始", "—"), ("驗證", "todo", "還沒開始", "—")],
-             "規則：新增宿主機掛載 · <span class='mono'>compose.yaml:41  - /:/host:ro</span> · 受影響：shop-api、shop-worker · 更新方式：一次換一個副本，不中斷服務",
+             "規則：新增宿主機掛載 · <span class='mono'>compose.yaml:41  - /:/host:ro</span> · 受影響：shop-api、shop-worker · <span tabindex='0' data-tip='一次換一個副本，換好確認健康再換下一個，過程不中斷服務'>策略：滾動更新</span>",
              '<a class="btn pri sm" href="DeployCheck.dc.html" style="color: var(--hazelink)">檢視差異與批准</a><button type="button" class="btn sm">拒絕</button>')}
       </div>
     </section>"""
@@ -1333,8 +1333,8 @@ def appstore() -> str:
       <div class="ph"><h2 id="h-upg">可升級 · 3</h2><span class="sub">先看範本變更與映像差異，再決定；資料不動</span></div>
       <div class="row hd srow"><span>應用</span><span>版本</span><span class="c3">範本變更</span><span class="c4">映像</span><span class="c4">風險</span><span class="c5"></span><span></span></div>
       <a class="row srow" href="#u1"><span class="name"><span class="n">Ollama</span><span class="d">tw-01</span></span><span class="mono">0.5.7 → 0.6.1</span><span class="c3 note">+2 行：GPU device reservation 寫法改變</span><span class="c4 mono">ollama/ollama:0.6.1</span><span class="c4">{U.status("warn", "需重建容器")}</span><span class="c5"></span><span><button type="button" class="btn sm">看差異</button></span></a>
-      <a class="row srow" href="#u2"><span class="name"><span class="n">Redis</span><span class="d">tw-01</span></span><span class="mono">7.2 → 7.4</span><span class="c3 note">無範本變更</span><span class="c4 mono">redis:7.4.1</span><span class="c4">{U.status("ok", "不中斷")}</span><span class="c5"></span><span><button type="button" class="btn sm">看差異</button></span></a>
-      <a class="row srow" href="#u3"><span class="name"><span class="n">mail-relay</span><span class="d">tw-01</span></span><span class="mono">1.2 → 1.3</span><span class="c3 note">+1 環境變數（預設值）</span><span class="c4 mono">hazelnut/mail-relay:1.3</span><span class="c4">{U.status("ok", "不中斷")}</span><span class="c5"></span><span><button type="button" class="btn sm">看差異</button></span></a>
+      <a class="row srow" href="#u2"><span class="name"><span class="n">Redis</span><span class="d">tw-01</span></span><span class="mono">7.2 → 7.4</span><span class="c3 note">無範本變更</span><span class="c4 mono">redis:7.4.1</span><span class="c4">{U.status("ok", "滾動")}</span><span class="c5"></span><span><button type="button" class="btn sm">看差異</button></span></a>
+      <a class="row srow" href="#u3"><span class="name"><span class="n">mail-relay</span><span class="d">tw-01</span></span><span class="mono">1.2 → 1.3</span><span class="c3 note">+1 環境變數（預設值）</span><span class="c4 mono">hazelnut/mail-relay:1.3</span><span class="c4">{U.status("ok", "滾動")}</span><span class="c5"></span><span><button type="button" class="btn sm">看差異</button></span></a>
       <div class="note" style="padding:8px 14px;border-top:1px solid var(--line)">「忽略這個版本」會記住到下一版；Port 衝突在安裝前檢查，不在啟動時才失敗</div>
     </section>"""
     def catalog(ini, name, cat, engines, arch, dl, note):
@@ -3960,7 +3960,7 @@ def project_env() -> str:
     apply = _fp("套用", f"""
       <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
         <div class="wrap">{U.status("warn", "1 個變更還沒生效")}<span class="note">CHECKOUT_TIMEOUT_MS 5000 → 8000</span></div>
-        <div class="wrap"><span class="note">生效要重建：</span><span class="mono">shop-api ×2</span><span class="note">一次重建一個，不中斷服務</span></div>
+        <div class="wrap"><span class="note">生效要重建：</span><span class="mono">shop-api ×2</span><span class="note">滾動重建，一次一個，不中斷服務</span></div>
         <div class="wrap"><button type="button" class="btn pri">儲存並重新部署</button><button type="button" class="btn">只儲存</button><button type="button" class="btn">捨棄</button></div>
       </div>""")
     main = head + table + apply
