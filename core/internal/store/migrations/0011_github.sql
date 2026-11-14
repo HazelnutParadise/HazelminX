@@ -1,4 +1,4 @@
--- 0012: GitHub Apps, GitHub connections and browser authorization requests
+-- 0011: GitHub Apps, GitHub connections and browser authorization requests
 -- (ticket 047.1; GIT-001～004, GIT-013～016, GIT-031).
 --
 -- Secrets (App private key, client secret, webhook secret, PATs, user
