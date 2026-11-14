@@ -174,11 +174,18 @@ type Environment struct {
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
-// Sources a unit's files came from. Git (049) and the store (052) add theirs.
+// Sources a unit's files came from. The store (052) adds its own.
 const (
 	SourceUpload = "upload"
 	SourceEditor = "editor"
+	// SourceGit units are written only by SaveGitUnit: their files are what
+	// Core took from one commit (ticket 049.1, decision 0036).
+	SourceGit = "git"
 )
+
+// GitHook runs inside the transaction that saves a Git unit, after the
+// unit row and its files are written; version is the unit's new version.
+type GitHook func(ctx context.Context, tx *sql.Tx, unitID string, version int64) error
 
 // File is one file of a unit. Content is set only for files that are not
 // secret, and only when the unit is read with its contents.
@@ -801,7 +808,7 @@ type prepared struct {
 }
 
 func prepare(in UnitInput, old map[string]storedFile) (*prepared, error) {
-	if in.Source != SourceUpload && in.Source != SourceEditor {
+	if in.Source != SourceUpload && in.Source != SourceEditor && in.Source != SourceGit {
 		return nil, invalid("source", "one of upload, editor")
 	}
 	if len(in.Files) == 0 || len(in.Files) > MaxFiles {
@@ -1025,6 +1032,28 @@ func jsonList(v []string) string {
 
 // CreateUnit adds the Compose unit of an environment.
 func (s *Service) CreateUnit(ctx context.Context, a Actor, projectID, envID string, in UnitInput) (*Unit, error) {
+	if in.Source == SourceGit {
+		return nil, invalid("source", "a Git unit is imported through its Git source")
+	}
+	return s.createUnit(ctx, a, projectID, envID, in, nil)
+}
+
+// SaveGitUnit creates (ifVersion 0) or replaces a unit whose files come from
+// Git; hook writes the Git source in the same transaction.
+func (s *Service) SaveGitUnit(ctx context.Context, a Actor, projectID, envID string, ifVersion int64, in UnitInput, hook GitHook) (*Unit, error) {
+	in.Source = SourceGit
+	for _, f := range in.Files {
+		if f.Secret || f.Unchanged {
+			return nil, invalid("files", "files from Git are never secret")
+		}
+	}
+	if ifVersion == 0 {
+		return s.createUnit(ctx, a, projectID, envID, in, hook)
+	}
+	return s.replaceUnit(ctx, a, projectID, envID, ifVersion, in, hook)
+}
+
+func (s *Service) createUnit(ctx context.Context, a Actor, projectID, envID string, in UnitInput, hook GitHook) (*Unit, error) {
 	if err := checkName("name", in.Name); err != nil {
 		return nil, err
 	}
@@ -1063,6 +1092,11 @@ func (s *Service) CreateUnit(ctx context.Context, a Actor, projectID, envID stri
 		if err := insertFiles(ctx, tx, u.ID, p.files); err != nil {
 			return err
 		}
+		if hook != nil {
+			if err := hook(ctx, tx, u.ID, 1); err != nil {
+				return err
+			}
+		}
 		return s.auditTx(ctx, tx, a, "compose-unit.create", projectID, "compose-unit", u.ID, nil, unitAudit(u, p.files))
 	})
 	if err != nil {
@@ -1089,12 +1123,25 @@ func targetEnv(t *Target) any {
 // ReplaceUnit replaces a unit's files and settings at version ifVersion.
 // Its name and Compose project name do not change.
 func (s *Service) ReplaceUnit(ctx context.Context, a Actor, projectID, envID string, ifVersion int64, in UnitInput) (*Unit, error) {
+	if in.Source == SourceGit {
+		return nil, invalid("source", "a Git unit is imported through its Git source")
+	}
+	return s.replaceUnit(ctx, a, projectID, envID, ifVersion, in, nil)
+}
+
+func (s *Service) replaceUnit(ctx context.Context, a Actor, projectID, envID string, ifVersion int64, in UnitInput, hook GitHook) (*Unit, error) {
 	cur, err := s.GetUnit(ctx, projectID, envID, false)
 	if err != nil {
 		return nil, err
 	}
 	if cur.Version != ifVersion {
 		return nil, ErrVersionMismatch
+	}
+	if (cur.Source == SourceGit) != (hook != nil) {
+		if hook == nil {
+			return nil, invalid("source", "this unit's files come from Git: change its Git source, or delete the unit and import it again")
+		}
+		return nil, invalid("source", "this unit's files were uploaded: delete it before importing it from Git")
 	}
 	if in.Name != "" && in.Name != cur.Name {
 		return nil, invalid("name", "a unit keeps its name (ticket 108 adds renaming)")
@@ -1139,6 +1186,11 @@ func (s *Service) ReplaceUnit(ctx context.Context, a Actor, projectID, envID str
 		if err := insertFiles(ctx, tx, cur.ID, p.files); err != nil {
 			return err
 		}
+		if hook != nil {
+			if err := hook(ctx, tx, cur.ID, ifVersion+1); err != nil {
+				return err
+			}
+		}
 		return s.auditTx(ctx, tx, a, "compose-unit.update", projectID, "compose-unit", cur.ID, unitAudit(cur, oldFiles), unitAudit(&next, p.files))
 	})
 	if err != nil {
@@ -1174,6 +1226,15 @@ func (s *Service) DeleteUnit(ctx context.Context, a Actor, projectID, envID stri
 	if err != nil {
 		return err
 	}
+	var ids []string
+	// A Git source's own credential goes with the unit.
+	var gitSecret string
+	switch err := s.db.QueryRowContext(ctx, `SELECT secret_id FROM compose_unit_git_sources WHERE unit_id = ? AND secret_id IS NOT NULL`, cur.ID).Scan(&gitSecret); {
+	case err == nil:
+		ids = append(ids, gitSecret)
+	case !errors.Is(err, sql.ErrNoRows):
+		return err
+	}
 	err = s.write(ctx, func(tx *sql.Tx) error {
 		res, err := tx.ExecContext(ctx, `DELETE FROM compose_units WHERE id = ? AND version = ?`, cur.ID, ifVersion)
 		if err != nil {
@@ -1187,7 +1248,6 @@ func (s *Service) DeleteUnit(ctx context.Context, a Actor, projectID, envID stri
 	if err != nil {
 		return err
 	}
-	var ids []string
 	for _, f := range files {
 		if f.secretID != "" {
 			ids = append(ids, f.secretID)
