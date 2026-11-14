@@ -678,7 +678,7 @@ net::ERR_CONNECTION_REFUSED</div>
 
 # ---------- 工作中心 ----------
 def work_center() -> str:
-    head = U.page_head("工作中心", OBS, '<button type="button" class="btn">只看我的</button><button type="button" class="btn">歷史紀錄</button>')
+    head = U.page_head("工作中心", OBS, _seg(["所有人的工作", "我發起的"], 0, "誰發起的") + '<button type="button" class="btn">歷史紀錄</button>')
     tiles = '<div class="tiles">' + "".join([
         U.stat_tile("執行中", "3", "", "1 狀態不明", False),
         U.stat_tile("等待批准", "1", "", "變更計畫 #418 · 等了 44 分", None),
