@@ -341,7 +341,7 @@ pub enum Message {
     HostFacts {
         #[serde(with = "time::serde::rfc3339")]
         collected_at: OffsetDateTime,
-        facts: metrics::HostFacts,
+        facts: Box<metrics::HostFacts>,
     },
     /// Resource samples the Core has not acknowledged, oldest first.
     /// `dropped_samples` counts samples discarded because the agent's

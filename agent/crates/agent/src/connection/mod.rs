@@ -13,6 +13,7 @@ pub mod tls;
 use crate::actions::{self, AgentFacts};
 use crate::config::CoreTransport;
 use crate::identity::Identity;
+use crate::monitor::Monitor;
 use crate::steps::{Decision, ReconcileAnswer, RunTicket, Steps};
 use anyhow::{Context, Result, anyhow, bail};
 use base64::Engine;
@@ -59,9 +60,17 @@ pub struct Shared {
     renewed: std::sync::atomic::AtomicBool,
     /// Failed connection attempts in a row with `node.crt.next`.
     next_failures: std::sync::atomic::AtomicU32,
+    /// Host facts and samples waiting for the Core (`host.metrics`).
+    pub monitor: Arc<Monitor>,
 }
 
 impl Shared {
+    /// Wakes the session to send what is new (journal records, answers,
+    /// host facts and samples).
+    pub fn wake(&self) {
+        self.changed.notify_one();
+    }
+
     pub fn new(
         steps: Steps,
         identity: Identity,
@@ -83,6 +92,7 @@ impl Shared {
             privileged,
             renewed: std::sync::atomic::AtomicBool::new(false),
             next_failures: std::sync::atomic::AtomicU32::new(0),
+            monitor: Arc::default(),
         })
     }
 }
@@ -264,7 +274,7 @@ async fn connect_and_serve(opts: &Options, shared: &Arc<Shared>) -> End {
         }
     }
     info!(session = %ready.session_id, protocol = ready.protocol_version, core_version = %ready.core_version, "connected to core");
-    let err = serve(ws, shared, ready.keys, ready.heartbeat).await;
+    let err = serve(ws, shared, ready.keys, ready.heartbeat, ready.metrics).await;
     End::Lost {
         error: err,
         lived: started.elapsed(),
@@ -368,6 +378,9 @@ struct Ready {
     protocol_version: u32,
     core_version: String,
     heartbeat: Duration,
+    /// The Core declared `host.metrics` v1, so it reads host facts and
+    /// samples; an older Core would answer them with protocol_error.
+    metrics: bool,
 }
 
 async fn handshake(
@@ -505,6 +518,9 @@ async fn handshake(
         protocol_version: version,
         core_version,
         heartbeat: Duration::from_secs(u64::from(heartbeat.clamp(1, 300))),
+        metrics: core_caps
+            .iter()
+            .any(|c| c.name == proto::CAP_HOST_METRICS && c.version >= 1),
     })
 }
 
@@ -568,6 +584,7 @@ async fn serve(
     shared: &Arc<Shared>,
     keys: proto::SessionKeys,
     heartbeat: Duration,
+    metrics: bool,
 ) -> anyhow::Error {
     let mut ch = Channel {
         keys,
@@ -581,6 +598,13 @@ async fn serve(
         .store(false, std::sync::atomic::Ordering::SeqCst);
     // Replay every event the Core has not acknowledged, then follow the journal.
     let mut sent_up_to = shared.steps.lock().unwrap().journal().acked();
+    // Every unacknowledged sample and the current facts go out again on a
+    // new session.
+    let mut host = HostSent {
+        enabled: metrics,
+        facts: 0,
+        samples: 0,
+    };
     let mut tick = tokio::time::interval(heartbeat);
     tick.tick().await;
     let idle = heartbeat * 3;
@@ -593,7 +617,7 @@ async fn serve(
                 if shared.broken.swap(false, std::sync::atomic::Ordering::SeqCst) {
                     return anyhow!("a step outcome could not be journaled; reconnecting so the core reconciles");
                 }
-                if let Err(e) = flush(&mut ws, &mut ch, shared, &mut sent_up_to).await {
+                if let Err(e) = flush(&mut ws, &mut ch, shared, &mut sent_up_to, &mut host).await {
                     return e;
                 }
             }
@@ -645,12 +669,23 @@ async fn serve(
     }
 }
 
-/// Sends journal records after `sent_up_to` and queued answers.
+/// What this session has sent of the monitor's data.
+struct HostSent {
+    enabled: bool,
+    /// Facts version sent.
+    facts: u64,
+    /// Highest sample seq sent.
+    samples: u64,
+}
+
+/// Sends journal records after `sent_up_to`, queued answers, and host
+/// facts and samples this session has not sent.
 async fn flush(
     ws: &mut Ws,
     ch: &mut Channel,
     shared: &Arc<Shared>,
     sent_up_to: &mut u64,
+    host: &mut HostSent,
 ) -> Result<()> {
     let (records, outbox) = {
         let steps = shared.steps.lock().unwrap();
@@ -669,6 +704,16 @@ async fn flush(
     for m in outbox {
         ch.send(ws, &m).await?;
     }
+    if host.enabled {
+        if let Some((v, m)) = shared.monitor.facts_after(host.facts) {
+            ch.send(ws, &m).await?;
+            host.facts = v;
+        }
+        while let Some((last, m)) = shared.monitor.report_after(host.samples) {
+            ch.send(ws, &m).await?;
+            host.samples = last;
+        }
+    }
     Ok(())
 }
 
@@ -680,6 +725,10 @@ fn handle(shared: &Arc<Shared>, msg: Message) -> Vec<Message> {
             if let Err(e) = shared.steps.lock().unwrap().journal_mut().ack(*seq) {
                 warn!(seq, error = %format!("{e:#}"), "core acknowledged an event this agent never sent");
             }
+            vec![]
+        }
+        Message::MetricsAck { seq } => {
+            shared.monitor.ack(*seq);
             vec![]
         }
         Message::StepExecute { .. } => {
