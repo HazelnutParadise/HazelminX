@@ -117,8 +117,33 @@ type StorageUsageData struct {
 	Filesystems []FilesystemUsage `json:"filesystems"`
 }
 
-// StorageUsage carries the latest finished usage measurement.
-type StorageUsage struct {
-	Type  string           `json:"type"`
-	Usage StorageUsageData `json:"usage"`
+// StorageUsageRequest asks the agent for a usage measurement; the agent
+// passes Grant (host.storage.read) to the privileged executor's
+// storage_usage, which walks as root.
+type StorageUsageRequest struct {
+	Type      string        `json:"type"`
+	RequestID string        `json:"requestId"`
+	Grant     ExecutorGrant `json:"grant"`
 }
+
+// StorageUsage is the executor's measurement, relayed unchanged.
+type StorageUsage struct {
+	Type      string           `json:"type"`
+	RequestID string           `json:"requestId"`
+	Usage     StorageUsageData `json:"usage"`
+}
+
+// StorageUsageUnavailable: the agent could not get a measurement.
+type StorageUsageUnavailable struct {
+	Type      string `json:"type"`
+	RequestID string `json:"requestId"`
+	Code      string `json:"code"`
+	Message   string `json:"message"`
+}
+
+// storage_usage_unavailable codes.
+const (
+	StorageUsageExecutorUnreachable = "EXECUTOR_UNREACHABLE"
+	StorageUsageExecutorRefused     = "EXECUTOR_REFUSED"
+	StorageUsageMeasureFailed       = "MEASURE_FAILED"
+)

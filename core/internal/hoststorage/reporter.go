@@ -31,11 +31,3 @@ func (r Reporter) HostStorage(ctx context.Context, s *nodes.Session, m *protocol
 	}
 	return r.Store.RecordInventory(ctx, id, m)
 }
-
-func (r Reporter) StorageUsage(ctx context.Context, s *nodes.Session, m *protocol.StorageUsage) error {
-	id, err := r.node(ctx, s)
-	if err != nil {
-		return err
-	}
-	return r.Store.RecordUsage(ctx, id, m)
-}

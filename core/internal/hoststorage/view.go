@@ -71,13 +71,17 @@ type View struct {
 	ReceivedAt  *time.Time `json:"receivedAt"`
 	// UsageMeasuredAt is when the latest usage round started; null when
 	// none finished yet.
-	UsageMeasuredAt *time.Time              `json:"usageMeasuredAt"`
-	Devices         []Device                `json:"devices"`
-	Mounts          []MountView             `json:"mounts"`
-	Configs         []protocol.MountConfig  `json:"configs"`
-	Swaps           []protocol.SwapArea     `json:"swaps"`
-	Problems        []protocol.MountProblem `json:"problems"`
-	Unreadable      []string                `json:"unreadable"`
+	UsageMeasuredAt *time.Time `json:"usageMeasuredAt"`
+	// UsageError is why the latest request got no measurement (the
+	// privileged executor is not reachable, refused, or failed); the
+	// previous measurement, if any, stays. Null when the latest succeeded.
+	UsageError *UsageError             `json:"usageError"`
+	Devices    []Device                `json:"devices"`
+	Mounts     []MountView             `json:"mounts"`
+	Configs    []protocol.MountConfig  `json:"configs"`
+	Swaps      []protocol.SwapArea     `json:"swaps"`
+	Problems   []protocol.MountProblem `json:"problems"`
+	Unreadable []string                `json:"unreadable"`
 	// BackupStaging: whether alerts include the space backups need to
 	// stage. notApplicable until backup jobs exist (ticket 078).
 	BackupStaging string `json:"backupStaging"`
@@ -96,12 +100,15 @@ const trendWindow = 7 * 24 * time.Hour
 func (s *Store) NodeView(ctx context.Context, m Metrics, nodeID string) (View, error) {
 	v := View{Devices: []Device{}, Mounts: []MountView{}, Configs: []protocol.MountConfig{}, Swaps: []protocol.SwapArea{},
 		Problems: []protocol.MountProblem{}, Unreadable: []string{}, BackupStaging: "notApplicable"}
-	inv, err := s.Inventory(ctx, nodeID)
-	if err != nil || inv == nil {
-		return v, err
-	}
 	use, err := s.Usage(ctx, nodeID)
 	if err != nil {
+		return v, err
+	}
+	if use != nil {
+		v.UsageError = use.Error
+	}
+	inv, err := s.Inventory(ctx, nodeID)
+	if err != nil || inv == nil {
 		return v, err
 	}
 	latest, err := m.Latest(ctx, nodeID)
@@ -131,7 +138,7 @@ func (s *Store) NodeView(ctx context.Context, m Metrics, nodeID string) (View, e
 		}
 	}
 	usage := map[string]protocol.FilesystemUsage{}
-	if use != nil {
+	if use != nil && use.Measured {
 		at := use.Usage.StartedAt
 		v.UsageMeasuredAt = &at
 		for _, f := range use.Usage.Filesystems {
@@ -146,7 +153,7 @@ func (s *Store) NodeView(ctx context.Context, m Metrics, nodeID string) (View, e
 		if c, ok := caps[mt.MountPoint]; ok {
 			mv.Capacity = &c
 		}
-		if f, ok := usage[mt.Dev]; ok && use != nil {
+		if f, ok := usage[mt.Dev]; ok {
 			mv.Usage = fsUsage(f, use.Usage.StartedAt)
 		}
 		if mv.Capacity != nil {

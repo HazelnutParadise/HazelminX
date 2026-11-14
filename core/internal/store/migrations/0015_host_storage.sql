@@ -11,13 +11,19 @@ CREATE TABLE IF NOT EXISTS host_storage (
     received_at  TEXT NOT NULL
 );
 
--- The latest finished usage measurement of each node (agent JSON:
--- per-filesystem bytes by category).
+-- The latest usage measurement of each node (the privileged executor's
+-- JSON: per-filesystem bytes by category), and the latest failure to get
+-- one. A failure keeps the last measurement; a new measurement clears the
+-- failure. usage is NULL until a measurement arrived.
 CREATE TABLE IF NOT EXISTS host_storage_usage (
-    node_id     TEXT PRIMARY KEY REFERENCES nodes(id) ON DELETE RESTRICT,
-    usage       TEXT NOT NULL,
-    started_at  TEXT NOT NULL,
-    received_at TEXT NOT NULL
+    node_id       TEXT PRIMARY KEY REFERENCES nodes(id) ON DELETE RESTRICT,
+    usage         TEXT,
+    started_at    TEXT,
+    received_at   TEXT,
+    error_code    TEXT,
+    error_message TEXT,
+    error_at      TEXT,
+    CHECK ((usage IS NULL) = (started_at IS NULL))
 );
 
 -- Capacity alert thresholds. node_id '' applies to every node and

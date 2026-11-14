@@ -1,5 +1,9 @@
-//! Measures how much of each local filesystem a fixed set of directories
-//! holds, by category. Only those directories are walked; the rest of the
+//! `storage_usage` (ticket 030.1): measures how much of each local
+//! filesystem a fixed set of directories holds, by category. It runs here,
+//! as root, because the agent's account cannot read engine storage
+//! (`/var/lib/docker` is 0710 root) or database directories (0700 of their
+//! service accounts). It takes no parameters: the roots, the budget and the
+//! mounts (read from mountinfo) are fixed here, not chosen by a caller. Only those directories are walked; the rest of the
 //! used space is `other`. A walk stays on the filesystem of the directory
 //! it starts in, counts allocated blocks (not apparent sizes) and counts a
 //! hard-linked file once.
@@ -10,9 +14,13 @@
 
 use std::collections::{BTreeMap, HashSet};
 use std::path::{Path, PathBuf};
+
+use crate::executor::{ActionError, ActionResult};
 use std::time::{Duration, Instant};
 
-use hazelminx_protocol::storage::{CategoryUsage, FilesystemUsage, Mount, StorageUsage, category};
+use hazelminx_protocol::storage::{
+    CategoryUsage, FilesystemUsage, PSEUDO_FS, StorageUsage, category, mount_class,
+};
 use time::OffsetDateTime;
 
 /// What is measured. Databases and backup staging the platform manages
@@ -311,3 +319,129 @@ fn under(path: &str, mount_point: &str) -> bool {
             .strip_prefix(mount_point)
             .is_some_and(|rest| rest.starts_with('/'))
 }
+
+/// A local mount as the walk needs it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Mount {
+    pub mount_point: String,
+    /// `major:minor` from mountinfo.
+    pub dev: String,
+    pub class: &'static str,
+}
+
+/// Every mount point of mountinfo (pseudo filesystems too, so the walk
+/// stops at them) and the mounts worth measuring; a later mount on the
+/// same point hides the earlier one.
+pub fn mounts_from(mountinfo: &str) -> (Vec<Mount>, Vec<String>) {
+    let mut points = Vec::new();
+    let mut by_point = BTreeMap::new();
+    for line in mountinfo.lines() {
+        let Some((left, right)) = line.split_once(" - ") else {
+            continue;
+        };
+        let l: Vec<&str> = left.split(' ').collect();
+        let fs_type = right.split(' ').next().unwrap_or("");
+        if l.len() < 6 {
+            continue;
+        }
+        let point = unescape(l[4]);
+        points.push(point.clone());
+        if PSEUDO_FS.contains(&fs_type) {
+            by_point.remove(&point);
+            continue;
+        }
+        by_point.insert(
+            point.clone(),
+            Mount {
+                mount_point: point,
+                dev: l[2].to_string(),
+                class: mount_class(fs_type),
+            },
+        );
+    }
+    (by_point.into_values().collect(), points)
+}
+
+/// Undoes the octal escapes of mountinfo (`\040` for a space).
+fn unescape(s: &str) -> String {
+    let b = s.as_bytes();
+    let mut out = Vec::with_capacity(b.len());
+    let mut i = 0;
+    while i < b.len() {
+        if b[i] == b'\\'
+            && i + 3 < b.len()
+            && b[i + 1..i + 4].iter().all(|c| (b'0'..=b'7').contains(c))
+        {
+            out.push((b[i + 1] - b'0') * 64 + (b[i + 2] - b'0') * 8 + (b[i + 3] - b'0'));
+            i += 4;
+        } else {
+            out.push(b[i]);
+            i += 1;
+        }
+    }
+    String::from_utf8_lossy(&out).into_owned()
+}
+
+/// `total - free` of the filesystem holding `p`.
+#[cfg(unix)]
+pub fn statvfs_used(p: &Path) -> Option<u64> {
+    use std::os::unix::ffi::OsStrExt;
+    let c = std::ffi::CString::new(p.as_os_str().as_bytes()).ok()?;
+    let mut st: libc::statvfs = unsafe { std::mem::zeroed() };
+    // SAFETY: c is a valid C string and st a valid out pointer.
+    if unsafe { libc::statvfs(c.as_ptr(), &mut st) } != 0 {
+        return None;
+    }
+    let f = st.f_frsize as u64;
+    Some(
+        (st.f_blocks as u64)
+            .saturating_sub(st.f_bfree as u64)
+            .saturating_mul(f),
+    )
+}
+
+#[cfg(not(unix))]
+pub fn statvfs_used(_: &Path) -> Option<u64> {
+    None
+}
+
+/// Nice 19 and the idle I/O class for the calling thread only, so the
+/// walk yields to everything else on the host.
+#[cfg(target_os = "linux")]
+fn lowest_priority() {
+    // SAFETY: plain syscalls on the calling thread's id.
+    unsafe {
+        let tid = libc::syscall(libc::SYS_gettid) as libc::id_t;
+        libc::setpriority(libc::PRIO_PROCESS, tid, 19);
+        // IOPRIO_WHO_PROCESS = 1, IOPRIO_CLASS_IDLE = 3 << 13.
+        libc::syscall(libc::SYS_ioprio_set, 1, tid, 3 << 13);
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+fn lowest_priority() {}
+
+/// The action: one measurement round of the host under `sysroot`, on a
+/// blocking thread at the lowest priority.
+pub async fn run(sysroot: &Path) -> ActionResult {
+    let sysroot = sysroot.to_path_buf();
+    let usage = tokio::task::spawn_blocking(move || {
+        lowest_priority();
+        let text = std::fs::read_to_string(sysroot.join("proc/self/mountinfo"))
+            .map_err(|e| ActionError::new(format!("cannot read mountinfo: {e}")))?;
+        let (mounts, points) = mounts_from(&text);
+        Ok::<_, ActionError>(measure(
+            &sysroot,
+            &mounts,
+            &points,
+            Budget::default(),
+            statvfs_used,
+        ))
+    })
+    .await
+    .map_err(|e| ActionError::new(format!("storage usage task: {e}")))??;
+    Ok(serde_json::to_value(usage).expect("StorageUsage serializes"))
+}
+
+#[cfg(test)]
+mod tests;

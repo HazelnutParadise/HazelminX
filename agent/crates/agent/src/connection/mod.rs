@@ -624,7 +624,6 @@ async fn serve(
         in_flight: None,
         storage,
         inventory: 0,
-        usage: 0,
     };
     let mut tick = tokio::time::interval(heartbeat);
     tick.tick().await;
@@ -698,10 +697,9 @@ struct HostSent {
     /// The report waiting for its acknowledgement: its last seq and when
     /// it went out. The next one is sent only after it is answered.
     in_flight: Option<(u64, std::time::Instant)>,
-    /// `host.storage` is on, and the inventory and usage versions sent.
+    /// `host.storage` is on, and the inventory version sent.
     storage: bool,
     inventory: u64,
-    usage: u64,
 }
 
 /// Sends journal records after `sent_up_to`, queued answers, and host
@@ -730,15 +728,11 @@ async fn flush(
     for m in outbox {
         ch.send(ws, &m).await?;
     }
-    if host.storage {
-        if let Some((v, m)) = shared.storage.inventory_after(host.inventory) {
-            ch.send(ws, &m).await?;
-            host.inventory = v;
-        }
-        if let Some((v, m)) = shared.storage.usage_after(host.usage) {
-            ch.send(ws, &m).await?;
-            host.usage = v;
-        }
+    if host.storage
+        && let Some((v, m)) = shared.storage.inventory_after(host.inventory)
+    {
+        ch.send(ws, &m).await?;
+        host.inventory = v;
     }
     if host.enabled {
         if let Some((v, m)) = shared.monitor.facts_after(host.facts) {
@@ -870,6 +864,20 @@ fn handle(shared: &Arc<Shared>, msg: Message) -> Vec<Message> {
                 let answer = crate::engines::answer(&shared.privileged, request_id, grant).await;
                 if let Message::EnginesUnavailable { code, message, .. } = &answer {
                     warn!(%code, %message, "cannot inspect container engines for the core");
+                }
+                shared.outbox.lock().unwrap().push(answer);
+                shared.changed.notify_one();
+            });
+            vec![]
+        }
+        Message::StorageUsageRequest { request_id, grant } => {
+            // A round can take minutes: off the session loop, the answer
+            // goes out through the outbox.
+            let (shared, request_id, grant) = (shared.clone(), request_id.clone(), grant.clone());
+            tokio::spawn(async move {
+                let answer = crate::storage::answer(&shared.privileged, request_id, grant).await;
+                if let Message::StorageUsageUnavailable { code, message, .. } = &answer {
+                    warn!(%code, %message, "cannot measure storage usage for the core");
                 }
                 shared.outbox.lock().unwrap().push(answer);
                 shared.changed.notify_one();

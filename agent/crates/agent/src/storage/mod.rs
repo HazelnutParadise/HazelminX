@@ -1,34 +1,32 @@
-//! Storage inventory and usage (ticket 030.1, `host.storage` v1). One
-//! thread reads the inventory every `INVENTORY_INTERVAL`; another measures
-//! usage every `USAGE_INTERVAL` at the lowest CPU and I/O priority. The
-//! session sends whichever it has not sent yet.
+//! Storage inventory and usage (ticket 030.1, `host.storage` v1). A
+//! thread reads the inventory every `INVENTORY_INTERVAL`; the session sends
+//! it when it changes. Usage is measured by the privileged executor
+//! (`storage_usage`, as root) when the Core asks with a grant: the agent's
+//! own account cannot read engine storage or database directories.
 
 pub mod inventory;
-pub mod usage;
 
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use hazelminx_protocol::Message;
+use hazelminx_privileged::action::Action;
+use hazelminx_privileged::client::{Client, ClientError};
+use hazelminx_privileged::grant::Grant;
+use hazelminx_privileged::protocol::ErrorCode;
 use hazelminx_protocol::storage::{StorageInventory, StorageUsage};
+use hazelminx_protocol::{ExecutorGrant, Message, storage_usage_unavailable_code as code};
 use time::OffsetDateTime;
 
 pub const INVENTORY_INTERVAL: Duration = Duration::from_secs(60);
-/// First usage round after start, so it does not add to startup.
-pub const USAGE_FIRST: Duration = Duration::from_secs(5 * 60);
-pub const USAGE_INTERVAL: Duration = Duration::from_secs(6 * 60 * 60);
 
 #[derive(Default)]
 struct State {
     inventory: Option<(OffsetDateTime, StorageInventory)>,
     inventory_version: u64,
-    usage_mounts: Option<Vec<hazelminx_protocol::storage::Mount>>,
-    usage: Option<StorageUsage>,
-    usage_version: u64,
 }
 
-/// Shared between the storage threads and the session.
+/// Shared between the inventory thread and the session.
 #[derive(Default)]
 pub struct Storage {
     state: Mutex<State>,
@@ -46,30 +44,6 @@ impl Storage {
         true
     }
 
-    pub fn has_inventory(&self) -> bool {
-        self.state.lock().unwrap().usage_mounts.is_some()
-    }
-
-    pub fn set_usage_mounts(&self, m: Vec<hazelminx_protocol::storage::Mount>) {
-        self.state.lock().unwrap().usage_mounts = Some(m);
-    }
-
-    /// Every mount of the latest inventory read, before `fit` cut it.
-    pub fn mounts(&self) -> Vec<hazelminx_protocol::storage::Mount> {
-        self.state
-            .lock()
-            .unwrap()
-            .usage_mounts
-            .clone()
-            .unwrap_or_default()
-    }
-
-    pub fn set_usage(&self, u: StorageUsage) {
-        let mut st = self.state.lock().unwrap();
-        st.usage = Some(u);
-        st.usage_version += 1;
-    }
-
     /// The inventory message when the session has not sent version `sent`.
     pub fn inventory_after(&self, sent: u64) -> Option<(u64, Message)> {
         let st = self.state.lock().unwrap();
@@ -84,78 +58,92 @@ impl Storage {
             )
         })
     }
-
-    /// The usage message when the session has not sent version `sent`.
-    pub fn usage_after(&self, sent: u64) -> Option<(u64, Message)> {
-        let st = self.state.lock().unwrap();
-        let u = st.usage.as_ref()?;
-        (st.usage_version > sent).then(|| {
-            (
-                st.usage_version,
-                Message::StorageUsage {
-                    usage: Box::new(u.clone()),
-                },
-            )
-        })
-    }
 }
 
-/// Starts both threads; `wake` runs after each change so the session
-/// sends it.
+/// Starts the inventory thread; `wake` runs after each change so the
+/// session sends it.
 pub fn spawn(
     storage: Arc<Storage>,
     root: impl Into<PathBuf>,
-    wake: impl Fn() + Send + Sync + 'static,
+    wake: impl Fn() + Send + 'static,
 ) -> std::io::Result<()> {
     let root: PathBuf = root.into();
-    let wake = Arc::new(wake);
-    {
-        let (storage, root, wake) = (storage.clone(), root.clone(), wake.clone());
-        std::thread::Builder::new()
-            .name("storage".into())
-            .spawn(move || {
-                let inv = inventory::Inventory::new(root);
-                loop {
-                    let now = OffsetDateTime::now_utc();
-                    let now = now.replace_nanosecond(0).unwrap_or(now);
-                    let full = inv.read_all();
-                    // Usage measures every local mount, also the ones a
-                    // too-large inventory leaves out of the message.
-                    storage.set_usage_mounts(full.mounts.clone());
-                    if storage.set_inventory(now, fit(full)) {
-                        wake();
-                    }
-                    std::thread::sleep(INVENTORY_INTERVAL);
-                }
-            })?;
-    }
     std::thread::Builder::new()
-        .name("storage-usage".into())
+        .name("storage".into())
         .spawn(move || {
-            lowest_priority();
-            std::thread::sleep(usage_first());
+            let inv = inventory::Inventory::new(root);
             loop {
-                // The walk measures the mounts of the inventory; without
-                // one yet it would measure nothing.
-                while !storage.has_inventory() {
-                    std::thread::sleep(Duration::from_secs(1));
+                let now = OffsetDateTime::now_utc();
+                let now = now.replace_nanosecond(0).unwrap_or(now);
+                if storage.set_inventory(now, fit(inv.read_all())) {
+                    wake();
                 }
-                let mounts = storage.mounts();
-                let points = all_mount_points(&root);
-                let u = usage::measure(&root, &mounts, &points, usage::Budget::default(), |p| {
-                    crate::monitor::collect::statvfs_used(p)
-                });
-                tracing::info!(
-                    entries = u.entries,
-                    duration_ms = u.duration_ms,
-                    "measured storage usage"
-                );
-                storage.set_usage(u);
-                wake();
-                std::thread::sleep(USAGE_INTERVAL);
+                std::thread::sleep(INVENTORY_INTERVAL);
             }
         })
         .map(|_| ())
+}
+
+/// The answer to one `storage_usage_request`: the executor's measurement,
+/// or `storage_usage_unavailable` saying why there is none. Never a
+/// measurement of what the agent itself can read.
+pub async fn answer(client: &Client, request_id: String, grant: ExecutorGrant) -> Message {
+    let unavailable = |c: &str, message: String| Message::StorageUsageUnavailable {
+        request_id: request_id.clone(),
+        code: c.to_string(),
+        message,
+    };
+    let grant: Grant = match serde_json::to_value(&grant).and_then(serde_json::from_value) {
+        Ok(g) => g,
+        Err(e) => return unavailable(code::EXECUTOR_REFUSED, format!("grant is malformed: {e}")),
+    };
+    let value = match client
+        .execute(&request_id, &grant, &Action::StorageUsage {}, |_, _| {})
+        .await
+    {
+        Ok(v) => v,
+        Err(ClientError::Io(e)) => {
+            return unavailable(
+                code::EXECUTOR_UNREACHABLE,
+                format!("cannot reach the privileged executor: {e}"),
+            );
+        }
+        Err(ClientError::Rejected(b)) if b.code == ErrorCode::ActionFailed => {
+            return unavailable(code::MEASURE_FAILED, b.message);
+        }
+        Err(ClientError::Rejected(b)) => {
+            return unavailable(
+                code::EXECUTOR_REFUSED,
+                format!("{:?}: {}", b.code, b.message),
+            );
+        }
+        Err(ClientError::Protocol(m)) => {
+            return unavailable(
+                code::MEASURE_FAILED,
+                format!("executor answered unexpectedly: {m}"),
+            );
+        }
+    };
+    let usage: StorageUsage = match serde_json::from_value(value) {
+        Ok(u) => u,
+        Err(e) => {
+            return unavailable(
+                code::MEASURE_FAILED,
+                format!("executor returned an unreadable measurement: {e}"),
+            );
+        }
+    };
+    let msg = Message::StorageUsage {
+        request_id: request_id.clone(),
+        usage: Box::new(usage),
+    };
+    if hazelminx_protocol::encode(&msg).len() > INVENTORY_BYTES {
+        return unavailable(
+            code::MEASURE_FAILED,
+            format!("usage measurement is larger than {INVENTORY_BYTES} bytes"),
+        );
+    }
+    msg
 }
 
 /// Upper bound of one encoded `host_storage`; the Core reads at most 1 MiB
@@ -233,48 +221,6 @@ pub fn fit(mut inv: StorageInventory) -> StorageInventory {
     ));
     inv
 }
-
-/// Every mount point of mountinfo, virtual ones included.
-fn all_mount_points(root: &std::path::Path) -> Vec<String> {
-    std::fs::read_to_string(root.join("proc/self/mountinfo"))
-        .map(|t| {
-            crate::monitor::parse::mountinfo_full(&t)
-                .into_iter()
-                .map(|m| m.mount_point)
-                .collect()
-        })
-        .unwrap_or_default()
-}
-
-/// The delay before the first usage round. Builds with `test-actions`
-/// (interop tests, never a release) read it from
-/// `HAZELMINX_TEST_USAGE_FIRST_SECONDS`.
-fn usage_first() -> Duration {
-    #[cfg(feature = "test-actions")]
-    if let Some(s) = std::env::var("HAZELMINX_TEST_USAGE_FIRST_SECONDS")
-        .ok()
-        .and_then(|v| v.parse().ok())
-    {
-        return Duration::from_secs(s);
-    }
-    USAGE_FIRST
-}
-
-/// Nice 19 and the idle I/O class for the calling thread only, so the
-/// walk yields to everything else on the host.
-#[cfg(target_os = "linux")]
-fn lowest_priority() {
-    // SAFETY: plain syscalls on the calling thread's id.
-    unsafe {
-        let tid = libc::syscall(libc::SYS_gettid) as libc::id_t;
-        libc::setpriority(libc::PRIO_PROCESS, tid, 19);
-        // IOPRIO_WHO_PROCESS = 1, IOPRIO_CLASS_IDLE = 3 << 13.
-        libc::syscall(libc::SYS_ioprio_set, 1, tid, 3 << 13);
-    }
-}
-
-#[cfg(not(target_os = "linux"))]
-fn lowest_priority() {}
 
 #[cfg(test)]
 mod tests;

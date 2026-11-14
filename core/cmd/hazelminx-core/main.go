@@ -48,6 +48,10 @@ const LedgerSyncInterval = 5 * time.Minute
 // read again (ticket 039.1); a refresh from the API reads them at once.
 const EngineProbeInterval = 5 * time.Minute
 
+// StorageUsageCheckInterval is how often Core looks for connected nodes
+// whose storage usage measurement is due.
+const StorageUsageCheckInterval = 5 * time.Minute
+
 func main() {
 	if err := run(os.Args[1:]); err != nil {
 		slog.Error("hazelminx-core exited", "error", err)
@@ -148,6 +152,17 @@ func run(args []string) error {
 		}
 		return fps
 	}, EngineProbeInterval)
+	// Storage usage (ticket 030.1): each connected node is asked for a
+	// measurement by the privileged executor when its latest is 6 hours old.
+	usageProber := &hoststorage.Prober{Store: hostStorage, Grants: issuer, Hub: hub, NodeID: registry.NodeIDByFingerprint}
+	go usageProber.Run(ctx, func() []string {
+		conns, _ := hub.Connections()
+		fps := make([]string, len(conns))
+		for i, c := range conns {
+			fps[i] = c.NodeID
+		}
+		return fps
+	}, StorageUsageCheckInterval)
 	registry.AttachChannel(hub)
 	runner := nodes.NewStepRunner(hub)
 	runner.Gate = registry.GateJob

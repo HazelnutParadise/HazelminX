@@ -1,10 +1,9 @@
 use std::fs;
 use std::path::Path;
 
-use hazelminx_protocol::storage::{Mount, category};
+use hazelminx_protocol::storage::Mount;
 
 use super::inventory::{self, Inventory};
-use super::usage::{self, Budget};
 use super::*;
 
 fn write(root: &Path, rel: &str, body: &str) {
@@ -243,136 +242,6 @@ fn root_mount(_: &Path) -> Mount {
     }
 }
 
-#[cfg(unix)]
-fn sizes(
-    u: &hazelminx_protocol::storage::FilesystemUsage,
-) -> std::collections::BTreeMap<String, u64> {
-    u.categories
-        .iter()
-        .map(|c| (c.category.clone(), c.bytes))
-        .collect()
-}
-
-/// Each path counts in one category, hard links once, and the categories
-/// plus other add up to used space.
-#[cfg(unix)]
-#[test]
-fn usage_counts_each_path_once_and_adds_up() {
-    let t = tempfile::tempdir().unwrap();
-    let r = t.path();
-    let big = vec![7u8; 64 * 1024];
-    write(r, "/var/lib/docker/overlay2/l1/file", "");
-    fs::write(r.join("var/lib/docker/overlay2/l1/file"), &big).unwrap();
-    write(r, "/var/lib/docker/volumes/db/data", "");
-    fs::write(r.join("var/lib/docker/volumes/db/data"), &big).unwrap();
-    write(r, "/usr/bin/tool", "");
-    fs::write(r.join("usr/bin/tool"), &big).unwrap();
-    // A hard link of the same layer file in another layer.
-    fs::create_dir_all(r.join("var/lib/docker/overlay2/l2")).unwrap();
-    fs::hard_link(
-        r.join("var/lib/docker/overlay2/l1/file"),
-        r.join("var/lib/docker/overlay2/l2/file"),
-    )
-    .unwrap();
-    // A symlinked root (merged /usr) is not walked twice.
-    link(r, "/lib", "usr/lib");
-    let m = root_mount(r);
-    let used = 10 * 1024 * 1024;
-    let u = usage::measure(r, &[m], &["/".into()], Budget::default(), |_| Some(used));
-    assert_eq!(u.filesystems.len(), 1);
-    let fs0 = &u.filesystems[0];
-    assert_eq!(fs0.state, "complete");
-    let s = sizes(fs0);
-    let block = |n: &str| {
-        use std::os::unix::fs::MetadataExt;
-        fs::symlink_metadata(r.join(n)).unwrap().blocks() * 512
-    };
-    let file = block("usr/bin/tool");
-    assert!(
-        s[category::CONTAINER_IMAGES] >= file && s[category::CONTAINER_IMAGES] < 2 * file,
-        "hard link counted once: {s:?}"
-    );
-    assert!(
-        s[category::APP_DATA] >= file && s[category::APP_DATA] < 2 * file,
-        "volumes are app data only: {s:?}"
-    );
-    assert!(s[category::OS_AND_LOGS] >= file);
-    let sum: u64 = s.values().sum();
-    assert_eq!(sum + fs0.other_bytes.unwrap(), used);
-    assert!(!s.contains_key(category::DATABASE) && !s.contains_key(category::BACKUP_STAGING));
-    let docker = fs0
-        .categories
-        .iter()
-        .find(|c| c.category == category::CONTAINER_IMAGES)
-        .unwrap();
-    assert_eq!(docker.paths, ["/var/lib/docker"]);
-}
-
-#[cfg(unix)]
-#[test]
-fn usage_budget_makes_the_round_partial() {
-    let t = tempfile::tempdir().unwrap();
-    let r = t.path();
-    for i in 0..50 {
-        write(r, &format!("/var/log/f{i}"), "x");
-    }
-    let budget = Budget {
-        max_entries: 10,
-        ..Budget::default()
-    };
-    let u = usage::measure(r, &[root_mount(r)], &["/".into()], budget, |_| {
-        Some(1 << 20)
-    });
-    let fs0 = &u.filesystems[0];
-    assert_eq!(fs0.state, "partial");
-    assert_eq!(fs0.other_bytes, None, "a lower bound gives no honest rest");
-    assert!(u.entries <= 10);
-}
-
-#[cfg(unix)]
-#[test]
-fn usage_without_statvfs_is_unmeasured() {
-    let t = tempfile::tempdir().unwrap();
-    let u = usage::measure(
-        t.path(),
-        &[root_mount(t.path())],
-        &["/".into()],
-        Budget::default(),
-        |_| None,
-    );
-    assert_eq!(u.filesystems[0].state, "unmeasured");
-    assert_eq!(u.filesystems[0].used_bytes, None);
-    assert_eq!(u.filesystems[0].other_bytes, None);
-}
-
-#[cfg(unix)]
-#[test]
-fn usage_skips_network_and_unreadable_dirs_mark_partial() {
-    use std::os::unix::fs::PermissionsExt;
-    let t = tempfile::tempdir().unwrap();
-    let r = t.path();
-    write(r, "/var/log/secret/x", "x");
-    let mut net = root_mount(r);
-    net.class = "network".into();
-    net.mount_point = "/mnt/nfs".into();
-    net.dev = "0:99".into();
-    fs::set_permissions(r.join("var/log/secret"), fs::Permissions::from_mode(0o000)).unwrap();
-    let u = usage::measure(
-        r,
-        &[root_mount(r), net],
-        &["/".into(), "/mnt/nfs".into()],
-        Budget::default(),
-        |_| Some(1 << 20),
-    );
-    fs::set_permissions(r.join("var/log/secret"), fs::Permissions::from_mode(0o700)).unwrap();
-    assert_eq!(u.filesystems.len(), 1, "network mounts are not walked");
-    // Root can read a 0o000 directory.
-    if unsafe { libc::geteuid() } != 0 {
-        assert_eq!(u.filesystems[0].state, "partial");
-        assert_eq!(u.filesystems[0].unreadable_dirs, 1);
-    }
-}
-
 #[test]
 fn versions_send_each_change_once() {
     let s = Storage::default();
@@ -387,43 +256,6 @@ fn versions_send_each_change_once() {
     let (v, m) = s.inventory_after(0).unwrap();
     assert!(matches!(m, Message::HostStorage { .. }));
     assert!(s.inventory_after(v).is_none());
-    assert!(s.usage_after(0).is_none());
-}
-
-/// The walk stops at every mount point, and a root under a mount that is
-/// not local (a container's overlay root) is not measured at all.
-#[cfg(unix)]
-#[test]
-fn usage_stops_at_mount_points_and_skips_virtual_roots() {
-    let t = tempfile::tempdir().unwrap();
-    let r = t.path();
-    let big = vec![1u8; 64 * 1024];
-    write(r, "/var/log/a", "");
-    fs::write(r.join("var/log/a"), &big).unwrap();
-    // Another filesystem mounted inside /var/log.
-    write(r, "/var/log/mnt/b", "");
-    fs::write(r.join("var/log/mnt/b"), &big).unwrap();
-    write(r, "/var/lib/docker/x", "");
-    fs::write(r.join("var/lib/docker/x"), &big).unwrap();
-    let mut data = root_mount(r);
-    data.mount_point = "/var/lib/docker".into();
-    data.dev = "8:2".into();
-    // "/" is an overlay (not in the local list); /var/log/mnt is tmpfs.
-    let points = [
-        "/".to_string(),
-        "/var/log/mnt".into(),
-        "/var/lib/docker".into(),
-    ];
-    let mut root = root_mount(r);
-    root.class = "virtual".into();
-    let u = usage::measure(r, &[root, data], &points, Budget::default(), |_| {
-        Some(10 << 20)
-    });
-    assert_eq!(u.filesystems.len(), 1, "{:?}", u.filesystems);
-    let d = &u.filesystems[0];
-    assert_eq!(d.mount_point, "/var/lib/docker");
-    assert_eq!(d.categories.len(), 1);
-    assert_eq!(d.categories[0].category, category::CONTAINER_IMAGES);
 }
 
 /// A password in fstab or a unit never leaves the host.
@@ -470,26 +302,6 @@ fn mount_secrets_are_redacted() {
     assert!(!all.contains("hunter2"), "{all}");
 }
 
-/// Measured more than used: the categories cannot add up, so the round is
-/// partial and has no "other".
-#[cfg(unix)]
-#[test]
-fn usage_over_used_space_is_partial() {
-    let t = tempfile::tempdir().unwrap();
-    let r = t.path();
-    write(r, "/var/log/a", "");
-    fs::write(r.join("var/log/a"), vec![1u8; 64 * 1024]).unwrap();
-    let u = usage::measure(
-        r,
-        &[root_mount(r)],
-        &["/".into()],
-        Budget::default(),
-        |_| Some(1),
-    );
-    assert_eq!(u.filesystems[0].state, "partial");
-    assert_eq!(u.filesystems[0].other_bytes, None);
-}
-
 /// A huge inventory is cut to fit one message, and says so.
 #[test]
 fn oversized_inventory_is_truncated_and_named() {
@@ -526,4 +338,26 @@ fn oversized_inventory_is_truncated_and_named() {
     assert!(out.mounts.iter().any(|x| x.mount_point == "/srv/data"));
     let small = fit(Inventory::new("/nonexistent-root").read_all());
     assert!(!small.unreadable.iter().any(|u| u.starts_with("truncated:")));
+}
+
+/// Without the executor there is no measurement: the answer says so with
+/// a code, never zeros.
+#[tokio::test]
+async fn usage_without_executor_is_unavailable() {
+    let d = tempfile::tempdir().unwrap();
+    let client = hazelminx_privileged::client::Client::new(d.path().join("absent.sock"));
+    let grant: hazelminx_protocol::ExecutorGrant = serde_json::from_value(serde_json::json!({
+        "id": "g1", "subject": "system:storage-usage", "permissions": ["host.storage.read"],
+        "not_before": "2026-11-14T00:00:00Z", "expires_at": "2026-11-14T00:05:00Z", "signature": "00"
+    }))
+    .unwrap();
+    match answer(&client, "r1".into(), grant).await {
+        Message::StorageUsageUnavailable {
+            request_id, code, ..
+        } => {
+            assert_eq!(request_id, "r1");
+            assert_eq!(code, "EXECUTOR_UNREACHABLE");
+        }
+        other => panic!("{other:?}"),
+    }
 }

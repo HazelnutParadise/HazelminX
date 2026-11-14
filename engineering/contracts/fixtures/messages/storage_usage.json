@@ -1,5 +1,6 @@
 {
   "type": "storage_usage",
+  "requestId": "sur_4f1c2a9b0d3e5f67",
   "usage": {
     "startedAt": "2026-11-14T03:05:00Z",
     "durationMs": 41250,

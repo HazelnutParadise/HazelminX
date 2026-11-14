@@ -121,9 +121,25 @@ func (s *Store) RecordUsage(ctx context.Context, nodeID string, m *protocol.Stor
 		return err
 	}
 	_, err = s.db.ExecContext(ctx, `INSERT INTO host_storage_usage (node_id, usage, started_at, received_at) VALUES (?, ?, ?, ?)
-		ON CONFLICT (node_id) DO UPDATE SET usage = excluded.usage, started_at = excluded.started_at, received_at = excluded.received_at
-		WHERE excluded.started_at >= host_storage_usage.started_at`,
+		ON CONFLICT (node_id) DO UPDATE SET usage = excluded.usage, started_at = excluded.started_at, received_at = excluded.received_at,
+			error_code = NULL, error_message = NULL, error_at = NULL
+		WHERE host_storage_usage.started_at IS NULL OR excluded.started_at >= host_storage_usage.started_at`,
 		nodeID, string(b), ts(u.StartedAt), ts(s.now()))
+	return err
+}
+
+// maxErrorMessage bounds a stored failure message, in characters.
+const maxErrorMessage = 1000
+
+// RecordUsageError stores why a measurement could not be had; the last
+// measurement stays.
+func (s *Store) RecordUsageError(ctx context.Context, nodeID, code, message string) error {
+	if r := []rune(message); len(r) > maxErrorMessage {
+		message = string(r[:maxErrorMessage])
+	}
+	_, err := s.db.ExecContext(ctx, `INSERT INTO host_storage_usage (node_id, error_code, error_message, error_at) VALUES (?, ?, ?, ?)
+		ON CONFLICT (node_id) DO UPDATE SET error_code = excluded.error_code, error_message = excluded.error_message, error_at = excluded.error_at`,
+		nodeID, code, message, ts(s.now()))
 	return err
 }
 
@@ -148,22 +164,42 @@ func (s *Store) Inventory(ctx context.Context, nodeID string) (*Inventory, error
 	return out, json.Unmarshal([]byte(raw), &out.Storage)
 }
 
-// Usage is a node's stored usage measurement.
+// Usage is a node's stored usage measurement and its latest failure.
 type Usage struct {
+	// Measured is false until a measurement arrived; Usage is then empty.
+	Measured   bool
 	ReceivedAt time.Time
 	Usage      protocol.StorageUsageData
+	Error      *UsageError
 }
 
-// Usage returns nil when the node has reported none.
+// UsageError is why the latest request got no measurement.
+type UsageError struct {
+	Code    string    `json:"code"`
+	Message string    `json:"message"`
+	At      time.Time `json:"at"`
+}
+
+// Usage returns nil when nothing was recorded for the node.
 func (s *Store) Usage(ctx context.Context, nodeID string) (*Usage, error) {
-	var raw, rec string
-	err := s.db.QueryRowContext(ctx, `SELECT usage, received_at FROM host_storage_usage WHERE node_id = ?`, nodeID).Scan(&raw, &rec)
+	var raw, rec, code, msg, at sql.NullString
+	err := s.db.QueryRowContext(ctx, `SELECT usage, received_at, error_code, error_message, error_at FROM host_storage_usage WHERE node_id = ?`, nodeID).
+		Scan(&raw, &rec, &code, &msg, &at)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	out := &Usage{ReceivedAt: parseTS(rec)}
-	return out, json.Unmarshal([]byte(raw), &out.Usage)
+	out := &Usage{}
+	if code.Valid {
+		out.Error = &UsageError{Code: code.String, Message: msg.String, At: parseTS(at.String)}
+	}
+	if raw.Valid {
+		out.Measured, out.ReceivedAt = true, parseTS(rec.String)
+		if err := json.Unmarshal([]byte(raw.String), &out.Usage); err != nil {
+			return nil, err
+		}
+	}
+	return out, nil
 }

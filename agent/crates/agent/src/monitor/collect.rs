@@ -19,56 +19,7 @@ use super::parse::{self, DiskCounters, NetCounters};
 /// reported `unresponsive`.
 const STATVFS_TIMEOUT: Duration = Duration::from_secs(2);
 
-/// Filesystem types that hold no user data (kernel interfaces, container
-/// layers, RAM). They are not reported.
-pub const PSEUDO_FS: &[&str] = &[
-    "proc",
-    "sysfs",
-    "cgroup",
-    "cgroup2",
-    "devpts",
-    "devtmpfs",
-    "mqueue",
-    "debugfs",
-    "tracefs",
-    "securityfs",
-    "pstore",
-    "bpf",
-    "configfs",
-    "fusectl",
-    "hugetlbfs",
-    "autofs",
-    "binfmt_misc",
-    "efivarfs",
-    "nsfs",
-    "rpc_pipefs",
-    "selinuxfs",
-    "overlay",
-    "squashfs",
-    "tmpfs",
-    "ramfs",
-    "fuse.gvfsd-fuse",
-    "fuse.portal",
-    "nfsd",
-];
-
-pub const NETWORK_FS: &[&str] = &[
-    "nfs",
-    "nfs4",
-    "cifs",
-    "smb3",
-    "smbfs",
-    "ceph",
-    "glusterfs",
-    "fuse.glusterfs",
-    "fuse.sshfs",
-    "fuse.rclone",
-    "fuse.s3fs",
-    "davfs",
-    "9p",
-    "afs",
-    "lustre",
-];
+pub use hazelminx_protocol::storage::{NETWORK_FS, PSEUDO_FS};
 
 /// Filesystems without a fixed inode table: inode use is not applicable.
 const NO_INODE_TABLE: &[&str] = &["btrfs", "zfs", "bcachefs"];
@@ -686,11 +637,6 @@ fn statvfs(p: &Path) -> Option<Vfs> {
 #[cfg(not(unix))]
 fn statvfs(_: &Path) -> Option<Vfs> {
     None
-}
-
-/// `total - free` of the filesystem holding `p`.
-pub fn statvfs_used(p: &Path) -> Option<u64> {
-    statvfs(p).map(|v| v.total.saturating_sub(v.free))
 }
 
 #[cfg(unix)]

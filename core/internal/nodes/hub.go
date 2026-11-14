@@ -114,13 +114,12 @@ type HostReports interface {
 	MetricsReport(ctx context.Context, s *Session, m *protocol.MetricsReport) (uint64, error)
 }
 
-// StorageReports stores what agents report about their storage. Calls run
-// on the session's read loop, one at a time per session. Neither message
-// is acknowledged: the agent sends the current state again on its next
-// session or change.
+// StorageReports stores the storage inventories agents report. Calls run
+// on the session's read loop, one at a time per session. Inventories are
+// not acknowledged: the agent sends the current one again on its next
+// session or change. Usage is asked for with RequestStorageUsage.
 type StorageReports interface {
 	HostStorage(ctx context.Context, s *Session, m *protocol.HostStorage) error
-	StorageUsage(ctx context.Context, s *Session, m *protocol.StorageUsage) error
 }
 
 // Limits on inbound data. Before the agent has proven who it is, messages

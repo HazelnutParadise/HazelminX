@@ -230,3 +230,14 @@ jobs:
           GOCACHE: ${{ runner.temp }}/go-build-root
           GOMODCACHE: /home/runner/go/pkg/mod
           GOFLAGS: -mod=readonly
+      - name: Storage usage, end to end (agent as nobody, executor as root)
+        working-directory: core
+        run: |
+          sudo --preserve-env=HAZELMINX_AGENT_BIN,HAZELMINX_PRIVILEGED_BIN,GOCACHE,GOMODCACHE,GOFLAGS \
+            HAZELMINX_DISPOSABLE_HOST=1 "$(command -v go)" test ./internal/hoststorage -run Interop -count=1 -v
+        env:
+          HAZELMINX_AGENT_BIN: ${{ github.workspace }}/agent/target/debug/hazelminx-agent
+          HAZELMINX_PRIVILEGED_BIN: ${{ github.workspace }}/agent/target/debug/hazelminx-privileged
+          GOCACHE: ${{ runner.temp }}/go-build-root
+          GOMODCACHE: /home/runner/go/pkg/mod
+          GOFLAGS: -mod=readonly

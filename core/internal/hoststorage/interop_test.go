@@ -1,15 +1,23 @@
 package hoststorage
 
-// End to end with a real agent: Core (hub, Reporter, Store) ← real
-// hazelminx-agent reading the storage of the host it runs on. The agent
-// must be built with test-actions so the first usage round starts at once:
+// End to end with a real agent: Core (hub, Reporter, Prober, Store) ←
+// real hazelminx-agent reading the storage of the host it runs on.
 //
-//	cargo build -p hazelminx-agent --features test-actions   (in agent/)
+//	cargo build -p hazelminx-agent -p hazelminx-privileged     (in agent/)
 //	HAZELMINX_AGENT_BIN=$CARGO_TARGET_DIR/debug/hazelminx-agent \
 //	  go test ./internal/hoststorage -run Interop -v
 //
-// On Linux it checks the host's real mounts and the usage breakdown;
-// elsewhere the agent has no /proc and reports the sources unreadable.
+// TestInteropAgentReportsStorage needs no root: the agent's privileged
+// executor socket does not exist, so the usage request must come back as
+// "could not measure" with nothing invented.
+//
+// TestInteropRootHelperMeasuresWhatAgentCannotRead runs the agent as
+// nobody and the real hazelminx-privileged as root on a Linux host whose
+// /var/lib/docker is its own local mount (a container with a volume there):
+//
+//	sudo HAZELMINX_DISPOSABLE_HOST=1 HAZELMINX_AGENT_BIN=... \
+//	  HAZELMINX_PRIVILEGED_BIN=$CARGO_TARGET_DIR/debug/hazelminx-privileged \
+//	  go test ./internal/hoststorage -run Interop -v
 
 import (
 	"context"
@@ -28,12 +36,14 @@ import (
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
 	"testing"
 	"time"
 
+	"github.com/HazelnutParadise/hazelminx/core/internal/grants"
 	"github.com/HazelnutParadise/hazelminx/core/internal/hostmetrics"
 	"github.com/HazelnutParadise/hazelminx/core/internal/nodes"
 	"github.com/HazelnutParadise/hazelminx/core/internal/protocol"
@@ -130,22 +140,53 @@ func interopDB(t *testing.T) *sql.DB {
 	return st.DB
 }
 
-func TestInteropAgentReportsStorage(t *testing.T) {
-	agentBin := os.Getenv("HAZELMINX_AGENT_BIN")
-	if agentBin == "" {
-		t.Skip("HAZELMINX_AGENT_BIN not set")
-	}
+// core is a Core with hub, grant issuer, storage and metrics stores.
+type core struct {
+	hub    *nodes.Hub
+	addr   string
+	pki    *nodes.PKI
+	issuer *grants.Issuer
+	st     *Store
+	hm     *hostmetrics.Store
+}
+
+func startCore(t *testing.T, fp *string) *core {
+	t.Helper()
 	ctx := context.Background()
-	pki, err := nodes.LoadOrCreatePKI(ctx, &memSecrets{vals: map[string][]byte{}}, nil)
+	sec := &memSecrets{vals: map[string][]byte{}}
+	pki, err := nodes.LoadOrCreatePKI(ctx, sec, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	issuer, err := grants.LoadOrCreate(ctx, sec, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	db := interopDB(t)
-	st, hm := NewStore(db, nil), hostmetrics.NewStore(db, nil)
-	logs := &lockedBuffer{}
-	state := filepath.Join(t.TempDir(), "agent")
-	out, err := exec.Command(agentBin, "--config", "/nonexistent.toml", "--state-dir", state, "identity").CombinedOutput()
-	if err != nil {
+	c := &core{pki: pki, issuer: issuer, st: NewStore(db, nil), hm: hostmetrics.NewStore(db, nil)}
+	nodeID := func(_ context.Context, got string) (string, error) {
+		if got != *fp {
+			return "", errors.New("unknown fingerprint")
+		}
+		return "node-1", nil
+	}
+	c.hub = nodes.NewHub(nodes.HubOptions{PKI: pki, CoreVersion: "test", Heartbeat: time.Second,
+		HostReports:    hostmetrics.Reporter{Store: c.hm, NodeID: nodeID},
+		StorageReports: Reporter{Store: c.st, NodeID: nodeID},
+		Logger:         slog.New(slog.NewTextHandler(io.Discard, nil))})
+	srv := httptest.NewUnstartedServer(c.hub)
+	srv.TLS = pki.ServerTLSConfig()
+	srv.StartTLS()
+	t.Cleanup(func() { c.hub.Close(); srv.Close() })
+	c.addr = srv.Listener.Addr().String()
+	return c
+}
+
+// enroll makes an agent identity in state, signs it and returns its
+// fingerprint; owner, when not -1, gets the state directory.
+func (c *core) enroll(t *testing.T, agentBin, state string, owner int) string {
+	t.Helper()
+	if out, err := exec.Command(agentBin, "--config", "/nonexistent.toml", "--state-dir", state, "identity").CombinedOutput(); err != nil {
 		t.Fatalf("agent identity: %v\n%s", err, out)
 	}
 	pubPEM, err := os.ReadFile(filepath.Join(state, "identity", "node.pub"))
@@ -157,101 +198,221 @@ func TestInteropAgentReportsStorage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fp := protocol.Fingerprint(k.(ed25519.PublicKey))
-	nodeID := func(_ context.Context, got string) (string, error) {
-		if got != fp {
-			return "", errors.New("unknown fingerprint")
-		}
-		return "node-1", nil
-	}
-	hub := nodes.NewHub(nodes.HubOptions{PKI: pki, CoreVersion: "test", Heartbeat: time.Second,
-		HostReports:    hostmetrics.Reporter{Store: hm, NodeID: nodeID},
-		StorageReports: Reporter{Store: st, NodeID: nodeID},
-		Logger:         slog.New(slog.NewTextHandler(io.Discard, nil))})
-	srv := httptest.NewUnstartedServer(hub)
-	srv.TLS = pki.ServerTLSConfig()
-	srv.StartTLS()
-	t.Cleanup(func() { hub.Close(); srv.Close() })
-	cert, err := pki.IssueNodeCertificate(k.(ed25519.PublicKey), time.Hour)
+	cert, err := c.pki.IssueNodeCertificate(k.(ed25519.PublicKey), time.Hour)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(state, "identity", "node.crt"), cert, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(state, "identity", "core-ca.crt"), pki.CACertificatePEM(), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(state, "identity", "core-ca.crt"), c.pki.CACertificatePEM(), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	_, port, _ := net.SplitHostPort(srv.Listener.Addr().String())
-	cmd := exec.Command(agentBin, "--config", "/nonexistent.toml", "--state-dir", state, "--core-url", "https://127.0.0.1:"+port, "--log-format", "text", "run")
-	cmd.Env = append(os.Environ(), "HAZELMINX_TEST_USAGE_FIRST_SECONDS=0")
+	if owner >= 0 {
+		_ = filepath.Walk(state, func(p string, _ os.FileInfo, _ error) error { return os.Lchown(p, owner, owner) })
+	}
+	return protocol.Fingerprint(k.(ed25519.PublicKey))
+}
+
+func (c *core) prober(fp string) *Prober {
+	return &Prober{Store: c.st, Grants: c.issuer, Hub: c.hub, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+		NodeID: func(context.Context, string) (string, error) { return "node-1", nil }}
+}
+
+func startAgent(t *testing.T, logs *lockedBuffer, agentBin, cfg, state, coreAddr string, uid int) {
+	t.Helper()
+	_, port, _ := net.SplitHostPort(coreAddr)
+	cmd := exec.Command(agentBin, "--config", cfg, "--state-dir", state, "--core-url", "https://127.0.0.1:"+port, "--log-format", "text", "run")
+	if uid >= 0 {
+		cmd.SysProcAttr = &syscall.SysProcAttr{Credential: &syscall.Credential{Uid: uint32(uid), Gid: uint32(uid)}}
+	}
 	cmd.Stdout, cmd.Stderr = logs, logs
 	if err := cmd.Start(); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { stopProc(cmd) })
+}
+
+func TestInteropAgentReportsStorage(t *testing.T) {
+	agentBin := os.Getenv("HAZELMINX_AGENT_BIN")
+	if agentBin == "" {
+		t.Skip("HAZELMINX_AGENT_BIN not set")
+	}
+	ctx := context.Background()
+	var fp string
+	c := startCore(t, &fp)
+	logs := &lockedBuffer{}
+	work := t.TempDir()
+	state := filepath.Join(work, "agent")
+	fp = c.enroll(t, agentBin, state, -1)
+	cfg := filepath.Join(work, "agent.toml")
+	if err := os.WriteFile(cfg, fmt.Appendf(nil, "privileged_socket = %q\n", filepath.Join(work, "absent.sock")), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	startAgent(t, logs, agentBin, cfg, state, c.addr, -1)
 
 	waitFor(t, logs, 15*time.Second, "agent session with host.storage", func() bool {
-		s, ok := hub.Session(fp)
+		s, ok := c.hub.Session(fp)
 		return ok && s.Supports(protocol.CapHostStorage, 1)
 	})
 	var inv *Inventory
 	waitFor(t, logs, 20*time.Second, "storage inventory stored", func() bool {
-		inv, _ = st.Inventory(ctx, "node-1")
+		inv, _ = c.st.Inventory(ctx, "node-1")
 		return inv != nil
 	})
 	if runtime.GOOS != "linux" {
 		if len(inv.Storage.Mounts) != 0 || !slices.Contains(inv.Storage.Unreadable, "/proc/self/mountinfo") {
 			t.Fatalf("no /proc here, yet mounts arrived or the gap is not named: %+v", inv.Storage)
 		}
-		return
-	}
-	if len(inv.Storage.Mounts) == 0 {
+	} else if len(inv.Storage.Mounts) == 0 {
 		t.Fatalf("no mounts on Linux: %+v", inv.Storage)
 	}
-	var use *Usage
-	waitFor(t, logs, 120*time.Second, "storage usage stored", func() bool {
-		use, _ = st.Usage(ctx, "node-1")
-		return use != nil
-	})
-	measured := map[string]bool{}
-	for _, m := range inv.Storage.Mounts {
-		if m.Class == "local" {
-			measured[m.Dev] = true
-		}
+
+	// No executor: the request comes back as "could not measure", with
+	// nothing measured and no zeros.
+	if err := c.prober(fp).Probe(ctx, fp); err == nil {
+		t.Fatal("usage without the executor must fail")
 	}
-	found := map[string]uint64{}
-	for _, f := range use.Usage.Filesystems {
-		if !measured[f.Dev] {
-			t.Fatalf("usage for %s (%s), which the inventory has no local mount for", f.MountPoint, f.Dev)
-		}
-		var sum uint64
-		for _, c := range f.Categories {
-			sum += c.Bytes
-			found[c.Category] += c.Bytes
-		}
-		if f.State == "complete" && (f.UsedBytes == nil || f.OtherBytes == nil || sum+*f.OtherBytes != *f.UsedBytes) {
-			t.Fatalf("a complete measurement must add up to used space: %+v", f)
-		}
-		t.Logf("usage of %s (%s): state %s, categories %+v, other %v, used %v", f.MountPoint, f.Dev, f.State, f.Categories, f.OtherBytes, f.UsedBytes)
+	u, err := c.st.Usage(ctx, "node-1")
+	if err != nil || u == nil || u.Measured || u.Error == nil || u.Error.Code != protocol.StorageUsageExecutorUnreachable {
+		t.Fatalf("usage: %+v %v\n%s", u, err, logs.String())
 	}
-	t.Logf("round: %d entries in %d ms", use.Usage.Entries, use.Usage.DurationMs)
-	// HAZELMINX_INTEROP_EXPECT_CATEGORY names a category the host is set
-	// up to have (the Linux container mounts a volume at /var/lib/docker).
-	if want := os.Getenv("HAZELMINX_INTEROP_EXPECT_CATEGORY"); want != "" && found[want] == 0 {
-		t.Fatalf("expected bytes in %s, got %v", want, found)
-	}
-	waitFor(t, logs, 30*time.Second, "a metrics sample", func() bool {
-		l, _ := hm.Latest(ctx, "node-1")
-		return l != nil
-	})
-	v, err := st.NodeView(ctx, hm, "node-1")
-	if err != nil || !v.Reported {
+	v, err := c.st.NodeView(ctx, c.hm, "node-1")
+	if err != nil || !v.Reported || v.UsageError == nil || v.UsageMeasuredAt != nil {
 		t.Fatalf("view: %+v %v", v, err)
+	}
+	for _, m := range v.Mounts {
+		if m.Usage != nil {
+			t.Fatalf("mount %s has usage without a measurement: %+v", m.MountPoint, m.Usage)
+		}
 	}
 	for _, d := range v.Devices {
 		if d.Kind == "disk" && (d.Health == nil || d.Health.State != "notCollected") {
 			t.Fatalf("disk %s must not claim a health result: %+v", d.Name, d.Health)
 		}
 	}
+}
+
+func TestInteropRootHelperMeasuresWhatAgentCannotRead(t *testing.T) {
+	agentBin, privBin := os.Getenv("HAZELMINX_AGENT_BIN"), os.Getenv("HAZELMINX_PRIVILEGED_BIN")
+	if agentBin == "" || privBin == "" {
+		t.Skip("HAZELMINX_AGENT_BIN and HAZELMINX_PRIVILEGED_BIN not set")
+	}
+	if runtime.GOOS != "linux" || os.Getenv("HAZELMINX_DISPOSABLE_HOST") != "1" || os.Geteuid() != 0 {
+		t.Skip("writes under /var/lib/docker and runs the executor as root: Linux, root and HAZELMINX_DISPOSABLE_HOST=1")
+	}
+	const nobody = 65534
+	ctx := context.Background()
+	// /var/lib/docker must be its own local filesystem (an overlay root is
+	// not measured): the CI job and the container recipe mount one there.
+	if out, err := exec.Command("findmnt", "-n", "-o", "FSTYPE", "-T", "/var/lib/docker").Output(); err != nil || len(out) == 0 || strings.TrimSpace(string(out)) == "overlay" {
+		t.Skip("/var/lib/docker is on an overlay root, which is not measured")
+	}
+	// Root-only engine storage, like Docker's 0710 root directory.
+	data := filepath.Join("/var/lib/docker", "overlay2", "hzx-interop-"+strconv.Itoa(os.Getpid()))
+	if err := os.MkdirAll(data, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(data) })
+	if err := os.Chmod("/var/lib/docker", 0o710); err != nil {
+		t.Fatal(err)
+	}
+	blob := make([]byte, 4<<20)
+	if err := os.WriteFile(filepath.Join(data, "layer"), blob, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	var fp string
+	c := startCore(t, &fp)
+	logs := &lockedBuffer{}
+	// A directory nobody can enter: state, config and the executor socket.
+	work, err := os.MkdirTemp("/tmp", "hzx-storage-interop-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(work) })
+	_ = os.Chmod(work, 0o755)
+	// A copy of the agent nobody may run (the build tree may be private).
+	agentCopy := filepath.Join(work, "hazelminx-agent")
+	b, err := os.ReadFile(agentBin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(agentCopy, b, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	agentBin = agentCopy
+	state := filepath.Join(work, "agent")
+	fp = c.enroll(t, agentBin, state, nobody)
+
+	// The executor, as root, accepts nobody's connections.
+	base := filepath.Join("/var/lib", fmt.Sprintf("hzx-storage-interop-%d", os.Getpid()))
+	if err := os.Mkdir(base, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	_ = os.Chmod(base, 0o755)
+	t.Cleanup(func() { _ = os.RemoveAll(base) })
+	sock := filepath.Join(work, "privileged.sock")
+	pub := filepath.Join(work, "issuer.pub")
+	if err := os.WriteFile(pub, c.issuer.PublicKeyPEM(), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	ex := exec.Command(privBin, "--config", "/nonexistent.toml", "--socket", sock, "--issuer-key", pub,
+		"--allowed-uid", strconv.Itoa(nobody), "--ledger-dir", filepath.Join(base, "ledger"), "--log-format", "text", "run")
+	ex.Stdout, ex.Stderr = logs, logs
+	if err := ex.Start(); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { stopProc(ex) })
+	waitFor(t, logs, 10*time.Second, "executor socket", func() bool { _, err := os.Stat(sock); return err == nil })
+	// Deployed, the executor runs with the agent's group (Group=hazelminx-agent)
+	// and its 0660 socket is the agent's to open; here that group is nobody's.
+	if err := os.Chown(sock, 0, nobody); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := filepath.Join(work, "agent.toml")
+	if err := os.WriteFile(cfg, fmt.Appendf(nil, "privileged_socket = %q\n", sock), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	startAgent(t, logs, agentBin, cfg, state, c.addr, nobody)
+	waitFor(t, logs, 15*time.Second, "agent session with host.storage", func() bool {
+		s, ok := c.hub.Session(fp)
+		return ok && s.Supports(protocol.CapHostStorage, 1)
+	})
+	// The agent's own account cannot even list the directory.
+	ls := exec.Command("ls", data)
+	ls.SysProcAttr = &syscall.SysProcAttr{Credential: &syscall.Credential{Uid: nobody, Gid: nobody}}
+	if err := ls.Run(); err == nil {
+		t.Fatalf("%s is readable by the agent's account; the test proves nothing", data)
+	}
+	if err := c.prober(fp).Probe(ctx, fp); err != nil {
+		t.Fatalf("probe: %v\n%s", err, logs.String())
+	}
+	u, err := c.st.Usage(ctx, "node-1")
+	if err != nil || u == nil || !u.Measured || u.Error != nil {
+		t.Fatalf("usage: %+v %v", u, err)
+	}
+	var found *protocol.FilesystemUsage
+	for i, f := range u.Usage.Filesystems {
+		for _, cat := range f.Categories {
+			if cat.Category == protocol.CategoryContainerImages {
+				found = &u.Usage.Filesystems[i]
+			}
+		}
+	}
+	if found == nil {
+		t.Fatalf("no container images measured: %+v", u.Usage)
+	}
+	var sum, images uint64
+	for _, cat := range found.Categories {
+		sum += cat.Bytes
+		if cat.Category == protocol.CategoryContainerImages {
+			images = cat.Bytes
+		}
+	}
+	if found.State != "complete" || found.OtherBytes == nil || sum+*found.OtherBytes != *found.UsedBytes || images < uint64(len(blob)) {
+		t.Fatalf("a complete round of root-only data that adds up: %+v", found)
+	}
+	t.Logf("measured %s as root for an agent running as uid %d: %+v, other %d, used %d, %d entries in %d ms",
+		found.MountPoint, nobody, found.Categories, *found.OtherBytes, *found.UsedBytes, u.Usage.Entries, u.Usage.DurationMs)
 }

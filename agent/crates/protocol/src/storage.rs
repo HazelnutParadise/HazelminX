@@ -204,3 +204,67 @@ pub struct StorageUsage {
     pub entries: u64,
     pub filesystems: Vec<FilesystemUsage>,
 }
+
+/// Filesystem types that hold no user data (kernel interfaces, container
+/// layers, RAM). They are not reported.
+pub const PSEUDO_FS: &[&str] = &[
+    "proc",
+    "sysfs",
+    "cgroup",
+    "cgroup2",
+    "devpts",
+    "devtmpfs",
+    "mqueue",
+    "debugfs",
+    "tracefs",
+    "securityfs",
+    "pstore",
+    "bpf",
+    "configfs",
+    "fusectl",
+    "hugetlbfs",
+    "autofs",
+    "binfmt_misc",
+    "efivarfs",
+    "nsfs",
+    "rpc_pipefs",
+    "selinuxfs",
+    "overlay",
+    "squashfs",
+    "tmpfs",
+    "ramfs",
+    "fuse.gvfsd-fuse",
+    "fuse.portal",
+    "nfsd",
+];
+
+/// Network filesystems: not walked for usage, statvfs bounded in time.
+pub const NETWORK_FS: &[&str] = &[
+    "nfs",
+    "nfs4",
+    "cifs",
+    "smb3",
+    "smbfs",
+    "ceph",
+    "glusterfs",
+    "fuse.glusterfs",
+    "fuse.sshfs",
+    "fuse.rclone",
+    "fuse.s3fs",
+    "davfs",
+    "9p",
+    "afs",
+    "lustre",
+];
+
+/// Mount class from the filesystem type: `network`, `virtual` (FUSE) or
+/// `local`. Pseudo filesystems are left out before this.
+pub fn mount_class(fs_type: &str) -> &'static str {
+    if NETWORK_FS.contains(&fs_type) {
+        "network"
+    } else if fs_type.starts_with("fuse") {
+        "virtual"
+    } else {
+        "local"
+    }
+}
