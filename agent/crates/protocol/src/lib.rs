@@ -11,6 +11,7 @@
 //! The JSON shapes are pinned by `engineering/contracts/fixtures`; the Go mirror in
 //! `core/internal/protocol` is tested against the same files.
 
+pub mod engines;
 pub mod enroll;
 pub mod metrics;
 
@@ -45,6 +46,9 @@ pub const CAP_NODE_CERTIFICATE: &str = "node.certificate";
 /// samples (ticket 020.1). The agent sends them only when the Core declares
 /// this capability too.
 pub const CAP_HOST_METRICS: &str = "host.metrics";
+/// `engines_probe` / `engines_report` / `engines_unavailable`: the container
+/// engines on the host (ticket 039.1), read by the privileged executor.
+pub const CAP_HOST_ENGINES: &str = "host.engines";
 
 /// `certificate_refused` codes.
 pub mod certificate_refused_code {
@@ -95,6 +99,17 @@ pub mod ledger_unavailable_code {
     /// The executor accepted but could not export (ledger not open, or
     /// `afterSeq` is past the host ledger's head).
     pub const EXPORT_FAILED: &str = "EXPORT_FAILED";
+}
+
+/// `engines_unavailable` codes.
+pub mod engines_unavailable_code {
+    /// The agent cannot reach the privileged executor's socket.
+    pub const EXECUTOR_UNREACHABLE: &str = "EXECUTOR_UNREACHABLE";
+    /// The executor refused the request (grant, permission, parameters).
+    pub const EXECUTOR_REFUSED: &str = "EXECUTOR_REFUSED";
+    /// The executor accepted but could not inspect, or answered something
+    /// that is not an engine report.
+    pub const INSPECT_FAILED: &str = "INSPECT_FAILED";
 }
 
 /// A grant for the privileged executor, carried through the agent unchanged.
@@ -354,6 +369,25 @@ pub enum Message {
     MetricsAck {
         seq: u64,
     },
+    /// Core asks which container engines the host has; the agent passes
+    /// `grant` to the privileged executor's `engine_inspect`.
+    EnginesProbe {
+        request_id: String,
+        grant: ExecutorGrant,
+    },
+    /// The executor's report, unchanged.
+    EnginesReport {
+        request_id: String,
+        #[serde(with = "time::serde::rfc3339")]
+        collected_at: OffsetDateTime,
+        report: Box<engines::EngineReport>,
+    },
+    /// The agent could not produce a report.
+    EnginesUnavailable {
+        request_id: String,
+        code: String,
+        message: String,
+    },
 }
 
 /// Why a message could not be decoded. `UnknownType` lets the receiver answer
@@ -459,6 +493,9 @@ const SESSION_TYPES: &[&str] = &[
     "host_facts",
     "metrics_report",
     "metrics_ack",
+    "engines_probe",
+    "engines_report",
+    "engines_unavailable",
 ];
 
 /// The string `type` of a JSON object, or `Malformed`.

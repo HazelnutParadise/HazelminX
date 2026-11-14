@@ -1,0 +1,180 @@
+{
+  "type": "engines_report",
+  "requestId": "enp_01HXYZ",
+  "collectedAt": "2026-11-14T08:00:00Z",
+  "report": {
+    "engines": [
+      {
+        "kind": "docker",
+        "state": "running",
+        "binary": "/usr/bin/docker",
+        "binaryVersion": "Docker version 27.3.1, build ce12230",
+        "units": [
+          {
+            "name": "docker.service",
+            "loadState": "loaded",
+            "activeState": "active",
+            "subState": "running",
+            "unitFileState": "enabled"
+          },
+          {
+            "name": "docker.socket",
+            "loadState": "loaded",
+            "activeState": "active",
+            "subState": "listening",
+            "unitFileState": "enabled"
+          },
+          {
+            "name": "containerd.service",
+            "loadState": "loaded",
+            "activeState": "active",
+            "subState": "running",
+            "unitFileState": "enabled"
+          }
+        ],
+        "plugins": [
+          {
+            "name": "compose",
+            "path": "/usr/libexec/docker/cli-plugins/docker-compose",
+            "version": "Docker Compose version v2.29.7"
+          },
+          {
+            "name": "buildx",
+            "path": "/usr/libexec/docker/cli-plugins/docker-buildx",
+            "version": null
+          }
+        ]
+      },
+      {
+        "kind": "podman",
+        "state": "running",
+        "binary": "/usr/bin/podman",
+        "binaryVersion": "podman version 5.4.2",
+        "units": [
+          {
+            "name": "podman.service",
+            "loadState": "loaded",
+            "activeState": "inactive",
+            "subState": "dead",
+            "unitFileState": "disabled"
+          },
+          {
+            "name": "podman.socket",
+            "loadState": "loaded",
+            "activeState": "active",
+            "subState": "listening",
+            "unitFileState": "enabled"
+          }
+        ],
+        "plugins": []
+      },
+      {
+        "kind": "k3s",
+        "state": "not_installed",
+        "binary": null,
+        "binaryVersion": null,
+        "units": [
+          {
+            "name": "k3s.service",
+            "loadState": "not-found",
+            "activeState": "inactive",
+            "subState": "dead",
+            "unitFileState": null
+          },
+          {
+            "name": "k3s-agent.service",
+            "loadState": "not-found",
+            "activeState": "inactive",
+            "subState": "dead",
+            "unitFileState": null
+          }
+        ],
+        "plugins": []
+      }
+    ],
+    "environments": [
+      {
+        "id": "env:/run/docker.sock",
+        "kind": "docker",
+        "kindConfirmed": true,
+        "endpoint": "/var/run/docker.sock",
+        "endpointResolved": "/run/docker.sock",
+        "mode": "rootful",
+        "ownerUid": 0,
+        "ownerName": "root",
+        "state": "running",
+        "version": "27.3.1",
+        "apiVersion": "1.47",
+        "cgroupDriver": "systemd",
+        "cgroupVersion": "2",
+        "swarm": "inactive",
+        "containers": 12,
+        "containersRunning": 9,
+        "error": null
+      },
+      {
+        "id": "env:/run/podman/podman.sock",
+        "kind": "podman",
+        "kindConfirmed": true,
+        "endpoint": "/run/podman/podman.sock",
+        "endpointResolved": "/run/podman/podman.sock",
+        "mode": "rootful",
+        "ownerUid": 0,
+        "ownerName": "root",
+        "state": "running",
+        "version": "5.4.2",
+        "apiVersion": "1.41",
+        "cgroupDriver": "systemd",
+        "cgroupVersion": "2",
+        "swarm": null,
+        "containers": 1,
+        "containersRunning": 1,
+        "error": null
+      },
+      {
+        "id": "env:/run/user/1000/podman/podman.sock",
+        "kind": "podman",
+        "kindConfirmed": true,
+        "endpoint": "/run/user/1000/podman/podman.sock",
+        "endpointResolved": "/run/user/1000/podman/podman.sock",
+        "mode": "rootless",
+        "ownerUid": 1000,
+        "ownerName": "tim",
+        "state": "running",
+        "version": "5.4.2",
+        "apiVersion": "1.41",
+        "cgroupDriver": "systemd",
+        "cgroupVersion": "2",
+        "swarm": null,
+        "containers": 3,
+        "containersRunning": 2,
+        "error": null
+      },
+      {
+        "id": "env:/run/user/1001/podman/podman.sock",
+        "kind": "podman",
+        "kindConfirmed": false,
+        "endpoint": "/run/user/1001/podman/podman.sock",
+        "endpointResolved": "/run/user/1001/podman/podman.sock",
+        "mode": "rootless",
+        "ownerUid": 1001,
+        "ownerName": null,
+        "state": "not_responding",
+        "version": null,
+        "apiVersion": null,
+        "cgroupDriver": null,
+        "cgroupVersion": null,
+        "swarm": null,
+        "containers": null,
+        "containersRunning": null,
+        "error": "connect: Connection refused (os error 111)"
+      }
+    ],
+    "uninspected": [
+      {
+        "path": "/run/user/1002/docker.sock",
+        "reason": "leads to /run/docker.sock owned by uid 0; only the user's own sockets in their runtime directory are asked"
+      }
+    ]
+  }
+}

@@ -467,6 +467,7 @@ dependencies = [
  "base64",
  "clap",
  "ed25519-dalek",
+ "hazelminx-protocol",
  "hex",
  "rand 0.8.8",
  "serde",

@@ -6,6 +6,7 @@
 mod actions;
 mod config;
 mod connection;
+mod engines;
 mod enroll;
 mod identity;
 mod journal;
