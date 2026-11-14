@@ -10,7 +10,7 @@ import { authApi, authKeys, isApiError, type FactorMethod, type FactorProof } fr
 import { AUTH_PATHS, safeNext, withNext } from "./nextPath";
 import { AuthCard, AuthError, Divider, Notice, OtpInput } from "./parts";
 import { useRetryCountdown } from "./hooks";
-import { forgetAccountData, useSession, useSignOut } from "./session";
+import { forgetAccountData, useSession, useSignOut, useSignOutRetry } from "./session";
 import { getPasskey, passkeyBlock, passkeyFailure } from "./webauthn";
 
 interface Challenge {
@@ -36,6 +36,10 @@ export function LoginPage() {
   const signOut = useSignOut();
   // Set by useSignOut when Core did not confirm the sign-out: the old session may still work.
   const signOutFailed = (location.state as { signOutFailed?: boolean } | null)?.signOutFailed === true;
+  // It is retried here without the user asking; the warning appears only when the retries fail too.
+  const signOutRetry = useSignOutRetry(signOutFailed, location.key, () => {
+    void navigate(location.pathname + location.search, { replace: true, state: null });
+  });
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [username, setUsername] = useState("");
   const [expired, setExpired] = useState(false);
@@ -58,10 +62,16 @@ export function LoginPage() {
     <div className="hx-auth-stack">
       {signOutFailed && (
         <div className="hx-auth-row">
-          <Notice tone="warn">{t("auth.login.signOutFailed")}</Notice>
-          <Button variant="secondary" onClick={() => void signOut()}>
-            {t("auth.login.signOutRetry")}
-          </Button>
+          {signOutRetry === "retrying" ? (
+            <Notice tone="info">{t("auth.login.signOutRetrying")}</Notice>
+          ) : (
+            <>
+              <Notice tone="warn">{t("auth.login.signOutFailed")}</Notice>
+              <Button variant="secondary" onClick={() => void signOut()}>
+                {t("auth.login.signOutRetry")}
+              </Button>
+            </>
+          )}
         </div>
       )}
       {challenge ? (

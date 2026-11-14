@@ -180,6 +180,7 @@
       "lostFactor": "忘記二次驗證：第二步選「使用復原碼」",
       "lostPassword": "忘記密碼：請管理員重設，或在主機上執行",
       "signOutFailed": "沒有確認登出成功，這台裝置可能還在登入狀態",
+      "signOutRetrying": "還沒確認登出成功，正在重試",
       "signOutRetry": "再登出一次"
     },
     "second": {

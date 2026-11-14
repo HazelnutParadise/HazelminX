@@ -1,4 +1,5 @@
 import { MutationCache, QueryCache, QueryClient, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { ApiError } from "../api/client";
@@ -72,7 +73,8 @@ function toApiError(err: unknown): ApiError {
 /**
  * Signs out, opens the login page (without `next`) and forgets everything cached for the account. When Core
  * did not confirm the sign-out (unreachable, or any error but "already signed out"), the session may still
- * be valid: the login page says so and offers to try again instead of quietly signing the user back in.
+ * be valid: the login page keeps trying on its own ({@link useSignOutRetry}) and only when that fails too
+ * says so and offers to try again, instead of quietly signing the user back in.
  */
 export function useSignOut() {
   const client = useQueryClient();
@@ -89,6 +91,69 @@ export function useSignOut() {
     client.removeQueries();
     client.setQueryData(authKeys.session, null);
   };
+}
+
+/** Waits before each automatic retry of an unconfirmed sign-out. Tests shorten them. */
+export const signOutRetry = { delaysMs: [1000, 3000, 6000] };
+
+/**
+ * Retries a sign-out Core did not confirm, without the user asking: after each delay of {@link signOutRetry},
+ * and at once when the browser comes back online. `onConfirmed` runs when Core confirms (or says the session
+ * is already gone). The result is "retrying" while attempts remain and "failed" when the last one failed;
+ * a new `attempt` (the manual retry) starts over.
+ */
+export function useSignOutRetry(active: boolean, attempt: string, onConfirmed: () => void): "retrying" | "failed" {
+  const [failedFor, setFailedFor] = useState<string | null>(null);
+  const confirmed = useRef(onConfirmed);
+  useEffect(() => {
+    confirmed.current = onConfirmed;
+  });
+  useEffect(() => {
+    if (!active) return;
+    // One run of retries; cleanup stops it.
+    const run: { stopped: boolean; busy: boolean; n: number; timer?: ReturnType<typeof setTimeout> } = {
+      stopped: false,
+      busy: false,
+      n: 0,
+    };
+    const schedule = () => {
+      const delay = signOutRetry.delaysMs[run.n];
+      if (delay === undefined) {
+        setFailedFor(attempt);
+        return;
+      }
+      run.n += 1;
+      run.timer = setTimeout(() => void tryOnce(), delay);
+    };
+    const tryOnce = async () => {
+      if (run.stopped || run.busy) return;
+      run.busy = true;
+      const ok = await authApi.logout().then(
+        () => true,
+        (err: unknown) => isApiError(err, "UNAUTHENTICATED"),
+      );
+      run.busy = false;
+      if (run.stopped) return;
+      if (ok) {
+        run.stopped = true;
+        confirmed.current();
+        return;
+      }
+      schedule();
+    };
+    const online = () => {
+      clearTimeout(run.timer);
+      void tryOnce();
+    };
+    schedule();
+    window.addEventListener("online", online);
+    return () => {
+      run.stopped = true;
+      clearTimeout(run.timer);
+      window.removeEventListener("online", online);
+    };
+  }, [active, attempt]);
+  return failedFor === attempt ? "failed" : "retrying";
 }
 
 /** The shell's account menu label: display name and the most privileged role. */
