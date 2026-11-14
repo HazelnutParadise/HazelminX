@@ -89,6 +89,9 @@
 | 042 | 管理員可以匯入既有容器選擇接管，並管理引擎設定、儲存位置與 GPU 裝置 | 容器引擎 | 040, 032 | [#42](https://github.com/HazelnutParadise/hazelminx/issues/42) |
 | 043 | 管理員可以管理 Swarm 節點、服務、Stack、Secret 與更新策略 | 容器引擎 | 041 | [#43](https://github.com/HazelnutParadise/hazelminx/issues/43) |
 | 044 | 專案管理員可以建立專案與環境，匯入完整 Compose 並驗證後部署 | Compose 部署 | 039, 008, 016 | [#44](https://github.com/HazelnutParadise/hazelminx/issues/44) |
+| 044.1 | 專案管理員可以用 API 建立專案與環境、匯入完整 Compose、看到驗證結果與部署預覽 | Compose 部署 | 039.1, 010, 011 | [#176](https://github.com/HazelnutParadise/hazelminx/issues/176) |
+| 044.2 | 專案管理員可以在預檢與批准後，由工作透過高權限執行器建置並部署整個 Compose 專案 | Compose 部署 | 044.1, 008, 016, 113 | [#177](https://github.com/HazelnutParadise/hazelminx/issues/177) |
+| 044.3 | 專案管理員可以在專案頁匯入、編輯、驗證 Compose 並看到部署預檢 | Compose 部署 | 044.1, 044.2, 017 | [#178](https://github.com/HazelnutParadise/hazelminx/issues/178) |
 | 045 | 管理員可以分層管理 .env、介面變數與覆寫層，並預覽每個服務實際收到的值 | Compose 部署 | 044, 011 | [#45](https://github.com/HazelnutParadise/hazelminx/issues/45) |
 | 046 | 管理員可以查看部署版本、三方比較並回到相容舊版 | Compose 部署 | 045 | [#46](https://github.com/HazelnutParadise/hazelminx/issues/46) |
 | 047 | 使用者可以用 GitHub 網頁授權或 PAT 建立可重用連線，並保存多帳號多授權 | GitHub 來源 | 009, 011, 010 | [#47](https://github.com/HazelnutParadise/hazelminx/issues/47) |
