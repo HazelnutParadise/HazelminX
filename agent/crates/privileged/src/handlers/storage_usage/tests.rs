@@ -235,15 +235,29 @@ fn mounts_from_mountinfo_keep_points_and_skip_pseudo() {
     );
 }
 
-/// A directory swapped for a symlink is not listed through the link.
+/// A directory swapped for a symlink, itself or one above it, is not
+/// listed: the opened directory must be the one seen when it was queued.
 #[cfg(unix)]
 #[test]
-fn open_dir_refuses_a_symlink() {
+fn open_dir_refuses_a_swapped_directory() {
+    use std::os::unix::fs::MetadataExt;
     let t = tempfile::tempdir().unwrap();
-    fs::create_dir(t.path().join("real")).unwrap();
-    std::os::unix::fs::symlink(t.path().join("real"), t.path().join("link")).unwrap();
-    assert!(open_dir(&t.path().join("real")).is_ok());
-    assert!(open_dir(&t.path().join("link")).is_err());
+    let r = t.path();
+    fs::create_dir_all(r.join("x/inner")).unwrap();
+    fs::create_dir_all(r.join("elsewhere/inner")).unwrap();
+    let id = |p: &Path| {
+        let m = fs::symlink_metadata(p).unwrap();
+        (m.dev(), m.ino())
+    };
+    let seen = id(&r.join("x/inner"));
+    assert!(open_dir(&r.join("x/inner"), seen).is_ok());
+    // The parent is swapped for a link: x/inner now resolves elsewhere.
+    fs::rename(r.join("x"), r.join("x-old")).unwrap();
+    std::os::unix::fs::symlink(r.join("elsewhere"), r.join("x")).unwrap();
+    assert!(open_dir(&r.join("x/inner"), seen).is_err());
+    // The directory itself swapped for a link.
+    let seen_x = id(&r.join("x-old"));
+    assert!(open_dir(&r.join("x"), seen_x).is_err());
 }
 
 /// One walk at a time.

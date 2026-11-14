@@ -133,10 +133,18 @@ impl Walk<'_> {
     /// Adds the allocated bytes under `top` to `t`; false when the walk
     /// ran out of budget part way or could not read everything.
     fn walk(&mut self, top: &Path, t: &mut u64, unreadable: &mut u64) -> bool {
-        let mut stack = vec![top.to_path_buf()];
+        // Each directory carries the (device, inode) seen when it was
+        // queued; opening it must reach the same one, so swapping it, or
+        // any directory above it, for a symlink does not redirect the walk.
+        let Ok(top_md) = std::fs::symlink_metadata(top) else {
+            *unreadable += 1;
+            return false;
+        };
+        let (td, ti, ..) = meta(&top_md);
+        let mut stack = vec![(top.to_path_buf(), (td, ti))];
         let mut complete = true;
-        while let Some(dir) = stack.pop() {
-            let it = match open_dir(&dir) {
+        while let Some((dir, seen)) = stack.pop() {
+            let it = match open_dir(&dir, seen) {
                 Ok(it) => it,
                 Err(_) => {
                     *unreadable += 1;
@@ -163,7 +171,7 @@ impl Walk<'_> {
                 };
                 let (d, ino, nlink, blocks) = meta(&md);
                 if md.is_dir() {
-                    stack.push(p);
+                    stack.push((p, (d, ino)));
                 } else if nlink > 1 {
                     if self.links.len() >= self.budget.max_links {
                         complete = false;
@@ -327,21 +335,31 @@ fn under(path: &str, mount_point: &str) -> bool {
 /// writing into a volume) is not walked as root. On Linux the directory is
 /// opened with `O_NOFOLLOW | O_DIRECTORY` and read through that descriptor.
 #[cfg(target_os = "linux")]
-fn open_dir(dir: &Path) -> std::io::Result<std::fs::ReadDir> {
+fn open_dir(dir: &Path, seen: (u64, u64)) -> std::io::Result<std::fs::ReadDir> {
     use std::os::unix::fs::OpenOptionsExt;
     use std::os::unix::io::AsRawFd;
     let f = std::fs::OpenOptions::new()
         .read(true)
         .custom_flags(libc::O_NOFOLLOW | libc::O_DIRECTORY)
         .open(dir)?;
+    // O_NOFOLLOW only covers the last component; the descriptor must be the
+    // directory that was seen, whatever happened to the path above it.
+    let (d, i, ..) = meta(&f.metadata()?);
+    if (d, i) != seen {
+        return Err(std::io::Error::other("directory changed since it was seen"));
+    }
     // read_dir opens its own descriptor of the directory f refers to.
     std::fs::read_dir(format!("/proc/self/fd/{}", f.as_raw_fd()))
 }
 
+/// Without /proc/self/fd: the same check, by path (a short window remains
+/// between the check and the listing).
 #[cfg(not(target_os = "linux"))]
-fn open_dir(dir: &Path) -> std::io::Result<std::fs::ReadDir> {
-    if std::fs::symlink_metadata(dir)?.file_type().is_symlink() {
-        return Err(std::io::Error::other("a symlink, not a directory"));
+fn open_dir(dir: &Path, seen: (u64, u64)) -> std::io::Result<std::fs::ReadDir> {
+    let md = std::fs::symlink_metadata(dir)?;
+    let (d, i, ..) = meta(&md);
+    if md.file_type().is_symlink() || (d, i) != seen {
+        return Err(std::io::Error::other("directory changed since it was seen"));
     }
     std::fs::read_dir(dir)
 }
