@@ -279,6 +279,18 @@ body{{margin:0}}
 .hb .banner{{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:var(--raised);font-size:13px}}
 .hb .tabs{{display:flex;gap:2px;border-bottom:1px solid var(--line);padding:0 14px}}
 .hb .tabs{{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin}}.hb .tabs>.tab,.hb .tabs>.lbl{{flex:none;white-space:nowrap}}.hb .tabs-end{{position:sticky;right:-14px;margin-left:auto;margin-right:-14px;padding:0 14px 0 6px;display:flex;flex:none;gap:2px;background:var(--panel);box-shadow:-14px 0 12px -8px var(--panel);border-left:1px solid var(--line)}}.hb .tabs-end .tab{{flex:none;white-space:nowrap;gap:4px}}
+.hb .lvl{{--lvl-bg:color-mix(in srgb,var(--ink) 5%,var(--bg));--lvl-edge:color-mix(in srgb,var(--ink) 28%,var(--bg));--lvl-head:color-mix(in srgb,var(--hazel) 11%,var(--panel));border:1px solid var(--lvl-edge);border-left:3px solid var(--hazel);background:var(--lvl-bg)}}
+.hb .lvl .lvl{{--lvl-bg:color-mix(in srgb,var(--ink) 10%,var(--bg));border-left-color:color-mix(in srgb,var(--hazel) 55%,var(--lvl-edge))}}
+.hb .lvl-h{{background:var(--lvl-head);border-radius:7px 9px 0 0}}
+.hb .lvl-h>.panel,.hb .lvl-h>.scope,.hb .lvl-h>div{{background:transparent;border:0;border-radius:0}}
+.hb .lvl-h>.scope,.hb .lvl-h>div:not(.panel){{box-shadow:inset 0 -1px 0 var(--lvl-edge)}}
+.hb .lvl-h>.panel>:not(.tabs){{background:var(--lvl-bg)}}.hb .lvl-h>.panel{{box-shadow:inset 0 -1px 0 var(--lvl-edge)}}
+.hb .lvl-h .tabs{{border-bottom:0;box-shadow:inset 0 -1px 0 var(--lvl-edge);padding:8px 14px 0;gap:4px;align-items:flex-end}}
+.hb .lvl-h .tabs .lbl{{align-self:center;padding-bottom:8px;font-weight:600;color:var(--ink)}}
+.hb .lvl-h .tabs>.tab{{border:1px solid transparent;border-bottom:0;border-radius:8px 8px 0 0;padding:0 14px}}
+.hb .lvl-h .tabs>.tab.on{{background:var(--lvl-bg);border-color:var(--lvl-edge);color:var(--ink);font-weight:600;box-shadow:inset 0 2px 0 var(--hazel)}}
+@media (max-width:1280px){{.hb .lvl{{border-left-width:2px;border-right:0;border-radius:10px 0 0 10px}}}}
+.hb .lvl-h .tabs-end{{background:var(--lvl-head);box-shadow:-14px 0 12px -8px var(--lvl-head);border-left:1px solid var(--lvl-edge);align-self:stretch;align-items:center}}
 .hb .tab{{min-height:40px;display:inline-flex;align-items:center;padding:0 10px;border-bottom:2px solid transparent;color:var(--muted);font-size:13px;background:transparent;border-top:0;border-left:0;border-right:0}}
 .hb .tab.on{{color:var(--hazel);border-bottom-color:var(--hazel);font-weight:600}}
 .hb .diff{{background:#14120F;color:var(--ink);overflow-x:auto;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;display:flex;flex-direction:column}}
@@ -304,7 +316,7 @@ body{{margin:0}}
 .hb .note{{font-size:12px;color:var(--faint)}}
 .hb .wrap{{display:flex;flex-wrap:wrap;gap:8px;align-items:center}}
 .hb .scroll{{overflow-x:auto}}
-.hb .mtitle{{display:none}}.hb .lvl{{display:flex;flex-direction:column;min-width:0;border:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--ink) 3%,transparent)}}.hb .lvl-h{{display:flex;flex-direction:column;min-width:0}}.hb .lvl-h>.panel,.hb .lvl-h>.scope{{border:0;border-bottom:1px solid var(--line);border-radius:0}}.hb .lvl-h>:first-child{{border-radius:9px 9px 0 0}}.hb .lvl-b{{display:flex;flex-direction:column;gap:16px;padding:16px;min-width:0}}.hb .tabs .lbl{{align-self:center;font-size:12px;color:var(--muted);margin-right:8px}}@media (max-width:1280px){{.hb .lvl-b{{padding:14px 0}}.hb .lvl-b>.panel,.hb .lvl-b>.tiles,.hb .lvl-b>.cg>.panel,.hb .lvl-b>.chart{{border-left:0;border-right:0;border-radius:0}}.hb .lvl-b>.subtabs,.hb .lvl-b>.grp,.hb .lvl-b>.phead{{padding-left:12px;padding-right:12px}}}}.hb .aside{{width:340px;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:18px;padding:18px 16px 24px}}
+.hb .mtitle{{display:none}}.hb .lvl{{display:flex;flex-direction:column;min-width:0;border-radius:10px}}.hb .lvl-h{{display:flex;flex-direction:column;min-width:0}}.hb .lvl-b{{display:flex;flex-direction:column;gap:16px;padding:16px;min-width:0}}.hb .tabs .lbl{{align-self:center;font-size:12px;color:var(--muted);margin-right:8px}}@media (max-width:1280px){{.hb .lvl-b{{padding:14px 0}}.hb .lvl-b>.panel,.hb .lvl-b>.tiles,.hb .lvl-b>.cg>.panel,.hb .lvl-b>.chart{{border-left:0;border-right:0;border-radius:0}}.hb .lvl-b>.subtabs,.hb .lvl-b>.grp,.hb .lvl-b>.phead{{padding-left:12px;padding-right:12px}}}}.hb .aside{{width:340px;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:18px;padding:18px 16px 24px}}
 .hb .main{{flex:999 1 560px;min-width:0;display:flex;flex-direction:column;gap:16px;padding:16px 24px 40px}}
 .hb .layout{{display:flex;flex-wrap:wrap;align-items:stretch;flex:1}}
 .hb .side{{width:220px;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:10px;padding:12px 10px 16px}}
