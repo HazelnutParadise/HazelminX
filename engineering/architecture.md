@@ -14,6 +14,7 @@ hazelminx-core（Go，systemd；單一執行檔，嵌入 web/dist）
    ├─ iam/        使用者、角色、資源範圍、工作階段、API Token、稽核
    ├─ jobs/       工作引擎：狀態機、去重、資源鎖、事件序號、控制世代
    ├─ plans/      變更計畫（change-plans）與批准
+   ├─ projects/   專案、專案環境、Compose 單元：檔案原文、以 compose-go 檢查、部署預覽
    ├─ nodes/      Node PKI、心跳、能力、Agent 通道（mTLS WebSocket 伺服端）、步驟執行器
    ├─ nodereg/    節點名冊：註冊碼與核准、節點 ID／名稱／標籤／群組、憑證輪替、撤銷、維護、移除、連線狀態
    ├─ domain/     專案、服務、設定版本、部署來源、儲存綁定、網站、備份、排程…
@@ -82,7 +83,7 @@ scripts/   CI 與發布腳本（簽署清單、依賴檢查）
 | WAF | 透過 Zentinel agent filter 接 WAF agent（候選：`zentinel-agent-modsec`、ZentinelSec）；核心 `waf.mode` 目前是 hard error，不使用 | 21.1、研究報告第 2 節。候選比較與測試是票 064 的驗收項。 |
 | TCP／UDP 代理 | Zentinel 無 L4 代理；以獨立受驗證元件提供（候選另評估），不拿 HTTP 代理冒充 | WEB-013、研究報告第 8 節。 |
 | Token API 代理 | 以 infra-manager 的 Go 邏輯為基礎移植到 Core 的 `proxy/` 模組，掛獨立 listener；入口政策快照同步到 Zentinel agent 供離線 5 分鐘放行 | 20 章、`docs/research/infra-manager-contract.md`。 |
-| Compose 執行 | Agent 呼叫固定版本的 `docker compose` CLI（Compose v2），以 `--env-file` 傳乾淨環境；Core 以 `compose-go/v2` 解析與合併多檔以產生預覽與差異，不自行實作替換語法 | 15.2、CMP-008。1Panel 走 CLI；Portainer 的 libstack 在行程內使用 `docker/compose/v2` Go 函式庫。CLI 讓 Rust Agent 不必綁 Go 函式庫，且行為與使用者手動操作一致；若需要進度事件再評估 in-process。 |
+| Compose 執行 | Agent 呼叫固定版本的 `docker compose` CLI（Compose v2），以 `--env-file` 傳乾淨環境；Core 以 `compose-go/v2`（版本固定在 `core/go.mod`）解析與合併多檔以產生預覽與差異，不自行實作替換語法；Core 只把檔案內容交給解析器，不讓它讀 Core 主機上的檔案（決策 0034） | 15.2、CMP-008。1Panel 走 CLI；Portainer 的 libstack 在行程內使用 `docker/compose/v2` Go 函式庫。CLI 讓 Rust Agent 不必綁 Go 函式庫，且行為與使用者手動操作一致；若需要進度事件再評估 in-process。 |
 | GitHub | GitHub App（manifest 自架）為網頁授權預設，PAT 與 Deploy Key 同等；受控抓取服務在 Core 側（或指定節點的隔離工作）取得固定 commit 後交付內容；連線（Source）與部署綁定分離，多專案以連線 ID 參照 | 15.6、31.6。Portainer 的 Source／Artifact 分離與以 Source 為單位的排程、`singleflight` 去重是可借鏡的結構；其 CE 預設明文存憑證與「ForcePullImage 設定無效」是要避開的坑。 |
 | 時間與容量 | UTC RFC 3339；位元組；排程保存 IANA 時區名稱 | 34.3。 |
 | 容器網路模型 | 每個部署單元或應用有自己的網路（Compose 預設網路）；平台管理的共用服務（資料庫、Ollama、推論 runtime）各自一個 `hzx-*` 網路，宣告依賴才接上；不使用全部互通的共用網路，1Panel 範本的 `1panel-network` 在覆寫層改掉，只有相容模式才加入；Zentinel 是原生 systemd，經受控本機回送 Port 連上游；跨主機與跨單元走增補 04 的內部位址 | 增補 06 第 54.1 節（2026-11-08 使用者核定）、第 40 章「不能只信任整段 Docker 網路」。 |
@@ -193,3 +194,4 @@ CI 必跑：`go test ./... && go vet`、`cargo test --workspace && cargo clippy 
 - [0031 — 節點註冊用一次性碼換憑證，Core CA 由註冊碼驗證，管理員核對後才簽發](decisions/0031-node-enrollment-code-and-ca-discovery.md)
 - [0032 — Agent 壓縮已結束的步驟紀錄，被壓縮的步驟仍留下結果](decisions/0032-agent-journal-compaction.md)
 - [0033 — 變更計畫的批准綁定內容摘要，批准與執行前都重算計畫](decisions/0033-change-plan-approval-binding.md)
+- [0034 — Core 解析 Compose 時只用上傳的內容，不讀自己主機的檔案](decisions/0034-compose-parsed-from-content-only.md)
