@@ -24,6 +24,7 @@ import (
 	"github.com/HazelnutParadise/hazelminx/core/internal/grants"
 	"github.com/HazelnutParadise/hazelminx/core/internal/hostledger"
 	"github.com/HazelnutParadise/hazelminx/core/internal/hostmetrics"
+	"github.com/HazelnutParadise/hazelminx/core/internal/hoststorage"
 	"github.com/HazelnutParadise/hazelminx/core/internal/iam"
 	"github.com/HazelnutParadise/hazelminx/core/internal/jobs"
 	"github.com/HazelnutParadise/hazelminx/core/internal/nodereg"
@@ -107,9 +108,12 @@ func run(args []string) error {
 	// raw points are kept 48 hours and 5-minute rollups 90 days.
 	hostMetrics := hostmetrics.NewStore(st.DB, nil)
 	go hostMetrics.RunPruner(ctx, time.Hour)
+	// Storage inventory and usage (ticket 030.1).
+	hostStorage := hoststorage.NewStore(st.DB, nil)
 	hub := nodes.NewHub(nodes.HubOptions{PKI: pki, CoreVersion: api.Version,
 		Authorizer: registry, OnClosed: registry.OnClosed, OnConflict: registry.OnConflict,
-		HostReports: hostmetrics.Reporter{Store: hostMetrics, NodeID: registry.NodeIDByFingerprint},
+		HostReports:    hostmetrics.Reporter{Store: hostMetrics, NodeID: registry.NodeIDByFingerprint},
+		StorageReports: hoststorage.Reporter{Store: hostStorage, NodeID: registry.NodeIDByFingerprint},
 		OnReady: func(s *nodes.Session, inFlight []string) {
 			go registry.OnReady(s)
 			// Core's copy of the host change ledger (spec 55.1) catches up
@@ -162,6 +166,7 @@ func run(args []string) error {
 	router.RegisterAgentConnections(hub)
 	router.RegisterNodes(registry)
 	router.RegisterHostMetrics(registry, hostMetrics)
+	router.RegisterHostStorage(registry, hostStorage, hostMetrics)
 	router.MountListQueries(listQueries)
 	go listQueries.RunPurger(ctx, time.Hour)
 	router.MountConfirmations(confirm.New(st.DB, nil))

@@ -320,6 +320,26 @@ func (s *Session) handle(msg any) {
 			return
 		}
 		s.protocolError(protocol.ErrorUnknownMessage, "host.metrics was not offered")
+	case *protocol.HostStorage:
+		if r := s.hub.opts.StorageReports; r != nil {
+			ctx, cancel := context.WithTimeout(context.Background(), hostReportTimeout)
+			defer cancel()
+			if err := r.HostStorage(ctx, s, m); err != nil {
+				s.hub.opts.Logger.Warn("storage inventory not stored", "node", s.id.Fingerprint, "error", err)
+			}
+			return
+		}
+		s.protocolError(protocol.ErrorUnknownMessage, "host.storage was not offered")
+	case *protocol.StorageUsage:
+		if r := s.hub.opts.StorageReports; r != nil {
+			ctx, cancel := context.WithTimeout(context.Background(), hostReportTimeout)
+			defer cancel()
+			if err := r.StorageUsage(ctx, s, m); err != nil {
+				s.hub.opts.Logger.Warn("storage usage not stored", "node", s.id.Fingerprint, "error", err)
+			}
+			return
+		}
+		s.protocolError(protocol.ErrorUnknownMessage, "host.storage was not offered")
 	case *protocol.ProtocolError:
 		s.hub.opts.Logger.Warn("agent could not read a core message", "node", s.id.Fingerprint, "code", m.Code, "detail", m.Message)
 	default:

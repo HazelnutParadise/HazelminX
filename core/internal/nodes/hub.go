@@ -94,6 +94,9 @@ type HubOptions struct {
 	// set, the hub declares the capability and acknowledges each report
 	// the receiver stored; when nil, agents do not send them.
 	HostReports HostReports
+	// StorageReports receives storage inventories and usage
+	// (host.storage v1); when nil, agents do not send them.
+	StorageReports StorageReports
 	// Range is the protocol range this hub speaks; zero means
 	// protocol.SupportedRange(). Tests use it to stand in for an older or
 	// newer Core.
@@ -109,6 +112,15 @@ type HostReports interface {
 	// forget; an error sends no acknowledgement, and the agent sends the
 	// samples again after 30 seconds without one.
 	MetricsReport(ctx context.Context, s *Session, m *protocol.MetricsReport) (uint64, error)
+}
+
+// StorageReports stores what agents report about their storage. Calls run
+// on the session's read loop, one at a time per session. Neither message
+// is acknowledged: the agent sends the current state again on its next
+// session or change.
+type StorageReports interface {
+	HostStorage(ctx context.Context, s *Session, m *protocol.HostStorage) error
+	StorageUsage(ctx context.Context, s *Session, m *protocol.StorageUsage) error
 }
 
 // Limits on inbound data. Before the agent has proven who it is, messages
@@ -565,6 +577,9 @@ func (h *Hub) handshake(r *http.Request, conn *websocket.Conn, slot *handshakeSl
 	coreCaps := []protocol.Capability{{Name: protocol.CapJobs, Version: JobsProtocolVersion}}
 	if h.opts.HostReports != nil {
 		coreCaps = append(coreCaps, protocol.Capability{Name: protocol.CapHostMetrics, Version: 1})
+	}
+	if h.opts.StorageReports != nil {
+		coreCaps = append(coreCaps, protocol.Capability{Name: protocol.CapHostStorage, Version: 1})
 	}
 	heartbeat := int(h.opts.Heartbeat / time.Second)
 	// The signatures cover the whole hello as received and the welcome's

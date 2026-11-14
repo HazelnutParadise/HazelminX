@@ -118,7 +118,7 @@ pub fn spawn(
         .name("storage-usage".into())
         .spawn(move || {
             lowest_priority();
-            std::thread::sleep(USAGE_FIRST);
+            std::thread::sleep(usage_first());
             loop {
                 let mounts = storage.mounts();
                 let u = usage::measure(&root, &mounts, usage::Budget::default(), |p| {
@@ -135,6 +135,20 @@ pub fn spawn(
             }
         })
         .map(|_| ())
+}
+
+/// The delay before the first usage round. Builds with `test-actions`
+/// (interop tests, never a release) read it from
+/// `HAZELMINX_TEST_USAGE_FIRST_SECONDS`.
+fn usage_first() -> Duration {
+    #[cfg(feature = "test-actions")]
+    if let Some(s) = std::env::var("HAZELMINX_TEST_USAGE_FIRST_SECONDS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+    {
+        return Duration::from_secs(s);
+    }
+    USAGE_FIRST
 }
 
 /// Nice 19 and the idle I/O class for the calling thread only, so the

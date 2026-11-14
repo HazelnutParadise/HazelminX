@@ -131,6 +131,8 @@ var messageCases = map[string]messageCase{
 	"host_facts.json":              {false, reflect.TypeOf(&HostFacts{})},
 	"metrics_ack.json":             {false, reflect.TypeOf(&MetricsAck{})},
 	"metrics_report.json":          {false, reflect.TypeOf(&MetricsReport{})},
+	"host_storage.json":            {false, reflect.TypeOf(&HostStorage{})},
+	"storage_usage.json":           {false, reflect.TypeOf(&StorageUsage{})},
 	"ledger_page.json":             {false, reflect.TypeOf(&LedgerPage{})},
 	"ledger_pull.json":             {false, reflect.TypeOf(&LedgerPull{})},
 	"ledger_unavailable.json":      {false, reflect.TypeOf(&LedgerUnavailable{})},

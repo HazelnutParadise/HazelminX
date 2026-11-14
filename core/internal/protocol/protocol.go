@@ -54,6 +54,9 @@ const (
 	// CapHostMetrics: host_facts / metrics_report / metrics_ack, host facts
 	// and resource samples (ticket 020.1).
 	CapHostMetrics = "host.metrics"
+	// CapHostStorage: host_storage / storage_usage, disks, mounts and
+	// per-category usage (ticket 030.1).
+	CapHostStorage = "host.storage"
 )
 
 // certificate_refused codes.
@@ -133,6 +136,8 @@ const (
 	TypeHostFacts            = "host_facts"
 	TypeMetricsReport        = "metrics_report"
 	TypeMetricsAck           = "metrics_ack"
+	TypeHostStorage          = "host_storage"
+	TypeStorageUsage         = "storage_usage"
 )
 
 // Durable event kinds.
@@ -451,6 +456,8 @@ var sessionTypes = map[string]func() any{
 	TypeHostFacts:            func() any { return &HostFacts{} },
 	TypeMetricsReport:        func() any { return &MetricsReport{} },
 	TypeMetricsAck:           func() any { return &MetricsAck{} },
+	TypeHostStorage:          func() any { return &HostStorage{} },
+	TypeStorageUsage:         func() any { return &StorageUsage{} },
 }
 
 func decode(data []byte, types map[string]func() any, strict bool) (any, error) {
