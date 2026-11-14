@@ -78,6 +78,9 @@
 | 票 | 使用者可以做什麼 | Epic | Blocked by | Issue |
 |---|---|---|---|---|
 | 039 | 管理員可以看到 Docker、Podman、K3s 各自狀態並在頁面一鍵安裝 Docker | 容器引擎 | 019, 016, 012 | [#39](https://github.com/HazelnutParadise/hazelminx/issues/39) |
+| 039.1 | Agent 與 Core 偵測並提供每個節點的 Docker、Podman、K3s 狀態與環境 | 容器引擎 | 019, 012 | [#165](https://github.com/HazelnutParadise/hazelminx/issues/165) |
+| 039.2 | 管理員可以在預覽與批准後，由工作透過高權限執行器安裝、啟停與移除 Docker | 容器引擎 | 039.1, 016, 113 | [#166](https://github.com/HazelnutParadise/hazelminx/issues/166) |
+| 039.3 | 管理員可以在容器頁看到各引擎與環境狀態，並從未安裝畫面走完安裝流程 | 容器引擎 | 039.1, 039.2, 017 | [#167](https://github.com/HazelnutParadise/hazelminx/issues/167) |
 | 040 | 容器管理員可以建立、檢視、操作容器並查看日誌、終端機與暴露範圍 | 容器引擎 | 039, 027 | [#40](https://github.com/HazelnutParadise/hazelminx/issues/40) |
 | 041 | 管理員可以管理映像、登錄站、容器網路與 Volume 並採用安全更新 | 容器引擎 | 039 | [#41](https://github.com/HazelnutParadise/hazelminx/issues/41) |
 | 042 | 管理員可以匯入既有容器選擇接管，並管理引擎設定、儲存位置與 GPU 裝置 | 容器引擎 | 040, 032 | [#42](https://github.com/HazelnutParadise/hazelminx/issues/42) |

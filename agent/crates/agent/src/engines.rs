@@ -42,7 +42,10 @@ pub async fn answer(client: &Client, request_id: String, grant: ExecutorGrant) -
     let report: EngineReport = match serde_json::from_value(value) {
         Ok(r) => r,
         Err(e) => {
-            return unavailable(code::INSPECT_FAILED, format!("executor returned an unreadable report: {e}"));
+            return unavailable(
+                code::INSPECT_FAILED,
+                format!("executor returned an unreadable report: {e}"),
+            );
         }
     };
     let msg = Message::EnginesReport {
@@ -112,7 +115,11 @@ mod tests {
             signature: "00".into(),
         };
         match answer(&c, "r1".into(), g).await {
-            Message::EnginesUnavailable { request_id, code: c, .. } => {
+            Message::EnginesUnavailable {
+                request_id,
+                code: c,
+                ..
+            } => {
                 assert_eq!(request_id, "r1");
                 assert_eq!(c, code::EXECUTOR_UNREACHABLE);
             }

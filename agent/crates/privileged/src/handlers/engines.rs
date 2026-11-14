@@ -20,8 +20,8 @@
 use crate::command::{CommandRunner, CommandSpec, OutputSink};
 use crate::executor::ActionResult;
 use hazelminx_protocol::engines::{
-    EngineReport, Engine, Environment, MIN_DOCKER_API, MIN_PODMAN, Plugin, Uninspected, Unit,
-    kind, state,
+    Engine, EngineReport, Environment, MIN_DOCKER_API, MIN_PODMAN, Plugin, Uninspected, Unit, kind,
+    state,
 };
 use std::collections::HashSet;
 use std::os::unix::fs::{FileTypeExt, MetadataExt};
@@ -138,7 +138,8 @@ pub async fn inspect(runner: Arc<dyn CommandRunner>, sysroot: &Path) -> EngineRe
         if !seen.insert(resolved.clone()) {
             continue;
         }
-        environments.push(probe_socket(&endpoint, &shown, &resolved, usual, meta.uid(), &users).await);
+        environments
+            .push(probe_socket(&endpoint, &shown, &resolved, usual, meta.uid(), &users).await);
     }
 
     // K3s: its containerd speaks gRPC, not the engine API, so the
@@ -157,7 +158,10 @@ pub async fn inspect(runner: Arc<dyn CommandRunner>, sysroot: &Path) -> EngineRe
             endpoint_resolved: K3S_CONTAINERD.into(),
             mode: mode(meta.uid()).into(),
             owner_uid: meta.uid(),
-            owner_name: users.iter().find(|(u, _)| *u == meta.uid()).map(|(_, n)| n.clone()),
+            owner_name: users
+                .iter()
+                .find(|(u, _)| *u == meta.uid())
+                .map(|(_, n)| n.clone()),
             state: match active {
                 Some(true) => state::RUNNING,
                 Some(false) => state::STOPPED,
@@ -202,15 +206,46 @@ pub async fn inspect(runner: Arc<dyn CommandRunner>, sysroot: &Path) -> EngineRe
             let path = format!("{dir}/docker-{name}");
             if is_file(sysroot, &path) {
                 let version = first_line(&runner, sysroot, &path, "version").await;
-                plugins.push(Plugin { name: name.into(), path, version });
+                plugins.push(Plugin {
+                    name: name.into(),
+                    path,
+                    version,
+                });
             }
         }
     }
 
     let engines = vec![
-        engine(&runner, sysroot, kind::DOCKER, DOCKER_BINS, docker_units, plugins, &environments).await,
-        engine(&runner, sysroot, kind::PODMAN, PODMAN_BINS, podman_units, Vec::new(), &environments).await,
-        engine(&runner, sysroot, kind::K3S, K3S_BINS, k3s_units, Vec::new(), &environments).await,
+        engine(
+            &runner,
+            sysroot,
+            kind::DOCKER,
+            DOCKER_BINS,
+            docker_units,
+            plugins,
+            &environments,
+        )
+        .await,
+        engine(
+            &runner,
+            sysroot,
+            kind::PODMAN,
+            PODMAN_BINS,
+            podman_units,
+            Vec::new(),
+            &environments,
+        )
+        .await,
+        engine(
+            &runner,
+            sysroot,
+            kind::K3S,
+            K3S_BINS,
+            k3s_units,
+            Vec::new(),
+            &environments,
+        )
+        .await,
     ];
     EngineReport {
         engines,
@@ -228,7 +263,10 @@ async fn engine(
     plugins: Vec<Plugin>,
     envs: &[Environment],
 ) -> Engine {
-    let binary = bins.iter().find(|b| is_file(sysroot, b)).map(|b| b.to_string());
+    let binary = bins
+        .iter()
+        .find(|b| is_file(sysroot, b))
+        .map(|b| b.to_string());
     let binary_version = match &binary {
         Some(b) => first_line(runner, sysroot, b, "--version").await,
         None => None,
@@ -247,7 +285,12 @@ async fn engine(
 /// The engine's state from its environments, program and units: an
 /// environment that answers wins, then the most specific problem, then
 /// installation and units.
-pub fn engine_state(k: &str, has_binary: bool, units: Option<&[Unit]>, envs: &[Environment]) -> &'static str {
+pub fn engine_state(
+    k: &str,
+    has_binary: bool,
+    units: Option<&[Unit]>,
+    envs: &[Environment],
+) -> &'static str {
     let mine: Vec<&Environment> = envs.iter().filter(|e| e.kind == k).collect();
     for s in [
         state::RUNNING,
@@ -271,12 +314,19 @@ pub fn engine_state(k: &str, has_binary: bool, units: Option<&[Unit]>, envs: &[E
 }
 
 fn any_active(units: &[Unit]) -> bool {
-    units.iter().any(|u| u.active_state.as_deref() == Some("active"))
+    units
+        .iter()
+        .any(|u| u.active_state.as_deref() == Some("active"))
 }
 
 /// The uid of a `/run/user/<uid>/...` path.
 fn user_of(endpoint: &str) -> Option<u32> {
-    endpoint.strip_prefix("/run/user/")?.split('/').next()?.parse().ok()
+    endpoint
+        .strip_prefix("/run/user/")?
+        .split('/')
+        .next()?
+        .parse()
+        .ok()
 }
 
 fn mode(uid: u32) -> &'static str {
@@ -299,7 +349,10 @@ async fn probe_socket(
         endpoint_resolved: shown.into(),
         mode: mode(uid).into(),
         owner_uid: uid,
-        owner_name: users.iter().find(|(u, _)| *u == uid).map(|(_, n)| n.clone()),
+        owner_name: users
+            .iter()
+            .find(|(u, _)| *u == uid)
+            .map(|(_, n)| n.clone()),
         state: state::NOT_RESPONDING.into(),
         version: None,
         api_version: None,
@@ -335,8 +388,16 @@ async fn probe_socket(
     env.version = text(&version, "Version");
     env.api_version = text(&version, "ApiVersion");
     let supported = match answered {
-        kind::PODMAN => env.version.as_deref().and_then(major_minor).map(|v| v >= MIN_PODMAN),
-        _ => env.api_version.as_deref().and_then(major_minor).map(|v| v >= MIN_DOCKER_API),
+        kind::PODMAN => env
+            .version
+            .as_deref()
+            .and_then(major_minor)
+            .map(|v| v >= MIN_PODMAN),
+        _ => env
+            .api_version
+            .as_deref()
+            .and_then(major_minor)
+            .map(|v| v >= MIN_DOCKER_API),
     };
     env.state = match supported {
         Some(false) => state::INCOMPATIBLE,
@@ -367,20 +428,32 @@ async fn probe_socket(
 /// in `Components` or `Platform`), `docker` when it has an engine version
 /// otherwise, `None` when it is not the engine API.
 pub fn answered_kind(v: &serde_json::Value) -> Option<&'static str> {
-    let names_podman = |s: Option<&str>| s.is_some_and(|s| s.to_ascii_lowercase().contains("podman"));
-    let platform = v.get("Platform").and_then(|p| p.get("Name")).and_then(|n| n.as_str());
+    let names_podman =
+        |s: Option<&str>| s.is_some_and(|s| s.to_ascii_lowercase().contains("podman"));
+    let platform = v
+        .get("Platform")
+        .and_then(|p| p.get("Name"))
+        .and_then(|n| n.as_str());
     let component = v
         .get("Components")
         .and_then(|c| c.as_array())
-        .is_some_and(|cs| cs.iter().any(|c| names_podman(c.get("Name").and_then(|n| n.as_str()))));
+        .is_some_and(|cs| {
+            cs.iter()
+                .any(|c| names_podman(c.get("Name").and_then(|n| n.as_str())))
+        });
     if names_podman(platform) || component {
         return Some(kind::PODMAN);
     }
-    text(v, "Version").map(|_| kind::DOCKER).filter(|_| text(v, "ApiVersion").is_some())
+    text(v, "Version")
+        .map(|_| kind::DOCKER)
+        .filter(|_| text(v, "ApiVersion").is_some())
 }
 
 fn text(v: &serde_json::Value, key: &str) -> Option<String> {
-    v.get(key).and_then(|s| s.as_str()).filter(|s| !s.is_empty()).map(cut)
+    v.get(key)
+        .and_then(|s| s.as_str())
+        .filter(|s| !s.is_empty())
+        .map(cut)
 }
 
 /// `"1.47"` → (1, 47); `"v4.9.3"` → (4, 9).
@@ -408,7 +481,8 @@ async fn get_json(sock: &Path, path: &str) -> Result<serde_json::Value, ProbeErr
                 ProbeError::Other(format!("connect: {e}"))
             }
         })?;
-        let req = format!("GET {path} HTTP/1.0\r\nHost: localhost\r\nAccept: application/json\r\n\r\n");
+        let req =
+            format!("GET {path} HTTP/1.0\r\nHost: localhost\r\nAccept: application/json\r\n\r\n");
         s.write_all(req.as_bytes())
             .await
             .map_err(|e| ProbeError::Other(format!("write: {e}")))?;
@@ -419,13 +493,18 @@ async fn get_json(sock: &Path, path: &str) -> Result<serde_json::Value, ProbeErr
             .await
             .map_err(|e| ProbeError::Other(format!("read: {e}")))?;
         if buf.len() > MAX_ANSWER_BYTES {
-            return Err(ProbeError::Other(format!("answer to {path} is larger than {MAX_ANSWER_BYTES} bytes")));
+            return Err(ProbeError::Other(format!(
+                "answer to {path} is larger than {MAX_ANSWER_BYTES} bytes"
+            )));
         }
         parse_http(&buf).map_err(ProbeError::Other)
     };
     match tokio::time::timeout(PROBE_TIMEOUT, fut).await {
         Ok(r) => r,
-        Err(_) => Err(ProbeError::Other(format!("no answer to {path} within {}s", PROBE_TIMEOUT.as_secs()))),
+        Err(_) => Err(ProbeError::Other(format!(
+            "no answer to {path} within {}s",
+            PROBE_TIMEOUT.as_secs()
+        ))),
     }
 }
 
@@ -470,13 +549,17 @@ async fn units(runner: &Arc<dyn CommandRunner>, names: &[&str]) -> Option<Vec<Un
         names
             .iter()
             .map(|n| {
-                parsed.iter().find(|u| u.name == *n).cloned().unwrap_or(Unit {
-                    name: n.to_string(),
-                    load_state: None,
-                    active_state: None,
-                    sub_state: None,
-                    unit_file_state: None,
-                })
+                parsed
+                    .iter()
+                    .find(|u| u.name == *n)
+                    .cloned()
+                    .unwrap_or(Unit {
+                        name: n.to_string(),
+                        load_state: None,
+                        active_state: None,
+                        sub_state: None,
+                        unit_file_state: None,
+                    })
             })
             .collect(),
     )
@@ -494,7 +577,9 @@ pub fn parse_show(out: &str) -> Vec<Unit> {
             unit_file_state: None,
         };
         for line in block.lines() {
-            let Some((k, v)) = line.split_once('=') else { continue };
+            let Some((k, v)) = line.split_once('=') else {
+                continue;
+            };
             let v = (!v.trim().is_empty()).then(|| cut(v.trim()));
             match k {
                 "Id" => u.name = v.unwrap_or_default(),
@@ -513,7 +598,12 @@ pub fn parse_show(out: &str) -> Vec<Unit> {
 }
 
 /// First non-empty line of `<program> <arg>`, or `None`.
-async fn first_line(runner: &Arc<dyn CommandRunner>, sysroot: &Path, program: &str, arg: &str) -> Option<String> {
+async fn first_line(
+    runner: &Arc<dyn CommandRunner>,
+    sysroot: &Path,
+    program: &str,
+    arg: &str,
+) -> Option<String> {
     let spec = CommandSpec::new(sysroot.join(program.trim_start_matches('/'))).arg(arg);
     let out = tokio::time::timeout(PROBE_TIMEOUT, runner.run(spec, OutputSink::discard()))
         .await
@@ -557,7 +647,10 @@ pub fn passwd(sysroot: &Path) -> Vec<(u32, String)> {
 }
 
 fn cut(s: &str) -> String {
-    s.chars().filter(|c| !c.is_control()).take(MAX_TEXT).collect()
+    s.chars()
+        .filter(|c| !c.is_control())
+        .take(MAX_TEXT)
+        .collect()
 }
 
 #[cfg(test)]

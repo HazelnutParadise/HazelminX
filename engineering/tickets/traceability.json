@@ -962,22 +962,71 @@
         "016",
         "012"
       ],
+      "requirements": [],
+      "acceptance_tests": [],
+      "issue": 39
+    },
+    {
+      "id": "039.1",
+      "file": "039.1-engine-detection-api.md",
+      "title": "Agent 與 Core 偵測並提供每個節點的 Docker、Podman、K3s 狀態與環境",
+      "epic": "containers",
+      "milestone": "M2",
+      "blocked_by": [
+        "019",
+        "012"
+      ],
       "requirements": [
         "NOD-003",
         "NOD-004",
-        "INS-008",
         "ENV-001",
-        "ENV-002",
-        "ENV-006"
+        "ENV-002"
       ],
       "acceptance_tests": [
         "T-051",
         "T-149",
         "T-150",
-        "T-152",
         "T-156"
       ],
-      "issue": 39
+      "issue": 165,
+      "parent": "039"
+    },
+    {
+      "id": "039.2",
+      "file": "039.2-docker-install-lifecycle.md",
+      "title": "管理員可以在預覽與批准後，由工作透過高權限執行器安裝、啟停與移除 Docker",
+      "epic": "containers",
+      "milestone": "M2",
+      "blocked_by": [
+        "039.1",
+        "016",
+        "113"
+      ],
+      "requirements": [
+        "INS-008",
+        "ENV-006"
+      ],
+      "acceptance_tests": [
+        "T-152"
+      ],
+      "issue": 166,
+      "parent": "039"
+    },
+    {
+      "id": "039.3",
+      "file": "039.3-engine-screens.md",
+      "title": "管理員可以在容器頁看到各引擎與環境狀態，並從未安裝畫面走完安裝流程",
+      "epic": "containers",
+      "milestone": "M2",
+      "blocked_by": [
+        "039.1",
+        "039.2",
+        "017"
+      ],
+      "requirements": [],
+      "acceptance_tests": [],
+      "issue": 167,
+      "parent": "039"
     },
     {
       "id": "040",
