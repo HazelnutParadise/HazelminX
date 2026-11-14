@@ -159,6 +159,8 @@ func (s *Server) MountGitHub(svc *github.Service) {
 	s.handle(g, base, op(Operation{Method: "DELETE", Path: base + "/github/connections/{id}", ID: "deleteGitHubConnection",
 		Summary: "remove a connection and its stored credentials here; nothing is revoked on GitHub; requires If-Match", Permission: usePerm, Versioned: true,
 		Responses: []Response{{Status: 204}}}), use, h.deleteConnection)
+
+	h.mountRepos(g, base, op, use, usePerm)
 }
 
 type githubRoutes struct {
@@ -191,6 +193,7 @@ func (h *githubRoutes) fail(c *gin.Context, err error) {
 	var ae *github.AuthorizationError
 	var re *github.ReferencedError
 	var ge *github.APIError
+	var rl *github.RateLimitedError
 	switch {
 	case errors.As(err, &ve):
 		e := newError(CodeValidationFailed, ve.Error())
@@ -216,6 +219,12 @@ func (h *githubRoutes) fail(c *gin.Context, err error) {
 		respond(c, versionMismatch(c.Param("id"), cur))
 	case errors.Is(err, github.ErrNotAvailable):
 		fail(c, CodeNotAvailable, strings.TrimPrefix(err.Error(), "github: not available: "))
+	case errors.As(err, &rl):
+		e := newError(CodeGitHubUnavailable, "GitHub rate limited this connection; it is not asked again, and no other connection is used, before retryAfterSeconds")
+		e.RetryAfter = max(int(time.Until(rl.RetryAt).Seconds())+1, 1)
+		respond(c, e)
+	case errors.Is(err, github.ErrEmptyRepository):
+		fail(c, CodeGitHubRepoEmpty, "the repository has no commits yet")
 	case errors.Is(err, github.ErrNeedsReauth), errors.Is(err, github.ErrDisabled):
 		fail(c, CodeGitHubReauthRequired, strings.TrimPrefix(err.Error(), "github: "))
 	case errors.As(err, &ge) && errors.Is(err, github.ErrUnavailable), errors.Is(err, github.ErrUnavailable), errors.Is(err, github.ErrRefreshBackoff):

@@ -42,6 +42,13 @@ const maxBody = 1 << 20
 // none). It decodes a 2xx JSON answer into out (when not nil) and maps every
 // other answer to an *APIError.
 func (c *HTTPClient) call(ctx context.Context, method, rawURL, auth string, body any, form url.Values, out any) (http.Header, error) {
+	h, _, err := c.callH(ctx, method, rawURL, auth, body, form, nil, out)
+	return h, err
+}
+
+// callH is call with extra request headers. A 304 answer is not an error:
+// it returns status 304 and leaves out untouched.
+func (c *HTTPClient) callH(ctx context.Context, method, rawURL, auth string, body any, form url.Values, extra http.Header, out any) (http.Header, int, error) {
 	var rd io.Reader
 	ctype := ""
 	switch {
@@ -50,13 +57,16 @@ func (c *HTTPClient) call(ctx context.Context, method, rawURL, auth string, body
 	case body != nil:
 		b, err := json.Marshal(body)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		rd, ctype = bytes.NewReader(b), "application/json"
 	}
 	req, err := http.NewRequestWithContext(ctx, method, rawURL, rd)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
+	}
+	for k, v := range extra {
+		req.Header[k] = v
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
@@ -70,22 +80,25 @@ func (c *HTTPClient) call(ctx context.Context, method, rawURL, auth string, body
 	resp, err := c.HTTP.Do(req)
 	if err != nil {
 		// The URL may hold a manifest code; report only the method and host.
-		return nil, &APIError{Kind: ErrUnavailable, Reason: fmt.Sprintf("%s %s: request failed", method, req.URL.Host)}
+		return nil, 0, &APIError{Kind: ErrUnavailable, Reason: fmt.Sprintf("%s %s: request failed", method, req.URL.Host)}
 	}
 	defer resp.Body.Close()
 	data, err := io.ReadAll(io.LimitReader(resp.Body, maxBody))
 	if err != nil {
-		return nil, &APIError{Kind: ErrUnavailable, Status: resp.StatusCode, Reason: "reading the answer failed"}
+		return nil, resp.StatusCode, &APIError{Kind: ErrUnavailable, Status: resp.StatusCode, Reason: "reading the answer failed"}
+	}
+	if resp.StatusCode == http.StatusNotModified && extra.Get("If-None-Match") != "" {
+		return resp.Header, resp.StatusCode, nil
 	}
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return resp.Header, statusError(resp, data)
+		return resp.Header, resp.StatusCode, statusError(resp, data)
 	}
 	if out != nil && len(data) > 0 {
 		if err := json.Unmarshal(data, out); err != nil {
-			return resp.Header, &APIError{Kind: ErrUnavailable, Status: resp.StatusCode, Reason: "answer is not the expected JSON"}
+			return resp.Header, resp.StatusCode, &APIError{Kind: ErrUnavailable, Status: resp.StatusCode, Reason: "answer is not the expected JSON"}
 		}
 	}
-	return resp.Header, nil
+	return resp.Header, resp.StatusCode, nil
 }
 
 func statusError(resp *http.Response, data []byte) error {

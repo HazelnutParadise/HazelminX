@@ -47,6 +47,33 @@ type Client interface {
 	// CanListRepositories reports whether the token can list at least the
 	// repositories endpoint (GET /user/repos?per_page=1).
 	CanListRepositories(ctx context.Context, token string) (bool, error)
+
+	// The calls below read repositories for the source picker (ticket
+	// 048.1). fullName is "owner/name"; page counts from 1 with 100 items
+	// per page; next reports whether GitHub announced a following page.
+
+	// ListUserOrgs lists the organizations the token's user belongs to
+	// (GET /user/orgs, every page).
+	ListUserOrgs(ctx context.Context, token string) ([]Account, error)
+	// ListRepositories reads one page of a repository source with
+	// If-None-Match set to etag when not empty; an unchanged page answers
+	// NotModified with no repositories (GitHub does not count it against
+	// the rate limit).
+	ListRepositories(ctx context.Context, token string, src RepoSource, page int, etag string) (RepoPage, error)
+	// GetRepositoryByID reads a repository by its stable id
+	// (GET /repositories/{id}); it follows renames and transfers.
+	GetRepositoryByID(ctx context.Context, token string, id int64) (Repository, error)
+	// ListRefs lists branches or tags (kind "branches" | "tags").
+	ListRefs(ctx context.Context, token, fullName, kind string, page int) (refs []Ref, next bool, err error)
+	// ListCommits lists commits reachable from ref, newest first.
+	ListCommits(ctx context.Context, token, fullName, ref string, page int) (commits []Commit, next bool, err error)
+	// GetCommit resolves a branch, tag or SHA to its commit
+	// (GET /repos/{fullName}/commits/{ref}).
+	GetCommit(ctx context.Context, token, fullName, ref string) (Commit, error)
+	// GetTree reads the whole file tree of a commit (recursive).
+	GetTree(ctx context.Context, token, fullName, sha string) (Tree, error)
+	// ListDirectory lists one directory of a commit ("" is the root).
+	ListDirectory(ctx context.Context, token, fullName, path, sha string) ([]Entry, error)
 }
 
 // Account is a GitHub user or organization. ID is GitHub's stable id; Login
