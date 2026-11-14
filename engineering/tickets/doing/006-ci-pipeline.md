@@ -40,3 +40,5 @@ GitHub Actions：Go／Rust／前端的 lint、test、build；Linux x86_64 與 AR
 - 在 `.github/workflows/ci.yml` 加前端 job：用固定版本的 Vite+ 跑 `vp check`、`vp test`、`vp build`，不能用浮動版本。票 005 已經合併，可以接上。
 - 讓 Core 改用 `scripts/embed-web.sh` 以 `-tags embedweb` 建置，冒煙測試從「`/` 回 503」改成「`/` 回 `index.html`」。
 - main 分支還沒設定「CI 通過才能合併」的保護規則，要由 repo 管理者在 GitHub 設定。
+- 2026-11-14：CI 只有 Core、Agent 與互通測試的工作，沒有 `web/` 的工作。PR #181（票 020.4）的型別檢查、270 個單元測試與 133 個 e2e 都只有本機結果。要補一個前端的工作：`vp check`、`vp test`，以及對這個分支建置的 Core 跑 e2e（含版面與無障礙掃描）。
+
