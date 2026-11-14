@@ -36,7 +36,9 @@ import {
   SeverityPill,
   StepPill,
   When,
+  Coded,
 } from "./parts";
+import { findingKeys } from "./format";
 
 const PLAN_PARAM = "plan";
 const CHECK_PARAM = "check";
@@ -164,8 +166,7 @@ export function DeployPanel({ project: p, env, unit: u }: { project: Project; en
                   {blockers.map((b, i) => (
                     <li key={`${b.code}-${i}`}>
                       <SeverityPill value="error" />
-                      <span className="hx-mono hx-code">{b.code}</span>
-                      <span className="hx-raw">{b.message}</span>
+                      <Coded keys={findingKeys(b.code)} raw={b.message} />
                     </li>
                   ))}
                 </ul>
@@ -336,7 +337,13 @@ function PlanPanel({
         }
       >
         <div className="hx-panel-body hx-plan-body">
-          <p className="hx-mono hx-plan-summary">{pl.summary}</p>
+          <p className="hx-plan-summary">
+            <Coded
+              keys={target ? ["projects.code.summary"] : []}
+              values={{ name: target?.name, host: target?.nodeName || target?.node || "—", env: target?.environment }}
+              raw={pl.summary}
+            />
+          </p>
           <dl className="hx-env-facts">
             <div>
               <dt>{t("projects.plan.target")}</dt>
@@ -396,8 +403,7 @@ function PlanPanel({
             {checks.map((c) => (
               <li key={c.id}>
                 <CheckPill value={c.status} />
-                <span className="hx-mono hx-code">{c.title}</span>
-                <span className="hx-raw">{c.detail}</span>
+                <Coded keys={findingKeys(c.title)} raw={c.detail} />
                 {(c.evidence ?? []).length > 0 && (
                   <span className="hx-sub hx-mono">{(c.evidence ?? []).join(" · ")}</span>
                 )}
@@ -405,16 +411,24 @@ function PlanPanel({
             ))}
           </ul>
           <h3 className="hx-h3">{t("projects.plan.affected", { count: (pl.affected ?? []).length })}</h3>
-          <ul className="hx-plain-list hx-mono">
+          <ul className="hx-plain-list">
             {(pl.affected ?? []).map((a) => (
-              <li key={a.id}>{`${a.name} · ${a.effect}`}</li>
+              <li key={a.id}>
+                <span className="hx-mono">{a.name}</span> ·{" "}
+                <Coded keys={[`projects.code.affected.${a.kind}`]} raw={a.effect} />
+              </li>
             ))}
           </ul>
           <h3 className="hx-h3">{t("projects.plan.changes", { count: (pl.changes ?? []).length })}</h3>
-          <ul className="hx-plain-list hx-mono">
+          <ul className="hx-plain-list">
             {(pl.changes ?? []).map((c, i) => (
               <li key={`${c.path}-${i}`}>
-                {c.op} {c.path}
+                {t(`projects.code.op.${c.op}`, { defaultValue: c.op ?? "" })}{" "}
+                {c.path === "compose"
+                  ? t("projects.code.changePath.compose")
+                  : (c.path ?? "").startsWith("files/")
+                    ? t("projects.code.changePath.file", { path: (c.path ?? "").slice(6) })
+                    : c.path}
                 {c.secret ? ` (${t("projects.files.secret")})` : ""}
               </li>
             ))}
@@ -478,8 +492,7 @@ function ApproveDialog({
                 {high.map((c) => (
                   <li key={c.id}>
                     <CheckPill value={c.status} />
-                    <span className="hx-mono hx-code">{c.title}</span>
-                    <span className="hx-raw">{c.detail}</span>
+                    <Coded keys={findingKeys(c.title)} raw={c.detail} />
                   </li>
                 ))}
               </ul>
@@ -562,19 +575,27 @@ function JobPanel({
           <>
             <p className="hx-note">
               <span className="hx-mono">{j.id}</span> · {t("projects.job.progress", { n: j.progress ?? 0 })}
-              {j.stateReason && <span className="hx-raw"> · {j.stateReason}</span>}
+              {j.stateReason && (
+                <span className="hx-original" lang="en">
+                  {" · "}
+                  {j.stateReason}
+                </span>
+              )}
             </p>
             <ol className="hx-steps">
               {(j.steps ?? []).map((s) => (
                 <li key={s.index}>
                   <div className="hx-step-head">
                     <StepPill value={s.status} />
-                    <span>{s.name}</span>
+                    <Coded keys={[`projects.code.step.${j.kind}.${s.index}`]} raw={s.name} />
                   </div>
                   {s.error && (
                     <div className="hx-step-error">
-                      <span className="hx-mono hx-code">{s.error.code}</span>
-                      <span className="hx-raw">{s.error.summary}</span>
+                      <Coded
+                        keys={[`projects.code.stepError.${s.error.code}`]}
+                        raw={`${s.error.code} · ${s.error.summary}`}
+                      />
+                      <HostChecks lines={s.error.evidence ?? []} />
                       {(s.error.evidence ?? []).length > 0 && (
                         <pre className="hx-log" tabIndex={0}>
                           {(s.error.evidence ?? []).join("\n")}
@@ -583,6 +604,7 @@ function JobPanel({
                       {s.error.nothingChanged && <span className="hx-note">{t("projects.job.nothingChanged")}</span>}
                     </div>
                   )}
+                  {!s.error && <HostChecks lines={s.logTail ?? []} />}
                   {(s.logTail ?? []).length > 0 && (
                     <pre className="hx-log" tabIndex={0}>
                       {(s.logTail ?? []).join("\n")}
@@ -601,8 +623,10 @@ function JobPanel({
                 {(j.completion?.checks ?? []).map((c) => (
                   <li key={c.name}>
                     <CheckPill value={c.passed ? "pass" : c.required ? "failed" : "warning"} />
-                    <span className="hx-mono hx-code">{c.name}</span>
-                    <span className="hx-raw">{c.detail}</span>
+                    <Coded
+                      keys={[`projects.code.completion.${c.name}`]}
+                      raw={c.detail ? `${c.name} · ${c.detail}` : c.name}
+                    />
                   </li>
                 ))}
               </ul>
@@ -694,8 +718,10 @@ export function DeploymentsPanel({ project: p, env }: { project: Project; env: E
                     <Table.Cell>
                       {d.state === "failed" && (
                         <>
-                          <span className="hx-mono hx-code">{d.errorCode}</span>
-                          <div className="hx-raw">{d.errorMessage}</div>
+                          <Coded
+                            keys={[`projects.code.stepError.${d.errorCode}`]}
+                            raw={`${d.errorCode} · ${d.errorMessage}`}
+                          />
                           <div className="hx-danger-text">{t("projects.deployments.leftBehind")}</div>
                         </>
                       )}
@@ -718,5 +744,27 @@ export function DeploymentsPanel({ project: p, env }: { project: Project; env: E
         </div>
       )}
     </Panel>
+  );
+}
+
+/** "host check <level> <CODE>[ service <name>]: <detail>", the line composedeploy writes for each host check. */
+const HOST_CHECK = /^host check (error|warning|info) ([A-Z_]+)(?: service (\S+))?: (.*)$/;
+
+/** The host checks named in a step's evidence, in the interface language; the raw lines stay in the log below. */
+function HostChecks({ lines }: { lines: (string | null)[] }) {
+  const parsed = lines.map((l) => HOST_CHECK.exec(l ?? "")).filter((m): m is RegExpExecArray => !!m);
+  if (parsed.length === 0) return null;
+  return (
+    <ul className="hx-check-list">
+      {parsed.map((m, i) => (
+        <li key={i}>
+          <CheckPill value={m[1] === "error" ? "failed" : m[1] === "warning" ? "warning" : "pass"} />
+          <span>
+            {m[3] && <span className="hx-mono">{m[3]} · </span>}
+            <Coded keys={[`projects.code.hostCheck.${m[2]}`]} raw={`${m[2]}: ${m[4]}`} />
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }

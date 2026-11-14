@@ -7,8 +7,8 @@ import { PageSkeleton } from "../shell/PageStates";
 import { SEVERITIES, projectKeys, projectsApi, type Analysis, type Environment, type Project, type Unit } from "./api";
 import { DeployPanel, DeploymentsPanel } from "./Deploy";
 import { PROJECTS_WRITE, useProjectPermission, useHostName } from "./hooks";
-import { Panel, ProjectError, SeverityPill, When } from "./parts";
-import { bytes } from "./format";
+import { Coded, Panel, ProjectError, SeverityPill, When } from "./parts";
+import { bytes, findingKeys } from "./format";
 import { UnitEditor } from "./UnitEditor";
 import { editHref } from "./paths";
 
@@ -178,8 +178,7 @@ export function FindingsPanel({ analysis: a, title }: { analysis: Analysis; titl
                     {f.attribute && <div className="hx-sub">{f.attribute}</div>}
                   </Table.Cell>
                   <Table.Cell>
-                    <span className="hx-mono hx-code">{f.code}</span>
-                    <div className="hx-raw">{f.message}</div>
+                    <Coded keys={findingKeys(f.code)} raw={`${f.code} · ${f.message}`} />
                   </Table.Cell>
                 </Table.Row>
               ))}

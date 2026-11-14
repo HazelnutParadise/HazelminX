@@ -241,6 +241,10 @@ describe("project page", () => {
     const rows = within(findings).getAllByRole("row").slice(1);
     expect(rows[0]).toHaveTextContent("高風險");
     expect(rows[1]).toHaveTextContent("警告");
+    // Core's codes read in the interface language, Core's text underneath; an unknown code keeps Core's text.
+    expect(rows[0]).toHaveTextContent("以特權模式執行，容器擁有所有權限與主機的所有裝置");
+    expect(rows[0]).toHaveTextContent("privileged · runs privileged");
+    expect(rows[1]).toHaveTextContent("uses latest");
     // A secret file is listed without content.
     expect(screen.getByRole("region", { name: /^檔案/ })).toHaveTextContent(".env機密");
   });

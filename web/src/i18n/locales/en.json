@@ -1274,6 +1274,129 @@
       "forbidden": "This account is not allowed.",
       "planChanged": "The plan's content or a version changed; the approval no longer counts.",
       "validation": "Core does not accept this content."
+    },
+    "code": {
+      "finding": {
+        "yaml-invalid": "Not valid YAML",
+        "compose-empty": "The file is empty",
+        "name-not-used": "The file's name is not used; the platform fixes the Compose project name",
+        "variable-missing": "A required variable has no value",
+        "variable-empty": "The variable has no value and no default; Compose uses an empty string",
+        "compose-invalid": "Docker Compose refuses these files",
+        "not-applied": "Kept as written; HazelminX does not act on this key",
+        "include-unsupported": "include is not supported yet",
+        "extends-file-unsupported": "extends from another file is not supported yet",
+        "profile-disabled": "None of this service's profiles is enabled; it does not start",
+        "build-context-missing": "The build context is not among the unit's files",
+        "dockerfile-missing": "The Dockerfile is not among the unit's files",
+        "build-context-remote": "The engine fetches the build context remotely",
+        "path-outside-unit": "The path leaves the unit's files",
+        "port-all-addresses": "The port listens on every host address",
+        "data-dir": "Not a unit file: created on the host as a data directory",
+        "mount-unsupported": "This mount exists only on Windows engines",
+        "env-file-not-secret": "Used as an env file: mark it secret",
+        "env-file-missing": "The env file is not among the unit's files",
+        "env-file-optional-missing": "The optional env file is not among the unit's files",
+        "file-missing": "A referenced file is not among the unit's files",
+        "extension": "x- extension kept as written; HazelminX does not read it",
+        "external-volume": "The external volume must already exist on the engine",
+        "external-network": "The external network must already exist on the engine",
+        "secret-file-not-secret": "Holds a Compose secret: mark it secret",
+        "object-from-environment": "The content comes from a variable set per environment",
+        "dotenv-not-read": ".env is not read when deploying; variables are set per environment",
+        "home-path": "~ is not expanded when deploying: write the absolute host path",
+        "engine-socket": "Mounts the engine socket: the container controls the engine and the host",
+        "host-system-path": "Mounts a host system path",
+        "host-path": "Mounts a host path; checked on the host before deploying",
+        "privileged": "Runs privileged: every capability and all host devices",
+        "host-namespace": "Shares a namespace with the host",
+        "cap-add": "Adds capabilities",
+        "device": "Gives the container a host device",
+        "security-opt": "Weakens the container's confinement",
+        "target-not-set": "No host chosen to deploy to",
+        "target-not-probed": "The host has not reported its engines",
+        "target-not-found": "No such engine environment on the host",
+        "target-unsupported": "The engine is not Docker or Podman",
+        "target-not-running": "The engine is not running",
+        "target-no-compose": "No Docker Compose on the host"
+      },
+      "check": {
+        "target-node": "The target host is not registered",
+        "target-rootful": "Only a host's root-owned engine can be deployed to",
+        "target-ready": "The target engine runs and has Docker Compose; images, disk space, ports and mount paths are checked on the host before anything changes",
+        "target engine": "The target engine runs and has Docker Compose; images, disk space, ports and mount paths are checked on the host before anything changes",
+        "target node": "The target host is not registered",
+        "engine environment": "Only a host's root-owned engine can be deployed to"
+      },
+      "hostCheck": {
+        "BIND_SOURCE_MISSING": "A bind mount source does not exist on the host",
+        "COMPOSE_INVALID": "Docker Compose on the host refuses these files",
+        "DISK_LOW": "Not enough disk space",
+        "DISK_UNKNOWN": "Disk space could not be read",
+        "ENGINE_UNREACHABLE": "The engine cannot be reached",
+        "HOST_RISK": "High-risk setting (approved by the owner in the plan)",
+        "IMAGE_INVALID": "The image name is not valid",
+        "IMAGE_UNAVAILABLE": "The image is not on the host and cannot be pulled",
+        "IMAGE_UNCHECKED": "The image was not checked",
+        "PORTS_UNKNOWN": "The host's ports could not be read",
+        "PORT_IN_USE": "A host port is already in use",
+        "PROJECT_NOT_PLATFORM_OWNED": "A Compose project of this name exists on the host and was not made by the platform"
+      },
+      "hostCheckLevel": {
+        "error": "Blocked",
+        "warning": "Warning",
+        "info": "Info"
+      },
+      "stepError": {
+        "AGENT_RESULT_INVALID": "The agent's result could not be read",
+        "GRANT_FAILED": "The executor grant could not be issued",
+        "HOST_CHECK_FAILED": "Host checks failed; nothing on the host was changed",
+        "INVALID_PARAMS": "The job's parameters are incomplete",
+        "NODE_REQUIRED": "The job has no host",
+        "TARGET_MOVED": "The unit's target host changed; deploy again",
+        "TARGET_NOT_SET": "The unit has no target engine",
+        "UNIT_CHANGED": "The unit changed; create a new deployment plan",
+        "UNIT_GONE": "The Compose unit no longer exists",
+        "UNIT_TOO_LARGE_TO_SEND": "The unit's files are too large to send in one step",
+        "EXECUTOR_ACTION_FAILED": "The privileged executor's action failed",
+        "EXECUTOR_PERMISSION_DENIED": "The privileged executor refused the grant",
+        "EXECUTOR_REFUSED": "The privileged executor refused to run it",
+        "EXECUTOR_UNREACHABLE": "The privileged executor cannot be reached",
+        "JOB_FAILED": "The job failed",
+        "JOB_CANCELLED": "The job was cancelled",
+        "JOB_ROLLED_BACK": "The job was rolled back",
+        "JOB_NEEDS_ATTENTION": "The job needs attention"
+      },
+      "step": {
+        "compose": {
+          "check": {
+            "0": "Check the host (images, disk space, ports, mount paths)"
+          },
+          "deploy": {
+            "0": "Check the host (images, disk space, ports, mount paths)",
+            "1": "Write this revision and run docker compose up"
+          }
+        }
+      },
+      "completion": {
+        "host-checks-passed": "Every host check passed",
+        "deployment-recorded": "The deployment is recorded as succeeded",
+        "containers-running": "Every container is running"
+      },
+      "affected": {
+        "compose-service": "Created or recreated by docker compose up"
+      },
+      "op": {
+        "add": "Add",
+        "change": "Change",
+        "remove": "Remove"
+      },
+      "changePath": {
+        "compose": "Compose settings (main file, merged files, profiles, working directory)",
+        "file": "File {{path}}"
+      },
+      "summary": "Deploy {{name}} to {{host}} · {{env}}",
+      "original": "Original"
     }
   }
 }

@@ -373,3 +373,17 @@ textarea.hx-code-area {
   overflow-wrap: normal;
   word-break: keep-all;
 }
+
+/* Core's original text under a translated summary (DESIGN.md「原文加白話摘要」). */
+.hx-coded {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.hx-original {
+  font-size: 12px;
+  color: var(--text-color-kumo-subtle);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}

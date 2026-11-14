@@ -1251,6 +1251,129 @@
       "forbidden": "這個帳號沒有權限。",
       "planChanged": "計畫內容或版本已改變，原批准失效。",
       "validation": "Core 不接受這些內容。"
+    },
+    "code": {
+      "finding": {
+        "yaml-invalid": "檔案不是有效的 YAML",
+        "compose-empty": "檔案是空的",
+        "name-not-used": "檔案裡的 name 不會被使用，Compose 專案名稱由平台固定",
+        "variable-missing": "缺少必要變數",
+        "variable-empty": "變數沒有值也沒有預設值，Compose 會用空字串",
+        "compose-invalid": "Docker Compose 讀不了這些檔案",
+        "not-applied": "原樣保留，HazelminX 不處理這個鍵",
+        "include-unsupported": "還不支援 include",
+        "extends-file-unsupported": "還不支援從其他檔案 extends",
+        "profile-disabled": "這個服務的 profiles 都沒啟用，不會啟動",
+        "build-context-missing": "建置目錄不在單元的檔案裡",
+        "dockerfile-missing": "Dockerfile 不在單元的檔案裡",
+        "build-context-remote": "建置目錄由引擎從遠端取得",
+        "path-outside-unit": "路徑跑到單元的檔案外面",
+        "port-all-addresses": "Port 開在主機的所有位址上",
+        "data-dir": "這個路徑不是單元的檔案，會在主機上建立成資料目錄",
+        "mount-unsupported": "這種掛載只有 Windows 引擎才有",
+        "env-file-not-secret": "這個檔案當成 env 檔使用，要標成機密檔案",
+        "env-file-missing": "env 檔不在單元的檔案裡",
+        "env-file-optional-missing": "選用的 env 檔不在單元的檔案裡",
+        "file-missing": "引用的檔案不在單元的檔案裡",
+        "extension": "x- 擴充鍵原樣保留，HazelminX 不讀它",
+        "external-volume": "外部儲存卷要事先存在於引擎上",
+        "external-network": "外部網路要事先存在於引擎上",
+        "secret-file-not-secret": "這個檔案存放 Compose secret，要標成機密檔案",
+        "object-from-environment": "內容來自環境變數，變數依環境設定",
+        "dotenv-not-read": "部署時不會讀 .env，變數依環境設定",
+        "home-path": "部署時不會展開 ~，要寫主機上的絕對路徑",
+        "engine-socket": "掛載引擎的 socket，容器可以控制引擎和整台主機",
+        "host-system-path": "掛載主機的系統路徑",
+        "host-path": "掛載主機路徑，部署前會在主機上確認是否存在",
+        "privileged": "以特權模式執行，容器擁有所有權限與主機的所有裝置",
+        "host-namespace": "和主機共用命名空間",
+        "cap-add": "額外加上權限（capabilities）",
+        "device": "把主機的裝置交給容器",
+        "security-opt": "放寬容器的隔離設定",
+        "target-not-set": "還沒選要部署到哪台主機",
+        "target-not-probed": "主機還沒回報引擎狀態",
+        "target-not-found": "主機上沒有這個引擎環境",
+        "target-unsupported": "這個引擎不是 Docker 或 Podman",
+        "target-not-running": "引擎沒有在執行",
+        "target-no-compose": "主機沒有 Docker Compose"
+      },
+      "check": {
+        "target-node": "目標主機沒有註冊",
+        "target-rootful": "只能部署到主機上 root 擁有的引擎",
+        "target-ready": "目標引擎在執行且有 Docker Compose；映像、磁碟空間、Port 與掛載路徑會在變更前於主機上檢查",
+        "target engine": "目標引擎在執行且有 Docker Compose；映像、磁碟空間、Port 與掛載路徑會在變更前於主機上檢查",
+        "target node": "目標主機沒有註冊",
+        "engine environment": "只能部署到主機上 root 擁有的引擎"
+      },
+      "hostCheck": {
+        "BIND_SOURCE_MISSING": "掛載來源路徑在主機上不存在",
+        "COMPOSE_INVALID": "主機上的 Docker Compose 讀不了這些檔案",
+        "DISK_LOW": "磁碟空間不足",
+        "DISK_UNKNOWN": "讀不到磁碟空間",
+        "ENGINE_UNREACHABLE": "連不到引擎",
+        "HOST_RISK": "高風險設定（已由擁有者在計畫中批准）",
+        "IMAGE_INVALID": "映像名稱無效",
+        "IMAGE_UNAVAILABLE": "主機上沒有這個映像，也無法從 registry 取得",
+        "IMAGE_UNCHECKED": "沒有檢查這個映像",
+        "PORTS_UNKNOWN": "讀不到主機的 Port 使用狀況",
+        "PORT_IN_USE": "主機上的 Port 已被占用",
+        "PROJECT_NOT_PLATFORM_OWNED": "主機上已有同名的 Compose 專案，不是平台建立的"
+      },
+      "hostCheckLevel": {
+        "error": "擋下",
+        "warning": "警告",
+        "info": "資訊"
+      },
+      "stepError": {
+        "AGENT_RESULT_INVALID": "Agent 回傳的結果讀不懂",
+        "GRANT_FAILED": "無法發出高權限執行器的授權",
+        "HOST_CHECK_FAILED": "主機預檢沒有通過，主機沒有任何變更",
+        "INVALID_PARAMS": "工作參數不完整",
+        "NODE_REQUIRED": "工作沒有指定主機",
+        "TARGET_MOVED": "單元的目標主機已經改了，要重新部署",
+        "TARGET_NOT_SET": "單元沒有選目標引擎",
+        "UNIT_CHANGED": "單元已經改版，要重新建立部署計畫",
+        "UNIT_GONE": "Compose 單元已經不存在",
+        "UNIT_TOO_LARGE_TO_SEND": "單元的檔案太大，一次送不到主機",
+        "EXECUTOR_ACTION_FAILED": "高權限執行器執行失敗",
+        "EXECUTOR_PERMISSION_DENIED": "高權限執行器拒絕這個授權",
+        "EXECUTOR_REFUSED": "高權限執行器拒絕執行",
+        "EXECUTOR_UNREACHABLE": "連不到高權限執行器",
+        "JOB_FAILED": "工作失敗",
+        "JOB_CANCELLED": "工作已取消",
+        "JOB_ROLLED_BACK": "工作已復原",
+        "JOB_NEEDS_ATTENTION": "工作需要處理"
+      },
+      "step": {
+        "compose": {
+          "check": {
+            "0": "檢查主機（映像、磁碟空間、Port、掛載路徑）"
+          },
+          "deploy": {
+            "0": "檢查主機（映像、磁碟空間、Port、掛載路徑）",
+            "1": "寫入這次的檔案並執行 docker compose up"
+          }
+        }
+      },
+      "completion": {
+        "host-checks-passed": "主機預檢全部通過",
+        "deployment-recorded": "部署已記錄為成功",
+        "containers-running": "所有容器都在執行"
+      },
+      "affected": {
+        "compose-service": "由 docker compose up 建立或重建"
+      },
+      "op": {
+        "add": "新增",
+        "change": "修改",
+        "remove": "移除"
+      },
+      "changePath": {
+        "compose": "Compose 設定（主檔、合併檔、profiles、工作目錄）",
+        "file": "檔案 {{path}}"
+      },
+      "summary": "部署 {{name}} 到 {{host}} · {{env}}",
+      "original": "原文"
     }
   }
 }

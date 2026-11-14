@@ -193,8 +193,16 @@ test.describe("with a real host running Docker", () => {
   test.skip(!AGENT || !PRIV, "set HAZELMINX_E2E_AGENT_BIN and HAZELMINX_E2E_PRIVILEGED_BIN to Linux builds");
   test.setTimeout(600_000);
   let host: ChildProcess | undefined;
+  let nodeId = "";
   const container = `hzx-e2e-compose-${randomBytes(3).toString("hex")}`;
-  test.afterAll(() => {
+  test.afterAll(async () => {
+    // Stop managing the host before its container goes away, so later specs do not see a host that stopped
+    // answering in the host bar and the host list.
+    if (nodeId) {
+      const owner = await request.newContext({ baseURL: BASE_URL, storageState: OWNER_STATE });
+      await call(owner, "POST", `/nodes/${nodeId}/remove`, { mode: "unmanage" }).catch(() => undefined);
+      await owner.dispose();
+    }
     host?.kill();
     try {
       execFileSync("docker", ["rm", "-f", container], { stdio: "ignore" });
@@ -275,7 +283,7 @@ test.describe("with a real host running Docker", () => {
     // The engine report: ask for a fresh one until the host's Docker answers.
     const owner = await request.newContext({ baseURL: BASE_URL, storageState: OWNER_STATE });
     const nodes = (await call(owner, "GET", `/nodes?q=${hostName}`)) as { items: { id: string; name: string }[] };
-    const nodeId = nodes.items.find((n) => n.name === hostName)!.id;
+    nodeId = nodes.items.find((n) => n.name === hostName)!.id;
     await expect
       .poll(
         async () => {
@@ -329,7 +337,7 @@ test.describe("with a real host running Docker", () => {
     const job = page.getByRole("region", { name: /^部署進度/ });
     await expect(job.getByText("成功").first()).toBeVisible({ timeout: 300_000 });
     const deployments = page.getByRole("region", { name: /^部署紀錄/ });
-    await expect(deployments.getByText("成功")).toBeVisible({ timeout: 30_000 });
+    await expect(deployments.getByText("成功", { exact: true })).toBeVisible({ timeout: 30_000 });
     await expect(deployments.getByText(/web.* · running/)).toBeVisible();
     await scanScreen(page, errors, "deployed", "deployed");
 
@@ -348,7 +356,7 @@ test.describe("with a real host running Docker", () => {
     await plan.getByRole("button", { name: `部署到 ${hostName}` }).click();
     await expect(job.getByText("失敗").first()).toBeVisible({ timeout: 300_000 });
     await expect(job.getByText(/不會自動回滾/)).toBeVisible();
-    await expect(deployments.getByText("失敗")).toBeVisible({ timeout: 30_000 });
+    await expect(deployments.getByText("失敗", { exact: true })).toBeVisible({ timeout: 30_000 });
     await expect(deployments.getByText("沒有自動回滾，容器可能停在部分更新的狀態")).toBeVisible();
     await scanScreen(page, errors, "failed deployment", "failed");
   });

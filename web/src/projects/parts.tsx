@@ -168,3 +168,33 @@ export function ProjectError({ error }: { error: unknown }) {
   }
   return <Notice tone="danger">{error instanceof Error ? error.message : JSON.stringify(error)}</Notice>;
 }
+
+/**
+ * Text Core identifies by a code: the interface-language sentence for the first key that exists, with Core's
+ * original text underneath as secondary detail (DESIGN.md「原文加白話摘要」). With no translation for any key,
+ * Core's text is shown as it is, so a new code is never hidden.
+ */
+export function Coded({
+  keys,
+  raw,
+  values,
+}: {
+  keys: string[];
+  raw?: string | null;
+  values?: Record<string, unknown>;
+}) {
+  const { t, i18n } = useTranslation();
+  const key = keys.find((k) => i18n.exists(k));
+  if (!key) return <span className="hx-raw">{raw || "—"}</span>;
+  return (
+    <span className="hx-coded">
+      <span>{t(key as never, values as never) as unknown as string}</span>
+      {raw && (
+        <span className="hx-original" lang="en">
+          <span className="hx-visually-hidden">{t("projects.code.original")}：</span>
+          {raw}
+        </span>
+      )}
+    </span>
+  );
+}
