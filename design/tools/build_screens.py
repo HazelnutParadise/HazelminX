@@ -365,7 +365,7 @@ def node_detail() -> str:
       <div class="note" style="padding: 8px 14px 10px">不以 <span class="mono">privileged</span> 當通用解法 · 驅動升級會影響整台主機，從 <a href="WorkCenter.dc.html" style="color: var(--hazel)">工作中心</a> 走批准流程</div>
     </section>"""
     tabs = node_tabs("概況")
-    main = (head + tabs + spec + hw + range_row() + f'<div class="cg">{cpu}{mem}{io}{net}{load}{temp}</div><div class="cg">{disks}{hot}</div>'
+    main = (head + tabs + spec + hw + '<div class="lvl"><div class="lvl-h"><div style="padding:8px 12px;border-bottom:1px solid var(--line);background:var(--panel);border-radius:9px 9px 0 0">' + range_row() + '</div></div><div class="lvl-b">' + f'<div class="cg">{cpu}{mem}{io}{net}{load}{temp}</div></div></div><div class="cg">{disks}{hot}</div>'
             + nodes(part="procs") + gpu_head + gpu_dev + gpu_proc + f'<div class="cg">{gpu_util}{gpu_vram}{gpu_power}</div>' + gpu_auth)
     return U.shell("nodes", main)
 
@@ -3938,8 +3938,7 @@ def project_env() -> str:
     head = f"""
     <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px">
       <div class="name">{U.crumbs([("專案與服務", "Projects.dc.html"), ("shop", "ProjectDetail.dc.html")])}<h1>環境變數</h1></div>
-      <div class="wrap" style="margin-left: auto">{_seg(["production", "staging"], 0, "環境")}</div>
-    </div>"""
+    </div>""" + ENV_TABS
     eye = f'<button type="button" class="ib" aria-label="顯示值">{U.icon("eye")}</button>'
     def r(k, v, src, svc, secret=False):
         val = f'<span class="wrap" style="flex-wrap:nowrap"><span class="mono">••••••••••</span>{eye}</span>' if secret else f'<span class="wr"><span class="mono" style="overflow-wrap:anywhere;white-space:normal">{v}</span></span>'
@@ -4137,13 +4136,16 @@ def unit_config() -> str:
     return U.shell("projects", main)
 
 
+ENV_TABS = '<div class="panel"><div class="tabs" role="tablist"><span class="lbl">環境</span><button type="button" class="tab on" role="tab" aria-selected="true">production</button><button type="button" class="tab" role="tab" aria-selected="false">staging</button></div></div>'
+
+
 # ---------- 環境變數（四層變數組） ----------
 def env_groups_page(upload: bool = False) -> str:
     head = f"""
     <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px">
       <div class="name">{U.crumbs([("專案與服務", "Projects.dc.html"), ("shop", "ProjectDetail.dc.html")])}<h1>環境變數</h1></div>
-      <div class="wrap" style="margin-left: auto">{_seg(["production", "staging"], 0, "專案環境")}<a class="btn pri" href="EnvUpload.dc.html">{U.icon("upload", 14)}上傳 env 檔</a></div>
-    </div>"""
+      <div class="wrap" style="margin-left: auto"><a class="btn pri" href="EnvUpload.dc.html">{U.icon("upload", 14)}上傳 env 檔</a></div>
+    </div>""" + ENV_TABS
     def g(name, n, refs, on=False, note=""):
         return (f'<a class="row{" sel" if on else ""}" href="#g"><span class="name"><span class="n mono">{name}</span><span class="d">{n} 個 · {refs}</span></span><span>{note}</span></a>')
     groups = f"""
