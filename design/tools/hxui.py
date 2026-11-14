@@ -91,6 +91,11 @@ body{{margin:0}}
 .hb .kbd{{font-family:"Geist Mono",ui-monospace,monospace;font-size:11px;color:var(--faint);border:1px solid var(--line);border-radius:4px;padding:1px 5px;margin-left:auto}}
 .hb .navgrp{{font-size:12px;color:var(--faint);font-weight:500;padding:8px 12px 2px}}
 .hb .navcol{{display:flex;flex-direction:column;gap:2px}}
+.hb .nv.nvg .chv{{margin-left:auto;display:inline-flex;color:var(--faint);transition:transform .15s}}.hb .nv.nvg.open .chv{{transform:rotate(90deg)}}
+.hb .navsub{{display:flex;flex-direction:column;gap:2px;margin:0 0 4px 21px;padding-left:10px;border-left:1px solid var(--line)}}
+.hb .nv.sub{{min-height:30px;font-size:12.5px;color:var(--muted)}}.hb .nv.sub.cur{{color:var(--hazel);background:var(--raised);font-weight:600}}
+.hb .side.mini .navsub,.hb .side.mini .nv.nvg .chv{{display:none}}
+@media (max-width:900px){{.hb .navsub{{flex-direction:row;margin:0;padding:0 0 0 4px;border-left:1px solid var(--line);gap:4px}}.hb .nv.nvg .chv{{display:none}}}}
 .hb .tiles{{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr));gap:0;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}}
 .hb .tile{{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto;column-gap:12px;row-gap:2px;align-items:center;padding:12px 16px;background:transparent;border:0;border-right:1px solid var(--hairline);min-width:0}}
 .hb .tile .l,.hb .tile .tdl{{grid-column:1/-1}}.hb .tile .v{{grid-column:1;grid-row:2}}
@@ -583,7 +588,7 @@ NAV = [
     ("專案與服務", "projects", "Projects.dc.html"),
     ("容器", "docker", "Containers.dc.html"),
     ("Kubernetes", "k8s", "Kubernetes.dc.html"),
-    ("服務模組", "svcmod", "HostServices.dc.html"),
+    ("網路服務", "netsvc", "HostServices.dc.html"),
     ("應用商店", "store", "AppStore.dc.html"),
     ("網站與入口", "web", "Websites.dc.html"),
     ("API 代理", "api", "APIProxy.dc.html"),
@@ -600,22 +605,33 @@ NAV = [
     ("身分與存取", "iam", "IAM.dc.html"),
     ("平台設定", "settings", "Settings.dc.html"),
 ]
-# 側欄只放「跨節點的資源」。單一主機才有意義的（系統、服務模組、檔案、程序）收進節點頁分頁；
+# 側欄只放「跨節點的資源」。單一主機才有意義的（系統、檔案、程序）收進節點頁分頁；
 # 全站都會用到的（工作、告警、終端機、搜尋）放頂列與最上方。
 GROUPS = [("應用", ["projects", "store", "web", "db", "objstore", "ai", "api"]),
-          ("基礎設施", ["nodes", "docker", "k8s", "storage", "cron"]),
+          ("基礎設施", ["nodes", "docker", "k8s", "netsvc", "storage", "cron"]),
           ("安全與紀錄", ["security", "analytics", "logs"]),
           ("管理", ["iam", "settings"])]
-NAV_ALIAS = {"svcmod": "nodes", "files": "nodes"}  # 這些頁屬於「主機」底下
+NAV_ALIAS = {"svcmod": "netsvc", "files": "nodes"}  # 檔案屬於「主機」底下；服務模組改名為網路服務
+# 可收合的側欄項目（學 1Panel）：有子項目的項目點了展開，目前所在的那一組自動展開，其他組收著。
+SUBNAV = {"netsvc": [("DNS", "dns", "HostServiceBind.dc.html"), ("郵件", "mail", "HostServiceMail.dc.html"),
+                     ("檔案分享", "share", "HostServices.dc.html"), ("DHCP", "dhcp", "HostServices.dc.html")]}
 
 
 def nav(current: str, jobs: int = 3, attention: int = 5, mobile_links: bool = True, collapsed: bool = False) -> str:
     current = NAV_ALIAS.get(current, current)
+    parent = next((p for p, subs in SUBNAV.items() if any(k == current for _, k, _ in subs)), None)
     def link(key: str) -> str:
         label, k, file = next(n for n in NAV if n[1] == key)
         href = file if file else f"#{k}"
         cur = ' cur" aria-current="page' if k == current else ""
-        return f'<a class="nv{cur}" href="{href}" title="{label}">{icon(k)}<span>{label}</span></a>'
+        subs = SUBNAV.get(k)
+        if not subs:
+            return f'<a class="nv{cur}" href="{href}" title="{label}">{icon(k)}<span>{label}</span></a>'
+        is_open = k == current or k == parent
+        kids = "".join(f'<a class="nv sub{" cur" if sk == current else ""}"{" aria-current=page" if sk == current else ""} href="{sf}"><span>{sl}</span></a>' for sl, sk, sf in subs)
+        return (f'<a class="nv nvg{" open" if is_open else ""}{cur}" href="{href}" title="{label}" aria-expanded="{"true" if is_open else "false"}">{icon("svcmod" if k == "netsvc" else k)}<span>{label}</span>'
+                f'<span class="chv" aria-hidden="true">{icon("chev", 14)}</span></a>'
+                + (f'<div class="navsub" role="group" aria-label="{label}">{kids}</div>' if is_open else ""))
     ov = ' cur" aria-current="page' if current == "overview" else ""
     jb = ' cur" aria-current="page' if current == "jobs" else ""
     ev = ' cur" aria-current="page' if current == "events" else ""

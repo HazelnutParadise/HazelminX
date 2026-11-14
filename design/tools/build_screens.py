@@ -258,7 +258,7 @@ def node_head(name: str, st: str, note: str, acts: str) -> str:
 
 def nodes_tabs(active: str) -> str:
     """主機的頁面分頁：機群（每台一列）與服務模組（模組 × 主機）。"""
-    items = [("主機 · 4", "Nodes.dc.html"), ("服務模組 · 7", "HostServices.dc.html")]
+    items = [("主機 · 4", "Nodes.dc.html")] if active.startswith("主機") else [("網路服務 · 7", "HostServices.dc.html")]
     return ('<div class="panel"><div class="tabs" role="tablist">' + "".join(
         f'<a class="tab{" on" if l.startswith(active) else ""}" role="tab" aria-selected="{"true" if l.startswith(active) else "false"}" href="{h}">{l}</a>' for l, h in items) + "</div></div>")
 
@@ -1235,7 +1235,7 @@ def nodes(part: str | None = None) -> str:
     </section>"""
     if part:
         return {"ports": ports, "published": published, "procs": procs, "ssh": ssh}[part]
-    main = head + nodes_tabs("主機") + tiles + fleet + envs + f'<div class="cg">{cross}{engines}</div>'
+    main = head + tiles + fleet + envs + f'<div class="cg">{cross}{engines}</div>'
     return U.shell("nodes", main)
 
 
@@ -3357,7 +3357,7 @@ def edge_cases() -> str:
 
 # ---------- 宿主機服務模組（Webmin 等價） ----------
 def host_services(part: str | None = None) -> str:
-    head = U.page_head("主機", OBS, '<button type="button" class="btn pri">安裝模組</button><button type="button" class="btn">新增 adapter</button>') + nodes_tabs("服務模組")
+    head = U.page_head("網路服務", OBS, '<button type="button" class="btn pri">安裝模組</button><button type="button" class="btn">新增 adapter</button>')
     scope = U.scope_bar([("全部主機", "3"), ("hazel-tw-01", "Docker"), ("hazel-jp-02", "過期"), ("lab-mini", "Podman")])
     tiles = '<div class="tiles">' + "".join([
         U.stat_tile("已安裝模組", "7", "/12", "3 主機合計", None),
@@ -3463,7 +3463,7 @@ def host_services(part: str | None = None) -> str:
         <div class="wrap" style="justify-content:flex-end"><button type="button" class="btn">取消</button><button type="button" class="btn dng" disabled aria-disabled="true" style="opacity:.6">移除</button></div>
       </div></div></section>"""
     if part == "mail":
-        mhead = _form_head([("主機", "Nodes.dc.html"), ("服務模組", "HostServices.dc.html")], "郵件伺服器 · hazel-tw-01",
+        mhead = _form_head([("網路服務", "HostServices.dc.html")], "郵件 · hazel-tw-01",
                            U.status("ok", "執行中") + '<button type="button" class="btn">重新啟動</button><a class="btn" href="HostServices.dc.html">回模組清單</a>')
         mtiles = '<div class="tiles">' + "".join([
             U.stat_tile("網域", "2", "", "example.tw、hazelnut.tw", None),
@@ -3520,12 +3520,12 @@ def host_services(part: str | None = None) -> str:
                   + sbox("刪除網域", f'<div class="wrap">{U.status("warn", "hazelnut.tw 還有 3 個信箱 · 412 MiB 信件")}</div><div style="font-size:13px">信件不會刪除，移到封存資料夾保留 30 天</div><div class="wrap"><button type="button" class="btn">取消</button><button type="button" class="btn dng">刪除網域</button></div>')
                   + "</div>")
         main = mhead + mtiles + domains + boxes + queue + f'<div class="cg">{tls}{relay}</div>' + states
-        return U.shell("svcmod", main)
+        return U.shell("mail", main)
     if part == "bind":
-        bhead = _form_head([("主機", "Nodes.dc.html"), ("服務模組", "HostServices.dc.html")], "BIND DNS · hazel-tw-01",
+        bhead = _form_head([("網路服務", "HostServices.dc.html")], "DNS · hazel-tw-01",
                            U.status("ok", "執行中") + '<button type="button" class="btn">重新啟動</button><a class="btn" href="HostServices.dc.html">回模組清單</a>')
         main = bhead + zones + records + f'<div class="cg">{apply}{history}</div>' + rdiff + U.savebar("example.tw 紀錄：1 筆新增、1 筆修改", "按套用才會寫進 BIND，並先跑 named-checkzone", "套用到 BIND")
-        return U.shell("svcmod", main)
+        return U.shell("dns", main)
     main = head + scope + tiles + modules + installed + remove
     return U.shell("svcmod", main)
 
@@ -4724,7 +4724,7 @@ def compose_compat() -> str:
       {it(blk, "compose.yml:79", "mysql 的資料目錄 /mnt/ssd1/n8n-stack/mysql 不存在", "Docker 會建空目錄，mysql 初始化成新的空資料庫", '<span class="wrap"><button type="button" class="btn sm">選既有路徑</button><button type="button" class="btn sm">從別台搬資料</button><button type="button" class="btn sm">從空的開始</button></span>')}
       {it(blk, "compose.yml:5、8", "production 的 n8n 單元也用這份 compose.yml", "同一台 tw-01：container_name n8n、Port 5678 會衝突", '<span class="wrap"><button type="button" class="btn sm">改成 n8n-staging</button><a class="btn sm" href="UnitConfig.dc.html">改部署到其他主機</a></span>')}
       {it(wrn, "compose.yml:31", "外部網路 infra-net 不存在", "compose 會直接失敗", '<span class="wrap">' + _seg(["建立", "對應到既有", "改用依賴連線"], 0, "infra-net") + '</span>')}
-      {it(wrn, "compose.yml:24、45、71", "4 個看起來是機密的值 · MYSQL_ROOT_PASSWORD 等", "依變數名稱判斷 · 能讀 repo 的人都看得到", '<button type="button" class="btn sm">移到平台變數</button>')}
+      {it(wrn, "compose.yml:24、45、71", "<span tabindex='0' data-tip='依變數名稱判斷（含 PASSWORD、SECRET、TOKEN、KEY）'>4 個可能是機密</span> · MYSQL_ROOT_PASSWORD 等", "能讀 repo 的人都看得到", '<button type="button" class="btn sm">移到平台變數</button>')}
       {it(wrn, "compose.yml:8、96", "Port 5678、5679 開到所有位址", "繞過 Zentinel 與防火牆", '<button type="button" class="btn sm">改綁 127.0.0.1</button>')}
       {it(ok, "compose.yml:91", "phpmyadmin:latest 浮動標籤", "部署時記下 digest sha256:9c1e…", '<span class="note">回滾回到同一個 digest</span>')}
       {it(ok, "compose.yml:44", "task-runners 在主機上建置", "映像標成 hzx/n8n-stack/task-runners:4d81a2c3e9f0", '<span class="note">回滾不必重建</span>')}"""
@@ -4958,9 +4958,9 @@ SCREENS = {
     "Logs": ("日誌", logs, 1440, 2200),
     "AppSettings": ("nextcloud · 網路與掛載", app_settings, 1440, 1300),
     "AppInstall": ("安裝應用（1Panel 市集）", app_install, 1440, 1800),
-    "HostServices": ("服務模組（Webmin 等價）", host_services, 1440, 1900),
-    "HostServiceBind": ("服務模組 › BIND DNS", lambda: host_services("bind"), 1440, 1900),
-    "HostServiceMail": ("服務模組 › 郵件伺服器", lambda: host_services("mail"), 1440, 1900),
+    "HostServices": ("網路服務（原服務模組）", host_services, 1440, 1900),
+    "HostServiceBind": ("網路服務 › DNS", lambda: host_services("bind"), 1440, 1900),
+    "HostServiceMail": ("網路服務 › 郵件", lambda: host_services("mail"), 1440, 1900),
     "ContainersEmpty": ("容器引擎未安裝", containers_empty, 1440, 1900),
     "KubernetesEmpty": ("Kubernetes 未連接", kubernetes_empty, 1440, 1500),
     "Login": ("登入", login, 1440, 900),
