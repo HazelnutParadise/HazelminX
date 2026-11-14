@@ -371,17 +371,38 @@ const SECRET_OPTIONS: &[&str] = &[
 
 /// The options with every secret value replaced by `***`, so mount
 /// configuration never carries a password off the host.
+/// A CIFS user may carry the password after `%` (`username=u%secret`), and
+/// a comma inside a CIFS password is written `,,`, so the value goes on
+/// past the next comma.
 pub fn redact_options(options: &str) -> String {
-    options
-        .split(',')
-        .map(|o| match o.split_once('=') {
-            Some((k, _)) if SECRET_OPTIONS.contains(&k.to_ascii_lowercase().as_str()) => {
-                format!("{k}=***")
+    let parts: Vec<&str> = options.split(',').collect();
+    let mut out = Vec::new();
+    let mut i = 0;
+    while i < parts.len() {
+        let o = parts[i];
+        i += 1;
+        let Some((k, v)) = o.split_once('=') else {
+            out.push(o.to_string());
+            continue;
+        };
+        let key = k.to_ascii_lowercase();
+        if SECRET_OPTIONS.contains(&key.as_str()) {
+            out.push(format!("{k}=***"));
+            // `,,` is an escaped comma: skip the empty part and what follows.
+            while i + 1 < parts.len() && parts[i].is_empty() {
+                i += 2;
             }
-            _ => o.to_string(),
-        })
-        .collect::<Vec<_>>()
-        .join(",")
+        } else if (key == "user" || key == "username") && v.contains('%') {
+            let user = v.split('%').next().unwrap_or("");
+            out.push(format!("{k}={user}%***"));
+            while i + 1 < parts.len() && parts[i].is_empty() {
+                i += 2;
+            }
+        } else {
+            out.push(o.to_string());
+        }
+    }
+    out.join(",")
 }
 
 /// A source with a password in it (`https://user:secret@host/dav`) keeps
@@ -513,7 +534,7 @@ pub fn mounts(text: &str, devices: &[BlockDevice], configs: &[MountConfig]) -> V
         by_point.insert(
             m.mount_point.clone(),
             Mount {
-                source: m.source,
+                source: redact_spec(&m.source),
                 device,
                 dev: m.dev,
                 fs_type: m.fs_type,

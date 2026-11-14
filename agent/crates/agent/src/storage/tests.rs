@@ -447,7 +447,18 @@ fn mount_secrets_are_redacted() {
     )
     .unwrap();
     assert_eq!(u.options, "user=u,Password=***");
-    let all = format!("{c:?}{u:?}");
+    let c2 = inventory::fstab(
+        "//nas/s /mnt/x cifs username=u%hunter2,password=ab,,hunter2,,x,vers=3.0 0 0\n",
+        "/etc/fstab",
+    );
+    assert_eq!(c2[0].options, "username=u%***,password=***,vers=3.0");
+    let mi = inventory::mounts(
+        "30 1 0:60 / /mnt/dav rw - fuse.davfs https://u:hunter2@dav.example/x rw\n",
+        &[],
+        &[],
+    );
+    assert_eq!(mi[0].source, "https://u:***@dav.example/x");
+    let all = format!("{c:?}{u:?}{c2:?}{mi:?}");
     assert!(!all.contains("hunter2"), "{all}");
 }
 
@@ -490,6 +501,21 @@ fn oversized_inventory_is_truncated_and_named() {
         "{:?}",
         out.unreadable
     );
+    // The data mount sorts last but survives; snap mounts go first.
+    let mut inv = Inventory::new("/nonexistent-root").read_all();
+    inv.mounts = (0..20_000)
+        .map(|i| Mount {
+            mount_point: format!("/snap/pkg{i}"),
+            fs_type: "squashfs".into(),
+            ..m.clone()
+        })
+        .collect();
+    inv.mounts.push(Mount {
+        mount_point: "/srv/data".into(),
+        ..m.clone()
+    });
+    let out = fit(inv);
+    assert!(out.mounts.iter().any(|x| x.mount_point == "/srv/data"));
     let small = fit(Inventory::new("/nonexistent-root").read_all());
     assert!(!small.unreadable.iter().any(|u| u.starts_with("truncated:")));
 }

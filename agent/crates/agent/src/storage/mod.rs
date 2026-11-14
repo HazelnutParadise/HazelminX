@@ -23,6 +23,7 @@ pub const USAGE_INTERVAL: Duration = Duration::from_secs(6 * 60 * 60);
 struct State {
     inventory: Option<(OffsetDateTime, StorageInventory)>,
     inventory_version: u64,
+    usage_mounts: Option<Vec<hazelminx_protocol::storage::Mount>>,
     usage: Option<StorageUsage>,
     usage_version: u64,
 }
@@ -46,14 +47,20 @@ impl Storage {
     }
 
     pub fn has_inventory(&self) -> bool {
-        self.state.lock().unwrap().inventory.is_some()
+        self.state.lock().unwrap().usage_mounts.is_some()
     }
 
+    pub fn set_usage_mounts(&self, m: Vec<hazelminx_protocol::storage::Mount>) {
+        self.state.lock().unwrap().usage_mounts = Some(m);
+    }
+
+    /// Every mount of the latest inventory read, before `fit` cut it.
     pub fn mounts(&self) -> Vec<hazelminx_protocol::storage::Mount> {
-        let st = self.state.lock().unwrap();
-        st.inventory
-            .as_ref()
-            .map(|(_, i)| i.mounts.clone())
+        self.state
+            .lock()
+            .unwrap()
+            .usage_mounts
+            .clone()
             .unwrap_or_default()
     }
 
@@ -111,7 +118,11 @@ pub fn spawn(
                 loop {
                     let now = OffsetDateTime::now_utc();
                     let now = now.replace_nanosecond(0).unwrap_or(now);
-                    if storage.set_inventory(now, fit(inv.read_all())) {
+                    let full = inv.read_all();
+                    // Usage measures every local mount, also the ones a
+                    // too-large inventory leaves out of the message.
+                    storage.set_usage_mounts(full.mounts.clone());
+                    if storage.set_inventory(now, fit(full)) {
                         wake();
                     }
                     std::thread::sleep(INVENTORY_INTERVAL);
@@ -151,9 +162,11 @@ pub fn spawn(
 /// per message, and the body is escaped again inside the frame.
 pub const INVENTORY_BYTES: usize = 384 * 1024;
 
-/// Drops the last devices and mounts until the inventory fits, and names
-/// what was left out in `unreadable`, so a host with thousands of loop
-/// devices still reports instead of losing its session.
+/// Drops entries until the inventory fits, the least useful first (loop
+/// devices, snap and squashfs mounts, then virtual and network mounts),
+/// then the last of the rest, and names what was left out in
+/// `unreadable`, so a host with thousands of loop devices still reports
+/// its data disks instead of losing its session.
 pub fn fit(mut inv: StorageInventory) -> StorageInventory {
     fn len<T: serde::Serialize>(v: &T) -> usize {
         serde_json::to_vec(v).map(|b| b.len()).unwrap_or(usize::MAX)
@@ -161,25 +174,59 @@ pub fn fit(mut inv: StorageInventory) -> StorageInventory {
     // The whole is encoded once; each dropped entry takes its own encoded
     // length and a comma off it, so this stays linear.
     let mut size = len(&inv);
-    let (mut devices, mut mounts) = (0, 0);
     // Room for the note added below.
     let limit = INVENTORY_BYTES - 200;
-    while size > limit {
-        if inv.devices.len() >= inv.mounts.len() {
-            let Some(d) = inv.devices.pop() else { break };
-            size = size.saturating_sub(len(&d) + 1);
+    if size <= limit {
+        return inv;
+    }
+    let dev_rank = |d: &hazelminx_protocol::storage::BlockDevice| u8::from(d.class != "loop");
+    let mount_rank = |m: &hazelminx_protocol::storage::Mount| {
+        if m.fs_type == "squashfs" || m.mount_point.starts_with("/snap/") {
+            0
+        } else if m.class != "local" {
+            1
+        } else {
+            2
+        }
+    };
+    let (mut devices, mut mounts) = (0, 0);
+    let mut keep_dev = vec![true; inv.devices.len()];
+    let mut keep_mnt = vec![true; inv.mounts.len()];
+    // Candidates by rank, last first within a rank.
+    let mut order: Vec<(u8, bool, usize)> = inv
+        .devices
+        .iter()
+        .enumerate()
+        .map(|(i, d)| (dev_rank(d), true, i))
+        .chain(
+            inv.mounts
+                .iter()
+                .enumerate()
+                .map(|(i, m)| (mount_rank(m), false, i)),
+        )
+        .collect();
+    order.sort_by(|a, b| a.0.cmp(&b.0).then(b.2.cmp(&a.2)));
+    for (_, is_dev, i) in order {
+        if size <= limit {
+            break;
+        }
+        if is_dev {
+            size = size.saturating_sub(len(&inv.devices[i]) + 1);
+            keep_dev[i] = false;
             devices += 1;
         } else {
-            let Some(m) = inv.mounts.pop() else { break };
-            size = size.saturating_sub(len(&m) + 1);
+            size = size.saturating_sub(len(&inv.mounts[i]) + 1);
+            keep_mnt[i] = false;
             mounts += 1;
         }
     }
-    if devices + mounts > 0 {
-        inv.unreadable.push(format!(
-            "truncated: {devices} devices and {mounts} mounts left out (inventory over {INVENTORY_BYTES} bytes)"
-        ));
-    }
+    let mut k = keep_dev.into_iter();
+    inv.devices.retain(|_| k.next().unwrap_or(true));
+    let mut k = keep_mnt.into_iter();
+    inv.mounts.retain(|_| k.next().unwrap_or(true));
+    inv.unreadable.push(format!(
+        "truncated: {devices} devices and {mounts} mounts left out (inventory over {INVENTORY_BYTES} bytes)"
+    ));
     inv
 }
 
