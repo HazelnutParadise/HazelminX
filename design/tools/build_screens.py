@@ -2007,6 +2007,154 @@ def change_safety() -> str:
     return U.shell("security", main)
 
 
+# ---------- 磁碟：分割與格式化、LVM／RAID／LUKS、網路儲存（STO-002～004，票 031） ----------
+def _disk_sub(title, back="NodeDisks.dc.html"):
+    return (f'<div class="wrap"><a class="btn sm" href="{back}">← 磁碟</a><h2 style="font-size:16px">{title}</h2></div>')
+
+
+def node_disk_format() -> str:
+    head = node_head("hazel-tw-01", U.status("ok", "連線中"), "最後聯絡 2 秒前", '<a class="btn" href="NodeDisks.dc.html">取消</a>') + node_tabs("磁碟")
+    ident = _fp("先確認是這一顆", f"""
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));gap:10px 16px;padding:12px 16px;font-size:13px">
+        {kv("裝置", '<span class="mono">/dev/sdc</span>')}
+        {kv("型號", "Samsung SSD 870 EVO 1TB")}
+        {kv("序號", '<span class="mono">S6PXNM0T412345K</span>')}
+        {kv("容量", '<span class="mono">931.5 GiB</span>')}
+        {kv("接在", "SATA 第 3 埠")}
+        {kv("目前內容", U.status("ok", "空的 · 沒有分割表"))}
+        {kv("誰在用", '<span class="note">沒有</span>')}
+      </div>
+      <div class="wrap" style="padding:0 16px 12px">{U.status("info", "裝置名稱會變，按下建立前會再用序號核對一次")}</div>""")
+    part = _fp("分割", _grid(
+        _fld("怎麼分", _seg(["整顆一個分割區", "自己分"], 0, "分割方式")),
+        _fld("分割表", _seg(["GPT", "MBR"], 0, "分割表"), "超過 2 TiB 或要用 UEFI 開機選 GPT"),
+        _fld("分割區", '<div class="wrap"><span class="mono">sdc1</span><span class="mono">931.5 GiB</span><span class="note">全部空間</span></div>')))
+    fs = _fp("檔案系統", _grid(
+        _fld("格式", _seg(["ext4", "XFS", "Btrfs"], 0, "檔案系統"), "ext4：可以放大也可以縮小。XFS：只能放大。Btrfs：有快照"),
+        _fld("標籤", _in("data2", mono=True), "方便辨認，掛載仍然用 UUID"),
+        _fld("保留給 root 的空間", _dd("1%"), "資料碟不用留 5%")))
+    mount = _fp("格式化後掛到哪", _grid(
+        _fld("掛載點", _in("/mnt/data2", mono=True, tail='<a class="btn sm" href="FolderPicker.dc.html">選擇資料夾</a>')),
+        _fld("用什麼認這顆磁碟", _seg(["UUID", "標籤"], 0, "識別方式"), "格式化完成才有 UUID，平台會自動填"),
+        _fld("開機時", _seg(["自動掛載", "用到才掛載", "不掛載"], 0, "開機掛載")),
+        _fld("磁碟不在時", _seg(["照常開機", "停下來等我處理"], 0, "磁碟缺席"))))
+    confirm = _fp("確認", f"""
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
+        {_chk("dng", "sdc 上的所有資料會被清除，不能復原", "目前是空的，沒有分割表", "")}
+        {_chk("ok", "不是系統碟，也沒有被掛載", "系統在 nvme0n1", "")}
+        {_chk("ok", "沒有服務、容器或程序在用", "只能確認平台看得到的使用者", "")}
+        <div class="term">parted /dev/sdc mklabel gpt mkpart primary 1MiB 100%
+mkfs.ext4 -L data2 -m 1 /dev/sdc1
+UUID=（格式化後取得）  /mnt/data2  ext4  defaults,noatime,nofail  0  2</div>
+        <div class="wrap">{_fld("輸入序號末 6 碼確認", _in("12345K", mono=True))}</div>
+        <div class="wrap"><button type="button" class="btn dng" disabled aria-disabled="true">建立變更計畫</button><a class="btn" href="NodeDisks.dc.html">取消</a>{U.status("info", "會進變更計畫，批准後才執行")}</div>
+      </div>""")
+    card = "background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0"
+    def box(title, body):
+        return f'<section style="{card}"><h2 style="font-size:14px">{title}</h2>{body}</section>'
+    blocked = ('<h2 style="font-size:13px;color:var(--muted);letter-spacing:.04em">不能格式化的情況</h2><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:16px">'
+               + box("系統碟", f'<div class="wrap"><span class="mono">/dev/nvme0n1</span>{U.status("dng", "系統正在使用")}</div><div style="font-size:13px">/、/boot、swap 都在這顆上。沒有格式化按鈕</div>')
+               + box("有人在用", f'<div class="wrap"><span class="mono">/dev/sdb1</span>{U.status("dng", "掛在 /mnt/data")}</div><div style="font-size:13px">shop-db、wiki-db、2 個備份任務在用</div><div class="wrap"><a class="btn sm" href="NodeDisks.dc.html">先卸載</a></div>')
+               + box("裝置換了", f'<div class="wrap">{U.status("dng", "序號和你確認時不一樣")}</div><div style="font-size:13px">/dev/sdc 現在是另一顆磁碟（重新插拔或開機順序改變）。計畫已取消，沒有動到任何東西</div><div class="wrap"><a class="btn sm" href="NodeDisks.dc.html">重新掃描</a></div>')
+               + box("裡面已經有資料", f'<div class="wrap"><span class="mono">/dev/sdd1</span>{U.status("warn", "ext4 · 212 GiB 已用")}</div><div style="font-size:13px">可以直接掛載使用，不用格式化</div><div class="wrap"><a class="btn sm" href="NodeDisks.dc.html">掛載這個分割區</a><button type="button" class="btn sm">仍然要格式化</button></div>')
+               + "</div>")
+    main = head + _disk_sub("建立分割區並格式化 · /dev/sdc") + ident + f'<div class="cg">{part}{fs}</div>' + mount + confirm + blocked
+    return U.shell("nodes", main)
+
+
+def node_disk_volumes() -> str:
+    head = node_head("hazel-tw-01", U.status("ok", "連線中"), "最後聯絡 2 秒前", '<button type="button" class="btn">重新掃描</button>') + node_tabs("磁碟")
+    def lv(name, size, fs, mnt, used, act):
+        return f'<div class="row cols-6"><span class="mono">{name}</span><span class="mono">{size}</span><span class="mono">{fs}</span><span class="mono">{mnt}</span><span class="mono">{used}</span><span>{act}</span></div>'
+    grow = '<button type="button" class="btn sm">放大</button>'
+    lvm = _fp("LVM", f"""
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));gap:10px 16px;padding:12px 16px;font-size:13px">
+        {kv("磁碟區群組", '<span class="mono">vg-data</span>')}
+        {kv("實體磁碟", '<span class="mono">sdb2、sdd1</span>')}
+        {kv("總容量", '<span class="mono">1.8 TiB</span>')}
+        {kv("還沒分配", '<span class="mono">412 GiB</span>')}
+      </div>
+      <div class="row hd cols-6"><span>邏輯磁碟區</span><span>大小</span><span>檔案系統</span><span>掛載點</span><span>已用</span><span></span></div>
+      {lv("lv-apps", "600 GiB", "ext4", "/mnt/apps", "71%", grow + '<button type="button" class="btn sm">縮小</button>')}
+      {lv("lv-db", "500 GiB", "xfs", "/mnt/db", "64%", grow + '<span tabindex="0" data-tip="XFS 只能放大，不能縮小"><button type="button" class="btn sm" disabled>縮小</button></span>')}
+      {lv("lv-snap", "300 GiB", "ext4", "/mnt/snap", "12%", grow + '<button type="button" class="btn sm">縮小</button>')}
+      <div class="wrap" style="padding:10px 14px"><button type="button" class="btn sm">{U.icon("plus", 14)}新增邏輯磁碟區</button><button type="button" class="btn sm">把磁碟加進群組</button>{U.status("info", "縮小要先卸載並檢查檔案系統")}</div>""")
+    def md(dev, role, st, note):
+        return f'<div class="row cols-4"><span class="mono">{dev}</span><span>{role}</span><span>{st}</span><span class="note">{note}</span></div>'
+    raid = _fp("軟體 RAID", f"""
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));gap:10px 16px;padding:12px 16px;font-size:13px">
+        {kv("陣列", '<span class="mono">/dev/md0</span>')}
+        {kv("等級", "RAID 1 · 2 顆")}
+        {kv("容量", '<span class="mono">931 GiB</span>')}
+        {kv("狀態", U.status("warn", "降級 · 少一顆"))}
+        {kv("重建", '<span class="mono">還沒開始</span>')}
+      </div>
+      <div class="row hd cols-4"><span>成員</span><span>角色</span><span>狀態</span><span>說明</span></div>
+      {md("sde1", "使用中", U.status("ok", "同步"), "健康")}
+      {md("sdf1", "已移出", U.status("dng", "故障"), "11/12 02:14 讀取錯誤 37 次")}
+      <div class="wrap" style="padding:10px 14px"><button type="button" class="btn pri sm">換上新磁碟並重建</button><button type="button" class="btn sm">看核心訊息</button>{U.status("warn", "現在再壞一顆就會遺失資料")}</div>""", extra=f'<span style="margin-left:auto">{U.status("dng", "需要處理")}</span>')
+    def lk(dev, name, st, unlock, deps, act):
+        return f'<div class="row cols-6"><span class="mono">{dev}</span><span class="mono">{name}</span><span>{st}</span><span>{unlock}</span><span class="note">{deps}</span><span>{act}</span></div>'
+    luks = _fp("加密（LUKS）", f"""
+      <div class="row hd cols-6"><span>裝置</span><span>解鎖後的名稱</span><span>狀態</span><span>開機時怎麼解鎖</span><span>誰依賴它</span><span></span></div>
+      {lk("sdg1", "secure-data", U.status("ok", "已解鎖"), "金鑰檔（在系統碟）", "shop-db", '<button type="button" class="btn sm">上鎖</button><button type="button" class="btn sm">金鑰</button>')}
+      {lk("sdh1", "archive", U.status("warn", "上鎖中"), "手動輸入密碼", "backup-archive 沒有啟動", '<button type="button" class="btn pri sm">解鎖</button><button type="button" class="btn sm">金鑰</button>')}
+      <div class="wrap" style="padding:10px 14px">{U.status("info", "密碼只送到這台主機用一次，平台不保存")}{U.status("info", "金鑰檔和資料放同一顆磁碟等於沒有加密")}</div>""")
+    card = "background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0"
+    def box(title, body):
+        return f'<section style="{card}"><h2 style="font-size:14px">{title}</h2>{body}</section>'
+    states = ('<h2 style="font-size:13px;color:var(--muted);letter-spacing:.04em">其他狀態</h2><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:16px">'
+              + box("這台沒有用到", f'<div class="wrap">{U.status("info", "沒有 LVM、軟體 RAID 或加密磁碟")}</div><div style="font-size:13px">一般的分割區和掛載在「磁碟」頁</div>')
+              + box("RAID 重建中", f'<div class="wrap"><span class="mono">/dev/md0</span>{U.status("info", "重建 41%")}</div><div class="prog" aria-hidden="true"><i style="width:41%"></i></div><div style="font-size:13px">預估還要 1 小時 52 分 · 重建期間讀寫會變慢</div>')
+              + box("解鎖 archive", _grid(_fld("密碼", _in("••••••••••", mono=True)), minw=200) + f'<div class="wrap"><button type="button" class="btn pri">解鎖並掛載</button><button type="button" class="btn">取消</button></div><div style="font-size:12px;color:var(--muted)">解鎖後 backup-archive 會自動啟動</div>')
+              + box("工具沒裝", f'<div class="wrap">{U.status("warn", "這台沒有 mdadm")}</div><div style="font-size:13px">看得到陣列，但不能管理</div><div class="wrap"><a class="btn sm" href="Updates.dc.html">安裝 mdadm</a></div>')
+              + "</div>")
+    main = head + _disk_sub("LVM、軟體 RAID 與加密") + raid + lvm + luks + states
+    return U.shell("nodes", main)
+
+
+def node_mount_network() -> str:
+    head = node_head("hazel-tw-01", U.status("ok", "連線中"), "最後聯絡 2 秒前", '<a class="btn" href="NodeDisks.dc.html">取消</a>') + node_tabs("磁碟")
+    src = _fp("來源", _grid(
+        _fld("類型", _seg(["NFS", "SMB"], 1, "類型")),
+        _fld("伺服器", _in("nas.lab.example.tw", mono=True)),
+        _fld("分享名稱", _in("backups", mono=True), "SMB 填分享名稱；NFS 填匯出路徑，例如 /export/backups"),
+        _fld("協定版本", _dd("SMB 3.1.1（自動）")),
+        _fld("帳號", _in("hazel-backup", mono=True)),
+        _fld("密碼", _in("••••••••••", mono=True, tail='<button type="button" class="btn sm">更換</button>'), "存在機密庫；主機上只有 root 讀得到的憑證檔，不會出現在指令列或 fstab")))
+    test = _fp("測試連線", f"""
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">
+        <div class="wrap"><button type="button" class="btn pri sm">再測一次</button><span class="mono" style="font-size:12px">03:41:08</span></div>
+        {_chk("ok", "連得到 nas.lab.example.tw:445", "38 ms", "")}
+        {_chk("ok", "帳號密碼正確", "SMB 3.1.1 · 有加密", "")}
+        {_chk("ok", "看得到分享 backups", "1.2 TiB 可用 / 4 TiB", "")}
+        {_chk("warn", "只有讀取權限", "這個帳號不能寫入，備份會失敗", "到 NAS 改權限")}
+      </div>""")
+    mount = _fp("掛到哪", _grid(
+        _fld("掛載點", _in("/mnt/nas/backups", mono=True, tail='<a class="btn sm" href="FolderPicker.dc.html">選擇資料夾</a>')),
+        _fld("開機時", _seg(["自動掛載", "用到才掛載", "不掛載"], 1, "開機掛載"), "網路儲存建議用到才掛載：伺服器不在時開機不會卡住"),
+        _fld("伺服器沒回應時", _seg(["等 30 秒後回報錯誤", "一直等到恢復"], 0, "逾時"), "一直等會讓用到這個路徑的程式卡住"),
+        _fld("誰可以讀寫", _dd("backup（uid 998）")),
+        _fld("掛載選項", '<div class="wrap">' + _cb("唯讀", False) + _cb("不允許執行檔（noexec）", True) + "</div>")) + f"""
+      <div style="padding:0 16px 12px;display:flex;flex-direction:column;gap:8px">
+        <span class="note">會寫進 /etc/fstab 的內容</span>
+        <div class="term" style="white-space:pre-wrap;overflow-wrap:anywhere">//nas.lab.example.tw/backups  /mnt/nas/backups  cifs  credentials=/etc/hazelminx/mounts/backup.cred,vers=3.1.1,uid=998,noexec,nofail,x-systemd.automount,x-systemd.mount-timeout=30  0  0</div>
+        <div class="wrap">{U.status("ok", "語法檢查通過")}{U.status("ok", "密碼不在這一行")}{U.status("info", "需要 cifs-utils · 已安裝")}</div>
+      </div>""" + _submit("預覽變更計畫", "只存設定，不立刻掛載"))
+    card = "background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0"
+    def box(title, body):
+        return f'<section style="{card}"><h2 style="font-size:14px">{title}</h2>{body}</section>'
+    states = ('<h2 style="font-size:13px;color:var(--muted);letter-spacing:.04em">各種狀態</h2><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:16px">'
+              + box("選 NFS 時", _grid(_fld("匯出路徑", _in("/export/backups", mono=True)), _fld("協定版本", _dd("NFS 4.2（自動）")), minw=200) + f'<div class="wrap">{U.status("info", "NFS 不用帳號密碼，靠伺服器允許這台的 IP")}</div>')
+              + box("連不到伺服器", f'<div class="wrap">{U.status("dng", "連不到 nas.lab.example.tw:445")}</div><div style="font-size:13px">逾時 5 秒。可能是防火牆、伺服器沒開，或網域解析不到</div><div class="wrap"><button type="button" class="btn sm">再測一次</button></div>')
+              + box("帳號密碼不對", f'<div class="wrap">{U.status("dng", "伺服器拒絕登入")}</div><div style="font-size:13px">帳號 hazel-backup · 密碼沒有顯示也沒有寫進紀錄</div>')
+              + box("掛載後伺服器失聯", f'<div class="wrap"><span class="mono">/mnt/nas/backups</span>{U.status("warn", "伺服器沒有回應 · 4 分鐘")}</div><div style="font-size:13px">這個掛載點的容量和檔案暫時讀不到，頁面其他部分照常</div><div class="wrap"><button type="button" class="btn sm">重新連線</button><a class="btn sm" href="NodeDisks.dc.html">卸載</a></div>')
+              + box("少了工具", f'<div class="wrap">{U.status("warn", "這台沒有 cifs-utils")}</div><div style="font-size:13px">掛載 SMB 需要它</div><div class="wrap"><a class="btn sm" href="Updates.dc.html">安裝 cifs-utils</a></div>')
+              + "</div>")
+    main = head + _disk_sub("掛載網路儲存") + f'<div class="cg">{src}{test}</div>' + mount + states
+    return U.shell("nodes", main)
+
+
 # ---------- 公司帳號登入（增補 10，票 127） ----------
 def oidc_setup() -> str:
     copy = f'<button type="button" class="ib" aria-label="複製">{U.icon("copy")}</button>'
@@ -3849,7 +3997,7 @@ def node_terminal() -> str:
 
 # ---------- 主機 › 磁碟（STO-001～004、007、008；票 031、032） ----------
 def node_disks() -> str:
-    head = node_head("hazel-tw-01", U.status("ok", "連線中"), "最後聯絡 2 秒前", '<button type="button" class="btn">重新掃描磁碟</button><button type="button" class="btn pri">掛載網路儲存</button>') + node_tabs("磁碟")
+    head = node_head("hazel-tw-01", U.status("ok", "連線中"), "最後聯絡 2 秒前", '<button type="button" class="btn">重新掃描磁碟</button><a class="btn" href="NodeDiskVolumes.dc.html">LVM、RAID 與加密</a><a class="btn pri" href="NodeMountNetwork.dc.html">掛載網路儲存</a>') + node_tabs("磁碟")
     tiles = '<div class="tiles">' + "".join([
         U.stat_tile("磁碟", "4", "", "1 顆還沒使用", None),
         U.stat_tile("掛載", "6", "", "4 個開機自動掛載 · 2 個設定衝突", False),
@@ -4700,6 +4848,9 @@ SCREENS = {
     "BatchResult": ("批次操作結果", batch_result, 1440, 900),
     "ComposeEditor": ("Compose 編輯器（側欄收合）", compose_editor, 1440, 1100),
     "NodeDisks": ("主機 hazel-tw-01 › 磁碟", node_disks, 1440, 1900),
+    "NodeDiskFormat": ("主機 › 磁碟 › 分割與格式化", node_disk_format, 1440, 1900),
+    "NodeDiskVolumes": ("主機 › 磁碟 › LVM、RAID 與加密", node_disk_volumes, 1440, 1900),
+    "NodeMountNetwork": ("主機 › 磁碟 › 掛載網路儲存", node_mount_network, 1440, 1900),
     "NodeLogs": ("主機 hazel-tw-01 › 日誌", node_logs, 1440, 1000),
     "NodeTerminal": ("主機 hazel-tw-01 › 終端機", node_terminal, 1440, 1000),
     "GitHubSource": ("從 GitHub 匯入", github_source, 1440, 1100),
