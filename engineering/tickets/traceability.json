@@ -1085,6 +1085,21 @@
         "011",
         "010"
       ],
+      "requirements": [],
+      "acceptance_tests": [],
+      "issue": 47
+    },
+    {
+      "id": "047.1",
+      "file": "047.1-github-connections-api.md",
+      "title": "使用者可以用 API 以 GitHub 網頁授權或 PAT 建立可重用連線，管理員可以接入自己的 GitHub App",
+      "epic": "github",
+      "milestone": "M2",
+      "blocked_by": [
+        "009",
+        "011",
+        "010"
+      ],
       "requirements": [
         "GIT-001",
         "GIT-002",
@@ -1106,7 +1121,23 @@
         "GH-T14",
         "GH-T15"
       ],
-      "issue": 47
+      "issue": 159,
+      "parent": "047"
+    },
+    {
+      "id": "047.2",
+      "file": "047.2-github-connection-screens.md",
+      "title": "使用者可以在畫面上連接 GitHub、管理多個連線並檢查回呼與 Webhook 可達性",
+      "epic": "github",
+      "milestone": "M2",
+      "blocked_by": [
+        "047.1",
+        "017"
+      ],
+      "requirements": [],
+      "acceptance_tests": [],
+      "issue": 160,
+      "parent": "047"
     },
     {
       "id": "048",
