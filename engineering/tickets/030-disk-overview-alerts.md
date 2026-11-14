@@ -15,9 +15,9 @@
 
 | 子票 | 交付 | 擁有的需求 |
 |---|---|---|
-| 030.1 | Agent 回報磁碟、分割區、掛載與用量分類，Core 保存並以 API 提供容量告警 | STO-001、STO-010 |
-| 030.2 | 儲存與備份頁、主機磁碟頁與總覽的磁碟畫面 | 無（畫面） |
-| 030.3 | 快照與檔案備份分開管理 | STO-011 |
+| [030.1](doing/030.1-storage-inventory-usage-alerts-api.md)（[#170](https://github.com/HazelnutParadise/hazelminx/issues/170)） | Agent 回報磁碟、分割區、掛載與用量分類，Core 保存並以 API 提供容量告警 | STO-001、STO-010 |
+| [030.2](030.2-storage-screens.md)（[#171](https://github.com/HazelnutParadise/hazelminx/issues/171)） | 儲存與備份頁、主機磁碟頁與總覽的磁碟畫面 | 無（畫面） |
+| [030.3](030.3-snapshots-vs-backups.md)（[#172](https://github.com/HazelnutParadise/hazelminx/issues/172)） | 快照與檔案備份分開管理 | STO-011 |
 
 SMART、NVMe 健康與磁碟溫度由票 020.3 讀取，結果填進 030.1 的 `GET /management/v1/nodes/{id}/storage` 的 `devices[].health`。
 
