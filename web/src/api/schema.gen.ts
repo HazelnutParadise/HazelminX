@@ -1323,6 +1323,168 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/management/v1/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** projects the caller can read */
+        get: operations["listProjects"];
+        put?: never;
+        /** create a project; name follows 52.1 (lowercase letter first, lowercase letters, digits and '-', at most 30) */
+        post: operations["createProject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/projects/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** one project; ETag carries its version */
+        get: operations["getProject"];
+        put?: never;
+        post?: never;
+        /** delete a project; refused while it has environments; requires If-Match */
+        delete: operations["deleteProject"];
+        options?: never;
+        head?: never;
+        /** rename or describe a project; Compose project names of its units do not change; requires If-Match */
+        patch: operations["updateProject"];
+        trace?: never;
+    };
+    "/management/v1/projects/{id}/environments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** the project's environments */
+        get: operations["listProjectEnvironments"];
+        put?: never;
+        /** add an environment (production, staging…); name follows 52.1 */
+        post: operations["createProjectEnvironment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/projects/{id}/environments/{envId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** one environment; ETag carries its version */
+        get: operations["getProjectEnvironment"];
+        put?: never;
+        post?: never;
+        /** delete an environment; refused while it has a Compose unit; requires If-Match */
+        delete: operations["deleteProjectEnvironment"];
+        options?: never;
+        head?: never;
+        /** rename or describe an environment; the unit's Compose project name does not change; requires If-Match */
+        patch: operations["updateProjectEnvironment"];
+        trace?: never;
+    };
+    "/management/v1/projects/{id}/environments/{envId}/compose": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** the environment's Compose unit with the content of its files that are not secret, and the check of those files */
+        get: operations["getComposeUnit"];
+        /** replace the unit's files and settings; name and Compose project name stay; a stored secret file is kept with unchanged=true; files are kept byte for byte (UTF-8 text, at most 200 files, 256 KiB each, 768 KiB in all); mainFile and extraFiles are the -f order; secret files go to the secret store and are never returned; the answer carries the check of the saved files; requires If-Match */
+        put: operations["replaceComposeUnit"];
+        /** import a complete Compose project as the environment's unit (upload or editor); its Compose project name is fixed as <project>-<environment>-<unit>; files are kept byte for byte (UTF-8 text, at most 200 files, 256 KiB each, 768 KiB in all); mainFile and extraFiles are the -f order; secret files go to the secret store and are never returned; the answer carries the check of the saved files */
+        post: operations["createComposeUnit"];
+        /** remove the unit and its secret files from HazelminX; nothing on any host is changed; requires If-Match */
+        delete: operations["deleteComposeUnit"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/projects/{id}/environments/{envId}/compose/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** check files as they would be saved, without saving: what Docker Compose accepts, refuses and why, what is kept but not applied, variables, services, mounts and high-risk settings */
+        post: operations["checkComposeUnit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/projects/{id}/environments/{envId}/compose/deployments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** the unit's deployments, newest first */
+        get: operations["listComposeDeployments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/projects/{id}/environments/{envId}/compose/host-checks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** check the unit's target host before deploying (images, disk space, host ports, bind mount sources); a read-only job; the same requestId replays the same job */
+        post: operations["checkComposeUnitOnHost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/management/v1/projects/{id}/environments/{envId}/compose/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** what deploying the saved unit would do: the check, the target engine's state from the node's latest engine report, whether it can deploy, whether it needs approval, and the host checks still to run (ticket 044.2) */
+        get: operations["previewComposeUnit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/management/v1/roles": {
         parameters: {
             query?: never;
@@ -1483,6 +1645,20 @@ export interface components {
             level: string;
             message: string;
         };
+        Analysis: {
+            composeProject: string;
+            configs: components["schemas"]["Resource"][];
+            files: string[];
+            findings: components["schemas"]["Finding"][];
+            networks: components["schemas"]["Resource"][];
+            profiles: string[];
+            projectDir: string;
+            secrets: components["schemas"]["Resource"][];
+            services: components["schemas"]["ServicePreview"][];
+            valid: boolean;
+            variables: components["schemas"]["Variable"][];
+            volumes: components["schemas"]["Resource"][];
+        };
         apiError: {
             alsoBlockedBy?: string[];
             /** @enum {string} */
@@ -1597,6 +1773,12 @@ export interface components {
             maxConcurrent: number;
             /** Format: int64 */
             reserveBytes: number;
+        };
+        Build: {
+            context: string;
+            dockerfile?: string;
+            inline: boolean;
+            remote: boolean;
         };
         Callback: {
             code: string;
@@ -1715,6 +1897,18 @@ export interface components {
             state: string;
             version: string;
         };
+        composeCheckResponse: {
+            analysis: components["schemas"]["Analysis"];
+        };
+        composeDeploymentsResponse: {
+            deployments: components["schemas"]["Deployment"][];
+        };
+        composeHostCheckRequest: {
+            requestId: string;
+        };
+        composePreviewResponse: {
+            preview: components["schemas"]["Preview"];
+        };
         ComposeProject: {
             directory: string;
             files: string[];
@@ -1727,6 +1921,10 @@ export interface components {
             ref: string;
             state: string;
             truncated: boolean;
+        };
+        composeUnitResponse: {
+            analysis: components["schemas"]["Analysis"];
+            unit: components["schemas"]["projects.Unit"];
         };
         Confirmation: {
             /** Format: date-time */
@@ -1814,6 +2012,28 @@ export interface components {
             at: string;
             by?: components["schemas"]["Actor"];
             reason: string;
+        };
+        Deployment: {
+            composeProject: string;
+            createdBy: string;
+            engineEnvironmentId: string;
+            errorCode?: string;
+            errorMessage?: string;
+            /** Format: date-time */
+            finishedAt?: string;
+            id: string;
+            jobId: string;
+            manifestDigest: string;
+            nodeId: string;
+            planId?: string;
+            result: unknown;
+            revision: string;
+            /** Format: date-time */
+            startedAt: string;
+            state: string;
+            unitId: string;
+            /** Format: int64 */
+            unitVersion: number;
         };
         Device: {
             class: string;
@@ -1967,6 +2187,14 @@ export interface components {
             swarm: string;
             version: string;
         };
+        EnvironmentInput: {
+            description: string;
+            name: string;
+        };
+        EnvironmentPatch: {
+            description?: string;
+            name?: string;
+        };
         Event: {
             /** Format: date-time */
             at: string;
@@ -2029,6 +2257,20 @@ export interface components {
             field: string;
             message: string;
         };
+        File: {
+            content?: string;
+            path: string;
+            secret: boolean;
+            sha256: string;
+            /** Format: int64 */
+            size: number;
+        };
+        FileInput: {
+            content?: string;
+            path: string;
+            secret?: boolean;
+            unchanged?: boolean;
+        };
         Filesystem: {
             /** Format: int64 */
             availableBytes: number;
@@ -2057,6 +2299,13 @@ export interface components {
             mountPoint: string;
             readOnly: boolean;
             state: string;
+        };
+        Finding: {
+            attribute?: string;
+            code: string;
+            file?: string;
+            message: string;
+            severity: string;
         };
         FSUsage: {
             categories: components["schemas"]["CategoryBytes"][];
@@ -2368,6 +2617,14 @@ export interface components {
             items: components["schemas"]["Plan"][];
             page: components["schemas"]["PageMeta"];
         };
+        "ListResponse_projects.Environment": {
+            items: components["schemas"]["projects.Environment"][];
+            page: components["schemas"]["PageMeta"];
+        };
+        "ListResponse_projects.Project": {
+            items: components["schemas"]["Project"][];
+            page: components["schemas"]["PageMeta"];
+        };
         Load: {
             fifteen: number;
             five: number;
@@ -2415,6 +2672,7 @@ export interface components {
         };
         maintenanceResponse: {
             affectedJobs: components["schemas"]["affectedJob"][];
+            affectedServices: components["schemas"]["OnNode"][];
             node: components["schemas"]["Node"];
         };
         ManifestInput: {
@@ -2472,6 +2730,13 @@ export interface components {
             seq: number;
             swap: components["schemas"]["Swap"];
             temperatures: components["schemas"]["Temperature"][];
+        };
+        Mount: {
+            kind: string;
+            readOnly: boolean;
+            source?: string;
+            target: string;
+            type: string;
         };
         MountConfig: {
             boot: string;
@@ -2568,6 +2833,13 @@ export interface components {
         };
         nodeResponse: {
             node: components["schemas"]["Node"];
+        };
+        OnNode: {
+            composeProject: string;
+            /** Format: date-time */
+            deployedAt: string;
+            revision: string;
+            unitId: string;
         };
         overviewOperation: {
             docs: string;
@@ -2666,6 +2938,12 @@ export interface components {
             samples: number;
             value: number;
         };
+        Port: {
+            hostIp?: string;
+            protocol: string;
+            published?: string;
+            target: number;
+        };
         Pressure: {
             cpu: components["schemas"]["PressureLine"];
             io: components["schemas"]["PressureLine"];
@@ -2679,6 +2957,81 @@ export interface components {
             someAvg10: number;
             someAvg60: number;
             someAvg300: number;
+        };
+        Preview: {
+            analysis: components["schemas"]["Analysis"];
+            blockers: components["schemas"]["Finding"][];
+            deployable: boolean;
+            hostChecksPending: string[];
+            needsApproval: boolean;
+            target: components["schemas"]["TargetCheck"];
+        };
+        Project: {
+            /** Format: date-time */
+            createdAt: string;
+            createdBy: string;
+            description: string;
+            displayName: string;
+            id: string;
+            name: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: int64 */
+            version: number;
+        };
+        projectEnvironmentResponse: {
+            environment: components["schemas"]["projects.Environment"];
+        };
+        ProjectInput: {
+            description: string;
+            displayName: string;
+            name: string;
+        };
+        ProjectPatch: {
+            description?: string;
+            displayName?: string;
+            name?: string;
+        };
+        projectResponse: {
+            project: components["schemas"]["Project"];
+        };
+        "projects.Environment": {
+            /** Format: date-time */
+            createdAt: string;
+            createdBy: string;
+            description: string;
+            id: string;
+            name: string;
+            projectId: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: int64 */
+            version: number;
+        };
+        "projects.Target": {
+            engineEnvironmentId: string;
+            nodeId: string;
+        };
+        "projects.Unit": {
+            composeProject: string;
+            /** Format: date-time */
+            createdAt: string;
+            createdBy: string;
+            environmentId: string;
+            extraFiles: string[];
+            files: components["schemas"]["File"][];
+            id: string;
+            mainFile: string;
+            name: string;
+            profiles: string[];
+            projectId: string;
+            source: string;
+            target: components["schemas"]["projects.Target"];
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: int64 */
+            version: number;
+            workingDir: string;
         };
         Range: {
             max: number;
@@ -2770,6 +3123,12 @@ export interface components {
             defaultBranch: string;
             ref: string;
         };
+        Resource: {
+            external: boolean;
+            file?: string;
+            key: string;
+            name: string;
+        };
         ResourceRef: {
             device?: string;
             id?: string;
@@ -2839,6 +3198,20 @@ export interface components {
             code?: string;
             credential?: unknown;
             method: string;
+        };
+        ServicePreview: {
+            build: components["schemas"]["Build"];
+            dependsOn: string[];
+            enabled: boolean;
+            envFiles: string[];
+            healthcheck: boolean;
+            image?: string;
+            mounts: components["schemas"]["Mount"][];
+            name: string;
+            networkMode?: string;
+            networks: string[];
+            ports: components["schemas"]["Port"][];
+            profiles: string[];
         };
         Session: {
             /** Format: date-time */
@@ -3016,6 +3389,18 @@ export interface components {
             /** Format: int64 */
             version: number;
         };
+        TargetCheck: {
+            composeVersion?: string;
+            engineEnvironmentId?: string;
+            engineVersion?: string;
+            kind?: string;
+            mode?: string;
+            nodeId?: string;
+            reason?: string;
+            /** Format: date-time */
+            reportCollectedAt?: string;
+            state: string;
+        };
         TargetMove: {
             /** Format: int64 */
             currentVersion: number;
@@ -3064,6 +3449,16 @@ export interface components {
             name: string;
             subState: string;
             unitFileState: string;
+        };
+        UnitInput: {
+            extraFiles: string[];
+            files: components["schemas"]["FileInput"][];
+            mainFile: string;
+            name?: string;
+            profiles: string[];
+            source: string;
+            target: components["schemas"]["projects.Target"];
+            workingDir?: string;
         };
         UpdateUserInput: {
             displayName?: string;
@@ -3123,6 +3518,13 @@ export interface components {
         };
         userResponse: {
             user: components["schemas"]["User"];
+        };
+        Variable: {
+            default: string;
+            files: string[];
+            name: string;
+            required: boolean;
+            state: string;
         };
         View: {
             backupStaging: string;
@@ -10371,6 +10773,1569 @@ export interface operations {
             };
             /** @description Bad Request: VALIDATION_FAILED */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    listProjects: {
+        parameters: {
+            query?: {
+                /** @description page.nextCursor of the previous page; continues the same query */
+                cursor?: string;
+                /** @description rows per page */
+                limit?: number;
+                /** @description comma-separated fields, '-' for descending; default name */
+                sort?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListResponse_projects.Project"];
+                };
+            };
+            /** @description Bad Request: QUERY_LIMIT_EXCEEDED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    createProject: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["projectResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: ALREADY_EXISTS */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    getProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["projectResponse"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    deleteProject: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description "v<version>" from the ETag of the resource as you read it */
+                "If-Match": string;
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: RESOURCE_REFERENCED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Precondition Failed: VERSION_MISMATCH */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Precondition Required: VERSION_REQUIRED */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    updateProject: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description "v<version>" from the ETag of the resource as you read it */
+                "If-Match": string;
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["projectResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: ALREADY_EXISTS */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Precondition Failed: VERSION_MISMATCH */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Precondition Required: VERSION_REQUIRED */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    listProjectEnvironments: {
+        parameters: {
+            query?: {
+                /** @description page.nextCursor of the previous page; continues the same query */
+                cursor?: string;
+                /** @description rows per page */
+                limit?: number;
+                /** @description comma-separated fields, '-' for descending; default name */
+                sort?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListResponse_projects.Environment"];
+                };
+            };
+            /** @description Bad Request: QUERY_LIMIT_EXCEEDED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    createProjectEnvironment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnvironmentInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["projectEnvironmentResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: ALREADY_EXISTS */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    getProjectEnvironment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                envId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["projectEnvironmentResponse"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    deleteProjectEnvironment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description "v<version>" from the ETag of the resource as you read it */
+                "If-Match": string;
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                envId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: RESOURCE_REFERENCED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Precondition Failed: VERSION_MISMATCH */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Precondition Required: VERSION_REQUIRED */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    updateProjectEnvironment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description "v<version>" from the ETag of the resource as you read it */
+                "If-Match": string;
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                envId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnvironmentPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["projectEnvironmentResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: ALREADY_EXISTS */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Precondition Failed: VERSION_MISMATCH */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Precondition Required: VERSION_REQUIRED */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    getComposeUnit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                envId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["composeUnitResponse"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    replaceComposeUnit: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description "v<version>" from the ETag of the resource as you read it */
+                "If-Match": string;
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                envId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnitInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["composeUnitResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Precondition Failed: VERSION_MISMATCH */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Precondition Required: VERSION_REQUIRED */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    createComposeUnit: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                envId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnitInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["composeUnitResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: ALREADY_EXISTS */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    deleteComposeUnit: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description "v<version>" from the ETag of the resource as you read it */
+                "If-Match": string;
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                envId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Precondition Failed: VERSION_MISMATCH */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Precondition Required: VERSION_REQUIRED */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    checkComposeUnit: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                envId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnitInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["composeCheckResponse"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    listComposeDeployments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                envId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["composeDeploymentsResponse"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    checkComposeUnitOnHost: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description required with cookie sessions: the csrfToken from login or /auth/session */
+                "X-CSRF-Token"?: string;
+            };
+            path: {
+                envId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["composeHostCheckRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAccepted"];
+                };
+            };
+            /** @description Bad Request: DRY_RUN_UNSUPPORTED, VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: CSRF_TOKEN_MISMATCH, FORBIDDEN, ORIGIN_MISMATCH */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Conflict: REQUEST_ID_CONFLICT */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Request Entity Too Large: PAYLOAD_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Internal Server Error: INTERNAL */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+        };
+    };
+    previewComposeUnit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                envId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["composePreviewResponse"];
+                };
+            };
+            /** @description Bad Request: VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Unauthorized: UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Forbidden: FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["apiError"];
+                };
+            };
+            /** @description Not Found: NOT_FOUND */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

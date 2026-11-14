@@ -1,0 +1,389 @@
+/* Projects (boards Projects, ProjectDetail, ComposeEditor, ComposeCompat, DeployCheck, DeployConfirm).
+   Panels, tables, dialogs, crumbs and forms reuse the host screens' styles. */
+@import "../nodes/nodes.css";
+
+.hx-project-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: -8px 0 0;
+  color: var(--text-color-kumo-subtle);
+  font-size: 13px;
+}
+
+.hx-env-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hx-env-chips a {
+  display: inline-flex;
+  white-space: nowrap;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--color-kumo-line);
+  border-radius: 4px;
+  color: var(--text-color-kumo-default);
+  font-size: 12px;
+  text-decoration: none;
+}
+.hx-env-chips a:hover {
+  border-color: var(--color-kumo-brand);
+}
+
+/* The environment frame (DESIGN.md「上層的切換要把它管的內容包在裡面」): a hazel spine on the left, a tinted
+   head with the layer's name and its tabs, the selected tab opening into a content area one step darker. */
+.hx-scope {
+  border: 1px solid var(--color-kumo-line);
+  border-left: 4px solid var(--color-kumo-brand);
+  border-radius: 8px;
+  overflow: hidden;
+  min-width: 0;
+}
+.hx-scope-head {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 8px 12px 0;
+  background: color-mix(in srgb, var(--color-kumo-brand) 12%, var(--color-kumo-base));
+  border-bottom: 1px solid var(--color-kumo-line);
+}
+.hx-scope-label {
+  flex: none;
+  align-self: center;
+  padding-bottom: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-color-kumo-subtle);
+}
+.hx-scope-tabs {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 2px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.hx-scope-head > :last-child {
+  flex: none;
+  margin: 0 0 6px auto;
+}
+.hx-scope-tab {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  margin-bottom: -1px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 6px 6px 0 0;
+  color: var(--text-color-kumo-subtle);
+  font-size: 14px;
+  text-decoration: none;
+}
+.hx-scope-tab:hover {
+  color: var(--text-color-kumo-default);
+}
+.hx-scope-tab[aria-current="page"] {
+  background: var(--color-kumo-recessed);
+  border-color: var(--color-kumo-line);
+  color: var(--text-color-kumo-default);
+  font-weight: 600;
+}
+.hx-scope-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  background: var(--color-kumo-recessed);
+  min-width: 0;
+}
+
+.hx-env-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.hx-env-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.hx-env-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px 24px;
+  margin: 0;
+}
+.hx-env-summary > .hx-env-facts {
+  flex: 1 1 520px;
+}
+.hx-env-facts dt {
+  font-size: 12px;
+  color: var(--text-color-kumo-subtle);
+}
+.hx-env-facts dd {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.hx-panel-extra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.hx-panel-head h2 {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.hx-code {
+  font-size: 12px;
+  color: var(--text-color-kumo-subtle);
+}
+.hx-raw {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.hx-hash {
+  font-size: 12px;
+}
+.hx-tag-secret {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border: 1px solid var(--color-kumo-line);
+  border-radius: 4px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--text-color-kumo-subtle);
+}
+.hx-subtable {
+  border-top: 1px solid var(--color-kumo-hairline);
+}
+.hx-ok-text {
+  color: var(--text-color-kumo-success);
+  font-weight: 600;
+}
+.hx-danger-text {
+  color: var(--text-color-kumo-danger);
+}
+.hx-h3 {
+  margin: 16px 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.hx-check-list,
+.hx-plain-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.hx-check-list li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px 10px;
+  align-items: baseline;
+}
+.hx-check-list li > :nth-child(n + 3) {
+  grid-column: 2;
+}
+.hx-plain-list li {
+  overflow-wrap: anywhere;
+}
+.hx-plan-summary {
+  margin: 0 0 12px;
+}
+
+.hx-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+}
+.hx-step-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.hx-step-error {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 6px;
+}
+.hx-log {
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  max-height: 240px;
+  overflow: auto;
+  background: var(--color-kumo-recessed);
+  border: 1px solid var(--color-kumo-hairline);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.hx-link-btn {
+  display: inline-flex;
+  min-width: 44px;
+  white-space: nowrap;
+  align-items: center;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-color-kumo-link);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* Compose editor */
+.hx-file-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--color-kumo-line);
+  border-radius: 8px;
+  min-width: 0;
+}
+.hx-file-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: end;
+}
+.hx-code-area textarea,
+textarea.hx-code-area {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  tab-size: 2;
+}
+.hx-stored {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  color: var(--text-color-kumo-subtle);
+}
+.hx-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px 16px;
+}
+
+/* The editor's bottom action bar (DESIGN.md「長表單的主要按鈕只放在底部」). */
+.hx-action-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+  border: 1px solid var(--color-kumo-line);
+  border-radius: 8px;
+  background: var(--color-kumo-base);
+}
+.hx-action-bar-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.hx-problems {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text-color-kumo-danger);
+  font-size: 13px;
+}
+
+@media (max-width: 767px) {
+  /* Tables whose cells hold long values read row by row on a phone: each row becomes a block. */
+  .hx-stack-sm thead {
+    display: none;
+  }
+  .hx-stack-sm tr,
+  .hx-stack-sm td {
+    display: block;
+  }
+  .hx-stack-sm tr {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--color-kumo-hairline);
+  }
+  .hx-stack-sm td {
+    border: 0;
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
+  .hx-scope .c5,
+  .hx-projects .c5 {
+    display: none;
+  }
+  .hx-scope .hx-table .hx-mono,
+  .hx-projects .hx-mono {
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+  .hx-scope-body {
+    padding: 10px;
+  }
+  .hx-scope-head {
+    flex-wrap: wrap;
+  }
+  .hx-scope-tab {
+    min-height: 44px;
+  }
+  .hx-file-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .hx-file-row > :first-child {
+    grid-column: 1 / -1;
+  }
+  .hx-link-btn,
+  .hx-env-chips a {
+    min-height: 44px;
+  }
+}
+
+.hx-projects td:first-child {
+  min-width: 9rem;
+}
+.hx-projects .hx-row-link {
+  overflow-wrap: normal;
+  word-break: keep-all;
+}
+
+/* Core's original text under a translated summary (DESIGN.md「原文加白話摘要」). */
+.hx-coded {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.hx-original {
+  font-size: 12px;
+  color: var(--text-color-kumo-subtle);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}

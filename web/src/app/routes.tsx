@@ -9,6 +9,8 @@ import { SetupPage } from "../auth/SetupPage";
 import { AddNodePage } from "../nodes/AddNodePage";
 import { NodePage } from "../nodes/NodePage";
 import { NodesPage } from "../nodes/NodesPage";
+import { ProjectPage } from "../projects/ProjectPage";
+import { ProjectsPage } from "../projects/ProjectsPage";
 import { AppShell } from "../shell/AppShell";
 import { SessionFallback } from "../shell/SessionFallback";
 import { NotFound } from "../shell/NotFound";
@@ -40,7 +42,7 @@ export const routes: RouteObject[] = [
         errorElement: <RouteError />,
         children: [
           ...Object.values(PAGES)
-            .filter((p) => p.key !== "accountSecurity" && p.key !== "nodes")
+            .filter((p) => p.key !== "accountSecurity" && p.key !== "nodes" && p.key !== "projects")
             .map((p) =>
               p.path === "/"
                 ? { index: true, element: <PageShell page={p.key} /> }
@@ -50,6 +52,8 @@ export const routes: RouteObject[] = [
           { path: PAGES.nodes.path.slice(1), element: <NodesPage /> },
           { path: `${PAGES.nodes.path.slice(1)}/new`, element: <AddNodePage /> },
           { path: `${PAGES.nodes.path.slice(1)}/:id/*`, element: <NodePage /> },
+          { path: PAGES.projects.path.slice(1), element: <ProjectsPage /> },
+          { path: `${PAGES.projects.path.slice(1)}/:id/*`, element: <ProjectPage /> },
           ...(import.meta.env.DEV
             ? [
                 {
