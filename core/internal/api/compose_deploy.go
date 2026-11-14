@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -113,6 +114,24 @@ func (h *composeDeployRoutes) list(c *gin.Context) {
 	if err != nil {
 		fail(c, CodeInternal, "internal error")
 		return
+	}
+	// A row still running whose job has ended (failed, cancelled, waiting
+	// for a person) is shown as failed with the job's reason: its outcome
+	// is not "running", and the job holds the detail.
+	for i := range list {
+		if list[i].State != composedeploy.StateRunning {
+			continue
+		}
+		j, err := h.engine.Get(c.Request.Context(), list[i].JobID)
+		if err != nil {
+			continue
+		}
+		switch j.State {
+		case jobs.StateFailed, jobs.StateCancelled, jobs.StateRolledBack, jobs.StateNeedsAttention:
+			list[i].State = composedeploy.StateFailed
+			list[i].ErrorCode = "JOB_" + strings.ToUpper(string(j.State))
+			list[i].ErrorMessage = j.StateReason
+		}
 	}
 	c.JSON(http.StatusOK, composeDeploymentsResponse{Deployments: list})
 }

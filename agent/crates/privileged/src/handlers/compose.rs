@@ -128,7 +128,38 @@ pub async fn project_state(
         project.as_str()
     );
     let v = get_json(&sock, &path, 0).await.map_err(probe_err)?;
-    parse_containers(&v)
+    let mut state = parse_containers(&v)?;
+    let label = format!(
+        "filters=%7B%22label%22%3A%5B%22com.docker.compose.project%3D{}%22%5D%7D",
+        project.as_str()
+    );
+    let vols = get_json(&sock, &format!("/volumes?{label}"), 0)
+        .await
+        .map_err(probe_err)?;
+    let nets = get_json(&sock, &format!("/networks?{label}"), 0)
+        .await
+        .map_err(probe_err)?;
+    state.volumes = names(vols.get("Volumes").unwrap_or(&Value::Null));
+    state.networks = names(&nets);
+    state.exists = state.exists || !state.volumes.is_empty() || !state.networks.is_empty();
+    state.removal = format!(
+        "docker compose --project-name {} down --volumes --rmi local (on {}), then remove {COMPOSE_ROOT}/{}",
+        project.as_str(),
+        env.as_str(),
+        project.as_str()
+    );
+    Ok(state)
+}
+
+fn names(v: &Value) -> Vec<String> {
+    let mut out: Vec<String> = v
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|x| x.get("Name").and_then(Value::as_str).map(str::to_string))
+        .collect();
+    out.sort();
+    out
 }
 
 pub fn parse_containers(v: &Value) -> Result<ComposeState, String> {
@@ -159,6 +190,7 @@ pub fn parse_containers(v: &Value) -> Result<ComposeState, String> {
     Ok(ComposeState {
         exists: !containers.is_empty(),
         containers,
+        ..Default::default()
     })
 }
 
@@ -246,7 +278,12 @@ pub fn read_spool(cfg: &ComposeConfig, m: &ComposeManifest) -> Result<Vec<Vec<u8
         .read(true)
         .custom_flags(libc::O_DIRECTORY | libc::O_NOFOLLOW)
         .open(&cfg.spool_dir)
-        .map_err(|e| format!("compose spool: {e}"))?;
+        .map_err(|e| {
+            format!(
+                "compose spool {}: {e}; compose_spool_dir in the executor's config must be the agent's <state_dir>/compose-spool",
+                cfg.spool_dir.display()
+            )
+        })?;
     agent_dir(&spool, uid, "the compose spool")?;
     let rev = open_at(
         &spool,
@@ -395,9 +432,76 @@ pub struct ResolvedService {
     pub ports: Vec<(String, u16, String)>,
     /// Absolute bind sources.
     pub binds: Vec<String>,
+    /// High-risk settings, by Core's rules (044.1): what needs the owner.
+    pub risks: Vec<String>,
 }
 
-pub fn parse_config(v: &Value) -> Result<Resolved, String> {
+/// Host paths whose mount gives a container control of the host; the same
+/// list as Core's `sensitiveHostPaths` (core/internal/projects/compose.go).
+pub const SENSITIVE_HOST_PATHS: &[&str] = &[
+    "/",
+    "/etc",
+    "/root",
+    "/proc",
+    "/sys",
+    "/dev",
+    "/boot",
+    "/var/lib/docker",
+    "/var/lib/containers",
+    "/run",
+    "/var/run",
+];
+pub const ENGINE_SOCKETS: &[&str] = &["docker.sock", "podman.sock", "containerd.sock"];
+
+/// Core's high-risk rules applied to one resolved service. `dir` is the
+/// revision's directory: binds inside it are the unit's own files.
+fn risks_of(s: &Value, binds: &[String], dir: &Path) -> Vec<String> {
+    let mut out = Vec::new();
+    if s.get("privileged").and_then(Value::as_bool) == Some(true) {
+        out.push("privileged".into());
+    }
+    for k in ["network_mode", "pid", "ipc", "userns_mode", "cgroup"] {
+        if s.get(k).and_then(Value::as_str) == Some("host") {
+            out.push(format!("{k}: host"));
+        }
+    }
+    for k in ["cap_add", "devices"] {
+        if s.get(k)
+            .and_then(Value::as_array)
+            .is_some_and(|a| !a.is_empty())
+        {
+            out.push(k.to_string());
+        }
+    }
+    for o in s
+        .get("security_opt")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+    {
+        let o = o.as_str().unwrap_or("");
+        if o.contains("unconfined") || o.starts_with("no-new-privileges:false") {
+            out.push(format!("security_opt {o}"));
+        }
+    }
+    for b in binds {
+        let p = Path::new(b);
+        if p.starts_with(dir) {
+            continue;
+        }
+        if ENGINE_SOCKETS.iter().any(|e| b.ends_with(&format!("/{e}"))) {
+            out.push(format!("engine socket {b}"));
+        } else if SENSITIVE_HOST_PATHS
+            .iter()
+            .any(|s| p == Path::new(s) || (*s != "/" && p.starts_with(s)))
+        {
+            out.push(format!("host system path {b}"));
+        }
+    }
+    out
+}
+
+pub fn parse_config(v: &Value, dir: &Path) -> Result<Resolved, String> {
     let services = v
         .get("services")
         .and_then(Value::as_object)
@@ -439,6 +543,7 @@ pub fn parse_config(v: &Value) -> Result<Resolved, String> {
                 r.binds.push(src.to_string());
             }
         }
+        r.risks = risks_of(s, &r.binds, dir);
         out.services.push(r);
     }
     Ok(out)
@@ -450,8 +555,13 @@ fn compose(docker: &Path, sock: &Path, dir: &Path, m: &ComposeManifest) -> Comma
     let pdir = m.project_dir();
     let mut spec = CommandSpec::new(docker)
         .env("DOCKER_HOST", format!("unix://{}", sock.display()))
-        .env("HOME", "/root")
+        // No HOME and no .env: Compose interpolates exactly what Core
+        // analysed (044.1 reads no .env and no environment). Registry
+        // credentials come from root's Docker config.
+        .env("DOCKER_CONFIG", "/root/.docker")
         .arg("compose")
+        .arg("--env-file")
+        .arg("/dev/null")
         .arg("--progress")
         .arg("plain")
         .arg("--project-name")
@@ -504,7 +614,7 @@ async fn resolve(
     }
     let v: Value = serde_json::from_slice(&out.stdout)
         .map_err(|e| format!("docker compose config output is not JSON: {e}"))?;
-    parse_config(&v)
+    parse_config(&v, dir)
 }
 
 // ---- checks -------------------------------------------------------------
@@ -564,8 +674,34 @@ async fn host_checks(
     m: &ComposeManifest,
     r: &Resolved,
     project_root: &Path,
+    deploying: bool,
 ) -> Vec<Check> {
     let mut checks = Vec::new();
+
+    // High-risk settings as native Compose resolved them. Core's plan asked
+    // the owner when its own analysis found them; anything it did not see
+    // (or that was not approved) is refused here.
+    for sv in &r.services {
+        for risk in &sv.risks {
+            let (sev, detail) = match (m.host_risk_approved, deploying) {
+                (true, _) => (
+                    "warning",
+                    format!("{risk}: approved by the owner in the change plan"),
+                ),
+                (false, true) => (
+                    "error",
+                    format!(
+                        "{risk}: high-risk setting without the owner's approval; nothing was started"
+                    ),
+                ),
+                (false, false) => (
+                    "warning",
+                    format!("{risk}: needs the owner's approval in the change plan"),
+                ),
+            };
+            checks.push(check(sev, "HOST_RISK", Some(&sv.name), detail));
+        }
+    }
 
     // Ownership of the project name.
     let filter = format!(
@@ -725,7 +861,7 @@ async fn host_checks(
         }
         let spec = CommandSpec::new(docker)
             .env("DOCKER_HOST", format!("unix://{}", sock.display()))
-            .env("HOME", "/root")
+            .env("DOCKER_CONFIG", "/root/.docker")
             .arg("manifest")
             .arg("inspect")
             .arg(img);
@@ -832,6 +968,7 @@ pub async fn check_only(
         &m,
         &r,
         &project_root,
+        false,
     )
     .await;
     Ok(json!({
@@ -901,6 +1038,7 @@ pub async fn deploy(
         &m,
         &r,
         &project_root,
+        true,
     )
     .await;
     if blocked(&checks) {
@@ -918,30 +1056,40 @@ pub async fn deploy(
         )));
     }
 
-    // Persistent data: <project>/data/<rel>, linked from the revision.
+    // Persistent data: one directory per data path directly under
+    // <project>/data/ (the relative path with '/' and '%' escaped), linked
+    // from the revision. Containers write inside those directories but not
+    // in data/ itself, which only root can write, so nothing a container
+    // plants can redirect a later mount. A data path inside another data
+    // path is refused: its link would have to be created through a
+    // directory a container controls.
     root_dir(&data, 0o755).map_err(fail)?;
-    for rel in data_dirs(&rev, &m, &r) {
-        let target = data.join(&rel);
-        // Containers write inside data/: every component must be a real
-        // directory, never a link they planted.
-        let mut d = data.clone();
-        for seg in rel.split('/') {
-            d.push(seg);
-            match std::fs::symlink_metadata(&d) {
-                Ok(md) if md.is_dir() => {}
-                Ok(_) => {
-                    return Err(fail(format!(
-                        "data path {rel} is not a directory on the host (a link or a file); refusing to mount it"
-                    )));
-                }
-                Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-                    std::fs::DirBuilder::new()
-                        .mode(0o755)
-                        .create(&d)
-                        .map_err(|e| fail(format!("create data directory {rel}: {e}")))?;
-                }
-                Err(e) => return Err(fail(format!("data directory {rel}: {e}"))),
+    let dirs = data_dirs(&rev, &m, &r);
+    if let Some((a, b)) = dirs
+        .iter()
+        .flat_map(|a| dirs.iter().map(move |b| (a, b)))
+        .find(|(a, b)| b.starts_with(&format!("{a}/")))
+    {
+        return Err(fail(format!(
+            "data path {b} is inside data path {a}; mount one of them, or use a named volume"
+        )));
+    }
+    for rel in dirs {
+        let target = data.join(rel.replace('%', "%25").replace('/', "%2F"));
+        match std::fs::symlink_metadata(&target) {
+            Ok(md) if md.is_dir() && !md.file_type().is_symlink() => {}
+            Ok(_) => {
+                return Err(fail(format!(
+                    "data path {rel} is not a directory on the host (a link or a file); refusing to mount it"
+                )));
             }
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                std::fs::DirBuilder::new()
+                    .mode(0o755)
+                    .create(&target)
+                    .map_err(|e| fail(format!("create data directory {rel}: {e}")))?;
+            }
+            Err(e) => return Err(fail(format!("data directory {rel}: {e}"))),
         }
         let link = rev.join(&rel);
         if let Some(parent) = link.parent() {

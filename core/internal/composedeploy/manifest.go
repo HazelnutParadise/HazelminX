@@ -37,6 +37,9 @@ type Manifest struct {
 	Profiles    []string       `json:"profiles"`
 	WorkingDir  *string        `json:"working_dir,omitempty"`
 	Files       []ManifestFile `json:"files"`
+	// HostRiskApproved: the owner approved this content's high-risk
+	// settings in a change plan; without it the executor refuses them.
+	HostRiskApproved bool `json:"host_risk_approved"`
 }
 
 // StagedFile is a file's content as the agent's step receives it.
@@ -87,6 +90,11 @@ func (m Manifest) DigestText() string {
 		w = *m.WorkingDir
 	}
 	fmt.Fprintf(&b, "workdir:%s\n", w)
+	if m.HostRiskApproved {
+		b.WriteString("hostrisk:approved\n")
+	} else {
+		b.WriteString("hostrisk:none\n")
+	}
 	files := append([]ManifestFile{}, m.Files...)
 	sort.Slice(files, func(i, j int) bool { return files[i].Path < files[j].Path })
 	for _, f := range files {

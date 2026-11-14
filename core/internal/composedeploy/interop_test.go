@@ -294,6 +294,64 @@ func TestInteropDeploysThroughTheRealAgentExecutorAndDocker(t *testing.T) {
 	if _, err := os.Stat(root + "/revisions/job_interop4"); err == nil {
 		t.Fatal("a refused deployment left its revision behind")
 	}
+	// 7. The executor interpolates as Core analysed: a .env and ${HOME} do
+	// not turn a data path into a host path (review P1), and a high-risk
+	// setting without the owner's approval is refused on the host.
+	files7 := map[string][]byte{
+		"compose.yaml": []byte("services:\n  web:\n    image: busybox:1.37\n    command: [\"sleep\", \"3600\"]\n" +
+			"    volumes:\n      - ${SRC:-./d1}:/h1\n      - ${HOME:-./d2}/x:/h2\n"),
+		".env":             []byte("SRC=/etc\n"),
+		"deploy/prod.yaml": []byte("services: {}\n"),
+	}
+	m7, s7 := x.manifest("job_interop7", files7)
+	res, _, err = x.step(ActionCheck, m7, s7, execCheck, PermCheck)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(res), "/etc") || strings.Contains(string(res), "/root") || !strings.Contains(string(res), `"d1"`) {
+		t.Fatalf(".env or HOME reached the executor's interpolation: %s", res)
+	}
+	files8 := map[string][]byte{"compose.yaml": []byte("services:\n  web:\n    image: busybox:1.37\n    privileged: true\n    volumes: [/etc:/h:ro]\n"),
+		"deploy/prod.yaml": []byte("services: {}\n")}
+	m8, s8 := x.manifest("job_interop8", files8)
+	res, _, err = x.step(ActionCheck, m8, s8, execCheck, PermCheck)
+	if err != nil || !strings.Contains(string(res), "HOST_RISK") || !strings.Contains(string(res), `"ready":true`) {
+		t.Fatalf("check of an unapproved high-risk unit: %v %s", err, res)
+	}
+	if _, _, err := x.step(ActionDeploy, m8, s8, execDeploy, PermDeploy); err == nil || !strings.Contains(err.Error(), "without the owner's approval") {
+		t.Fatalf("unapproved privileged deploy: %v", err)
+	}
+
+	// 9. An image that is not on the host and not in its registry.
+	files9 := map[string][]byte{"compose.yaml": []byte("services:\n  web:\n    image: busybox:hzx-no-such-tag-0\n"),
+		"deploy/prod.yaml": []byte("services: {}\n")}
+	m9, s9 := x.manifest("job_interop9", files9)
+	res, _, err = x.step(ActionCheck, m9, s9, execCheck, PermCheck)
+	if err != nil || !strings.Contains(string(res), "IMAGE_UNAVAILABLE") || !strings.Contains(string(res), `"ready":false`) {
+		t.Fatalf("check with a missing image: %v %s", err, res)
+	}
+
+	// 10. A data path inside another data path is refused (its link would
+	// go through a directory a container writes).
+	files10 := map[string][]byte{"compose.yaml": []byte("services:\n  web:\n    image: busybox:1.37\n    volumes: [./a:/a, ./a/b:/b]\n"),
+		"deploy/prod.yaml": []byte("services: {}\n")}
+	m10, s10 := x.manifest("job_interop10", files10)
+	if _, _, err := x.step(ActionDeploy, m10, s10, execDeploy, PermDeploy); err == nil || !strings.Contains(err.Error(), "is inside data path") {
+		t.Fatalf("nested data paths: %v", err)
+	}
+
+	// 11. Ledger: the first revision directory is platform-installed and
+	// the Compose project's state names its removal.
+	led, _ = os.ReadFile(filepath.Join(x.ledger, "ledger.jsonl"))
+	var sawInstalled, sawRemoval bool
+	for _, line := range strings.Split(strings.TrimSpace(string(led)), "\n") {
+		sawInstalled = sawInstalled || (strings.Contains(line, root+"/revisions/job_interop1") && strings.Contains(line, `"ownership":"platform_installed"`))
+		sawRemoval = sawRemoval || (strings.Contains(line, `"type":"compose_project"`) && strings.Contains(line, "down --volumes"))
+	}
+	if !sawInstalled || !sawRemoval {
+		t.Fatalf("ledger ownership %v, removal %v", sawInstalled, sawRemoval)
+	}
+
 	// The spool is gone after each step.
 	if ents, _ := os.ReadDir(filepath.Join(filepath.Dir(x.ledger), "agent", "compose-spool")); len(ents) != 0 {
 		t.Fatalf("spool left behind: %v", ents)

@@ -263,3 +263,16 @@ func TestLabelFilesStayInsideTheUnit(t *testing.T) {
 		t.Fatalf("unit label file: %+v", ok.Findings)
 	}
 }
+
+// The executor runs Compose as root, so ~ is root's home (044.2 review).
+func TestHomeOfRootIsASystemPath(t *testing.T) {
+	a := analyze(t, SourceSpec{Files: files("compose.yaml", `
+services:
+  web:
+    image: busybox:1.37
+    volumes: ["~/.ssh:/keys"]
+`), MainFile: "compose.yaml"})
+	if f := finding(a, "host-system-path"); f == nil || f.Severity != SeverityHighRisk || !strings.Contains(f.Message, "/root/.ssh") {
+		t.Fatalf("~/.ssh: %+v", a.Findings)
+	}
+}

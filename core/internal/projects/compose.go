@@ -615,6 +615,10 @@ var sensitiveHostPaths = []string{"/", "/etc", "/root", "/proc", "/sys", "/dev",
 var engineSockets = []string{"docker.sock", "podman.sock", "containerd.sock"}
 
 func (a *Analysis) hostPathRisk(at, p string, ro bool) {
+	// The executor runs Compose as root: ~ is root's home.
+	if p == "~" || strings.HasPrefix(p, "~/") {
+		p = "/root" + strings.TrimPrefix(p, "~")
+	}
 	clean := path.Clean(p)
 	for _, s := range engineSockets {
 		if strings.HasSuffix(clean, "/"+s) {

@@ -312,7 +312,7 @@ Core 在節點憑證剩不到 30 天時自動輪替，管理員也可以手動�
 票 044.2，決策 0035。步驟參數有三個欄位，多一個或少一個 Agent 都回 `step_rejected`：
 
 - `grant`：給執行器的憑證，帶 `binding`，權限是 `host.compose.check` 或 `host.compose.deploy`。
-- `manifest`：執行器的格式（snake_case）：`project`、`revision`、`environment`（只收 `env:/var/run/docker.sock`、`env:/run/docker.sock`、`env:/run/podman/podman.sock`）、`main_file`、`extra_files`、`profiles`、`working_dir`（可省略）、`files`（每個 `{path, size, sha256}`）。
+- `manifest`：執行器的格式（snake_case）：`project`、`revision`、`environment`（只收 `env:/var/run/docker.sock`、`env:/run/docker.sock`、`env:/run/podman/podman.sock`）、`main_file`、`extra_files`、`profiles`、`working_dir`（可省略）、`files`（每個 `{path, size, sha256}`）、`host_risk_approved`（擁有者在計畫裡批准了高風險設定；false 時執行器拒絕部署任何高風險設定）。
 - `files`：每份內容一個 `{sha256, content}`，`content` 是 UTF-8 文字；內容相同的檔案只送一次。
 
 `binding` 是 `sha256("{執行器動作}:" + manifest 摘要)`，執行器動作是 `compose_check` 或 `compose_deploy`。manifest 摘要是下面這段文字的 SHA-256，`file` 依路徑的位元組順序排列：
@@ -326,6 +326,7 @@ main:{main_file}
 extra:{每個 extra_files，依序一行}
 profile:{每個 profiles，依序一行}
 workdir:{working_dir，省略時是空字串}
+hostrisk:{host_risk_approved 為 true 時是 approved，否則 none}
 file:{sha256} {size} {path}
 ```
 

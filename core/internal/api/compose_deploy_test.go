@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -25,11 +26,12 @@ import (
 // fakeAgent answers compose steps the way the agent and executor would,
 // and keeps what it was sent.
 type fakeAgent struct {
-	mu        sync.Mutex
-	sent      []nodes.Action
-	nodes     []string
-	checkFail bool
-	deployErr *jobs.StepError
+	mu         sync.Mutex
+	sent       []nodes.Action
+	nodes      []string
+	checkFail  bool
+	deployErr  *jobs.StepError
+	disconnect bool
 }
 
 func (f *fakeAgent) Execute(_ context.Context, job *jobs.Job, _ *jobs.Step, rep jobs.Reporter, a nodes.Action) (json.RawMessage, error) {
@@ -47,12 +49,16 @@ func (f *fakeAgent) Execute(_ context.Context, job *jobs.Job, _ *jobs.Step, rep 
 	if f.deployErr != nil {
 		return nil, f.deployErr
 	}
+	if f.disconnect {
+		return nil, fmt.Errorf("%w: session ended", jobs.ErrDisconnected)
+	}
 	rep.Log("Container shop-production-web-web-1  Started")
 	return json.RawMessage(`{"revision":"` + job.ID + `","containers":[{"name":"shop-production-web-web-1","state":"running"}]}`), nil
 }
 
-func (f *fakeAgent) Reconcile(context.Context, *jobs.Job, *jobs.Step) (jobs.StepReport, error) {
-	return jobs.StepReport{}, nil
+func (f *fakeAgent) Reconcile(_ context.Context, _ *jobs.Job, st *jobs.Step) (jobs.StepReport, error) {
+	// The agent's journal says the step finished.
+	return jobs.StepReport{Index: st.Index, Started: true, Completed: f.disconnect}, nil
 }
 
 func (f *fakeAgent) calls() []nodes.Action {
@@ -199,7 +205,7 @@ func TestComposeDeployRunsThePlanThroughTheAgentWithBoundGrants(t *testing.T) {
 		if g.Binding != m.Binding(exec) || !ed25519.Verify(h.pub, grants.Canonical(g), mustHex(t, g.Signature)) {
 			t.Fatalf("step %d grant is not bound to its manifest", i)
 		}
-		if m.Revision != jobID || m.Project != "shop-production-web" || m.Environment != "env:/run/docker.sock" {
+		if m.Revision != jobID || m.Project != "shop-production-web" || m.Environment != "env:/run/docker.sock" || m.HostRiskApproved {
 			t.Fatalf("manifest: %+v", m)
 		}
 		// The secret file goes to the host, as its content.
@@ -322,5 +328,59 @@ func TestComposeDeployPlanIsVoidWhenTheUnitChanges(t *testing.T) {
 		map[string]any{"digest": pl["digest"], "requestId": "deploy-4"}, nil)
 	if r.Code != 409 || len(h.agent.calls()) != 0 {
 		t.Fatalf("execute after the unit changed: %d %s", r.Code, r.Raw)
+	}
+}
+
+func TestComposeDeployLostOutcomeIsReconciledIntoTheDeploymentRow(t *testing.T) {
+	h := newComposeDeployHarness(t, webCompose)
+	h.agent.disconnect = true
+	pl := h.approve(t, h.plan(t))
+	r := h.owner.do(http.MethodPost, "/management/v1/change-plans/"+pl["id"].(string)+"/execute",
+		map[string]any{"digest": pl["digest"], "requestId": "deploy-5"}, nil)
+	id := r.Body["jobId"].(string)
+	// The job waits as unknown; when the node is back, the reconciler feeds
+	// the agent's record (the step finished) to the engine.
+	for deadline := time.Now().Add(10 * time.Second); ; {
+		j := obj(h.owner.do(http.MethodGet, "/management/v1/jobs/"+id, nil, nil).Body["job"])
+		if j["state"] == "unknown" {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("job never became unknown: %v", j)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if _, err := h.engine.Reconcile(context.Background(), id, []jobs.StepReport{{Index: 1, Started: true, Completed: true}}); err != nil {
+		t.Fatal(err)
+	}
+	deadline := time.Now().Add(10 * time.Second)
+	for {
+		r = h.owner.do(http.MethodGet, h.ubase+"/deployments", nil, nil)
+		if deps, _ := r.Body["deployments"].([]any); len(deps) == 1 && obj(deps[0])["state"] == "succeeded" {
+			break
+		}
+		if time.Now().After(deadline) {
+			j := h.owner.do(http.MethodGet, "/management/v1/jobs/"+id, nil, nil)
+			t.Fatalf("deployment row after a reconciled step: %s\njob: %s", r.Raw, j.Raw)
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+}
+
+func TestComposeDeployWithoutATargetIsRefusedBeforeAnything(t *testing.T) {
+	h := newComposeDeployHarness(t, webCompose)
+	cur := h.owner.do(http.MethodGet, h.ubase, nil, nil)
+	if r := h.owner.do(http.MethodPut, h.ubase, unitBody(nil), etag(cur)); r.Code != 200 {
+		t.Fatalf("clear target: %d %s", r.Code, r.Raw)
+	}
+	pl := h.plan(t)
+	if pl["executable"] != false || !strings.Contains(fmt.Sprint(pl["checks"]), "target-not-set") {
+		t.Fatalf("plan without a target: %v", pl)
+	}
+	if r := h.owner.do(http.MethodPost, h.ubase+"/host-checks", map[string]any{"requestId": "c-9"}, nil); r.Code != 400 {
+		t.Fatalf("host check without a target: %d %s", r.Code, r.Raw)
+	}
+	if len(h.agent.calls()) != 0 {
+		t.Fatal("something was sent")
 	}
 }

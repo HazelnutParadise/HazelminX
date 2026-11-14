@@ -155,7 +155,7 @@ fn reads_images_ports_and_binds_from_compose_config() {
                 {"type": "volume", "source": "db", "target": "/var/lib/db"}]},
         "api": {"build": {"context": "/srv/rev"}, "image": "shop-api"}
     }});
-    let r = parse_config(&v).unwrap();
+    let r = parse_config(&v, Path::new("/srv/rev")).unwrap();
     let web = r.services.iter().find(|s| s.name == "web").unwrap();
     assert_eq!(
         web.ports,
@@ -217,6 +217,8 @@ async fn compose_runs_with_fixed_arguments() {
         args,
         [
             "compose",
+            "--env-file",
+            "/dev/null",
             "--progress",
             "plain",
             "--project-name",
@@ -235,6 +237,8 @@ async fn compose_runs_with_fixed_arguments() {
             .iter()
             .any(|(k, v)| k == "DOCKER_HOST" && v == "unix:///var/run/docker.sock")
     );
+    // No HOME: ~ and ${HOME} are not expanded to root's home.
+    assert!(!call.env.iter().any(|(k, _)| k == "HOME"));
 }
 
 #[test]
@@ -252,5 +256,37 @@ fn engine_socket_must_be_a_root_socket_not_a_link() {
         engine_socket(d.path(), &env)
             .unwrap_err()
             .contains("not a socket")
+    );
+}
+
+#[test]
+fn applies_cores_high_risk_rules_to_what_compose_resolved() {
+    let v = json!({"services": {
+        "a": {"image": "x", "privileged": true, "network_mode": "host", "cap_add": ["NET_ADMIN"],
+              "volumes": [{"type": "bind", "source": "/etc", "target": "/h"},
+                          {"type": "bind", "source": "/var/run/docker.sock", "target": "/s"},
+                          {"type": "bind", "source": "/srv/rev/conf", "target": "/c"},
+                          {"type": "bind", "source": "/srv/data", "target": "/d"}]},
+        "b": {"image": "x"}
+    }});
+    let r = parse_config(&v, Path::new("/srv/rev")).unwrap();
+    let a = r.services.iter().find(|s| s.name == "a").unwrap();
+    assert_eq!(
+        a.risks,
+        vec![
+            "privileged",
+            "network_mode: host",
+            "cap_add",
+            "host system path /etc",
+            "engine socket /var/run/docker.sock"
+        ]
+    );
+    assert!(
+        r.services
+            .iter()
+            .find(|s| s.name == "b")
+            .unwrap()
+            .risks
+            .is_empty()
     );
 }

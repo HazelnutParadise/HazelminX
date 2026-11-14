@@ -179,6 +179,10 @@ pub struct ComposeManifest {
     pub working_dir: Option<RelPath>,
     /// Sorted by path, no duplicates.
     pub files: Vec<ManifestFile>,
+    /// The owner approved the high-risk settings of this content (a change
+    /// plan with a high-risk check). Without it, `compose_deploy` refuses
+    /// any high-risk setting the native Compose resolves.
+    pub host_risk_approved: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -195,6 +199,8 @@ pub struct RawManifest {
     #[serde(default)]
     pub working_dir: Option<RelPath>,
     pub files: Vec<ManifestFile>,
+    #[serde(default)]
+    pub host_risk_approved: bool,
 }
 
 impl TryFrom<RawManifest> for ComposeManifest {
@@ -260,6 +266,7 @@ impl TryFrom<RawManifest> for ComposeManifest {
             profiles: r.profiles,
             working_dir: r.working_dir,
             files,
+            host_risk_approved: r.host_risk_approved,
         })
     }
 }
@@ -275,6 +282,7 @@ impl From<ComposeManifest> for RawManifest {
             profiles: m.profiles,
             working_dir: m.working_dir,
             files: m.files,
+            host_risk_approved: m.host_risk_approved,
         }
     }
 }
@@ -300,6 +308,11 @@ impl ComposeManifest {
             "workdir:{}\n",
             self.working_dir.as_ref().map_or("", |w| w.as_str())
         ));
+        s.push_str(if self.host_risk_approved {
+            "hostrisk:approved\n"
+        } else {
+            "hostrisk:none\n"
+        });
         for f in &self.files {
             s.push_str(&format!(
                 "file:{} {} {}\n",
@@ -352,7 +365,7 @@ mod tests {
     fn digest_text_is_fixed_and_sorted() {
         let m: ComposeManifest = serde_json::from_value(sample()).unwrap();
         let want = format!(
-            "{DIGEST_PREFIX}\nproject:shop-prod-web\nrevision:r1\nenvironment:env:/var/run/docker.sock\nmain:compose.yaml\nextra:deploy/prod.yaml\nprofile:debug\nworkdir:\nfile:{} 5 compose.yaml\nfile:{} 3 deploy/prod.yaml\n",
+            "{DIGEST_PREFIX}\nproject:shop-prod-web\nrevision:r1\nenvironment:env:/var/run/docker.sock\nmain:compose.yaml\nextra:deploy/prod.yaml\nprofile:debug\nworkdir:\nhostrisk:none\nfile:{} 5 compose.yaml\nfile:{} 3 deploy/prod.yaml\n",
             "a".repeat(64),
             "b".repeat(64)
         );

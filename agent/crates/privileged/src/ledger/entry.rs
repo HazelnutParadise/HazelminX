@@ -164,6 +164,14 @@ pub struct ComposeState {
     /// `false` when no container carries the label.
     pub exists: bool,
     pub containers: Vec<ComposeContainer>,
+    /// Named volumes and networks with the project's label, sorted.
+    #[serde(default)]
+    pub volumes: Vec<String>,
+    #[serde(default)]
+    pub networks: Vec<String>,
+    /// How to remove what the platform created (55.1).
+    #[serde(default)]
+    pub removal: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]

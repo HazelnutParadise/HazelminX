@@ -308,6 +308,16 @@ func (h DeployHandler) Verify(ctx context.Context, job *jobs.Job) (jobs.Completi
 	if err != nil {
 		return jobs.CompletionReport{}, err
 	}
+	// The deploy step's outcome came from the agent's record (the result
+	// was lost with the connection): the row still says running.
+	if d.State == StateRunning && len(job.Steps) > 1 && job.Steps[1].Status == jobs.StepDone {
+		if err := h.D.Store.Finish(ctx, job.ID, StateSucceeded, json.RawMessage(`{"reconciled":true}`), "", ""); err != nil {
+			return jobs.CompletionReport{}, err
+		}
+		if d, err = h.D.Store.ByJob(ctx, job.ID); err != nil {
+			return jobs.CompletionReport{}, err
+		}
+	}
 	recorded := jobs.Check{Name: "deployment-recorded", Required: true, Passed: d.State == StateSucceeded, Detail: "deployment " + d.ID + " is " + d.State}
 	var res struct {
 		Containers []struct {
@@ -364,6 +374,16 @@ func (d *Deployer) prepare(ctx context.Context, job *jobs.Job) (*prepared, error
 		}
 	}
 	m, staged := NewManifest(u.ComposeProject, job.ID, u.Target.EngineEnvironmentID, u.MainFile, u.ExtraFiles, u.Profiles, u.WorkingDir, files)
+	// High-risk settings pass the executor only in a deployment whose plan
+	// an owner approved: the plan service requires the owner for any
+	// high-risk check, and the plan is bound to this unit version.
+	if job.Kind == KindDeploy && job.ChangePlanID != "" && job.Approver != "" {
+		an, err := d.Units.AnalyzeUnit(ctx, u)
+		if err != nil {
+			return nil, err
+		}
+		m.HostRiskApproved = slices.ContainsFunc(an.Findings, func(f projects.Finding) bool { return f.Severity == projects.SeverityHighRisk })
+	}
 	return &prepared{unit: u, manifest: m, staged: staged, redact: r}, nil
 }
 
@@ -389,6 +409,9 @@ func (d *Deployer) run(ctx context.Context, job *jobs.Job, step *jobs.Step, rep 
 	var se *jobs.StepError
 	if errors.As(err, &se) {
 		se.Summary = pr.redact.clean(se.Summary)
+		for i, e := range se.Evidence {
+			se.Evidence[i] = pr.redact.clean(e)
+		}
 	}
 	return res, err
 }
@@ -461,7 +484,7 @@ func (d *Deployer) deploy(ctx context.Context, job *jobs.Job, step *jobs.Step, r
 		return err
 	}
 	rep.Log("deployed revision " + pr.manifest.Revision)
-	return d.Store.Finish(ctx, job.ID, StateSucceeded, res, "", "")
+	return d.Store.Finish(ctx, job.ID, StateSucceeded, json.RawMessage(pr.redact.clean(string(res))), "", "")
 }
 
 // ---- secrets in output ------------------------------------------------------------
@@ -503,7 +526,8 @@ type redacting struct {
 	r *redactor
 }
 
-func (x redacting) Log(line string) { x.Reporter.Log(x.r.clean(line)) }
+func (x redacting) Log(line string)     { x.Reporter.Log(x.r.clean(line)) }
+func (x redacting) Evidence(ref string) { x.Reporter.Evidence(x.r.clean(ref)) }
 
 // RegistryNodes adapts the node registry's GetNode.
 type RegistryNodes struct {
