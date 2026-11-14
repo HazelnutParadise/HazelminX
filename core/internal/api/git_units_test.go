@@ -59,7 +59,7 @@ func newGitHarness(t *testing.T) *gitHarness {
 	h := newComposeDeployHarness(t, "")
 	fake := &fakeGitHub{}
 	g := &gitunits.Service{DB: h.st.DB, Units: h.units, GitHub: fake, Vault: h.vault, Fetcher: gitsource.Fetcher{AllowLocal: true}}
-	h.d.Sources = gitunits.Deploys{S: g}
+	h.d.Sources = g
 	h.srv.MountGitUnits(g, nil)
 	h.h = h.srv.Handler()
 	return &gitHarness{composeDeployHarness: h, git: g, fake: fake, gbase: h.ubase + "/git"}

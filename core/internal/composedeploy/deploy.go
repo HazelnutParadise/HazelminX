@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/HazelnutParadise/hazelminx/core/internal/gitunits"
 	"github.com/HazelnutParadise/hazelminx/core/internal/iam"
 	"github.com/HazelnutParadise/hazelminx/core/internal/jobs"
 	"github.com/HazelnutParadise/hazelminx/core/internal/nodereg"
@@ -61,22 +62,12 @@ type Nodes interface {
 	Node(ctx context.Context, id string) (fingerprint, name string, err error)
 }
 
-// GitSource is where a Git unit's files came from (ticket 049.1).
-type GitSource struct {
-	Kind   string
-	Repo   string // GitHub full name or URL without credentials
-	RepoID int64
-	Host   string
-	Ref    string
-	Commit string
-	Digest string
-}
-
-// Sources rechecks a Git unit's source before it is planned or deployed:
-// nil, nil for a unit that does not come from Git; an error when the
-// source changed or its connection can no longer read the repository.
+// Sources rechecks a Git unit's source before it is planned or deployed
+// (gitunits.Service): nil, nil for a unit that does not come from Git; an
+// error when the source changed or its connection can no longer read the
+// repository.
 type Sources interface {
-	ForDeployment(ctx context.Context, u *projects.Unit) (*GitSource, error)
+	Recheck(ctx context.Context, u *projects.Unit) (*gitunits.Source, error)
 }
 
 // Deployer is the compose.deploy plan kind and the compose.deploy and
@@ -94,14 +85,14 @@ type Deployer struct {
 }
 
 // gitSource rechecks u's source; nil for a unit that does not come from Git.
-func (d *Deployer) gitSource(ctx context.Context, u *projects.Unit) (*GitSource, error) {
+func (d *Deployer) gitSource(ctx context.Context, u *projects.Unit) (*gitunits.Source, error) {
 	if u.Source != projects.SourceGit {
 		return nil, nil
 	}
 	if d.Sources == nil {
 		return nil, errors.New("composedeploy: Git units cannot be deployed: no source checker configured")
 	}
-	return d.Sources.ForDeployment(ctx, u)
+	return d.Sources.Recheck(ctx, u)
 }
 
 // Params of the plan and of both jobs.
@@ -179,7 +170,7 @@ func (k PlanKind) Draft(ctx context.Context, raw json.RawMessage) (*plans.Draft,
 		checks = append(checks, plans.Check{ID: "git-source", Status: plans.CheckFailed, Title: "Git source", Detail: err.Error(), Target: t.Key})
 	case src != nil:
 		checks = append(checks, plans.Check{ID: "git-source", Status: plans.CheckPass, Title: "Git source",
-			Detail: fmt.Sprintf("%s at commit %s (%s); the files were taken from this commit and are deployed as previewed", src.Repo, src.Commit, src.Ref),
+			Detail: fmt.Sprintf("%s at commit %s (%s); the files were taken from this commit and are deployed as previewed", src.Repo(), src.Commit, src.Ref),
 			Target: t.Key, Evidence: []string{"commit " + src.Commit, "source digest " + src.Digest}})
 	}
 	for _, b := range pv.Blockers {
@@ -202,7 +193,7 @@ func (k PlanKind) Draft(ctx context.Context, raw json.RawMessage) (*plans.Draft,
 		changes = append(changes, plans.Change{Target: t.Key, Path: "files/" + f.Path, After: map[string]any{"size": f.Size, "sha256": f.SHA256}, Secret: f.Secret, Op: "add"})
 	}
 	if src != nil {
-		changes = append(changes, plans.Change{Target: t.Key, Path: "source", Op: "change", After: map[string]any{"kind": src.Kind, "repo": src.Repo,
+		changes = append(changes, plans.Change{Target: t.Key, Path: "source", Op: "change", After: map[string]any{"kind": src.Kind, "repo": src.Repo(),
 			"repoId": src.RepoID, "host": src.Host, "ref": src.Ref, "commit": src.Commit, "digest": src.Digest}})
 	}
 	changes = append(changes, plans.Change{Target: t.Key, Path: "compose", Op: "change",
@@ -386,7 +377,7 @@ func (h DeployHandler) Verify(ctx context.Context, job *jobs.Job) (jobs.Completi
 
 type prepared struct {
 	unit     *projects.Unit
-	source   *GitSource
+	source   *gitunits.Source
 	manifest Manifest
 	staged   []StagedFile
 	redact   *redactor
@@ -523,8 +514,8 @@ func (d *Deployer) deploy(ctx context.Context, job *jobs.Job, step *jobs.Step, r
 		ComposeProject: u.ComposeProject, Revision: pr.manifest.Revision, ManifestDigest: pr.manifest.Digest(), NodeID: u.Target.NodeID,
 		EngineEnvironmentID: u.Target.EngineEnvironmentID, JobID: job.ID, PlanID: job.ChangePlanID, CreatedBy: job.Requester}
 	if pr.source != nil {
-		dep.SourceRepo, dep.SourceRef, dep.SourceCommit = pr.source.Repo, pr.source.Ref, pr.source.Commit
-		rep.Log("deploying " + pr.source.Repo + " at commit " + pr.source.Commit)
+		dep.SourceRepo, dep.SourceRef, dep.SourceCommit = pr.source.Repo(), pr.source.Ref, pr.source.Commit
+		rep.Log("deploying " + pr.source.Repo() + " at commit " + pr.source.Commit)
 	}
 	if _, err := d.Store.Begin(ctx, dep); err != nil {
 		return err

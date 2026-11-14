@@ -17,7 +17,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/HazelnutParadise/hazelminx/core/internal/composedeploy"
 	"github.com/HazelnutParadise/hazelminx/core/internal/github"
 	"github.com/HazelnutParadise/hazelminx/core/internal/gitsource"
 	"github.com/HazelnutParadise/hazelminx/core/internal/projects"
@@ -477,17 +476,4 @@ func (s *Service) Recheck(ctx context.Context, u *projects.Unit) (*Source, error
 		}
 	}
 	return src, nil
-}
-
-// Deploys adapts the Service to composedeploy.Sources.
-type Deploys struct{ S *Service }
-
-// ForDeployment implements composedeploy.Sources.
-func (d Deploys) ForDeployment(ctx context.Context, u *projects.Unit) (*composedeploy.GitSource, error) {
-	src, err := d.S.Recheck(ctx, u)
-	if err != nil || src == nil {
-		return nil, err
-	}
-	return &composedeploy.GitSource{Kind: src.Kind, Repo: src.Repo(), RepoID: src.RepoID, Host: src.Host, Ref: src.Ref,
-		Commit: src.Commit, Digest: src.Digest}, nil
 }

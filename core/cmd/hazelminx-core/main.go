@@ -194,7 +194,7 @@ func run(args []string) error {
 	// node only ever receives file content (decision 0036).
 	gitUnits := &gitunits.Service{DB: st.DB, Units: projectSvc, GitHub: sources, Vault: sec}
 	deployer := &composedeploy.Deployer{Units: projectSvc, Views: engineStore, Store: composedeploy.NewStore(st.DB, nil),
-		Grants: issuer, Steps: runner, Nodes: composedeploy.RegistryNodes{Get: registry.GetNode}, Sources: gitunits.Deploys{S: gitUnits}}
+		Grants: issuer, Steps: runner, Nodes: composedeploy.RegistryNodes{Get: registry.GetNode}, Sources: gitUnits}
 	if err := engine.Register(composedeploy.DeployHandler{D: deployer}); err != nil {
 		return err
 	}
