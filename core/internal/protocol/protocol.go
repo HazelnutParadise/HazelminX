@@ -51,6 +51,9 @@ const (
 	// CapNodeCertificate: certificate_renew / certificate_installed /
 	// certificate_refused (certificate rotation, ticket 019).
 	CapNodeCertificate = "node.certificate"
+	// CapHostMetrics: host_facts / metrics_report / metrics_ack, host facts
+	// and resource samples (ticket 020.1).
+	CapHostMetrics = "host.metrics"
 )
 
 // certificate_refused codes.
@@ -127,6 +130,9 @@ const (
 	TypeCertificateRenew     = "certificate_renew"
 	TypeCertificateInstalled = "certificate_installed"
 	TypeCertificateRefused   = "certificate_refused"
+	TypeHostFacts            = "host_facts"
+	TypeMetricsReport        = "metrics_report"
+	TypeMetricsAck           = "metrics_ack"
 )
 
 // Durable event kinds.
@@ -442,6 +448,9 @@ var sessionTypes = map[string]func() any{
 	TypeCertificateRenew:     func() any { return &CertificateRenew{} },
 	TypeCertificateInstalled: func() any { return &CertificateInstalled{} },
 	TypeCertificateRefused:   func() any { return &CertificateRefused{} },
+	TypeHostFacts:            func() any { return &HostFacts{} },
+	TypeMetricsReport:        func() any { return &MetricsReport{} },
+	TypeMetricsAck:           func() any { return &MetricsAck{} },
 }
 
 func decode(data []byte, types map[string]func() any, strict bool) (any, error) {

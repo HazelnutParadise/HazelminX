@@ -1,0 +1,19 @@
+{
+  "type": "host_facts",
+  "collectedAt": "2026-11-14T03:00:00Z",
+  "facts": {
+    "hostname": {"value": "edge-01", "source": "/proc/sys/kernel/hostname"},
+    "osName": {"value": "Debian GNU/Linux", "source": "/etc/os-release"},
+    "osVersion": {"value": "13", "source": "/etc/os-release"},
+    "osPrettyName": {"value": "Debian GNU/Linux 13 (trixie)", "source": "/etc/os-release"},
+    "kernel": {"value": "6.12.48+deb13-amd64", "source": "/proc/sys/kernel/osrelease"},
+    "arch": {"value": "x86_64", "source": "uname"},
+    "bootTime": {"value": "2026-11-01T08:12:40Z", "source": "/proc/stat btime"},
+    "timezone": {"value": "Asia/Taipei", "source": "/etc/localtime"},
+    "timeSynchronized": {"value": true, "source": "adjtimex"},
+    "timeMaxErrorMicros": {"value": 16500, "source": "adjtimex"},
+    "cpuModel": {"value": "AMD EPYC 7763 64-Core Processor", "source": "/proc/cpuinfo"},
+    "logicalCpus": {"value": 2, "source": "/proc/stat"},
+    "memoryTotalBytes": {"value": null, "source": "/proc/meminfo"}
+  }
+}

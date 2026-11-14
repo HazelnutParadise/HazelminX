@@ -12,6 +12,7 @@
 //! `core/internal/protocol` is tested against the same files.
 
 pub mod enroll;
+pub mod metrics;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -40,6 +41,10 @@ pub const CAP_HOST_LEDGER: &str = "host.ledger";
 /// `certificate_renew` / `certificate_installed` / `certificate_refused`:
 /// node certificate rotation (ticket 019).
 pub const CAP_NODE_CERTIFICATE: &str = "node.certificate";
+/// `host_facts` / `metrics_report` / `metrics_ack`: host facts and resource
+/// samples (ticket 020.1). The agent sends them only when the Core declares
+/// this capability too.
+pub const CAP_HOST_METRICS: &str = "host.metrics";
 
 /// `certificate_refused` codes.
 pub mod certificate_refused_code {
@@ -332,6 +337,23 @@ pub enum Message {
         code: String,
         message: String,
     },
+    /// What the host is; sent after `ready` and when a value changes.
+    HostFacts {
+        #[serde(with = "time::serde::rfc3339")]
+        collected_at: OffsetDateTime,
+        facts: metrics::HostFacts,
+    },
+    /// Resource samples the Core has not acknowledged, oldest first.
+    /// `dropped_samples` counts samples discarded because the agent's
+    /// buffer was full since the previous report.
+    MetricsReport {
+        samples: Vec<metrics::MetricsSample>,
+        dropped_samples: u64,
+    },
+    /// The Core stored every sample up to `seq`.
+    MetricsAck {
+        seq: u64,
+    },
 }
 
 /// Why a message could not be decoded. `UnknownType` lets the receiver answer
@@ -434,6 +456,9 @@ const SESSION_TYPES: &[&str] = &[
     "certificate_renew",
     "certificate_installed",
     "certificate_refused",
+    "host_facts",
+    "metrics_report",
+    "metrics_ack",
 ];
 
 /// The string `type` of a JSON object, or `Malformed`.
