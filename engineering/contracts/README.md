@@ -245,7 +245,9 @@ hazelminx-grant-v1
 - 檔案系統 `state`：`ok`、`unresponsive`（`statvfs` 2 秒沒回）、`unreadable`；`inodes`：`ok` 或 `notApplicable`（btrfs、ZFS、bcachefs，或 inode 總數為 0 的檔案系統）。
 - 磁碟 `class`：`physical`、`raid`、`mapper`、`virtual`、`loop`、`network`；網路介面 `class`：`physical`、`virtual`、`loopback`。
 - Agent 最多暫存 360 筆（Core 連不上時約一小時），滿了丟最舊的，下一則 `metrics_report` 的 `droppedSamples` 帶出丟掉的筆數。一則報告的樣本編碼後不超過 192 KiB，超過就分成多則。
-- Core 存好整則報告才回 `metrics_ack`，`seq` 是報告裡最大的值；存失敗不回，Agent 在下一次連線重送。
+- Core 存好整則報告才回 `metrics_ack`，`seq` 是報告裡最大的值。存失敗不回；Agent 送出後 30 秒還沒收到確認，就從最舊的未確認樣本重送，新連線也一樣重送。
+- Core 用不了的樣本（`intervalSeconds` 不在 1 到 3600、`collectedAt` 比 Core 的時鐘快 5 分鐘以上或早於 48 小時）不保存，但照樣確認，因為重送也不會變好。比 Core 快 5 分鐘以上的 `host_facts` 也不保存。
+- `droppedSamples` 只放在丟棄後的第一則報告，這則被確認才歸零；沒被確認就隨重送再帶一次，所以 Core 可能多算，不會少算。
 
 ### 憑證輪替
 

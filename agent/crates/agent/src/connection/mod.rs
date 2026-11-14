@@ -604,6 +604,7 @@ async fn serve(
         enabled: metrics,
         facts: 0,
         samples: 0,
+        sent_at: None,
     };
     let mut tick = tokio::time::interval(heartbeat);
     tick.tick().await;
@@ -676,6 +677,8 @@ struct HostSent {
     facts: u64,
     /// Highest sample seq sent.
     samples: u64,
+    /// When the latest report went out.
+    sent_at: Option<std::time::Instant>,
 }
 
 /// Sends journal records after `sent_up_to`, queued answers, and host
@@ -709,9 +712,21 @@ async fn flush(
             ch.send(ws, &m).await?;
             host.facts = v;
         }
+        if host
+            .sent_at
+            .is_some_and(|t| t.elapsed() > crate::monitor::ACK_TIMEOUT)
+            && shared.monitor.unacked_through(host.samples)
+        {
+            warn!(
+                up_to = host.samples,
+                "core did not acknowledge host samples; sending them again"
+            );
+            host.samples = shared.monitor.rewind();
+        }
         while let Some((last, m)) = shared.monitor.report_after(host.samples) {
             ch.send(ws, &m).await?;
             host.samples = last;
+            host.sent_at = Some(std::time::Instant::now());
         }
     }
     Ok(())

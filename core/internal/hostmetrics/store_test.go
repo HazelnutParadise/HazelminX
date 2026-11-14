@@ -185,15 +185,39 @@ func TestHistoryMarksGapsInsteadOfFilling(t *testing.T) {
 }
 
 func TestRecordReportRejectsBadReports(t *testing.T) {
-	st := NewStore(openDB(t), nil)
+	st := NewStore(openDB(t), (&clock{now: t0}).Now)
 	ctx := context.Background()
 	if _, err := st.RecordReport(ctx, "node-1", &protocol.MetricsReport{}); !errors.Is(err, ErrValidation) {
 		t.Fatalf("empty report: %v", err)
 	}
-	s := sample(1, t0, nil)
-	s.IntervalSeconds = 0
-	if _, err := st.RecordReport(ctx, "node-1", &protocol.MetricsReport{Samples: []protocol.MetricsSample{s}}); !errors.Is(err, ErrValidation) {
-		t.Fatalf("interval 0: %v", err)
+	// Unusable samples are left out but acknowledged (resending them
+	// would not change them): interval 0 or over an hour, a clock ahead of
+	// Core's, a time past the raw retention.
+	zero, huge := sample(1, t0, ptr(1.0)), sample(2, t0.Add(-10*time.Second), ptr(2.0))
+	zero.IntervalSeconds, huge.IntervalSeconds = 0, 4_000_000_000
+	future, old := sample(3, t0.Add(time.Hour), ptr(3.0)), sample(4, t0.Add(-49*time.Hour), ptr(4.0))
+	good := sample(5, t0.Add(-20*time.Second), ptr(5.0))
+	r, err := st.Record(ctx, "node-1", &protocol.MetricsReport{Samples: []protocol.MetricsSample{zero, huge, future, old, good}, DroppedSamples: 2})
+	if err != nil || r.Seq != 5 || r.Skipped != 4 {
+		t.Fatalf("record %+v %v", r, err)
+	}
+	pts := history(t, st, HistoryQuery{NodeID: "node-1", Series: "cpu.usage", Resolution: ResolutionRaw, From: t0.Add(-48 * time.Hour), To: t0.Add(2 * time.Hour)})
+	if len(pts) != 1 || pts[0].Value != 5 {
+		t.Fatalf("only the usable sample is stored: %+v", pts)
+	}
+	if l, _ := st.Latest(ctx, "node-1"); l.Sample.Seq != 5 || l.DroppedSamples != 2 {
+		t.Fatalf("latest %+v", l)
+	}
+	// A report with nothing usable stores nothing and is still acknowledged.
+	if r, err := st.Record(ctx, "node-1", &protocol.MetricsReport{Samples: []protocol.MetricsSample{future}, DroppedSamples: 7}); err != nil || r.Seq != 3 {
+		t.Fatalf("nothing usable: %+v %v", r, err)
+	}
+	if l, _ := st.Latest(ctx, "node-1"); l.Sample.Seq != 5 || l.DroppedSamples != 2 {
+		t.Fatalf("latest after an unusable report %+v", l)
+	}
+	// Facts from a clock far ahead are refused.
+	if err := st.RecordFacts(ctx, "node-1", &protocol.HostFacts{CollectedAt: t0.Add(time.Hour)}); !errors.Is(err, ErrValidation) {
+		t.Fatalf("future facts: %v", err)
 	}
 	// An unknown node is refused by the foreign key; nothing is stored.
 	if _, err := st.RecordReport(ctx, "node-x", &protocol.MetricsReport{Samples: []protocol.MetricsSample{sample(1, t0, ptr(1.0))}}); err == nil {
@@ -248,9 +272,12 @@ func TestPruneKeepsRetention(t *testing.T) {
 	c := &clock{now: t0}
 	st := NewStore(openDB(t), c.Now)
 	ctx := context.Background()
-	rep := &protocol.MetricsReport{Samples: []protocol.MetricsSample{sample(1, t0, ptr(5.0)), sample(2, t0.Add(47*time.Hour), ptr(6.0))}}
-	if _, err := st.RecordReport(ctx, "node-1", rep); err != nil {
-		t.Fatal(err)
+	for i, at := range []time.Time{t0, t0.Add(47 * time.Hour)} {
+		c.now = at
+		rep := &protocol.MetricsReport{Samples: []protocol.MetricsSample{sample(uint64(i+1), at, ptr(float64(5+i)))}}
+		if _, err := st.RecordReport(ctx, "node-1", rep); err != nil {
+			t.Fatal(err)
+		}
 	}
 	c.now = t0.Add(49 * time.Hour)
 	if err := st.Prune(ctx); err != nil {

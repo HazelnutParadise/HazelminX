@@ -106,7 +106,8 @@ type HostReports interface {
 	// HostFacts stores the facts of the node behind s.
 	HostFacts(ctx context.Context, s *Session, m *protocol.HostFacts) error
 	// MetricsReport stores the samples and returns the seq the agent may
-	// forget; an error sends no acknowledgement, so the agent resends.
+	// forget; an error sends no acknowledgement, and the agent sends the
+	// samples again after 30 seconds without one.
 	MetricsReport(ctx context.Context, s *Session, m *protocol.MetricsReport) (uint64, error)
 }
 

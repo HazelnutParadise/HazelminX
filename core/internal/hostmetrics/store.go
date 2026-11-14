@@ -35,6 +35,12 @@ const (
 	// cores or sensors of one sample get history; the latest sample still
 	// carries all of them.
 	maxKeysPerFamily = 64
+	// maxClockAhead is how far in the future (by Core's clock) a sample or
+	// facts may be; later ones come from a wrong agent clock and would
+	// freeze the latest view and history until real time caught up.
+	maxClockAhead = 5 * time.Minute
+	// maxIntervalSeconds bounds the sampling interval an agent may claim.
+	maxIntervalSeconds = 3600
 )
 
 // Resolutions of History.
@@ -62,9 +68,22 @@ func NewStore(db *sql.DB, now func() time.Time) *Store {
 
 func ts(t time.Time) string { return t.UTC().Truncate(time.Second).Format(timeLayout) }
 
+// usable reports whether a sample time is one Core keeps: not ahead of
+// Core's clock by more than maxClockAhead and not older than the raw
+// retention (a point already pruned would be counted into its rollup
+// again).
+func (s *Store) usable(at time.Time) bool {
+	now := s.now()
+	return !at.After(now.Add(maxClockAhead)) && !at.Before(now.Add(-RawRetention))
+}
+
 // RecordFacts stores a node's facts, replacing older ones. Facts collected
-// before the stored ones are ignored (a late resend).
+// before the stored ones are ignored (a late resend), and so are facts
+// from a clock too far ahead (ErrValidation).
 func (s *Store) RecordFacts(ctx context.Context, nodeID string, m *protocol.HostFacts) error {
+	if m.CollectedAt.After(s.now().Add(maxClockAhead)) {
+		return fmt.Errorf("%w: facts collected at %s, ahead of Core's clock", ErrValidation, ts(m.CollectedAt))
+	}
 	b, err := json.Marshal(m.Facts)
 	if err != nil {
 		return err
@@ -79,33 +98,54 @@ func (s *Store) RecordFacts(ctx context.Context, nodeID string, m *protocol.Host
 // RecordReport stores the samples of one report in one transaction and
 // returns the highest seq it holds, which the agent may forget. A sample
 // Core already has (same node and collection time, resent after a lost
-// acknowledgement) changes nothing.
+// acknowledgement) changes nothing. Samples Core cannot use (interval
+// outside 1..3600 s, a time ahead of Core's clock or past the raw
+// retention) are left out and counted in Skipped; they are acknowledged
+// too, since sending them again would not change them. Only a database
+// failure is an error, and then nothing is stored.
 func (s *Store) RecordReport(ctx context.Context, nodeID string, m *protocol.MetricsReport) (uint64, error) {
+	r, err := s.Record(ctx, nodeID, m)
+	return r.Seq, err
+}
+
+// Recorded is what RecordReport did with a report.
+type Recorded struct {
+	// Seq is the highest seq of the report.
+	Seq uint64
+	// Skipped counts the samples left out as unusable.
+	Skipped int
+}
+
+// Record is RecordReport with the count of skipped samples.
+func (s *Store) Record(ctx context.Context, nodeID string, m *protocol.MetricsReport) (Recorded, error) {
 	if len(m.Samples) == 0 || len(m.Samples) > maxSamplesPerMsg {
-		return 0, fmt.Errorf("%w: a report carries 1 to %d samples", ErrValidation, maxSamplesPerMsg)
+		return Recorded{}, fmt.Errorf("%w: a report carries 1 to %d samples", ErrValidation, maxSamplesPerMsg)
 	}
-	for _, smp := range m.Samples {
-		if smp.IntervalSeconds == 0 {
-			return 0, fmt.Errorf("%w: sample %d has interval 0", ErrValidation, smp.Seq)
+	var out Recorded
+	keep := make([]*protocol.MetricsSample, 0, len(m.Samples))
+	for i := range m.Samples {
+		smp := &m.Samples[i]
+		out.Seq = max(out.Seq, smp.Seq)
+		if smp.IntervalSeconds == 0 || smp.IntervalSeconds > maxIntervalSeconds || !s.usable(smp.CollectedAt) {
+			out.Skipped++
+			continue
 		}
+		keep = append(keep, smp)
 	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return 0, err
+		return Recorded{}, err
 	}
 	defer tx.Rollback()
 	received := ts(s.now())
-	var last uint64
-	for i := range m.Samples {
-		smp := &m.Samples[i]
-		last = max(last, smp.Seq)
+	for _, smp := range keep {
 		at := ts(smp.CollectedAt)
 		bucket := ts(smp.CollectedAt.UTC().Truncate(RollupSeconds * time.Second))
 		for _, p := range Points(smp) {
 			res, err := tx.ExecContext(ctx, `INSERT OR IGNORE INTO host_metric_points (node_id, series, series_key, at, value, interval_seconds) VALUES (?, ?, ?, ?, ?, ?)`,
 				nodeID, p.Series, p.Key, at, p.Value, smp.IntervalSeconds)
 			if err != nil {
-				return 0, err
+				return Recorded{}, err
 			}
 			if n, _ := res.RowsAffected(); n == 0 {
 				continue // already stored: already in its rollup
@@ -114,26 +154,26 @@ func (s *Store) RecordReport(ctx context.Context, nodeID string, m *protocol.Met
 				ON CONFLICT (node_id, series, series_key, bucket_start) DO UPDATE SET value_sum = value_sum + excluded.value_sum,
 					value_min = min(value_min, excluded.value_min), value_max = max(value_max, excluded.value_max), samples = samples + 1`,
 				nodeID, p.Series, p.Key, bucket, p.Value, p.Value, p.Value); err != nil {
-				return 0, err
+				return Recorded{}, err
 			}
 		}
 		raw, err := json.Marshal(smp)
 		if err != nil {
-			return 0, err
+			return Recorded{}, err
 		}
 		if _, err := tx.ExecContext(ctx, `INSERT INTO host_metric_latest (node_id, sample, collected_at, received_at, interval_seconds) VALUES (?, ?, ?, ?, ?)
 			ON CONFLICT (node_id) DO UPDATE SET sample = excluded.sample, collected_at = excluded.collected_at, received_at = excluded.received_at, interval_seconds = excluded.interval_seconds
 			WHERE excluded.collected_at > host_metric_latest.collected_at`,
 			nodeID, string(raw), at, received, smp.IntervalSeconds); err != nil {
-			return 0, err
+			return Recorded{}, err
 		}
 	}
-	if m.DroppedSamples > 0 {
+	if m.DroppedSamples > 0 && len(keep) > 0 {
 		if _, err := tx.ExecContext(ctx, `UPDATE host_metric_latest SET dropped_samples = dropped_samples + ? WHERE node_id = ?`, m.DroppedSamples, nodeID); err != nil {
-			return 0, err
+			return Recorded{}, err
 		}
 	}
-	return last, tx.Commit()
+	return out, tx.Commit()
 }
 
 // Facts is a node's latest facts; nil when it never reported any.

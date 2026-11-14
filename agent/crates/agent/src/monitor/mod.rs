@@ -24,12 +24,19 @@ pub const BUFFER_SAMPLES: usize = 360;
 /// escaped again inside the frame, so this stays well under the 1 MiB
 /// frame limit.
 pub const REPORT_BYTES: usize = 192 * 1024;
+/// A session that sent samples and got no acknowledgement for this long
+/// sends them again (the Core could not store them).
+pub const ACK_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[derive(Default)]
 struct State {
     samples: VecDeque<MetricsSample>,
-    /// Samples dropped because the buffer was full, not yet reported.
+    /// Samples dropped because the buffer was full and not yet
+    /// acknowledged as reported.
     dropped: u64,
+    /// The report carrying a drop count, until its acknowledgement:
+    /// (its last seq, the count it carried).
+    dropped_sent: Option<(u64, u64)>,
     facts: Option<(OffsetDateTime, HostFacts)>,
     /// Increases whenever the facts change, so each session knows whether
     /// it has sent the current ones.
@@ -80,7 +87,35 @@ impl Monitor {
 
     /// The Core stored every sample up to `seq`.
     pub fn ack(&self, seq: u64) {
-        self.state.lock().unwrap().samples.retain(|s| s.seq > seq);
+        let mut st = self.state.lock().unwrap();
+        st.samples.retain(|s| s.seq > seq);
+        if let Some((through, count)) = st.dropped_sent
+            && seq >= through
+        {
+            st.dropped = st.dropped.saturating_sub(count);
+            st.dropped_sent = None;
+        }
+    }
+
+    /// Whether a sample up to `sent` is still waiting for its
+    /// acknowledgement.
+    pub fn unacked_through(&self, sent: u64) -> bool {
+        self.state
+            .lock()
+            .unwrap()
+            .samples
+            .front()
+            .is_some_and(|s| s.seq <= sent)
+    }
+
+    /// Forgets what was sent without an acknowledgement, so the next
+    /// reports carry it again; returns the seq to send after (the buffer
+    /// holds only unacknowledged samples). A drop count whose report may
+    /// have been stored is sent again too: counting it twice is better
+    /// than losing it.
+    pub fn rewind(&self) -> u64 {
+        self.state.lock().unwrap().dropped_sent = None;
+        0
     }
 
     /// The facts message when the session has not sent version `sent`.
@@ -100,7 +135,8 @@ impl Monitor {
 
     /// The next report: unacknowledged samples after `after`, oldest
     /// first, at least one and at most `REPORT_BYTES` of them. The drop
-    /// count travels with it and starts again from zero.
+    /// count travels with the first report after it grew and is kept
+    /// until that report is acknowledged.
     pub fn report_after(&self, after: u64) -> Option<(u64, Message)> {
         let mut st = self.state.lock().unwrap();
         let mut size = 0;
@@ -116,7 +152,12 @@ impl Monitor {
             out.push(s.clone());
         }
         let last = out.last()?.seq;
-        let dropped = std::mem::take(&mut st.dropped);
+        let dropped = if st.dropped_sent.is_none() && st.dropped > 0 {
+            st.dropped_sent = Some((last, st.dropped));
+            st.dropped
+        } else {
+            0
+        };
         Some((
             last,
             Message::MetricsReport {

@@ -319,17 +319,29 @@ fn buffer_drops_oldest_and_counts_once() {
         }
         other => panic!("{other:?}"),
     }
-    // Sent but not acknowledged: a new session sends them again; the drop
-    // count was already reported.
-    match m.report_after(0).unwrap().1 {
+    // A second report while the first is unacknowledged does not carry the
+    // count again (both may be stored).
+    let dropped = |m: &Monitor, after: u64| match m.report_after(after).unwrap().1 {
         Message::MetricsReport {
             dropped_samples, ..
-        } => assert_eq!(dropped_samples, 0),
+        } => dropped_samples,
         other => panic!("{other:?}"),
-    }
+    };
+    assert_eq!(dropped(&m, 0), 0);
     assert!(m.report_after(5).is_none());
+    // No acknowledgement: everything waiting, and the count, go again.
+    assert!(m.unacked_through(5));
+    assert_eq!(m.rewind(), 0);
+    assert_eq!(dropped(&m, 0), 2);
+    // An acknowledgement short of that report keeps the count.
     m.ack(4);
     assert_eq!(m.len(), 1);
+    assert!(m.unacked_through(5));
+    assert!(!m.unacked_through(4));
+    m.ack(5);
+    assert_eq!(m.len(), 0);
+    m.push(sample(6));
+    assert_eq!(dropped(&m, 5), 0, "an acknowledged count is not sent again");
 }
 
 #[test]
