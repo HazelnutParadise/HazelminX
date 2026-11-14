@@ -3,9 +3,10 @@ import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { Input } from "@cloudflare/kumo/components/input";
 import { Table } from "@cloudflare/kumo/components/table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
+import { isApiError } from "../auth/api";
 import { Notice } from "../auth/parts";
 import {
   JOB_ENDED,
@@ -68,9 +69,17 @@ export function DeployPanel({ project: p, env, unit: u }: { project: Project; en
       },
       { replace: false },
     );
+  // One request id per host check until Core answers, so a retry after a lost reply gets the same job.
+  const checkRid = useRef("");
   const hostCheck = useMutation({
-    mutationFn: () => projectsApi.hostCheck(p.id, env.id, requestId()),
-    onSuccess: (r) => setParam(CHECK_PARAM, r.jobId),
+    mutationFn: () => {
+      checkRid.current ||= requestId();
+      return projectsApi.hostCheck(p.id, env.id, checkRid.current);
+    },
+    onSuccess: (r) => {
+      checkRid.current = "";
+      setParam(CHECK_PARAM, r.jobId);
+    },
   });
   const createPlan = useMutation({
     mutationFn: () => plansApi.createDeploy(p.id, env.id),
@@ -185,6 +194,7 @@ export function DeployPanel({ project: p, env, unit: u }: { project: Project; en
       )}
       {planId && (
         <PlanPanel
+          key={planId}
           planId={planId}
           project={p}
           env={env}
@@ -228,15 +238,29 @@ function PlanPanel({
     if (r) qc.setQueryData(projectKeys.plan(planId), r);
     await qc.invalidateQueries({ queryKey: projectKeys.deployments(p.id, env.id) });
   };
+  // Core answers the same request id with the same job: keep one id for this plan so a retry after a lost
+  // reply does not become REQUEST_ID_CONFLICT. A conflict still means the plan already runs: read it again.
+  const execRid = useRef("");
   const execute = useMutation({
-    mutationFn: (pl: Plan) => plansApi.execute(pl.id ?? "", pl.digest ?? "", requestId()),
+    mutationFn: async (pl: Plan) => {
+      execRid.current ||= requestId();
+      try {
+        return await plansApi.execute(pl.id ?? "", pl.digest ?? "", execRid.current);
+      } catch (e) {
+        if (isApiError(e, "REQUEST_ID_CONFLICT")) {
+          await qc.invalidateQueries({ queryKey: projectKeys.plan(planId) });
+          return undefined;
+        }
+        throw e;
+      }
+    },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: projectKeys.plan(planId) });
       await refresh();
     },
   });
   const reject = useMutation({
-    mutationFn: () => plansApi.withdraw(planId, "withdrawn from the project page"),
+    mutationFn: () => plansApi.withdraw(planId, t("projects.plan.withdrawReason")),
     onSuccess: (r) => refresh(r),
   });
   const pl = plan.data?.plan;
@@ -383,9 +407,7 @@ function PlanPanel({
           <h3 className="hx-h3">{t("projects.plan.affected", { count: (pl.affected ?? []).length })}</h3>
           <ul className="hx-plain-list hx-mono">
             {(pl.affected ?? []).map((a) => (
-              <li key={a.id}>
-                {a.name} · <span className="hx-raw">{a.effect}</span>
-              </li>
+              <li key={a.id}>{`${a.name} · ${a.effect}`}</li>
             ))}
           </ul>
           <h3 className="hx-h3">{t("projects.plan.changes", { count: (pl.changes ?? []).length })}</h3>
@@ -570,7 +592,7 @@ function JobPanel({
               ))}
             </ol>
             {deploy &&
-              (j.state === "failed" || j.state === "needs_attention") &&
+              (j.state === "failed" || j.state === "needs_attention" || j.state === "cancelled") &&
               !(j.steps ?? []).some((s) => s.error?.nothingChanged) && (
                 <Notice tone="danger">{t("projects.job.failedNoRollback")}</Notice>
               )}
@@ -623,7 +645,7 @@ export function DeploymentsPanel({ project: p, env }: { project: Project; env: E
         <p className="hx-note hx-panel-note">{list.data ? t("projects.deployments.none") : t("projects.loading")}</p>
       ) : (
         <div className="hx-table-wrap">
-          <Table className="hx-table hx-deployments">
+          <Table className="hx-table hx-deployments hx-stack-sm">
             <Table.Header>
               <Table.Row>
                 <Table.Head>{t("projects.deployments.deployment")}</Table.Head>

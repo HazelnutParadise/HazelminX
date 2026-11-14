@@ -355,6 +355,31 @@ describe("deploying", () => {
     expect(await within(job).findByText(/不會自動回滾/)).toBeInTheDocument();
   });
 
+  it("a retried run keeps its request id, and a conflict reads the plan again instead of failing", async () => {
+    let calls = 0;
+    const c = core("owner", {
+      [`GET ${B}/change-plans/pln_1`]: () => ({
+        status: 200,
+        body: { plan: plan({ state: "approved", executable: true }) },
+      }),
+      [`POST ${B}/change-plans/pln_1/execute`]: () =>
+        ++calls === 1 ? apiError(503, "PLATFORM_DEGRADED") : apiError(409, "REQUEST_ID_CONFLICT"),
+    });
+    renderAt("/projects/prj_1/env_p?plan=pln_1");
+    const panel = await screen.findByRole("region", { name: /^部署計畫/ });
+    const run = await within(panel).findByRole("button", { name: "部署到 hazel-tw-01" });
+    await userEvent.click(run);
+    await waitFor(() => expect(c.callsTo(`POST ${B}/change-plans/pln_1/execute`)).toHaveLength(1));
+    await userEvent.click(await within(panel).findByRole("button", { name: "部署到 hazel-tw-01" }));
+    await waitFor(() => expect(c.callsTo(`POST ${B}/change-plans/pln_1/execute`)).toHaveLength(2));
+    const ids = c
+      .callsTo(`POST ${B}/change-plans/pln_1/execute`)
+      .map((x) => (x.body as { requestId: string }).requestId);
+    expect(ids[0]).toBe(ids[1]);
+    await waitFor(() => expect(c.callsTo(`GET ${B}/change-plans/pln_1`).length).toBeGreaterThan(1));
+    expect(within(panel).queryByText(/REQUEST_ID_CONFLICT/)).toBeNull();
+  });
+
   it("a host check that changed nothing does not warn about a partial update", async () => {
     core("owner", {
       [`GET ${B}/jobs/job_c`]: {

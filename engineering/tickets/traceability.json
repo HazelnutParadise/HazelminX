@@ -1218,7 +1218,7 @@
     },
     {
       "id": "044.3",
-      "file": "044.3-compose-project-screens.md",
+      "file": "done/044.3-compose-project-screens.md",
       "title": "專案管理員可以在專案頁匯入、編輯、驗證 Compose 並看到部署預檢",
       "epic": "compose",
       "milestone": "M2",
@@ -1227,11 +1227,25 @@
         "044.2",
         "017"
       ],
+      "requirements": [],
+      "acceptance_tests": [],
+      "issue": 178,
+      "parent": "044"
+    },
+    {
+      "id": "044.4",
+      "file": "044.4-compose-graphical-editing.md",
+      "title": "專案管理員可以用圖形化設定編輯 Compose，必要時切回原始編輯，並管理專案與環境",
+      "epic": "compose",
+      "milestone": "M2",
+      "blocked_by": [
+        "044.3"
+      ],
       "requirements": [
         "UI-008"
       ],
       "acceptance_tests": [],
-      "issue": 178,
+      "issue": 189,
       "parent": "044"
     },
     {

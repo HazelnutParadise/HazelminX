@@ -96,7 +96,7 @@ function FilesPanel({ unit: u }: { unit: Unit }) {
   return (
     <Panel id="hx-unit-files" title={t("projects.files.title", { count: files.length })}>
       <div className="hx-table-wrap">
-        <Table className="hx-table">
+        <Table className="hx-table hx-stack-sm">
           <Table.Header>
             <Table.Row>
               <Table.Head>{t("projects.files.path")}</Table.Head>
@@ -159,7 +159,7 @@ export function FindingsPanel({ analysis: a, title }: { analysis: Analysis; titl
         <p className="hx-note hx-panel-note">{t("projects.findings.none")}</p>
       ) : (
         <div className="hx-table-wrap">
-          <Table className="hx-table hx-findings">
+          <Table className="hx-table hx-findings hx-stack-sm">
             <Table.Header>
               <Table.Row>
                 <Table.Head>{t("projects.findings.result")}</Table.Head>
@@ -223,7 +223,7 @@ export function ServicesPanel({ analysis: a }: { analysis: Analysis }) {
   return (
     <Panel id="hx-unit-services" title={t("projects.services.title", { count: services.length })}>
       <div className="hx-table-wrap">
-        <Table className="hx-table hx-services">
+        <Table className="hx-table hx-services hx-stack-sm">
           <Table.Header>
             <Table.Row>
               <Table.Head>{t("projects.services.name")}</Table.Head>

@@ -1173,7 +1173,8 @@
       "decision": "{{name}}：{{reason}}",
       "checks": "預檢 · {{count}}",
       "affected": "受影響服務 · {{count}}",
-      "changes": "變更 · {{count}}"
+      "changes": "變更 · {{count}}",
+      "withdrawReason": "從專案頁撤回"
     },
     "risk": {
       "low": "低",

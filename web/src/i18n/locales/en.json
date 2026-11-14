@@ -1196,7 +1196,8 @@
       "decision": "{{name}}: {{reason}}",
       "checks": "Prechecks · {{count}}",
       "affected": "Affected services · {{count}}",
-      "changes": "Changes · {{count}}"
+      "changes": "Changes · {{count}}",
+      "withdrawReason": "Withdrawn from the project page"
     },
     "risk": {
       "low": "Low",

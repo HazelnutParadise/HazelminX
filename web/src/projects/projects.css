@@ -319,6 +319,23 @@ textarea.hx-code-area {
 }
 
 @media (max-width: 767px) {
+  /* Tables whose cells hold long values read row by row on a phone: each row becomes a block. */
+  .hx-stack-sm thead {
+    display: none;
+  }
+  .hx-stack-sm tr,
+  .hx-stack-sm td {
+    display: block;
+  }
+  .hx-stack-sm tr {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--color-kumo-hairline);
+  }
+  .hx-stack-sm td {
+    border: 0;
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
   .hx-scope .c5,
   .hx-projects .c5 {
     display: none;
