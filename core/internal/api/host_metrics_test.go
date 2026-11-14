@@ -93,7 +93,7 @@ func TestHostMetricsOverTheAPI(t *testing.T) {
 	x := obj(r.Body["exhaustion"])
 	mp := obj(x["memoryPressure"])
 	fs := obj(x["filesystems"].([]any)[0])
-	if r.Code != 200 || r.Body["stale"] != true || obj(x["pids"])["exceeded"] != true || mp["state"] != "disabled" || mp["someAvg60"] != nil || fs["inodesExhausted"] != true {
+	if r.Code != 200 || r.Body["stale"] != false || obj(x["pids"])["exceeded"] != true || mp["state"] != "disabled" || mp["someAvg60"] != nil || fs["inodesExhausted"] != true {
 		t.Fatalf("latest: %d %s", r.Code, r.Raw)
 	}
 
@@ -142,5 +142,53 @@ func TestHostMetricsOverTheAPI(t *testing.T) {
 	}
 	if r := hs.client("192.0.2.9").do(http.MethodGet, "/management/v1/nodes/"+a+"/host", nil, nil); r.Code != http.StatusUnauthorized {
 		t.Fatalf("anonymous: %d", r.Code)
+	}
+}
+
+// Staleness follows Core's clock (receivedAt), not the agent's
+// collectedAt: a host whose clock runs behind is fresh while it reports,
+// and one whose clock runs ahead is stale once it stops.
+func TestHostMetricsStaleUsesCoreClock(t *testing.T) {
+	hs := newHarness(t)
+	pki, err := nodes.LoadOrCreatePKI(context.Background(), &pkiSecrets{vals: map[string][]byte{}}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	st, err := store.Open(context.Background(), t.TempDir()+"/nodes.db")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { st.Close() })
+	reg, err := nodereg.New(nodereg.Options{DB: st.DB, PKI: pki, IssuerKeyPEM: []byte("pub"), Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
+	if err != nil {
+		t.Fatal(err)
+	}
+	hs.srv.RegisterNodes(reg)
+	hs.srv.RegisterHostMetrics(reg, hostmetrics.NewStore(st.DB, nil))
+	owner := hs.bootstrap()
+	claim := func(code string) { claimAs(t, reg, code, "h", "") }
+	behind, ahead := approveNode(t, owner, claim, "behind"), approveNode(t, owner, claim, "ahead")
+
+	now := time.Now().UTC().Truncate(time.Second)
+	one := func(at time.Time) *protocol.MetricsReport {
+		return &protocol.MetricsReport{Samples: []protocol.MetricsSample{{Seq: 1, CollectedAt: at, IntervalSeconds: 10,
+			CPU: protocol.CPU{Cores: []protocol.CoreUsage{}}, Pressure: protocol.Pressure{State: protocol.PressureUnsupported},
+			Filesystems: []protocol.Filesystem{}, Disks: []protocol.Disk{}, Networks: []protocol.Network{}, Temperatures: []protocol.Temperature{}}}}
+	}
+	ctx := context.Background()
+	// Received now, collected by a clock 40 s behind.
+	if _, err := hostmetrics.NewStore(st.DB, func() time.Time { return now }).RecordReport(ctx, behind, one(now.Add(-40*time.Second))); err != nil {
+		t.Fatal(err)
+	}
+	// Received a minute ago, collected by a clock 4 minutes ahead.
+	minuteAgo := now.Add(-time.Minute)
+	if _, err := hostmetrics.NewStore(st.DB, func() time.Time { return minuteAgo }).RecordReport(ctx, ahead, one(minuteAgo.Add(4*time.Minute))); err != nil {
+		t.Fatal(err)
+	}
+	if r := owner.do(http.MethodGet, "/management/v1/nodes/"+behind+"/metrics/latest", nil, nil); r.Code != 200 || r.Body["stale"] != false {
+		t.Fatalf("clock behind, reporting: %d %s", r.Code, r.Raw)
+	}
+	if r := owner.do(http.MethodGet, "/management/v1/nodes/"+ahead+"/metrics/latest", nil, nil); r.Code != 200 || r.Body["stale"] != true {
+		t.Fatalf("clock ahead, stopped a minute ago: %d %s", r.Code, r.Raw)
 	}
 }

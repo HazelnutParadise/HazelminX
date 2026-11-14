@@ -31,8 +31,10 @@ type latestMetricsResponse struct {
 	CollectedAt     *time.Time `json:"collectedAt"`
 	ReceivedAt      *time.Time `json:"receivedAt"`
 	IntervalSeconds *int       `json:"intervalSeconds"`
-	// Stale: no sample for more than three intervals (the agent is
-	// offline or cannot report); the sample is the last one received.
+	// Stale: Core received no sample for more than three intervals (the
+	// agent is offline or cannot report), by Core's clock, so an agent
+	// clock running behind or ahead does not change it; the sample is the
+	// last one received.
 	Stale          bool                    `json:"stale"`
 	DroppedSamples int64                   `json:"droppedSamples"`
 	Sample         *protocol.MetricsSample `json:"sample"`
@@ -118,7 +120,7 @@ func (h *hostMetricsRoutes) latest(c *gin.Context) {
 	if l != nil {
 		x := hostmetrics.Assess(&l.Sample)
 		out = latestMetricsResponse{Reported: true, CollectedAt: &l.CollectedAt, ReceivedAt: &l.ReceivedAt, IntervalSeconds: &l.IntervalSeconds,
-			Stale:          h.now().Sub(l.CollectedAt) > 3*time.Duration(l.IntervalSeconds)*time.Second,
+			Stale:          h.now().Sub(l.ReceivedAt) > 3*time.Duration(l.IntervalSeconds)*time.Second,
 			DroppedSamples: l.DroppedSamples, Sample: &l.Sample, Exhaustion: &x}
 	}
 	c.JSON(http.StatusOK, out)

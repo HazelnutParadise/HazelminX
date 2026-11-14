@@ -1,4 +1,4 @@
--- 0011: host facts and resource history (ticket 020.1, SYS-001, MON-001,
+-- 0012: host facts and resource history (ticket 020.1, SYS-001, MON-001,
 -- MON-005, ROB-009). Keyed by node id, so history continues when a node
 -- re-enrolls with a new key. A missing value is NULL ("not provided"),
 -- never 0. Samples are telemetry: rows past their retention are deleted

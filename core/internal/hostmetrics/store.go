@@ -53,7 +53,7 @@ const (
 
 var ErrValidation = errors.New("hostmetrics: validation failed")
 
-// Store reads and writes the tables of migration 0011.
+// Store reads and writes the tables of migration 0012.
 type Store struct {
 	db  *sql.DB
 	now func() time.Time
