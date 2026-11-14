@@ -467,11 +467,17 @@ func (s *Service) RotatePAT(ctx context.Context, id string, version int64, token
 	if _, err := s.vault.Rotate(ctx, c.accessSecret, []byte(token), actor.UserID); err != nil {
 		return Connection{}, fmt.Errorf("github: store token: %w", err)
 	}
-	return s.mutate(ctx, id, version, actor, "github.connection.rotate", func(Connection) (map[string]any, string, []any, error) {
+	conn, err := s.mutate(ctx, id, version, actor, "github.connection.rotate", func(Connection) (map[string]any, string, []any, error) {
 		return map[string]any{"accountLogin": user.Login, "tokenType": tokenType, "scopes": nonNilSlice(scopes), "expiresAt": facts.ExpiresAt},
 			"account_login=?, token_type=?, scopes=?, permissions=?, access_expires_at=?, state=CASE WHEN state='disabled' THEN 'disabled' ELSE 'active' END, state_reason=CASE WHEN state='disabled' THEN state_reason ELSE '' END, last_checked_at=?",
 			[]any{user.Login, tokenType, jsonOf(nonNilSlice(scopes)), jsonOf(perms), tsOrNil(ptrTime(facts.ExpiresAt)), s.ts()}, nil
 	})
+	if err == nil {
+		// The new token may reach other repositories: what the old one
+		// listed is not shown under it (ticket 048.1).
+		s.dropInventory(ctx, id)
+	}
+	return conn, err
 }
 
 // DeleteConnection removes a connection and its stored credentials. Nothing
