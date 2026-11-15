@@ -69,7 +69,7 @@ scripts/   CI 與發布腳本（簽署清單、依賴檢查）
 | 決策 | 選擇 | 理由與來源 |
 |---|---|---|
 | Go HTTP 框架 | Gin | 1Panel 與 infra-manager 都用 Gin，移植成本最低；路由定義可產生 OpenAPI。 |
-| 平台資料庫 | SQLite（`modernc.org/sqlite`，純 Go）、WAL、`PRAGMA foreign_keys=ON` | PKG-001 要求乾淨主機無 C 編譯器；1Panel 已使用純 Go 的 glebarez/sqlite。多 Core 不共用同一檔案（35.1）。 |
+| 平台資料庫 | SQLite（`modernc.org/sqlite`，純 Go）、WAL、`PRAGMA foreign_keys=ON`、`synchronous=FULL`、單一寫入連線；所有資料表 STRICT；`journal_size_limit` 64 MiB；`auto_vacuum=INCREMENTAL`，主機指標清理迴圈每小時跑 `PRAGMA optimize` 與 `incremental_vacuum`（票 128） | PKG-001 要求乾淨主機無 C 編譯器；1Panel 已使用純 Go 的 glebarez/sqlite。多 Core 不共用同一檔案（35.1）。 |
 | Migration | 版本表 + 有序 SQL 檔 + Go 程式化步驟；只允許向上；啟動時比對 `schemaVersion` 拒絕舊執行檔開新資料 | DAT-006、REL-006。 |
 | Core↔Agent 協定 | Agent 主動建立 WebSocket over TLS 1.3（Core 的 Agent 入口，預設 `:9801`），JSON 訊息；握手四則（hello／welcome／auth／ready）交換 `protocolVersion` 範圍、`capabilities` 與 X25519 公鑰，雙方各以 Ed25519 私鑰簽雙方 nonce、雙方 X25519 公鑰、協定版本、節點指紋、session ID、hello 原文雜湊與 welcome 參數雜湊；之後每則訊息包成帶方向序號與 HMAC-SHA256（金鑰由 X25519 共同秘密經 HKDF 導出）的訊框；Core 有自己的 CA（私鑰在機密服務），節點憑證 EKU 只有 clientAuth、Core 憑證固定名稱 `core.hazelminx.internal`；直連時另要求 TLS 用戶端憑證與握手身分一致，經會終止 TLS 的代理時只靠握手簽章，任何 HTTP Header 都不當身分；握手訊息寬鬆解碼、握手後嚴格解碼；持久事件帶每節點單調序號並由 Core 累計確認；請求帶 `requestId`、`controlGeneration`、`expiresAt`。契約在 `engineering/contracts/README.md` | NOD-002、NOD-011、SEC-011、ENG-010、SEC-004。Komodo Periphery 已有 Agent 主動連 Core 的 WebSocket 客戶端（`connection/client.rs`），但身分驗證是 `mogh_pki` 的 Noise 握手而非 mTLS，Go 端沒有現成相容實作；因此 `connection/` 改為 mTLS 加握手簽章，保留其單一 WebSocket 多工請求的設計。docker／stats／terminal 模組保留；`lib/command` 以 shlex 拆參數後走 `Command::args`，可作低權限命令層，但高權限動作仍走 privileged。 |
 | GPU 指標 | NVIDIA 以 purego 動態載入 NVML（免 CGO／免綁定），AMD 與 Intel 讀 sysfs（`/sys/class/drm`、hwmon），CLI（nvidia-smi、rocm-smi、intel_gpu_top）只作退路；Rust 端對應用 `libloading` + sysfs | MON-002；Beszel 研究報告第 4 節。缺值明示，不假造跨廠相同欄位。 |
@@ -136,7 +136,7 @@ CI 必跑：`go test ./... && go vet`、`cargo test --workspace && cargo clippy 
 
 ## Migration plan
 
-1. 平台資料庫：有序 migration（`core/internal/store/migrations/NNNN_name.sql` 或 `.go`），每個版本記錄 `schemaVersion`；啟動時若資料版本高於執行檔支援版本則拒絕啟動並進入復原狀態（T-009）。
+1. 平台資料庫：有序 migration（`core/internal/store/migrations/NNNN_name.sql` 或 `.go`），每個版本記錄 `schemaVersion`；啟動時若資料版本高於執行檔支援版本則拒絕啟動並進入復原狀態（T-009）。新資料表一律宣告 `STRICT`（`TestEveryTableIsStrict` 會擋）。需要 Go 步驟或關外鍵檢查重建資料表的 migration，在 `store/strict.go` 的 `migrationHooks` 以檔名（不含編號）登記；關外鍵檢查的 migration 提交前必須通過 `foreign_key_check`。
 2. 設定與匯出格式：每份匯出帶 `schemaVersion`；未知欄位保留不丟（34.3）。
 3. 從 1Panel 匯入（票 091）：唯讀讀取 1Panel 的 SQLite 與檔案，不寫回；對應表 `原 ID → 新 ID → 現場資源` 持久化。
 4. 從 infra-manager 匯入（票 063）：Token 明文以雜湊保存查驗值，保留 `token_value` 的辨識規則所需資訊。

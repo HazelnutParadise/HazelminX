@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"time"
 
@@ -330,12 +331,21 @@ func (s *Store) Prune(ctx context.Context) error {
 	return err
 }
 
-// RunPruner prunes every interval until ctx ends.
-func (s *Store) RunPruner(ctx context.Context, every time.Duration) {
+// RunPruner prunes every interval until ctx ends. after runs once each
+// round, after the prune; Core passes the store's upkeep (PRAGMA optimize and
+// incremental_vacuum, which hands the pruned pages back to the file system).
+func (s *Store) RunPruner(ctx context.Context, every time.Duration, after ...func(context.Context) error) {
 	t := time.NewTicker(every)
 	defer t.Stop()
 	for {
-		_ = s.Prune(ctx)
+		if err := s.Prune(ctx); err != nil && ctx.Err() == nil {
+			slog.Warn("hostmetrics: prune", "error", err)
+		}
+		for _, f := range after {
+			if err := f(ctx); err != nil && ctx.Err() == nil {
+				slog.Warn("hostmetrics: after prune", "error", err)
+			}
+		}
 		select {
 		case <-ctx.Done():
 			return

@@ -300,3 +300,29 @@ func TestPruneKeepsRetention(t *testing.T) {
 		t.Fatalf("rollups after 90 days %+v", p)
 	}
 }
+
+// RunPruner runs the store upkeep after each prune round.
+func TestRunPrunerRunsUpkeepAfterPrune(t *testing.T) {
+	db := openDB(t)
+	st := NewStore(db, nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	called := make(chan struct{}, 1)
+	done := make(chan struct{})
+	go func() {
+		st.RunPruner(ctx, time.Hour, func(context.Context) error {
+			select {
+			case called <- struct{}{}:
+			default:
+			}
+			return nil
+		})
+		close(done)
+	}()
+	select {
+	case <-called:
+	case <-time.After(5 * time.Second):
+		t.Fatal("upkeep not run after the first prune")
+	}
+	cancel()
+	<-done
+}
