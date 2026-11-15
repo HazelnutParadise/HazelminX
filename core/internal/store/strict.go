@@ -48,8 +48,9 @@ var strictAccepts = map[string][]string{
 }
 
 type strictTable struct {
-	name string
-	sql  string
+	name    string
+	sql     string
+	hasRows bool
 }
 
 // rebuildStrict rebuilds every non-STRICT table as STRICT following steps 3-9
@@ -74,7 +75,7 @@ func rebuildStrict(ctx context.Context, tx *sql.Tx) error {
 	var mismatches []string
 	cols := map[string][]string{}
 	for _, t := range tables {
-		names, bad, err := checkStrictFit(ctx, tx, t.name)
+		names, bad, err := checkStrictFit(ctx, tx, t.name, t.hasRows)
 		if err != nil {
 			return err
 		}
@@ -147,12 +148,21 @@ func nonStrictTables(ctx context.Context, tx *sql.Tx) ([]strictTable, error) {
 		}
 		out = append(out, t)
 	}
-	return out, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	rows.Close()
+	for i := range out {
+		if err := tx.QueryRowContext(ctx, `SELECT EXISTS (SELECT 1 FROM `+quoteIdent(out[i].name)+`)`).Scan(&out[i].hasRows); err != nil {
+			return nil, err
+		}
+	}
+	return out, nil
 }
 
 // checkStrictFit returns the table's columns and one line per column holding
 // values a STRICT table would convert or refuse.
-func checkStrictFit(ctx context.Context, tx *sql.Tx, table string) ([]string, []string, error) {
+func checkStrictFit(ctx context.Context, tx *sql.Tx, table string, hasRows bool) ([]string, []string, error) {
 	rows, err := tx.QueryContext(ctx, `SELECT name, type, hidden FROM pragma_table_xinfo(?) ORDER BY cid`, table)
 	if err != nil {
 		return nil, nil, err
@@ -185,7 +195,7 @@ func checkStrictFit(ctx context.Context, tx *sql.Tx, table string) ([]string, []
 			bad = append(bad, fmt.Sprintf("%s.%s has type %q, which a STRICT table does not allow", table, c.name, c.typ))
 			continue
 		}
-		if accepts == nil {
+		if accepts == nil || !hasRows {
 			continue
 		}
 		q := fmt.Sprintf(`SELECT count(*), group_concat(DISTINCT typeof(%[1]s)) FROM %[2]s WHERE %[1]s IS NOT NULL AND typeof(%[1]s) NOT IN ('%[3]s')`,
@@ -252,6 +262,16 @@ func rebuildOne(ctx context.Context, tx *sql.Tx, t strictTable, cols []string) e
 		fmt.Sprintf(`INSERT INTO %s (%s) SELECT %s FROM %s`, quoteIdent(tmp), list, list, quoteIdent(t.name)), // step 5
 		`DROP TABLE ` + quoteIdent(t.name),                                              // step 6
 		fmt.Sprintf(`ALTER TABLE %s RENAME TO %s`, quoteIdent(tmp), quoteIdent(t.name)), // step 7
+	}
+	if !t.hasRows && !hasSeq {
+		// Nothing to copy: create the STRICT table under its own name. This
+		// skips the RENAME, which re-parses the whole schema and made every
+		// fresh database (all tables empty) about ten times slower to open.
+		direct, err := strictCreate(t, t.name)
+		if err != nil {
+			return err
+		}
+		steps = []string{`DROP TABLE ` + quoteIdent(t.name), direct}
 	}
 	steps = append(steps, extras...) // step 8
 	for _, s := range steps {
