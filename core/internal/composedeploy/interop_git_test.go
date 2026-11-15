@@ -61,8 +61,11 @@ func seed(t *testing.T, db *sql.DB, table string, fixed map[string]any) {
 			cols, vals = append(cols, name), append(vals, v)
 		} else if (notnull == 1 || pk == 1) && !dflt.Valid {
 			var v any = name + "-x"
-			if strings.Contains(strings.ToUpper(typ), "INT") {
+			switch up := strings.ToUpper(typ); {
+			case strings.Contains(up, "INT"):
 				v = 1
+			case up == "BLOB":
+				v = []byte(name + "-x")
 			}
 			cols, vals = append(cols, name), append(vals, v)
 		}
