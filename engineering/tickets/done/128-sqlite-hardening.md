@@ -22,14 +22,14 @@
 
 ## Acceptance criteria
 
-- [ ] 0019 之後每張資料表都是 STRICT；之後新增的表不是 STRICT 時測試會失敗。
-- [ ] 從 0018 升級時，每張表的資料、索引、外鍵、觸發器與 `AUTOINCREMENT` 序號都保留，有測試。
-- [ ] 舊資料有型別不符的值時，升級中止並指出表與欄，資料庫維持在 0018，有測試。
-- [ ] 型別錯誤的寫入被拒絕，有測試。
-- [ ] `journal_size_limit`、`auto_vacuum`、`synchronous` 在開啟後生效，有測試。
-- [ ] 既有的 NONE 資料庫開啟後轉成 INCREMENTAL，空間不夠時跳過並照常開啟，有測試。
-- [ ] 開啟時跑 `PRAGMA optimize=0x10002`，清理迴圈跑 `PRAGMA optimize` 與 `incremental_vacuum`。
-- [ ] `go test -race ./...`（`core/`）通過。
+- [x] 0019 之後每張資料表都是 STRICT；之後新增的表不是 STRICT 時測試會失敗。 — 證據：`TestEveryTableIsStrict`
+- [x] 從 0018 升級時，每張表的資料、索引、外鍵、觸發器與 `AUTOINCREMENT` 序號都保留，有測試。 — 證據：`TestMigration0019RebuildsEveryTableAsStrict`、`TestMigration0019KeepsCrossTableTriggers`
+- [x] 舊資料有型別不符的值時，升級中止並指出表與欄，資料庫維持在 0018，有測試。 — 證據：`TestMigration0019RefusesMismatchedValues`
+- [x] 型別錯誤的寫入被拒絕，有測試。 — 證據：`TestStrictRejectsWrongType`
+- [x] `journal_size_limit`、`auto_vacuum`、`synchronous` 在開啟後生效，有測試。 — 證據：`TestPragmasTakeEffect`
+- [x] 既有的 NONE 資料庫開啟後轉成 INCREMENTAL，空間不夠時跳過並照常開啟，有測試。 — 證據：`TestOpenConvertsAutoVacuum`、`TestOpenSkipsAutoVacuumWhenSpaceUnknown`
+- [x] 開啟時跑 `PRAGMA optimize=0x10002`，清理迴圈跑 `PRAGMA optimize` 與 `incremental_vacuum`。 — 證據：`Open`、`Store.Maintain`；`TestMaintainReturnsFreedPages`、`TestRunPrunerRunsUpkeepAfterPrune`
+- [x] `go test -race ./...`（`core/`）通過。 — 證據：本機 macOS 全部通過；PR #192 CI
 
 ## Delivery record
 

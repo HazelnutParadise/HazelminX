@@ -3206,7 +3206,7 @@
     },
     {
       "id": "128",
-      "file": "doing/128-sqlite-hardening.md",
+      "file": "128-sqlite-hardening.md",
       "title": "控制中心的資料庫拒收型別錯誤的值，檔案與日誌大小不會無限增加",
       "epic": "foundation",
       "milestone": "M1",
