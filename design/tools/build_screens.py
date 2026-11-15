@@ -4395,7 +4395,7 @@ def unit_config() -> str:
       {f("└ db/compose.yaml", True, "—", U.attr("diff", "由 deploy/compose.yaml 的 include 帶入，不能另外勾選", "include"), "shop-db · 以 db/ 解析相對路徑", ok=False)}
       {f("deploy/docker-compose.yml", False, "—", scan_dep, "舊檔名")}
       {f("deploy/monitoring.yml", True, "2", manual, "加上 node-exporter")}
-      <div style="padding:10px 14px 12px" class="wrap"><button type="button" class="btn sm">手動加入其他檔案</button><button type="button" class="btn sm">預覽合併結果</button><span class="note">平台的覆寫層永遠排在最後</span></div>""",
+      <div style="padding:10px 14px 12px" class="wrap"><button type="button" class="btn sm">手動加入其他檔案</button><button type="button" class="btn sm" data-tip="把勾選的檔案照順序疊起來，再加上平台的覆寫，顯示真正會部署的完整 compose">看最後會部署的內容</button></div>""",
       sub="掃描整個 repo 的 compose.yaml、compose.yml、docker-compose.yml、docker-compose.yaml 與對應的 override 檔；一定要指定主檔")
     prof = _fp("選用服務", f"""
       <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px">
