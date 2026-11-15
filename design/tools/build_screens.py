@@ -717,10 +717,10 @@ def work_center() -> str:
              [("預檢", "done", "3 秒", "空間足夠"), ("dump", "cur", "進行中", "此步不能取消"), ("傳輸", "todo", "還沒開始", "0.5／1.3 GiB"), ("校驗", "todo", "還沒開始", "sha256 + 還原測試")],
              "<span class='mono'>38 MB/s</span> · 剩 1 分 14 秒 · 不可中斷步驟：pg_dump",
              '<button type="button" class="btn sm" disabled aria-disabled="true" style="opacity:.6">此步不能取消</button><button type="button" class="btn sm">看日誌</button>', pct=39)}
-        {job("更新套件 openssl（安全性）", "hazel-jp-02 · 由 tim 手動觸發 03:38:50 · 最後心跳 03:41:18", U.status("warn", "狀態不明"),
-             [("預檢", "done", "7 秒", "通過"), ("批准", "done", "tim", "手動觸發"), ("執行", "wait", "狀態不明", "apt 進行到一半"), ("驗證", "todo", "還沒開始", "—")],
-             "最後心跳 03:41:18 · 重連後對帳 apt 狀態（政策：不自動重跑）",
-             '<button type="button" class="btn sm">查看主機</button><button type="button" class="btn sm">標記為需人工處理</button>', pulse=True)}
+        {job("更新套件 openssl（安全性）", "hazel-jp-02 · 由 tim 手動觸發 03:38:50 · 最後心跳 03:41:18", U.status("warn", "主機斷線 · 結果未知"),
+             [("預檢", "done", "7 秒", "通過"), ("批准", "done", "tim", "手動觸發"), ("執行", "wait", "斷線", "apt 執行到一半"), ("驗證", "todo", "還沒開始", "—")],
+             "jp-02 在 03:41 斷線 · 重新連上後自動檢查有沒有裝好，不會自己重跑",
+             '<button type="button" class="btn sm">查看主機</button><button type="button" class="btn sm">改成手動處理</button>', pulse=True)}
       </div>
     </section>"""
     waiting = f"""
