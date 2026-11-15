@@ -4406,8 +4406,8 @@ def unit_config() -> str:
       <div class="row hd"><span>服務</span><span>部署時</span><span class="c3">依據</span><span></span></div>
       <div class="row"><span class="mono">shop-api</span><span>{_seg(["無縫替換", "先停再起"], 0, "shop-api")}</span><span class="c3 note">健康檢查 /healthz</span><span></span></div>
       <div class="row"><span class="mono">shop-worker</span><span>{_seg(["無縫替換", "先停再起"], 0, "shop-worker")}</span><span class="c3 note">佇列消費者</span><span></span></div>
-      <div class="row"><span class="mono">shop-db</span><span>{U.status("warn", "先停再起 · 約 6 秒")}</span><span class="c3 note"><span class="mono">compose.yaml:23</span> 固定容器名稱</span><span></span></div>
-      <div class="row"><span class="mono">shop-redis</span><span>{U.status("warn", "先停再起 · 約 2 秒")}</span><span class="c3 note"><span class="mono">compose.yaml:31</span> 固定 Port 6379</span><span></span></div>""", sub="無縫替換：新版健康後才停舊版，不中斷。資料庫類只能先停再起，部署前需要批准")
+      <div class="row"><span class="mono">shop-db</span><span>{U.status("warn", "先停再起 · 約 6 秒")}</span><span class="c3 note"><span tabindex="0" data-tip="兩個 postgres 同時寫同一個資料目錄會損壞資料，所以一定要先停舊的">同一份資料只能一個程式寫</span></span><span></span></div>
+      <div class="row"><span class="mono">shop-redis</span><span>{U.status("warn", "先停再起 · 約 2 秒")}</span><span class="c3 note"><span tabindex="0" data-tip="新舊兩個容器不能同時佔用主機的 6379，所以要先停舊的"><span class="mono">compose.yaml:31</span> 佔用主機 Port 6379</span></span><span><button type="button" class="btn sm">改成只在內部連線</button></span></div>""", sub="無縫替換：新版健康後才停舊版，不中斷。資料庫類只能先停再起，部署前需要批准")
     build = _fp("建置", _grid(
         _fld("每次部署", _seg(["重新建置（推薦）", "沒變時沿用上次的映像"], 0, "建置")),
         _fld("快取", _cb("這次不用快取", False)),
