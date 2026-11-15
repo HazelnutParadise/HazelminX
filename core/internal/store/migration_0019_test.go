@@ -549,3 +549,45 @@ func TestMaintainReturnsFreedPages(t *testing.T) {
 		t.Fatalf("freelist_count %d after Maintain", free)
 	}
 }
+
+// A trigger on one table that writes another must not stop the rebuild:
+// RENAME re-checks every trigger, so a table it names must exist then.
+func TestMigration0019KeepsCrossTableTriggers(t *testing.T) {
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "core.db")
+	db := openAtVersion(t, path, 18)
+	if _, err := db.Exec(`CREATE TRIGGER test_user_audit AFTER INSERT ON users BEGIN
+		INSERT INTO audit_events (id, at, action, scope_kind, scope_id, result) VALUES ('ev-' || NEW.id, 't', 'user.create', 'global', '*', 'ok');
+	END`); err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
+	s, err := Open(ctx, path)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	defer s.Close()
+	seedRow(t, s.DB, "users", map[string]any{"id": "u1"})
+	var n int
+	s.DB.QueryRow(`SELECT count(*) FROM audit_events WHERE id = 'ev-u1'`).Scan(&n)
+	if n != 1 {
+		t.Fatal("cross-table trigger lost")
+	}
+}
+
+// When free space cannot be read, the conversion is skipped, not attempted.
+func TestOpenSkipsAutoVacuumWhenSpaceUnknown(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "core.db")
+	openAtVersion(t, path, 18).Close()
+	real := freeBytes
+	freeBytes = func(string) (int64, error) { return 0, errors.New("statfs failed") }
+	s, err := Open(context.Background(), path)
+	freeBytes = real
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	if got := pragmaInt(t, s.DB, "auto_vacuum"); got != 0 {
+		t.Fatalf("auto_vacuum %d", got)
+	}
+}
