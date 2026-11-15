@@ -4411,8 +4411,7 @@ def unit_config() -> str:
     build = _fp("建置", _grid(
         _fld("每次部署", _seg(["重新建置（推薦）", "沒變時沿用上次的映像"], 0, "建置")),
         _fld("快取", _cb("這次不用快取", False)),
-        _fld("建置時變數", _dd("build.env（3 個）"), "以 build args 提供，不會進到執行中的容器"),
-        _fld("Compose 專案名稱", '<span class="mono">shop-production-web</span>', "改單元名稱也不會變；儲存卷是 shop-production-web_uploads")))
+        _fld("建置時變數", _dd("build.env（3 個）"), "以 build args 提供，不會進到執行中的容器")))
     cfiles = _fp("掛進容器的檔案", f"""
       <div class="row hd"><span>檔案</span><span>掛到哪個容器的哪裡</span><span class="c3">來源</span><span></span></div>
       <div class="row"><span class="mono">nginx.conf</span><span class="mono">shop-api:/etc/nginx/nginx.conf</span><span class="c3">平台上傳 · v4</span><span>{U.actions(["rename", "more"])}</span></div>
