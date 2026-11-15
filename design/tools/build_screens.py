@@ -776,9 +776,8 @@ def github_source() -> str:
     <section class="panel" aria-labelledby="h-br">
       <div class="ph"><h2 id="h-br">hazelnut/report</h2><span class="sub">分支、路徑與觸發</span></div>
       <div style="padding: 12px 14px; display: flex; flex-direction: column; gap: 14px">
-        <div class="field"><label for="br">分支或標籤</label><div class="inp"><span class="mono">main</span><span class="note" style="margin-left:auto">最新 4d81a2c · 12 分鐘前</span></div><span class="help">之後每次推送到這個分支都會建立變更計畫；高風險變更先暫停等批准。</span></div>
-        <div class="field"><label for="path">建置方式</label><div class="inp"><span>Dockerfile（倉庫根目錄）</span>{U.status("ok", "已找到")}</div><span class="help">沒有 compose 檔，當成單一服務部署</span></div>
-        <div class="field"><label for="wd">工作目錄與 compose 檔</label><div class="inp"><span class="mono">./</span><span class="note" style="margin-left:auto">monorepo 時改成子目錄，例如 ./deploy</span></div><span class="help">下一步一定要指定主檔；repo 裡新舊檔名的 compose 檔都會列出</span></div></div>
+        {_fld("分支或標籤", _dd("main"), "最新 4d81a2c · 12 分鐘前")}
+        {_fld("工作目錄", _in("./", mono=True), "monorepo 改成子目錄，例如 ./deploy")}
         <div class="field"><label>觸發方式</label><div class="wrap"><label class="btn" style="gap:8px"><input type="radio" name="trig" aria-label="觸發方式" checked style="accent-color: var(--hazel)">Webhook（推送即部署）</label><label class="btn" style="gap:8px"><input type="radio" name="trig" aria-label="觸發方式" style="accent-color: var(--hazel)">定期檢查（每 5 分鐘）</label><label class="btn" style="gap:8px"><input type="radio" name="trig" aria-label="觸發方式" style="accent-color: var(--hazel)">只手動</label></div><span class="help">Webhook 會在 GitHub 上建立；沒有公開入口時自動改用定期檢查。</span></div>
         <div class="field"><label for="env">目標環境與主機</label><div class="wrap"><div class="inp" style="width:auto;min-width:160px"><span>production</span></div><div class="wrap" role="radiogroup" aria-label="目標主機"><button type="button" class="btn on" role="radio" aria-checked="true"><span class="mono">hazel-tw-01</span>{U.attr("storage", "/mnt/data 可用 412 GiB", "412G")}</button><button type="button" class="btn" role="radio" aria-checked="false" aria-disabled="true" style="opacity:.55"><span class="mono">hazel-jp-02</span>{U.attr("attention", "不可選：沒有回應、資料碟 93%", "", "warn")}</button></div></div></div>
       </div>
