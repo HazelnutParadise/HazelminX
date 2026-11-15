@@ -3665,7 +3665,7 @@ def _dd(val, inline=False):
 
 def _seg(opts, on=0, label="選項"):
     btns = "".join(f'<button type="button" class="btn{" on" if i == on else ""}" aria-pressed="{"true" if i == on else "false"}">{o}</button>' for i, o in enumerate(opts))
-    return f'<div class="range" role="group" aria-label="{label}" style="flex-wrap:wrap">{btns}</div>'
+    return f'<div class="range" role="group" aria-label="{label}" style="flex-wrap:wrap;width:max-content;max-width:100%">{btns}</div>'
 
 
 def _cb(label, on=True, note="", locked="", off=""):
@@ -4408,7 +4408,7 @@ def unit_config() -> str:
       <div class="row"><span class="mono">shop-db</span><span>{U.status("warn", "先停再起 · 約 6 秒")}</span><span class="c3 note"><span tabindex="0" data-tip="兩個 postgres 同時寫同一個資料目錄會損壞資料，所以一定要先停舊的">同一份資料只能一個程式寫</span></span><span></span></div>
       <div class="row"><span class="mono">shop-redis</span><span>{U.status("warn", "先停再起 · 約 2 秒")}</span><span class="c3 note"><span tabindex="0" data-tip="新舊兩個容器不能同時佔用主機的 6379，所以要先停舊的"><span class="mono">compose.yaml:31</span> 佔用主機 Port 6379</span></span><span><button type="button" class="btn sm">改成只在內部連線</button></span></div>""", sub="無縫替換：新版健康後才停舊版，不中斷。資料庫類只能先停再起，部署前需要批准")
     build = _fp("建置", _grid(
-        _fld("每次部署", _seg(["重新建置（推薦）", "沒變時沿用上次的映像"], 0, "建置")),
+        _fld("每次部署", _seg(["每次重建", "沒變就沿用"], 0, "建置")),
         _fld("快取", _cb("這次不用快取", False)),
         _fld("建置時變數", _dd("build.env（3 個）"), "以 build args 提供，不會進到執行中的容器")))
     cfiles = _fp("掛進容器的檔案", f"""
