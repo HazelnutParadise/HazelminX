@@ -76,6 +76,7 @@
 | 125 | 管理員可以在畫面上看主機清單、加入新主機，並改名、維護、輪替憑證、撤銷或不再管理主機 | 節點與 Agent | 005, 019 | [#145](https://github.com/HazelnutParadise/hazelminx/issues/145) |
 | 126 | 同一來源同時猜很多帳號時，被驗證的次數仍然受來源上限限制 | 身分與存取 | — | [#149](https://github.com/HazelnutParadise/hazelminx/issues/149) |
 | 127 | 管理員可以讓成員用公司帳號登入，本機登入與救援不受影響 | 身分與存取 | 014, 015, 011 | [#179](https://github.com/HazelnutParadise/hazelminx/issues/179) |
+| 128 | 控制中心的資料庫拒收型別錯誤的值，檔案與日誌大小不會無限增加 | 基礎建設 | — | [#191](https://github.com/HazelnutParadise/hazelminx/issues/191) |
 
 ## M2 容器、Compose 與 GitHub
 
