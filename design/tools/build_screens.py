@@ -4413,11 +4413,11 @@ def unit_config() -> str:
         _fld("快取", _cb("這次不用快取", False)),
         _fld("建置時變數", _dd("build.env（3 個）"), "以 build args 提供，不會進到執行中的容器"),
         _fld("Compose 專案名稱", '<span class="mono">shop-production-web</span>', "改單元名稱也不會變；儲存卷是 shop-production-web_uploads")))
-    cfiles = _fp("設定檔", f"""
-      <div class="row hd"><span>名稱（路徑）</span><span>掛到</span><span class="c3">版本</span><span></span></div>
-      <div class="row"><span class="mono">deploy/nginx.conf</span><span class="mono">shop-api:/etc/nginx/nginx.conf</span><span class="c3">v4 · 10/30</span><span>{U.actions(["rename", "more"])}</span></div>
-      <div class="row"><span class="mono">secrets/stripe.pem</span><span class="mono">secrets: stripe_key</span><span class="c3">機密庫</span><span>{U.actions(["rename", "more"])}</span></div>
-      <div style="padding:8px 14px 12px"><button type="button" class="btn sm">{U.icon("upload", 14)}上傳設定檔</button></div>""")
+    cfiles = _fp("掛進容器的檔案", f"""
+      <div class="row hd"><span>檔案</span><span>掛到哪個容器的哪裡</span><span class="c3">來源</span><span></span></div>
+      <div class="row"><span class="mono">nginx.conf</span><span class="mono">shop-api:/etc/nginx/nginx.conf</span><span class="c3">平台上傳 · v4</span><span>{U.actions(["rename", "more"])}</span></div>
+      <div class="row"><span class="mono">stripe.pem</span><span class="mono">shop-api:/run/secrets/stripe_key</span><span class="c3">機密庫</span><span>{U.actions(["rename", "more"])}</span></div>
+      <div style="padding:8px 14px 12px"><button type="button" class="btn sm">{U.icon("upload", 14)}上傳檔案</button></div>""", sub="不放進 repo 的設定檔與憑證，部署時掛進容器")
     main = head + files + f'<div class="cg">{prof}{build}</div>' + swap + cfiles + U.savebar("web 單元設定：3 處未儲存", "下次部署才會套用", "儲存", "儲存並部署")
     return U.shell("projects", main)
 
