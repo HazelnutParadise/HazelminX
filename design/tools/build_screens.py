@@ -4410,7 +4410,7 @@ def unit_config() -> str:
     build = _fp("建置", _grid(
         _fld("每次部署", _seg(["每次重建", "沒變就沿用"], 0, "建置")),
         _fld("快取", _cb("這次不用快取", False)),
-        _fld("建置時變數", _dd("build.env（3 個）"), "以 build args 提供，不會進到執行中的容器")))
+        _fld("建置時變數", '<div style="display:flex;flex-direction:column;gap:4px;font-size:13px"><span class="mono">NODE_VERSION=20</span><span class="mono">NPM_REGISTRY=https://npm.example.tw</span><span class="mono">GIT_SHA=<span class="note">自動帶入</span></span><a href="ProjectEnv.dc.html" style="color:var(--hazel);font-size:12px">編輯 →</a></div>', "只在建置映像時用，不會進到執行中的容器")))
     cfiles = _fp("掛進容器的檔案", f"""
       <div class="row hd"><span>檔案</span><span>掛到哪個容器的哪裡</span><span class="c3">來源</span><span></span></div>
       <div class="row"><span class="mono">nginx.conf</span><span class="mono">shop-api:/etc/nginx/nginx.conf</span><span class="c3">平台上傳 · v4</span><span>{U.actions(["rename", "more"])}</span></div>
