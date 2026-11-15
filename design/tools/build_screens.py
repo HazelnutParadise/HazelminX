@@ -4397,11 +4397,10 @@ def unit_config() -> str:
       {f("deploy/monitoring.yml", True, "2", manual, "加上 node-exporter")}
       <div style="padding:10px 14px 12px" class="wrap"><button type="button" class="btn sm">手動加入其他檔案</button><button type="button" class="btn sm">預覽合併結果</button><span class="note">平台的覆寫層永遠排在最後</span></div>""",
       sub="掃描整個 repo 的 compose.yaml、compose.yml、docker-compose.yml、docker-compose.yaml 與對應的 override 檔；一定要指定主檔")
-    prof = _fp("Profile", f"""
+    prof = _fp("選用服務", f"""
       <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px">
-        <div class="wrap">{_cb("預設（沒有 profile 的服務）", True, locked="沒有 profile 的服務一定會啟動")}{_cb("debug", False)}{_cb("metrics", True)}</div>
-        <div class="wrap">{U.status("info", "shop-debug 不會啟動 · profile debug 未啟用")}</div>
-      </div>""")
+        <div class="wrap">{_cb("debug · shop-debug", False)}{_cb("metrics · node-exporter", True)}</div>
+      </div>""", sub="compose 裡標了 profile 的服務，勾了才會啟動；其他服務一律啟動")
     swap = _fp("替換方式", f"""
       <div class="row hd"><span>服務</span><span>部署時</span><span class="c3">依據</span><span></span></div>
       <div class="row"><span class="mono">shop-api</span><span>{_seg(["無縫替換", "先停再起"], 0, "shop-api")}</span><span class="c3 note">健康檢查 /healthz</span><span></span></div>
