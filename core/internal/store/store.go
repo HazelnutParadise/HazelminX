@@ -10,10 +10,12 @@ package store
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
 	"embed"
 	"errors"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sort"
@@ -58,8 +60,7 @@ func Open(ctx context.Context, path string) (*Store, error) {
 	} else {
 		f.Close()
 	}
-	dsn := "file:" + path + "?_pragma=journal_mode(WAL)&_pragma=foreign_keys(ON)&_pragma=busy_timeout(5000)&_pragma=synchronous(FULL)"
-	db, err := sql.Open("sqlite", dsn)
+	db, err := sql.Open("sqlite", dsn(path))
 	if err != nil {
 		return nil, fmt.Errorf("store: open: %w", err)
 	}
@@ -73,11 +74,89 @@ func Open(ctx context.Context, path string) (*Store, error) {
 		db.Close()
 		return nil, err
 	}
+	s.convertAutoVacuum(ctx)
+	// SQLite's advice for a long-lived connection: a light optimize when it
+	// opens, then PRAGMA optimize periodically (Maintain).
+	if _, err := db.ExecContext(ctx, `PRAGMA optimize=0x10002`); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("store: optimize: %w", err)
+	}
 	if err := os.Chmod(path, 0o600); err != nil && !errors.Is(err, os.ErrNotExist) {
 		db.Close()
 		return nil, fmt.Errorf("store: chmod: %w", err)
 	}
 	return s, nil
+}
+
+// JournalSizeLimit caps the WAL file left on disk after a checkpoint
+// (ticket 128). Normal checkpoints keep the WAL near 4 MiB; only one large
+// transaction (a table rebuild, VACUUM, a big prune) grows it past this.
+const JournalSizeLimit = 64 << 20
+
+// dsn sets the connection pragmas. auto_vacuum comes first: it only takes
+// effect on a new file before anything has been written to it.
+func dsn(path string) string {
+	return "file:" + path + "?_pragma=auto_vacuum(INCREMENTAL)&_pragma=journal_mode(WAL)" +
+		"&_pragma=journal_size_limit(" + strconv.Itoa(JournalSizeLimit) + ")" +
+		"&_pragma=foreign_keys(ON)&_pragma=busy_timeout(5000)&_pragma=synchronous(FULL)"
+}
+
+// convertAutoVacuum moves a database created before ticket 128 to
+// incremental auto-vacuum. That takes one VACUUM, which rewrites the whole
+// file and needs about twice its size free; without the space it is skipped
+// and tried again on the next start. A failed VACUUM leaves the file as it was.
+func (s *Store) convertAutoVacuum(ctx context.Context) {
+	var mode int
+	if err := s.DB.QueryRowContext(ctx, `PRAGMA auto_vacuum`).Scan(&mode); err != nil {
+		slog.Warn("store: read auto_vacuum", "error", err)
+		return
+	}
+	if mode == autoVacuumIncremental {
+		return
+	}
+	var size int64
+	if err := s.DB.QueryRowContext(ctx, `SELECT page_count * page_size FROM pragma_page_count, pragma_page_size`).Scan(&size); err != nil {
+		slog.Warn("store: read database size", "error", err)
+		return
+	}
+	need := 2*size + JournalSizeLimit
+	if free, err := freeBytes(filepath.Dir(s.path)); err == nil && free < need {
+		slog.Warn("store: not enough free space to turn on incremental auto-vacuum; will retry on next start",
+			"freeBytes", free, "needBytes", need)
+		return
+	}
+	if _, err := s.DB.ExecContext(ctx, `PRAGMA auto_vacuum=INCREMENTAL`); err != nil {
+		slog.Warn("store: set auto_vacuum", "error", err)
+		return
+	}
+	if _, err := s.DB.ExecContext(ctx, `VACUUM`); err != nil {
+		slog.Warn("store: VACUUM to turn on incremental auto-vacuum failed; will retry on next start", "error", err)
+		return
+	}
+	slog.Info("store: incremental auto-vacuum turned on", "bytes", size)
+}
+
+const autoVacuumIncremental = 2
+
+// Maintain runs the periodic upkeep SQLite recommends for a long-lived
+// connection: PRAGMA optimize, then incremental_vacuum to hand pages freed by
+// deletes back to the file system. The host-metrics pruner calls it hourly.
+func (s *Store) Maintain(ctx context.Context) error {
+	if _, err := s.DB.ExecContext(ctx, `PRAGMA optimize`); err != nil {
+		return fmt.Errorf("store: optimize: %w", err)
+	}
+	// incremental_vacuum frees pages as it is stepped; read it to the end.
+	rows, err := s.DB.QueryContext(ctx, `PRAGMA incremental_vacuum`)
+	if err != nil {
+		return fmt.Errorf("store: incremental_vacuum: %w", err)
+	}
+	for rows.Next() {
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return fmt.Errorf("store: incremental_vacuum: %w", err)
+	}
+	return rows.Close()
 }
 
 // OpenExisting is Open for a data directory that is known to hold a database
@@ -225,22 +304,66 @@ func (s *Store) migrate(ctx context.Context) error {
 		if m.version <= cur {
 			continue
 		}
-		tx, err := s.DB.BeginTx(ctx, nil)
-		if err != nil {
-			return err
-		}
-		if _, err := tx.ExecContext(ctx, m.sql); err != nil {
-			tx.Rollback()
-			return fmt.Errorf("store: apply %s: %w", m.name, err)
-		}
-		if _, err := tx.ExecContext(ctx, `INSERT INTO schema_version(version, name, applied_at) VALUES(?, ?, ?)`,
-			m.version, m.name, time.Now().UTC().Format(time.RFC3339)); err != nil {
-			tx.Rollback()
-			return fmt.Errorf("store: record %s: %w", m.name, err)
-		}
-		if err := tx.Commit(); err != nil {
+		if err := s.apply(ctx, m); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// apply runs one migration in its own transaction on one pinned connection,
+// so a PRAGMA set for it cannot leak to or miss the connection that runs it.
+func (s *Store) apply(ctx context.Context, m migration) (err error) {
+	hook, hasHook := hookFor(m.name)
+	conn, err := s.DB.Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	if hook.foreignKeysOff {
+		// Steps 1 and 12 of SQLite's table rebuild: foreign_keys cannot change
+		// inside a transaction.
+		if _, err := conn.ExecContext(ctx, `PRAGMA foreign_keys=OFF`); err != nil {
+			return fmt.Errorf("store: %s: foreign keys off: %w", m.name, err)
+		}
+		defer func() {
+			if _, ferr := conn.ExecContext(context.WithoutCancel(ctx), `PRAGMA foreign_keys=ON`); ferr != nil {
+				// A connection left without foreign keys must not go back to the pool.
+				conn.Raw(func(any) error { return driver.ErrBadConn })
+				if err == nil {
+					err = fmt.Errorf("store: %s: foreign keys back on: %w", m.name, ferr)
+				}
+			}
+		}()
+		if _, err := conn.ExecContext(ctx, `PRAGMA legacy_alter_table=OFF`); err != nil {
+			return err
+		}
+	}
+	tx, err := conn.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err := tx.ExecContext(ctx, m.sql); err != nil {
+		return fmt.Errorf("store: apply %s: %w", m.name, err)
+	}
+	if hasHook {
+		if err := hook.run(ctx, tx); err != nil {
+			return fmt.Errorf("store: apply %s: %w", m.name, err)
+		}
+	}
+	if hook.foreignKeysOff {
+		bad, err := foreignKeyViolations(ctx, tx)
+		if err != nil {
+			return fmt.Errorf("store: %s: foreign_key_check: %w", m.name, err)
+		}
+		if len(bad) > 0 {
+			return fmt.Errorf("store: %s: foreign keys broken: %s", m.name, strings.Join(bad, "; "))
+		}
+	}
+	if _, err := tx.ExecContext(ctx, `INSERT INTO schema_version(version, name, applied_at) VALUES(?, ?, ?)`,
+		m.version, m.name, time.Now().UTC().Format(time.RFC3339)); err != nil {
+		return fmt.Errorf("store: record %s: %w", m.name, err)
+	}
+	return tx.Commit()
 }

@@ -120,7 +120,7 @@ func run(args []string) error {
 	// Host facts and metrics (ticket 020.1): agents report every 10 s;
 	// raw points are kept 48 hours and 5-minute rollups 90 days.
 	hostMetrics := hostmetrics.NewStore(st.DB, nil)
-	go hostMetrics.RunPruner(ctx, time.Hour)
+	go hostMetrics.RunPruner(ctx, time.Hour, st.Maintain)
 	// Storage inventory and usage (ticket 030.1).
 	hostStorage := hoststorage.NewStore(st.DB, nil)
 	hub := nodes.NewHub(nodes.HubOptions{PKI: pki, CoreVersion: api.Version,

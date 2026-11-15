@@ -31,8 +31,11 @@ func seedRow(t *testing.T, db *sql.DB, table string, fixed map[string]any) {
 		}
 		if (notnull == 1 || pk == 1) && !dflt.Valid {
 			var v any = name + "-x"
-			if strings.Contains(strings.ToUpper(typ), "INT") {
+			switch up := strings.ToUpper(typ); {
+			case strings.Contains(up, "INT"):
 				v = 1
+			case up == "BLOB":
+				v = []byte(name + "-x")
 			}
 			cols, vals = append(cols, name), append(vals, v)
 		}
@@ -79,7 +82,7 @@ func TestMigration0018KeepsUnitsFilesAndDeployments(t *testing.T) {
 		VALUES ('cu1','e1','web','shop-prod-web','upload','compose.yaml','n1','env:/run/docker.sock','u1','2026-11-14T00:00:00Z','2026-11-14T00:00:00Z',3)`); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := db.Exec(`INSERT INTO compose_unit_files (unit_id, path, content, size, sha256) VALUES ('cu1','compose.yaml','services: {}',12,'ab')`); err != nil {
+	if _, err := db.Exec(`INSERT INTO compose_unit_files (unit_id, path, content, size, sha256) VALUES ('cu1','compose.yaml',CAST('services: {}' AS BLOB),12,'ab')`); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := db.Exec(`INSERT INTO compose_deployments (id, unit_id, unit_version, compose_project, revision, manifest_digest, node_id, engine_env_id, job_id, state, created_by, started_at)
