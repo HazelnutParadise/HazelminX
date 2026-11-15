@@ -4403,11 +4403,11 @@ def unit_config() -> str:
         <div class="wrap">{U.status("info", "shop-debug 不會啟動 · profile debug 未啟用")}</div>
       </div>""")
     swap = _fp("替換方式", f"""
-      <div class="row hd"><span>服務</span><span>部署時</span><span class="c3">原因</span><span></span></div>
-      <div class="row"><span class="mono">shop-api</span><span>{U.status("ok", "無縫替換")}</span><span class="c3 note">經 Zentinel · 健康檢查 /healthz</span><span>{_seg(["自動", "先停再起"], 0, "shop-api")}</span></div>
-      <div class="row"><span class="mono">shop-worker</span><span>{U.status("ok", "無縫替換")}</span><span class="c3 note">佇列消費者 · 新舊同時消費可接受</span><span>{_seg(["自動", "先停再起"], 0, "shop-worker")}</span></div>
-      <div class="row"><span class="mono">shop-db</span><span>{U.status("warn", "先停再起 · 約 6 秒 · 需要批准")}</span><span class="c3"><span class="mono">compose.yaml:23</span> container_name · 單寫入資料</span><span></span></div>
-      <div class="row"><span class="mono">shop-redis</span><span>{U.status("warn", "先停再起 · 約 2 秒 · 需要批准")}</span><span class="c3"><span class="mono">compose.yaml:31</span> ports 6379:6379 · 單寫入資料</span><span></span></div>""")
+      <div class="row hd"><span>服務</span><span>部署時</span><span class="c3">依據</span><span></span></div>
+      <div class="row"><span class="mono">shop-api</span><span>{_seg(["無縫替換", "先停再起"], 0, "shop-api")}</span><span class="c3 note">健康檢查 /healthz</span><span></span></div>
+      <div class="row"><span class="mono">shop-worker</span><span>{_seg(["無縫替換", "先停再起"], 0, "shop-worker")}</span><span class="c3 note">佇列消費者</span><span></span></div>
+      <div class="row"><span class="mono">shop-db</span><span>{U.status("warn", "先停再起 · 約 6 秒")}</span><span class="c3 note"><span class="mono">compose.yaml:23</span> 固定容器名稱</span><span></span></div>
+      <div class="row"><span class="mono">shop-redis</span><span>{U.status("warn", "先停再起 · 約 2 秒")}</span><span class="c3 note"><span class="mono">compose.yaml:31</span> 固定 Port 6379</span><span></span></div>""", sub="無縫替換：新版健康後才停舊版，不中斷。資料庫類只能先停再起，部署前需要批准")
     build = _fp("建置", _grid(
         _fld("每次部署", _seg(["重新建置（推薦）", "沒變時沿用上次的映像"], 0, "建置")),
         _fld("快取", _cb("這次不用快取", False)),
