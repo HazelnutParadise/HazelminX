@@ -720,7 +720,7 @@ def work_center() -> str:
         {job("更新套件 openssl（安全性）", "hazel-jp-02 · 由 tim 手動觸發 03:38:50 · 最後心跳 03:41:18", U.status("warn", "主機斷線 · 結果未知"),
              [("預檢", "done", "7 秒", "通過"), ("批准", "done", "tim", "手動觸發"), ("執行", "wait", "斷線", "apt 執行到一半"), ("驗證", "todo", "還沒開始", "—")],
              "jp-02 在 03:41 斷線 · 重新連上後自動檢查有沒有裝好，不會自己重跑",
-             '<button type="button" class="btn sm">查看主機</button><button type="button" class="btn sm">改成手動處理</button>', pulse=True)}
+             '<button type="button" class="btn sm">查看主機</button><button type="button" class="btn sm" data-tip="不再等主機連回來自動檢查；這筆工作結束成「需人工處理」，你到主機上自己確認並修好，處理完再按「已處理」">停止等待，我自己處理</button>', pulse=True)}
       </div>
     </section>"""
     waiting = f"""
