@@ -4190,9 +4190,9 @@ def import_configure() -> str:
     head = _form_head([("專案與服務", "Projects.dc.html"), ("從 GitHub 匯入", "GitHubSource.dc.html")], "設定 hazelnut/report", '<a class="btn" href="GitHubSource.dc.html">上一步</a><a class="btn pri" href="ComposeCompat.dc.html">繼續：部署檢查</a>')
     stepper = f'<div class="panel" style="padding:12px 14px">{U.steps([("連接 GitHub", "done", "hazelnut"), ("選擇倉庫", "done", "hazelnut/report · main"), ("偵測與設定", "cur", "建置、變數、網址"), ("部署檢查", "todo", "預檢後才部署")])}</div>'
     detect = _fp("偵測結果", _grid(
-        _fld("建置方式", U.status("ok", "Dockerfile（沒有 compose，當成單一服務）")),
-        _fld("專案名稱", _in("report")), _fld("環境 · 上一步選的", '<span class="mono">production</span> <a href="GitHubSource.dc.html" class="note">改</a>'),
-        _fld("主機 · 上一步選的", '<span class="mono">hazel-tw-01 · Docker（root）</span> <a href="GitHubSource.dc.html" class="note">改</a>'),
+        _fld("建置方式", _dd("Dockerfile · 單一服務"), "偵測到 Dockerfile，沒有 compose 檔"),
+        _fld("專案名稱", _in("report")), _fld("環境", _dd("production")),
+        _fld("主機", _dd("hazel-tw-01 · Docker（root）")),
         _fld("服務 Port", _in("8080", mono=True, tail=U.status("ok", "Dockerfile EXPOSE 8080"))),
         _fld("健康檢查", _in("GET /healthz", mono=True))))
     envs = _fp("環境變數", _erows(["名稱", "值", "類型"], [
