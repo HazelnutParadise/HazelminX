@@ -78,8 +78,7 @@ func Open(ctx context.Context, path string) (*Store, error) {
 	// SQLite's advice for a long-lived connection: a light optimize when it
 	// opens, then PRAGMA optimize periodically (Maintain).
 	if _, err := db.ExecContext(ctx, `PRAGMA optimize=0x10002`); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("store: optimize: %w", err)
+		slog.Warn("store: optimize on open", "error", err)
 	}
 	if err := os.Chmod(path, 0o600); err != nil && !errors.Is(err, os.ErrNotExist) {
 		db.Close()
@@ -103,7 +102,7 @@ func dsn(path string) string {
 
 // convertAutoVacuum moves a database created before ticket 128 to
 // incremental auto-vacuum. That takes one VACUUM, which rewrites the whole
-// file and needs about twice its size free; without the space it is skipped
+// file and needs its size free in the temp directory and again next to it; without the space it is skipped
 // and tried again on the next start. A failed VACUUM leaves the file as it was.
 func (s *Store) convertAutoVacuum(ctx context.Context) {
 	var mode int
@@ -119,11 +118,22 @@ func (s *Store) convertAutoVacuum(ctx context.Context) {
 		slog.Warn("store: read database size", "error", err)
 		return
 	}
-	need := 2*size + JournalSizeLimit
-	if free, err := freeBytes(filepath.Dir(s.path)); err == nil && free < need {
-		slog.Warn("store: not enough free space to turn on incremental auto-vacuum; will retry on next start",
-			"freeBytes", free, "needBytes", need)
-		return
+	// VACUUM builds the new copy in a temporary file (SQLite's temp
+	// directory) and then writes it back through the WAL next to the database.
+	for _, need := range []struct {
+		dir   string
+		bytes int64
+	}{{filepath.Dir(s.path), size + JournalSizeLimit}, {os.TempDir(), size}} {
+		free, err := freeBytes(need.dir)
+		if err != nil {
+			slog.Warn("store: cannot read free space; incremental auto-vacuum stays off until a later start", "dir", need.dir, "error", err)
+			return
+		}
+		if free < need.bytes {
+			slog.Warn("store: not enough free space to turn on incremental auto-vacuum; will retry on next start",
+				"dir", need.dir, "freeBytes", free, "needBytes", need.bytes)
+			return
+		}
 	}
 	if _, err := s.DB.ExecContext(ctx, `PRAGMA auto_vacuum=INCREMENTAL`); err != nil {
 		slog.Warn("store: set auto_vacuum", "error", err)

@@ -17,7 +17,7 @@
 
 - **STRICT 重建**：migration 0019 依 SQLite 文件第 8 節的 12 步重建每張非 STRICT 表。關外鍵檢查必須在交易外，所以這個 migration 在固定的一條連線上關掉 `foreign_keys`、在交易裡重建、提交前跑 `foreign_key_check`，之後再打開。每張表照原本的 `CREATE TABLE` 文字加上 `STRICT`，索引與觸發器照原文重建，`AUTOINCREMENT` 的序號保留。複製前逐欄檢查每個值的實際型別：`INTEGER` 欄只接受整數、`REAL` 欄接受整數或實數、`TEXT` 欄只接受文字、`BLOB` 欄只接受位元組，都允許 NULL；有不符就中止並列出表、欄與筆數，不讓 SQLite 轉型。
 - **`journal_size_limit` = 64 MiB**：平常 WAL 每 1000 頁（約 4 MiB）就檢查點歸零重用，不會長大；只有一次很大的交易（這次重建、VACUUM、一次清掉很多主機指標）會把 WAL 撐到接近資料庫大小，之後也不會縮回。64 MiB 是平常用量的十幾倍，平常不會截斷，大交易之後在下一次檢查點把檔案縮回 64 MiB。
-- **`auto_vacuum=INCREMENTAL`**：新資料庫在建表前就設定。既有資料庫只能靠一次 `VACUUM` 轉換：開啟時發現還是 NONE，且資料目錄可用空間大於資料庫兩倍再加 64 MiB，就執行 `PRAGMA auto_vacuum=INCREMENTAL; VACUUM`；空間不夠就跳過、照常啟動並記一筆警告，下次開啟再試。`VACUUM` 失敗不會改壞資料庫（它本身是交易），同樣只記警告。
+- **`auto_vacuum=INCREMENTAL`**：新資料庫在建表前就設定。既有資料庫只能靠一次 `VACUUM` 轉換：開啟時發現還是 NONE，且暫存目錄有資料庫大小的可用空間、資料目錄有資料庫大小再加 64 MiB，就執行 `PRAGMA auto_vacuum=INCREMENTAL; VACUUM`；空間不夠或讀不到可用空間就跳過、照常啟動並記一筆警告，下次開啟再試。`VACUUM` 失敗不會改壞資料庫（它本身是交易），同樣只記警告。
 - **`PRAGMA optimize`**：控制中心只有一條長期連線，依 SQLite 文件對長期連線的建議，開啟時跑 `PRAGMA optimize=0x10002`，之後由每小時一次的主機指標清理迴圈接著跑 `PRAGMA optimize`。同一個迴圈在清理後跑 `PRAGMA incremental_vacuum`，把刪掉的頁還給檔案系統。
 
 ## Acceptance criteria

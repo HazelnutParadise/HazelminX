@@ -84,12 +84,50 @@ func rebuildStrict(ctx context.Context, tx *sql.Tx) error {
 	if len(mismatches) > 0 {
 		return fmt.Errorf("%w: %s", ErrStrictMismatch, strings.Join(mismatches, "; "))
 	}
+	// Every trigger is dropped first and recreated last: since SQLite 3.26
+	// RENAME re-checks every trigger, so a trigger on another table that
+	// names a table mid-rebuild would make the rename fail.
+	triggers, err := dropTriggers(ctx, tx)
+	if err != nil {
+		return err
+	}
 	for _, t := range tables {
 		if err := rebuildOne(ctx, tx, t, cols[t.name]); err != nil {
 			return fmt.Errorf("store: rebuild %s as STRICT: %w", t.name, err)
 		}
 	}
+	for _, sqlText := range triggers {
+		if _, err := tx.ExecContext(ctx, sqlText); err != nil {
+			return fmt.Errorf("store: recreate trigger: %s: %w", firstLine(sqlText), err)
+		}
+	}
 	return nil
+}
+
+func dropTriggers(ctx context.Context, tx *sql.Tx) ([]string, error) {
+	rows, err := tx.QueryContext(ctx, `SELECT name, sql FROM sqlite_schema WHERE type = 'trigger' ORDER BY name`)
+	if err != nil {
+		return nil, err
+	}
+	var names, sqls []string
+	for rows.Next() {
+		var n, s string
+		if err := rows.Scan(&n, &s); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		names, sqls = append(names, n), append(sqls, s)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	for _, n := range names {
+		if _, err := tx.ExecContext(ctx, `DROP TRIGGER `+quoteIdent(n)); err != nil {
+			return nil, err
+		}
+	}
+	return sqls, nil
 }
 
 func nonStrictTables(ctx context.Context, tx *sql.Tx) ([]strictTable, error) {
@@ -170,9 +208,9 @@ func rebuildOne(ctx context.Context, tx *sql.Tx, t strictTable, cols []string) e
 	if err != nil {
 		return err
 	}
-	// Step 3: remember the indexes and triggers that belong to the table.
+	// Step 3: remember the table's indexes (triggers are handled by the caller).
 	// Automatic indexes (sql IS NULL) come back from the constraints.
-	rows, err := tx.QueryContext(ctx, `SELECT sql FROM sqlite_schema WHERE tbl_name = ? AND type IN ('index', 'trigger') AND sql IS NOT NULL ORDER BY type, name`, t.name)
+	rows, err := tx.QueryContext(ctx, `SELECT sql FROM sqlite_schema WHERE tbl_name = ? AND type = 'index' AND sql IS NOT NULL ORDER BY type, name`, t.name)
 	if err != nil {
 		return err
 	}
