@@ -4201,7 +4201,7 @@ def import_configure() -> str:
         extra=f'<a class="btn sm" style="margin-left:auto" href="EnvUpload.dc.html">{U.icon("upload", 14)}上傳 env 檔</a>')
     domain = _fp("網址與 HTTPS", _grid(
         _fld("網址", _in("report.example.tw", mono=True)), _fld("HTTPS", _seg(["自動申請（推薦）", "先不要"], 0, "HTTPS")),
-        _fld("DNS 設定", f'<div class="banner" style="display:flex;flex-direction:column;gap:6px;align-items:flex-start">{U.status("warn", "還沒指向這台主機")}<span>到你的 DNS 服務新增一筆紀錄：</span><span class="mono">A　report　203.0.113.22</span><button type="button" class="btn sm">{U.icon("copy", 14)}複製</button></div>', "設定好後這裡會自動變綠，再申請憑證")))
+        _fld("DNS", f'<div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start">{U.status("warn", "還沒指向 tw-01")}<span class="wrap" style="flex-wrap:nowrap"><span class="mono">A　report　203.0.113.22</span><button type="button" class="ib" aria-label="複製紀錄">{U.icon("copy", 14)}</button></span><button type="button" class="btn sm">用 Cloudflare 帳號自動新增</button></div>', "example.tw 由已連接的 Cloudflare 帳號管理")))
     summary = _fp("部署會做的事", f'<div style="padding:12px 16px">{U.pipeline([("拉取", "todo", "main · 4d81a2c", ""), ("建置", "todo", "Dockerfile", "隔離建置"), ("啟動", "todo", "tw-01", "健康檢查"), ("網址", "todo", "report.example.tw", "Zentinel"), ("憑證", "todo", "DNS 指向後", "自動")])}<div class="note" style="margin-top:8px">之後 push 到 main 會自動部署（Webhook）· <a href="ProjectTriggers.dc.html">改觸發方式</a></div></div>' + _submit("繼續：部署檢查", "只建立，先不部署"))
     main = head + stepper + f'<div class="cg">{detect}{envs}</div>' + domain + summary
     return U.shell("projects", main)
