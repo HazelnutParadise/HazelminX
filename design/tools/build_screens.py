@@ -393,7 +393,17 @@ def project_list() -> str:
       {env("shop", "staging", U.tier("測試"), U.status("dng", "部署失敗"), "c91e0d7", "03:12", "lab-mini", "staging.shop.example.tw", "oooofooooooooofoooooffff", '<button type="button" class="btn sm">看日誌</button>' + more)}
       {env("wiki", "production", U.tier("正式"), U.status("warn", "主機沒有回應"), "7d02b4a", "1 天前", "jp-02", "wiki.example.tw", "oooooooooooooooooooooooo", dep + more)}
     </section>"""
-    return U.shell("projects", head + tiles + table)
+    pick = f"""
+    <section class="panel" aria-labelledby="h-newsrc">
+      <div class="ph"><h2 id="h-newsrc">新增專案 · 從哪裡來</h2><span class="sub">按「新增專案」後出現的對話框</span></div>
+      <div class="fleet choices">
+        {_choice("GitHub", "", ["選 repo 和分支", "push 後可自動部署"], "", href="GitHubSource.dc.html")}
+        {_choice("Compose 檔", "", ["貼上或上傳 compose.yaml", "不需要 Git"], "", href="ComposeEditor.dc.html")}
+        {_choice("映像", "", ["直接填映像名稱", "例如 nginx:1.27"], "", href="ContainerCreate.dc.html")}
+        {_choice("應用商店", "", ["從範本安裝", "WordPress、n8n 等"], "", href="AppStore.dc.html")}
+      </div>
+    </section>"""
+    return U.shell("projects", head + tiles + table + pick)
 
 
 def projects() -> str:
