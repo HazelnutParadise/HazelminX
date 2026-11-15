@@ -4195,9 +4195,11 @@ def import_configure() -> str:
         _fld("主機", _dd("hazel-tw-01 · Docker（root）")),
         _fld("服務 Port", _in("8080", mono=True, tail=U.status("ok", "Dockerfile EXPOSE 8080"))),
         _fld("健康檢查", _in("GET /healthz", mono=True))))
-    envs = _fp("環境變數", _erows(["名稱", "值", "類型"], [
-        ['<span class="mono">DATABASE_URL</span>', _in("postgres://report@shop-db:5432/report", mono=True), _dd("一般")],
-        ['<span class="mono">SMTP_PASSWORD</span>', _in("••••••••••", tail=U.icon("eye")), _dd("機密（存機密庫）")]], add="新增變數"),
+    def sec(name, on):
+        return f'<input type="checkbox"{" checked" if on else ""} aria-label="{name} 是機密">'
+    envs = _fp("環境變數", _erows(["名稱", "值", '<span tabindex="0" data-tip="勾選後值會加密存進機密庫，畫面上遮住，日誌裡也不會出現">機密</span>'], [
+        ['<span class="mono">DATABASE_URL</span>', _in("postgres://report@shop-db:5432/report", mono=True), sec("DATABASE_URL", False)],
+        ['<span class="mono">SMTP_PASSWORD</span>', _in("••••••••••", tail=U.icon("eye")), sec("SMTP_PASSWORD", True)]], add="新增變數"),
         extra=f'<a class="btn sm" style="margin-left:auto" href="EnvUpload.dc.html">{U.icon("upload", 14)}上傳 env 檔</a>')
     domain = _fp("網址與 HTTPS", _grid(
         _fld("網址", _in("report.example.tw", mono=True)), _fld("HTTPS", _seg(["自動申請（推薦）", "先不要"], 0, "HTTPS")),
