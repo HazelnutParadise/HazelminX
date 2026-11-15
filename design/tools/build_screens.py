@@ -4375,7 +4375,7 @@ def connection_panel() -> str:
 
 # ---------- 單元設定 ----------
 def unit_config() -> str:
-    head = _form_head([("專案與服務", "Projects.dc.html"), ("shop", "ProjectDetail.dc.html"), ("production", "ProjectDetail.dc.html")], "單元 web · 設定", '<a class="btn" href="ProjectDetail.dc.html">取消</a><button type="button" class="btn pri">儲存</button>')
+    head = _form_head([("專案與服務", "Projects.dc.html"), ("shop", "ProjectDetail.dc.html"), ("production", "ProjectDetail.dc.html")], "單元 web · 設定", '<span class="note" tabindex="0" data-tip="在主機上用 docker compose -p 這個名字操作；容器、網路、儲存卷都以它開頭">Compose 專案 <span class="mono">shop-production-web</span></span><button type="button" class="ib" aria-label="複製 Compose 專案名稱">' + U.icon("copy", 14) + '</button><a class="btn" href="ProjectDetail.dc.html">取消</a><button type="button" class="btn pri">儲存</button>')
     def f(path, on, order, src, note, ok=True, ok_tip="隨主檔一起載入，不能單獨取消"):
         box = (f'<input type="checkbox"{" checked" if on else ""} aria-label="使用 {path}">' if ok
                else (f'<span tabindex="0" data-tip="{ok_tip}"><input type="checkbox" class="lockck" checked aria-disabled="true" tabindex="-1" aria-label="{path}：{ok_tip}"></span>' if on
