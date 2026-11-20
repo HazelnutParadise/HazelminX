@@ -373,26 +373,30 @@ def node_detail() -> str:
 
 # ---------- 專案與服務 ----------
 def project_list() -> str:
-    """專案清單：一列一個環境，同專案的環境排在一起。專案一多（學 Railway／Coolify 的 project → environment），先挑再進去。"""
+    """專案清單：一列一個專案，環境是列裡的小標籤，點進專案再選環境。專案一多（學 Railway／Coolify 的 project → environment），先挑再進去。"""
     head = U.page_head("專案與服務", OBS, '<a class="btn pri" href="GitHubSource.dc.html">新增專案</a>')
     tiles = '<div class="tiles">' + "".join([
-        U.stat_tile("專案", "2", "· 3 環境", "正式 2 · 測試 1", None),
+        U.stat_tile("專案", "3", "· 13 環境", "PR 預覽 7", None),
         U.stat_tile("今日部署", "7", "", "成功 6 · 失敗 1", None, spark=[0, 1, 0, 2, 1, 0, 0, 1, 0, 1, 0, 1]),
         U.stat_tile("等待批准", "1", "", "shop production · #418", False),
         U.stat_tile("失敗中的環境", "1", "", "shop staging · migration", False),
     ]) + "</div>"
     more = f'<button type="button" class="ib" aria-label="更多動作">{U.icon("more")}</button>'
-    def env(proj, env_, tier, st, commit, when, node, domain, tl, acts):
-        return (f'<a class="row" href="ProjectDetail.dc.html"><span class="name"><span class="n">{proj}</span><span class="d">{env_}</span></span><span>{tier}</span><span>{st}</span>'
-                f'<span class="mono">{commit} <span class="note">{when}</span></span><span class="mono c3">{node}</span><span class="c6">{domain}</span><span class="c5">{U.state_timeline(tl)}</span><span class="wrap" style="justify-content:flex-end;flex-wrap:nowrap">{acts}</span></a>')
-    dep = '<button type="button" class="btn sm">部署</button>'
+    def chip(name, kind):
+        dot = {"ok": "var(--ok)", "warn": "var(--warn)", "dng": "var(--danger)"}[kind]
+        return (f'<span class="at" style="gap:6px"><i aria-hidden="true" style="width:8px;height:8px;border-radius:50%;background:{dot};display:inline-block"></i>'
+                f'<span class="mono">{name}</span></span>')
+    def proj(name, repo, envs, units, last, need):
+        return (f'<a class="row" href="ProjectDetail.dc.html"><span class="name"><span class="n">{name}</span><span class="d mono">{repo}</span></span>'
+                f'<span class="wrap">{"".join(chip(*e) for e in envs)}</span><span class="c3">{units}</span>'
+                f'<span class="mono c4">{last}</span><span>{need}</span><span>{more}</span></a>')
     table = f"""
     <section class="panel" aria-labelledby="h-plist" data-sort="0:asc">
-      <div class="ph"><h2 id="h-plist">環境 · 3</h2><div class="wrap" style="margin-left:auto"><label class="inp" style="min-width:220px"><span class="note">搜尋</span><input placeholder="專案、網域、commit" style="background:transparent;border:0;flex:1;min-width:0"></label><span class="chip on">全部 3</span><span class="chip">正式 2</span><span class="chip">測試 1</span><span class="chip">有問題 2</span></div></div>
-      <div class="row hd"><span>專案／環境</span><span>等級</span><span>狀態</span><span>最近部署</span><span class="c3">主機</span><span class="c6">入口</span><span class="c5">近 24 次部署</span><span></span></div>
-      {env("shop", "production", U.tier("正式"), U.status("warn", "待批准 #418"), "a3f9c1e", "02:57", "tw-01", "shop.example.tw", "oooooooofoooooooooooooro", '<button type="button" class="btn sm">檢視 #418</button>' + more)}
-      {env("shop", "staging", U.tier("測試"), U.status("dng", "部署失敗"), "c91e0d7", "03:12", "lab-mini", "staging.shop.example.tw", "oooofooooooooofoooooffff", '<button type="button" class="btn sm">看日誌</button>' + more)}
-      {env("wiki", "production", U.tier("正式"), U.status("warn", "主機沒有回應"), "7d02b4a", "1 天前", "jp-02", "wiki.example.tw", "oooooooooooooooooooooooo", dep + more)}
+      <div class="ph"><h2 id="h-plist">專案 · 3</h2><label class="inp" style="min-width:min(220px,100%);margin-left:auto"><span class="note">搜尋</span><input placeholder="專案、網域" style="background:transparent;border:0;flex:1;min-width:0" aria-label="搜尋專案"></label></div>
+      <div class="row hd"><span>專案</span><span>環境</span><span class="c3">單元</span><span class="c4">最近部署</span><span>要處理</span><span></span></div>
+      {proj("shop", "hazelnut/shop", [("production", "warn"), ("staging", "dng"), ("qa", "ok"), ("demo", "ok"), ("PR × 7", "ok")], "3", "a3f9c1e · 02:57", U.status("warn", "待批准 #418"))}
+      {proj("wiki", "hazelnut/wiki", [("production", "warn")], "1", "7d02b4a · 1 天前", U.status("warn", "主機沒有回應"))}
+      {proj("blog", "hazelnut/blog", [("production", "ok")], "1", "e81f0c3 · 3 天前", '<span class="note">—</span>')}
     </section>"""
     pick = f"""
     <section class="panel" aria-labelledby="h-newsrc">
