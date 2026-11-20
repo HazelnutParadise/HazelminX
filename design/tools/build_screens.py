@@ -1071,7 +1071,7 @@ def states() -> str:
         <p style="font-size:14px;font-weight:500">步驟 migrate 結束碼 1 · lab-mini · 03:12:40</p>
         <p class="note" style="color:var(--muted)">服務中版本：c0ffee1（自動回滾）· 影響範圍：staging.shop.example.tw</p>
         <p class="note"><span class="mono">migrate: relation "orders_v2" already exists (0004_orders.sql:12)</span></p>
-        <div class="wrap"><button type="button" class="btn pri sm" style="color:var(--hazelink)">看完整日誌</button><button type="button" class="btn sm">用 c0ffee1 重跑</button><button type="button" class="btn sm">複製診斷包</button></div>
+        <div class="wrap"><button type="button" class="btn pri sm" style="color:var(--hazelink)">看日誌</button><button type="button" class="btn sm" data-tip="用同一個 commit c91e0d7 再部署一次；資料庫狀態修好後再按">重試</button><button type="button" class="btn sm" data-tip="把錯誤、日誌、設定摘要整理成一段文字，貼給別人看">複製診斷</button></div>
       </article></div></section>"""
     partial = f"""
     <section class="chart" aria-label="部分結果範例"><div class="ph"><h2>部分結果</h2><span class="sub">能拿到的先顯示，缺的說清楚</span></div>
