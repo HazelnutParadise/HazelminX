@@ -432,7 +432,7 @@ def projects() -> str:
       <div class="ph"><h2 id="h-units">單元 · 3</h2></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(260px,100%),1fr));gap:12px;padding:12px 14px">
         {unit("web", "Compose", "hazel-tw-01", U.status("ok", "執行中"), "4 個服務", "a3f9c1e")}
-        {unit("worker", "Compose", "hazel-jp-02", U.status("warn", "主機沒有回應"), "2 個服務", "a3f9c1e")}
+        {unit("worker", "Compose", "hazel-jp-02", U.status("warn", "主機沒有回應"), "2 個服務", "a3f9c1e", href="UnitOffline.dc.html")}
         {unit("search", "K8s 模板", "lab-k3s · shop", U.status("ok", "3／3 就緒"), "3 個 Pod", "chart 1.4.2", href="UnitK8s.dc.html")}
       </div>
     </section>"""
@@ -555,6 +555,8 @@ def conn_panel(addr, port, public, pubs, refs) -> str:
     def rrow(k, src, val, st):
         return f'<div class="row"><span class="mono">{k}</span><span class="mono c3">{src}</span><span>{mono(val)}</span><span>{st}</span></div>'
     tip = "同專案的其他單元可以直接引用，不用另外設定；機密要先開放才引用得到"
+    pub_body = ('<div class="row hd"><span>變數</span><span>值</span><span class="c3">誰在用</span></div>' + "".join(prow(*r) for r in pubs)
+                if pubs else '<div style="padding:12px 14px" class="note">沒有提供變數</div>')
     ref_body = ('<div class="row hd"><span>變數</span><span class="c3">來自</span><span>解析結果</span><span>檢查</span></div>' + "".join(rrow(*r) for r in refs)
                 if refs else '<div style="padding:12px 14px" class="note">沒有引用別的單元</div>')
     return f"""
@@ -565,8 +567,7 @@ def conn_panel(addr, port, public, pubs, refs) -> str:
     <div class="cg">
     <section class="panel" aria-labelledby="h-pubv">
       <div class="ph"><h2 id="h-pubv"><span tabindex="0" data-tip="{tip}">提供的變數</span></h2></div>
-      <div class="row hd"><span>變數</span><span>值</span><span class="c3">誰在用</span></div>
-      {"".join(prow(*r) for r in pubs)}
+      {pub_body}
     </section>
     <section class="panel" aria-labelledby="h-refv">
       <div class="ph"><h2 id="h-refv">引用的變數</h2></div>
@@ -620,6 +621,41 @@ def unit_k8s() -> str:
                        ("SEARCH_ADMIN_TOKEN", "••••••••", "沒有人 · 未開放")],
                       [])
     main = head + strip + workloads + pods + conn + revs
+    return U.shell("projects", main)
+
+
+def unit_offline() -> str:
+    """主機沒有回應時的單元頁：顯示最後收到的狀態，能做的事只剩看主機或搬走。"""
+    head = _form_head([("專案與服務", "Projects.dc.html"), ("shop", "ProjectDetail.dc.html"), ("production", "ProjectDetail.dc.html")], "單元 worker",
+                      '<a class="btn" href="UnitConfig.dc.html">設定</a><span tabindex="0" data-tip="主機沒有回應，現在送不出去"><button type="button" class="btn pri" disabled aria-disabled="true">部署</button></span>' + U.actions(["more"]))
+    banner = (f'<div class="panel" style="padding:12px 14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center">'
+              f'{U.status("warn", "hazel-jp-02 沒有回應 · 48 秒")}<span class="note">下面是 03:41:18 最後收到的狀態</span>'
+              f'<span class="wrap" style="margin-left:auto"><a class="btn sm" href="NodeOffline.dc.html">看主機</a><a class="btn sm" href="UnitConfig.dc.html">改到其他主機</a></span></div>')
+    strip = (f'<div class="panel"><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr)); gap: 10px 16px; padding: 12px 14px; font-size: 13px">'
+             f'{kv("狀態", U.status("warn", "不明 · 上次執行中"))}{kv("主機", "hazel-jp-02 · Docker")}{kv("版本", "a3f9c1e · 02:57")}{kv("來源", "worker/compose.yaml")}</div></div>')
+    def svc(name, image, st, cpu, mem):
+        return (f'<div class="row" style="opacity:.7"><span class="n mono" tabindex="0" data-tip="{image}">{name}</span><span>{st}</span>'
+                f'<span class="c4 mono">{cpu}</span><span class="c4 mono">{mem}</span><span class="mono note">03:41</span></div>')
+    services = f"""
+    <section class="panel" aria-labelledby="h-osvc">
+      <div class="ph"><h2 id="h-osvc">服務 · 2</h2><span class="sub">上次觀測</span></div>
+      <div class="row hd"><span>服務</span><span>狀態</span><span class="c4">CPU</span><span class="c4">記憶體</span><span>時間</span></div>
+      {svc("shop-worker", "ghcr.io/hazelnut/shop-worker:a3f9c1e", U.status("none", "上次健康"), "12%", "380/1024M")}
+      {svc("shop-cron", "ghcr.io/hazelnut/shop-cron:a3f9c1e", U.status("none", "上次健康"), "2%", "64/256M")}
+    </section>"""
+    effect = f"""
+    <section class="panel" aria-labelledby="h-oeff">
+      <div class="ph"><h2 id="h-oeff">影響</h2></div>
+      <div class="row hd"><span>項目</span><span>現在</span></div>
+      <div class="row"><span>對外服務</span><span>{U.status("ok", "沒有 · worker 不對外")}</span></div>
+      <div class="row"><span>佇列</span><span>{U.status("warn", "orders 積了 214 筆")}</span></div>
+      <div class="row"><span>自動部署</span><span>{U.status("warn", "暫停，主機回來後補上")}</span></div>
+    </section>"""
+    conn = conn_panel("worker.production.shop.internal", "無", "",
+                      [],
+                      [("API_URL", "web", "http://web.production.shop.internal:8080", U.status("none", "無法檢查")),
+                       ("SEARCH_URL", "search", "http://search.production.shop.internal:9200", U.status("none", "無法檢查"))])
+    main = head + banner + strip + services + effect + conn
     return U.shell("projects", main)
 
 # ---------- 容器 ----------
@@ -5002,6 +5038,7 @@ SCREENS = {
     "UnitConfig": ("單元 web › 設定", unit_config, 1440, 1400),
     "UnitDetail": ("單元 web", unit_detail, 1440, 2400),
     "UnitK8s": ("單元 search（K8s 模板）", unit_k8s, 1440, 1800),
+    "UnitOffline": ("單元 worker（主機沒有回應）", unit_offline, 1440, 1400),
     "UserInvite": ("邀請同事", user_invite, 1440, 1100),
     "Setup": ("第一次啟動", setup, 1440, 900),
     "Updates": ("跨主機安全更新", updates, 1440, 800),
