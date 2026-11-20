@@ -105,7 +105,7 @@ def overview() -> str:
         U.Series("hazel-jp-02", CPU_JP, "var(--s2)", stale_from=23),
         U.Series("lab-mini", CPU_LAB, "var(--s3)"),
     ], HOURS, unit="%", vmax=100, markers=[(22, "a3f9c1e 部署")],
-        foot='100% = 該主機所有核心 · jp-02 的 <span class="mono">*</span> 為上次觀測（03:41:18） · <a href="#table">表格檢視</a>')
+        foot='100% = 該主機所有核心 · jp-02 的 <b class="star">*</b> 為上次觀測（03:41:18） · <a href="#table">表格檢視</a>')
     traffic = U.ts_card("今日請求 · 每小時", [
         U.Series("Cloudflare 邊緣", REQ_EDGE, "var(--s1)"),
         U.Series("Zentinel 來源站", REQ_ORIGIN, "var(--s2)"),
@@ -123,7 +123,7 @@ def overview() -> str:
         {U.node_card("lab-mini", "Debian 13 · Podman rootless · 4 核", U.status("info", "維護中"), 3, (1.1, 7.6), (38, 118), CPU_LAB[-12:], "5 秒前", (0, 2))}
       </div>      <div class="row hd"><span>其他主機 · 1</span><span>狀態</span><span>CPU</span><span>記憶體</span><span></span></div>
       <a class="row" href="Nodes.dc.html"><span class="name"><span class="n mono">old-nas</span><span class="d">Agent 0.0.9 · 協定 v0</span></span><span>{U.status("dng", "協定不相容")}</span><span class="mono">—</span><span class="mono">—</span><span class="acts"><span class="btn sm">升級 Agent</span></span></a>
-      <div class="note" style="padding: 0 14px 10px">* 上次觀測值，主機已過期 · 綠色段＝執行中的容器</div>
+      <div class="note" style="padding: 0 14px 10px"><b class="star">*</b> 上次觀測值，主機已過期 · 綠色段＝執行中的容器</div>
     </section>"""
 
     topo = U.topology([
@@ -689,14 +689,14 @@ def containers() -> str:
       {crow("ollama", "ollama/ollama:0.5.7", "tw-01", U.status("ok", "執行中 · 3 天"), 44.0, 2890, 8192, "0.2 / 0.4", 0, U.status("dng", "11434 對外"), gpu=(41, 13.1))}
       {crow("shop-api", "ghcr.io/hazelnut/shop-api:a3f9c1e", "tw-01", U.status("ok", "執行中 · 46 分"), 21.4, 812, 2048, "3.1 / 11.8", 0, "8080")}
       {crow("shop-worker", "ghcr.io/hazelnut/shop-worker:a3f9c1e", "tw-01", U.status("ok", "執行中 · 46 分"), 8.9, 410, 1024, "0.4 / 0.2", 0, "—")}
-      {crow("wiki-app", "ghcr.io/hazelnut/wiki:7d02b4a", "jp-02", U.status("warn", "過期 · 03:41"), 3.1, 356, 1024, "0.6 / 1.9*", 0, "3000")}
+      {crow("wiki-app", "ghcr.io/hazelnut/wiki:7d02b4a", "jp-02", U.status("warn", "過期 · 03:41"), 3.1, 356, 1024, '0.6 / 1.9<b class="star">*</b>', 0, "3000")}
       {crow("shop-db", "postgres:16.4", "tw-01", U.status("ok", "執行中 · 9 天"), 2.6, 1290, 4096, "0.3 / 0.5", 0, "5432 內部")}
       {crow("zentinel", "原生 systemd（非容器）", "tw-01", U.status("ok", "執行中 · 12 天"), 1.8, 94, 512, "11.9 / 12.1", 0, "80, 443")}
-      {crow("wiki-db", "postgres:16.4", "jp-02", U.status("warn", "過期 · 03:41"), 0.9, 540, 2048, "0.1 / 0.1*", 0, "5432 內部")}
+      {crow("wiki-db", "postgres:16.4", "jp-02", U.status("warn", "過期 · 03:41"), 0.9, 540, 2048, '0.1 / 0.1<b class="star">*</b>', 0, "5432 內部")}
       {crow("shop-redis", "redis:7.4", "tw-01", U.status("info", "重啟中 · 第 1 次"), 0.8, 62, 256, "—", 1, "6379 內部", drift="映像 redis:7.2 → 7.4（主機上手動改）")}
       <div class="row crow"><span class="name"><span class="n">dev-control-plane</span><span class="d">kindest/node:v1.31.0</span></span><span>{U.status("info", "由 dev 叢集管理")}</span><span class="c3">{U.attr("docker", "Docker（root）· hazel-tw-01", "tw-01")}</span><span class="c4">{U.meter(3.2, "3.2%")}</span><span class="c4">{U.meter(18, "0.7 / 4.0G")}</span><span class="c5 note">—</span><span class="mono c6">0.1 / 0.1</span><span class="mono c5 note">41235 → 6443</span><span class="wrap" style="justify-content:flex-end;flex-wrap:nowrap">{U.attr("lock", "由 kind 叢集 dev 管理，寫入動作停用")}<a class="ib" href="Kubernetes.dc.html" aria-label="到 Kubernetes 頁操作" data-tip="到 Kubernetes 頁操作">{U.icon("k8s")}</a></span></div>
       </div></div>
-      <div class="note" style="padding: 8px 14px; border-top: 1px solid var(--line)">* 上次觀測 · 原生 systemd 服務列在同一張表，讓「什麼在哪台、用哪個 Port」一眼看完</div>
+      <div class="note" style="padding: 8px 14px; border-top: 1px solid var(--line)"><b class="star">*</b> 上次觀測 · 原生 systemd 服務列在同一張表，讓「什麼在哪台、用哪個 Port」一眼看完</div>
     </section>"""
     hours12 = [f"{(16 + i) % 24:02d}" for i in range(12)]
     heat = f"""
@@ -709,7 +709,7 @@ def containers() -> str:
     <section class="panel" aria-labelledby="h-hot2">
       <div class="ph"><h2 id="h-hot2">最吃記憶體</h2><span class="sub">全部主機</span></div>
       {U.ranked([("shop-db", 1290, "1.29 GiB"), ("shop-api", 812, "812 MiB"), ("wiki-db", 540, "540 MiB*"), ("shop-worker", 410, "410 MiB"), ("wiki-app", 356, "356 MiB*"), ("zentinel", 94, "94 MiB")], vmax=1400)}
-      <div class="note" style="padding: 0 14px 10px">* 上次觀測（jp-02 過期）</div>
+      <div class="note" style="padding: 0 14px 10px"><b class="star">*</b> 上次觀測（jp-02 過期）</div>
     </section>"""
     cmap = U.hostmap([
         ("hazel-tw-01", [("shop-api", 21, "ok"), ("shop-worker", 9, "ok"), ("shop-db", 3, "ok"), ("shop-redis", 1, "bad"), ("wiki-media", 6, "ok"), ("ollama", 44, "ok"), ("zentinel", 2, "ok"), ("hazelminx-agent", 0, "ok"), ("backup-runner", 12, "ok"), ("mail-relay", 1, "ok")]),
@@ -1076,8 +1076,8 @@ def states() -> str:
     partial = f"""
     <section class="chart" aria-label="部分結果範例"><div class="ph"><h2>部分結果</h2><span class="sub">能拿到的先顯示，缺的說清楚</span></div>
       <div class="body" style="padding:0">
-        <div class="banner" style="border-radius:0;border-left:0;border-right:0;border-top:0">{U.status("warn", "1／3 主機沒有回應")}<span>hazel-jp-02 最後回報 03:41:18，以下數字不含它的最新值，標 <span class="mono">*</span> 者為上次觀測。</span><button type="button" class="btn sm" style="margin-left:auto">重新整理</button></div>
-        <div class="tiles" style="padding:12px 14px">{U.stat_tile("各主機 CPU", "32", "%*", "2 主機即時 + 1 上次觀測", None)}{U.stat_tile("資料完整度", "92.3", "%", "流量分析取樣 7.7%", False)}</div>
+        <div class="banner" style="border-radius:0;border-left:0;border-right:0;border-top:0">{U.status("warn", "1／3 主機沒有回應")}<span>hazel-jp-02 最後回報 03:41:18，以下數字不含它的最新值，標 <b class="star">*</b> 者為上次觀測。</span><button type="button" class="btn sm" style="margin-left:auto">重新整理</button></div>
+        <div class="tiles" style="padding:12px 14px">{U.stat_tile("各主機 CPU", "32", '%<b class="star">*</b>', "2 主機即時 + 1 上次觀測", None)}{U.stat_tile("資料完整度", "92.3", "%", "流量分析取樣 7.7%", False)}</div>
       </div></section>"""
     offline = f"""
     <section class="chart" aria-label="離線範例"><div class="ph"><h2>與控制中心失去連線</h2><span class="sub">保留上一次畫面並降低不透明度，不閃骨架</span></div>
