@@ -4510,12 +4510,12 @@ def updates() -> str:
 # ---------- 專案：部署單元 ----------
 def unit_config() -> str:
     head = _form_head([("專案與服務", "Projects.dc.html"), ("shop", "ProjectDetail.dc.html"), ("production", "ProjectDetail.dc.html")], "單元 web · 設定", '<span class="note" tabindex="0" data-tip="在主機上用 docker compose -p 這個名字操作；容器、網路、儲存卷都以它開頭">Compose 專案 <span class="mono">shop-production-web</span></span><button type="button" class="ib" aria-label="複製 Compose 專案名稱">' + U.icon("copy", 14) + '</button><a class="btn" href="ProjectDetail.dc.html">取消</a><button type="button" class="btn pri">儲存</button>')
-    def f(path, on, order, src, note, ok=True, ok_tip="隨主檔一起載入，不能單獨取消"):
+    def f(path, on, order, src, note, ok=True, ok_tip="隨主檔一起載入，不能單獨取消", acts=("more",)):
         box = (f'<input type="checkbox"{" checked" if on else ""} aria-label="使用 {path}">' if ok
                else (f'<span tabindex="0" data-tip="{ok_tip}"><input type="checkbox" class="lockck" checked aria-disabled="true" tabindex="-1" aria-label="{path}：{ok_tip}"></span>' if on
                      else f'<input type="checkbox" disabled aria-label="{path} 不能選">'))
         return (f'<div class="row"><span class="wrap" style="flex-wrap:nowrap">{box}<span class="mono">{path}</span></span>'
-                f'<span class="mono">{order}</span><span>{src}</span><span class="c3">{note}</span><span>{U.actions(["more"])}</span></div>')
+                f'<span class="mono">{order}</span><span>{src}</span><span class="c3">{note}</span><span>{U.actions(list(acts))}</span></div>')
     hint = U.status("info", "Compose 預設會用")
     scan_root = U.attr("folder", "掃描到 · 根目錄", "根目錄")
     scan_dep = U.attr("folder", "掃描到 · deploy/", "deploy/")
@@ -4528,7 +4528,7 @@ def unit_config() -> str:
       {f("deploy/compose.yaml", True, "1 主檔", scan_dep, hint + " 4 個服務")}
       {f("└ db/compose.yaml", True, "—", U.attr("diff", "由 deploy/compose.yaml 的 include 帶入，不能另外勾選", "include"), "shop-db · 以 db/ 解析相對路徑", ok=False)}
       {f("deploy/docker-compose.yml", False, "—", scan_dep, "舊檔名")}
-      {f("deploy/monitoring.yml", True, "2", manual, "加上 node-exporter")}
+      {f("deploy/monitoring.yml", True, "2", manual, "加上 node-exporter", acts=("trash",))}
       <div style="padding:10px 14px 12px" class="wrap"><button type="button" class="btn sm" data-tip="repo 裡沒被自動找到的 compose 檔，例如檔名不標準的，從這裡選進來">加入檔案</button><button type="button" class="btn sm" data-tip="把勾選的檔案照順序疊起來，再加上平台的覆寫，顯示真正會部署的完整 compose">預覽結果</button></div>""",
       sub="掃描整個 repo 的 compose.yaml、compose.yml、docker-compose.yml、docker-compose.yaml 與對應的 override 檔；一定要指定主檔")
     prof = _fp("選用服務", f"""
