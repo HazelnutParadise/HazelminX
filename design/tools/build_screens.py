@@ -720,7 +720,7 @@ def work_center() -> str:
         {job("更新套件 openssl（安全性）", "hazel-jp-02 · 由 tim 手動觸發 03:38:50 · 最後心跳 03:41:18", U.status("warn", "主機斷線 · 結果未知"),
              [("預檢", "done", "7 秒", "通過"), ("批准", "done", "tim", "手動觸發"), ("執行", "wait", "斷線", "apt 執行到一半"), ("驗證", "todo", "還沒開始", "—")],
              "jp-02 在 03:41 斷線 · 重新連上後自動檢查有沒有裝好，不會自己重跑",
-             '<button type="button" class="btn sm">查看主機</button><button type="button" class="btn sm" data-tip="不再等主機連回來自動檢查；這筆工作結束成「需人工處理」，你到主機上自己確認並修好，處理完再按「已處理」">停止等待，我自己處理</button>', pulse=True)}
+             '<button type="button" class="btn sm">查看主機</button><button type="button" class="btn sm" data-tip="不再等主機連回來自動檢查；這筆工作結束成「需人工處理」，你到主機上自己確認並修好，處理完再按「已處理」">手動處理</button>', pulse=True)}
       </div>
     </section>"""
     waiting = f"""
@@ -4213,7 +4213,7 @@ def import_configure() -> str:
         extra=f'<a class="btn sm" style="margin-left:auto" href="EnvUpload.dc.html">{U.icon("upload", 14)}上傳 env 檔</a>')
     domain = _fp("網址與 HTTPS", _grid(
         _fld("網址", _in("report.example.tw", mono=True)), _fld("HTTPS", _seg(["自動申請（推薦）", "先不要"], 0, "HTTPS")),
-        _fld("DNS", f'<div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start">{U.status("warn", "還沒指向 tw-01")}<span class="wrap" style="flex-wrap:nowrap"><span class="mono">A　report　203.0.113.22</span><button type="button" class="ib" aria-label="複製紀錄">{U.icon("copy", 14)}</button></span><button type="button" class="btn sm">用 Cloudflare 帳號自動新增</button></div>', "example.tw 由已連接的 Cloudflare 帳號管理")))
+        _fld("DNS", f'<div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start">{U.status("warn", "還沒指向 tw-01")}<span class="wrap" style="flex-wrap:nowrap"><span class="mono">A　report　203.0.113.22</span><button type="button" class="ib" aria-label="複製紀錄">{U.icon("copy", 14)}</button></span><button type="button" class="btn sm">自動新增</button></div>', "example.tw 由已連接的 Cloudflare 帳號管理")))
     summary = _fp("部署會做的事", f'<div style="padding:12px 16px">{U.pipeline([("拉取", "todo", "main · 4d81a2c", ""), ("建置", "todo", "Dockerfile", "隔離建置"), ("啟動", "todo", "tw-01", "健康檢查"), ("網址", "todo", "report.example.tw", "Zentinel"), ("憑證", "todo", "DNS 指向後", "自動")])}<div class="note" style="margin-top:8px">之後 push 到 main 會自動部署（Webhook）· <a href="ProjectTriggers.dc.html">改觸發方式</a></div></div>' + _submit("繼續：部署檢查", "只建立，先不部署"))
     main = head + stepper + f'<div class="cg">{detect}{envs}</div>' + domain + summary
     return U.shell("projects", main)
@@ -4395,7 +4395,7 @@ def unit_config() -> str:
       {f("└ db/compose.yaml", True, "—", U.attr("diff", "由 deploy/compose.yaml 的 include 帶入，不能另外勾選", "include"), "shop-db · 以 db/ 解析相對路徑", ok=False)}
       {f("deploy/docker-compose.yml", False, "—", scan_dep, "舊檔名")}
       {f("deploy/monitoring.yml", True, "2", manual, "加上 node-exporter")}
-      <div style="padding:10px 14px 12px" class="wrap"><button type="button" class="btn sm">手動加入其他檔案</button><button type="button" class="btn sm" data-tip="把勾選的檔案照順序疊起來，再加上平台的覆寫，顯示真正會部署的完整 compose">看最後會部署的內容</button></div>""",
+      <div style="padding:10px 14px 12px" class="wrap"><button type="button" class="btn sm">手動加入其他檔案</button><button type="button" class="btn sm" data-tip="把勾選的檔案照順序疊起來，再加上平台的覆寫，顯示真正會部署的完整 compose">預覽結果</button></div>""",
       sub="掃描整個 repo 的 compose.yaml、compose.yml、docker-compose.yml、docker-compose.yaml 與對應的 override 檔；一定要指定主檔")
     prof = _fp("選用服務", f"""
       <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px">
@@ -4406,7 +4406,7 @@ def unit_config() -> str:
       <div class="row"><span class="mono">shop-api</span><span>{_seg(["無縫替換", "先停再起"], 0, "shop-api")}</span><span class="c3 note">健康檢查 /healthz</span><span></span></div>
       <div class="row"><span class="mono">shop-worker</span><span>{_seg(["無縫替換", "先停再起"], 0, "shop-worker")}</span><span class="c3 note">佇列消費者</span><span></span></div>
       <div class="row"><span class="mono">shop-db</span><span>{U.status("warn", "先停再起 · 約 6 秒")}</span><span class="c3 note"><span tabindex="0" data-tip="兩個 postgres 同時寫同一個資料目錄會損壞資料，所以一定要先停舊的">同一份資料只能一個程式寫</span></span><span></span></div>
-      <div class="row"><span class="mono">shop-redis</span><span>{U.status("warn", "先停再起 · 約 2 秒")}</span><span class="c3 note"><span tabindex="0" data-tip="新舊兩個容器不能同時佔用主機的 6379，所以要先停舊的"><span class="mono">compose.yaml:31</span> 佔用主機 Port 6379</span></span><span><button type="button" class="btn sm">改成只在內部連線</button></span></div>""", sub="無縫替換：新版健康後才停舊版，不中斷。資料庫類只能先停再起，部署前需要批准")
+      <div class="row"><span class="mono">shop-redis</span><span>{U.status("warn", "先停再起 · 約 2 秒")}</span><span class="c3 note"><span tabindex="0" data-tip="新舊兩個容器不能同時佔用主機的 6379，所以要先停舊的"><span class="mono">compose.yaml:31</span> 佔用主機 Port 6379</span></span><span><button type="button" class="btn sm">改內部連線</button></span></div>""", sub="無縫替換：新版健康後才停舊版，不中斷。資料庫類只能先停再起，部署前需要批准")
     build = _fp("建置", _grid(
         _fld("每次部署", _seg(["每次重建", "沒變就沿用"], 0, "建置")),
         _fld("快取", _cb("這次不用快取", False)),
