@@ -423,8 +423,8 @@ def projects() -> str:
             + '<button type="button" class="tab" aria-label="新增環境">＋ 環境</button></span></div>'
             f'<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr)); gap: 10px 16px; padding: 12px 14px; font-size: 13px">'
             f'{kv("最近部署", "a3f9c1e · 02:57 · 成功")}{kv("入口", "shop.example.tw")}{kv("自動部署", "push 到 main")}{kv("待批准", PLAN_LINK)}</div></div>')
-    def unit(name, kind, target, st, svcs, ver):
-        return (f'<a class="ncard" href="UnitDetail.dc.html" style="text-decoration:none">'
+    def unit(name, kind, target, st, svcs, ver, href="UnitDetail.dc.html"):
+        return (f'<a class="ncard" href="{href}" style="text-decoration:none">'
                 f'<div class="nh"><span class="n mono" style="font-weight:600">{name}</span><span class="note">{kind}</span><span style="margin-left:auto">{st}</span></div>'
                 f'<div style="display:flex;flex-direction:column;gap:4px;font-size:13px"><span class="mono">{target}</span><span class="note">{svcs} · <span class="mono">{ver}</span></span></div></a>')
     units = f"""
@@ -433,7 +433,7 @@ def projects() -> str:
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(260px,100%),1fr));gap:12px;padding:12px 14px">
         {unit("web", "Compose", "hazel-tw-01", U.status("ok", "執行中"), "4 個服務", "a3f9c1e")}
         {unit("worker", "Compose", "hazel-jp-02", U.status("warn", "主機沒有回應"), "2 個服務", "a3f9c1e")}
-        {unit("search", "K8s 模板", "lab-k3s · shop", U.status("ok", "3／3 就緒"), "1 個服務", "chart 1.4.2")}
+        {unit("search", "K8s 模板", "lab-k3s · shop", U.status("ok", "3／3 就緒"), "3 個 Pod", "chart 1.4.2", href="UnitK8s.dc.html")}
       </div>
     </section>"""
     def dep(no, commit, unit_name, trig, st):
@@ -446,7 +446,38 @@ def projects() -> str:
       {dep(402, "88b1d02", "web", "手動 · tim", U.status("warn", "已回滾"))}
       {dep(401, "4e7a9c0", "web、worker", "Webhook", U.status("ok", "成功"))}
     </section>"""
-    main = head + tabs + units + recent
+    def pr(name, title, commit, st, age):
+        return f'<div class="row"><span class="mono">{name}</span><span>{title}</span><span class="mono c3">{commit}</span><span>{st}</span><span class="mono">{age}</span></div>'
+    pr_menu = _fp("PR 預覽 · 7", f"""
+      <div class="row hd"><span>環境</span><span>PR</span><span class="c3">commit</span><span>狀態</span><span>存活</span></div>
+      {pr("pr-433", "結帳頁改版", "e1c09a2", U.status("ok", "執行中"), "2 小時")}
+      {pr("pr-430", "會員點數", "7b2d4e1", U.status("ok", "執行中"), "1 天")}
+      {pr("pr-424", "升級 Node 22", "c4a8f30", U.status("dng", "部署失敗"), "3 天")}
+      {_pager("顯示 1–3 / 7", "")}""", sub="按「PR 預覽」展開 · PR 關閉後自動刪除")
+    new_env = _fp("新增環境", _grid(
+        _fld("名稱", _in("staging-2", mono=True)),
+        _fld("設定從哪裡複製", _dd("production")),
+        _fld("主機", _dd("lab-mini · Docker")),
+        _fld("資料", _cb("一併複製資料庫內容", False), "不勾就是空的資料庫")) + _submit("建立"))
+    new_unit = _fp("新增單元", f"""
+      <div class="fleet choices">
+        {_choice("Compose", "", ["repo 裡的 compose 檔"], "", on=True)}
+        {_choice("K8s 模板", "", ["Helm chart 或 YAML"], "")}
+        {_choice("映像", "", ["只有一個容器"], "")}
+      </div>""" + _grid(_fld("名稱", _in("api", mono=True)), _fld("compose 檔", _dd("deploy/compose.yaml")), _fld("主機", _dd("hazel-tw-01 · Docker"))) + _submit("建立"),
+        sub="加到目前的環境 production")
+    it = "padding:9px 12px;text-align:left;display:flex;gap:8px;align-items:center;width:100%"
+    more_menu = f"""
+    <section class="panel" aria-labelledby="h-pmore">
+      <div class="ph"><h2 id="h-pmore">「⋯」選單</h2></div>
+      <div style="padding:12px 14px"><div role="menu" aria-label="專案選單" style="width:min(240px,100%);border:1px solid var(--line);border-radius:8px;background:var(--raised);display:flex;flex-direction:column">
+        <button type="button" class="nv" role="menuitem" style="{it}">{U.icon("rename", 14)} 重新命名</button>
+        <a class="nv" role="menuitem" href="ProjectEnv.dc.html" style="{it}">{U.icon("api", 14)} 環境變數</a>
+        <a class="nv" role="menuitem" href="ProjectTriggers.dc.html" style="{it}">{U.icon("history", 14)} 自動部署</a>
+        <button type="button" class="nv" role="menuitem" style="{it};border-top:1px solid var(--line);color:var(--danger)">{U.icon("trash", 14)} 刪除專案</button>
+      </div></div>
+    </section>"""
+    main = head + tabs + units + recent + f'<div class="cg">{pr_menu}{more_menu}</div><div class="cg">{new_env}{new_unit}</div>'
     return U.shell("projects", main)
 
 
@@ -502,9 +533,94 @@ def unit_detail() -> str:
     rq_card = U.ts_card("shop-api · 請求／秒", rq, HOURS, unit="", fmt_val=lambda v: f"{v:.0f}", markers=[(22, "#403")], foot="來源：Zentinel 存取日誌 · 完整度 99.1%")
     er_card = U.ts_card("shop-api · 錯誤率（5xx）", er, HOURS, unit="%", vmax=2.5, fmt_val=lambda v: f"{v:.1f}%", markers=[(22, "#403")], foot="門檻 1% 告警 · 02:57 部署期間 1.9%，持續 4 分鐘")
     lat_card = U.ts_card("shop-api · 延遲", lat, HOURS, unit=" ms", wide=True, fmt_val=lambda v: f"{v:.0f}", foot="單位 ms · p50 與 p95 同一軸；p99 在表格檢視")
-    main = head + strip + services + f'<div class="cg">{rq_card}{er_card}</div>{lat_card}' + topo_panel + deploys
+    conn = conn_panel("web.production.shop.internal", "shop-api 8080", "shop.example.tw",
+                      [("API_URL", "http://web.production.shop.internal:8080", "worker")],
+                      [("SEARCH_URL", "search", "http://search.production.shop.internal:9200", U.status("ok", "連得到"))])
+    main = head + strip + services + f'<div class="cg">{rq_card}{er_card}</div>{lat_card}' + topo_panel + conn + deploys
     return U.shell("projects", main)
 
+
+
+def conn_panel(addr, port, public, pubs, refs) -> str:
+    """單元的連線、提供給別人的變數、引用別人的變數。文字只放值，說明放提示。"""
+    cp = f'<button type="button" class="ib" aria-label="複製">{U.icon("copy", 14)}</button>'
+    def mono(v):
+        return f'<span class="mono" style="overflow-wrap:anywhere;white-space:normal;min-width:0">{v}</span>'
+    addr_v = '<span class="wrap" style="flex-wrap:nowrap">' + mono(addr) + cp + '</span>'
+    pub_v = public or '<span class="note">未設定</span>'
+    info = ('<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:12px 20px;padding:12px 14px;font-size:13px">'
+            + kv("內部位址", addr_v) + kv("Port", mono(port)) + kv("對外網址", pub_v) + '</div>')
+    def prow(k, v, users):
+        return f'<div class="row"><span class="mono">{k}</span><span>{mono(v)}</span><span class="c3">{users}</span></div>'
+    def rrow(k, src, val, st):
+        return f'<div class="row"><span class="mono">{k}</span><span class="mono c3">{src}</span><span>{mono(val)}</span><span>{st}</span></div>'
+    tip = "同專案的其他單元可以直接引用，不用另外設定；機密要先開放才引用得到"
+    ref_body = ('<div class="row hd"><span>變數</span><span class="c3">來自</span><span>解析結果</span><span>檢查</span></div>' + "".join(rrow(*r) for r in refs)
+                if refs else '<div style="padding:12px 14px" class="note">沒有引用別的單元</div>')
+    return f"""
+    <section class="panel" aria-labelledby="h-conn">
+      <div class="ph"><h2 id="h-conn">連線</h2></div>
+      {info}
+    </section>
+    <div class="cg">
+    <section class="panel" aria-labelledby="h-pubv">
+      <div class="ph"><h2 id="h-pubv"><span tabindex="0" data-tip="{tip}">提供的變數</span></h2></div>
+      <div class="row hd"><span>變數</span><span>值</span><span class="c3">誰在用</span></div>
+      {"".join(prow(*r) for r in pubs)}
+    </section>
+    <section class="panel" aria-labelledby="h-refv">
+      <div class="ph"><h2 id="h-refv">引用的變數</h2></div>
+      {ref_body}
+    </section>
+    </div>"""
+
+
+def unit_k8s() -> str:
+    """K8s 模板單元（Helm chart）：工作負載、Pod、版本紀錄。"""
+    head = _form_head([("專案與服務", "Projects.dc.html"), ("shop", "ProjectDetail.dc.html"), ("production", "ProjectDetail.dc.html")], "單元 search",
+                      '<a class="btn" href="UnitConfig.dc.html">設定</a><button type="button" class="btn pri">部署</button>' + U.actions(["more"]))
+    strip = (f'<div class="panel"><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr)); gap: 10px 16px; padding: 12px 14px; font-size: 13px">'
+             f'{kv("狀態", U.status("ok", "3／3 就緒"))}{kv("叢集", "lab-k3s · shop")}{kv("版本", "chart 1.4.2 · 第 7 版")}{kv("來源", "charts/search")}</div></div>')
+    def wl(kind, name, ready, detail):
+        return f'<div class="row"><span class="note">{kind}</span><span class="mono">{name}</span><span>{ready}</span><span class="c3 mono">{detail}</span></div>'
+    workloads = f"""
+    <section class="panel" aria-labelledby="h-wl">
+      <div class="ph"><h2 id="h-wl">資源 · 4</h2><button type="button" class="btn sm" style="margin-left:auto">預覽結果</button></div>
+      <div class="row hd"><span>種類</span><span>名稱</span><span>狀態</span><span class="c3">內容</span></div>
+      {wl("Deployment", "search", U.status("ok", "3／3"), "opensearch:2.17.1")}
+      {wl("Service", "search", U.status("ok", "正常"), "9200、9300 · 僅內部")}
+      {wl("PVC", "search-data", U.status("ok", "已掛載"), "20 GiB · local-path")}
+      {wl("ConfigMap", "search-config", U.status("none", "—"), "3 個鍵")}
+    </section>"""
+    def pod(name, node, st, restarts, age, cpu, mem):
+        return (f'<div class="row"><span class="mono">{name}</span><span>{st}</span><span class="mono c3">{node}</span><span class="mono">{restarts}</span>'
+                f'<span class="c4">{U.meter(cpu, f"{cpu:.0f}%")}</span><span class="c4">{U.meter(mem, f"{mem:.0f}%")}</span><span class="mono">{age}</span>'
+                f'<span>{U.actions(["log", "term"])}</span></div>')
+    pods = f"""
+    <section class="panel" aria-labelledby="h-pods">
+      <div class="ph"><h2 id="h-pods">Pod · 3</h2></div>
+      <div class="row hd"><span>Pod</span><span>狀態</span><span class="c3">節點</span><span>重啟</span><span class="c4">CPU</span><span class="c4">記憶體</span><span>存活</span><span></span></div>
+      {pod("search-7d9f6c-4kq2x", "lab-k3s-1", U.status("ok", "執行中"), "0", "6 天", 34, 61)}
+      {pod("search-7d9f6c-9bz7m", "lab-k3s-2", U.status("ok", "執行中"), "0", "6 天", 29, 58)}
+      {pod("search-7d9f6c-tw3lp", "lab-k3s-2", U.status("ok", "執行中"), "1", "2 天", 31, 60)}
+    </section>"""
+    def rev(n, chart, trig, when, st, cur=False):
+        act = U.status("ok", "目前版本") if cur else '<button type="button" class="btn sm">回到這版</button>'
+        return f'<div class="row"><span class="mono">第 {n} 版</span><span class="mono">{chart}</span><span class="c3">{trig}</span><span class="mono">{when}</span><span class="wrap">{st}{act}</span></div>'
+    revs = f"""
+    <section class="panel" aria-labelledby="h-rev">
+      <div class="ph"><h2 id="h-rev">版本紀錄</h2><a class="more" href="WorkCenter.dc.html">全部 →</a></div>
+      <div class="row hd"><span>版本</span><span>chart</span><span class="c3">觸發</span><span>時間</span><span>結果</span></div>
+      {rev(7, "1.4.2", "Webhook", "11/14 10:20", U.status("ok", "成功"), cur=True)}
+      {rev(6, "1.4.1", "手動 · tim", "11/02 16:05", U.status("ok", "成功"))}
+      {rev(5, "1.4.0", "Webhook", "10/28 09:12", U.status("warn", "已回滾"))}
+    </section>"""
+    conn = conn_panel("search.production.shop.internal", "9200", "",
+                      [("SEARCH_URL", "http://search.production.shop.internal:9200", "web、worker"),
+                       ("SEARCH_ADMIN_TOKEN", "••••••••", "沒有人 · 未開放")],
+                      [])
+    main = head + strip + workloads + pods + conn + revs
+    return U.shell("projects", main)
 
 # ---------- 容器 ----------
 def containers() -> str:
@@ -4885,6 +5001,7 @@ SCREENS = {
     "EnvUpload": ("上傳 env 檔", env_upload, 1440, 1100),
     "UnitConfig": ("單元 web › 設定", unit_config, 1440, 1400),
     "UnitDetail": ("單元 web", unit_detail, 1440, 2400),
+    "UnitK8s": ("單元 search（K8s 模板）", unit_k8s, 1440, 1800),
     "UserInvite": ("邀請同事", user_invite, 1440, 1100),
     "Setup": ("第一次啟動", setup, 1440, 900),
     "Updates": ("跨主機安全更新", updates, 1440, 800),
