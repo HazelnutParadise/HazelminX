@@ -37,6 +37,7 @@ RING_LEGEND = [("color:var(--use)", "正常"), ("color:var(--warn)", "≥ 70%"),
 TL_LEGEND = [("color:var(--ok)", "成功"), ("color:var(--danger)", "失敗"), ("color:var(--warn)", "回滾"), ("color:var(--blue)", "進行中"), ("color:var(--q2)", "無資料")]
 ALERT_LEGEND = [("color:var(--ok)", "正常"), ("color:var(--danger)", "觸發"), ("color:var(--warn)", "靜音"), ("color:var(--q2)", "無資料")]
 PAUSE_LINK = '<a href="DeployCheck.dc.html">等批准 · 計畫 #418</a>'
+PLAN_LINK = '<a href="DeployCheck.dc.html">計畫 #418</a>'
 JOB_LEGEND = [("color:var(--ok)", "成功"), ("color:var(--danger)", "失敗"), ("color:var(--warn)", "略過"), ("color:var(--blue)", "執行中")]
 
 # ---------- 示例資料（假設） ----------
@@ -407,17 +408,55 @@ def project_list() -> str:
 
 
 def projects() -> str:
-    """專案詳細：麵包屑回專案清單，環境用分頁切換（同專案內），不再和其他專案混在同一排分頁。"""
+    """專案頁：專案 > 環境 > 單元（Compose、K8s 模板）。服務、圖表、部署歷史在單元頁。"""
     head = f"""
     <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px">
       <div class="name">{U.crumbs([("專案與服務", "Projects.dc.html")])}<h1>shop</h1></div>
       <span class="note mono">github.com/hazelnut/shop</span>
-      <div class="wrap" style="margin-left: auto"><a class="btn pri" href="DeployCheck.dc.html">檢視待批准 · 計畫 #418</a><button type="button" class="btn">重新部署目前版本</button><a class="btn" href="ProjectEnv.dc.html">環境變數</a><a class="btn" href="ProjectTriggers.dc.html">自動部署設定</a></div>
+      <div class="wrap" style="margin-left: auto"><button type="button" class="btn">新增單元</button><button type="button" class="btn pri">部署</button>{U.actions(["more"])}</div>
     </div>"""
-    tabs = ('<div class="panel"><div class="tabs" role="tablist"><span class="lbl">環境</span><button type="button" class="tab on" role="tab" aria-selected="true">production</button>'
-            '<button type="button" class="tab" role="tab" aria-selected="false">staging</button><button type="button" class="tab" role="tab" aria-selected="false">qa</button><button type="button" class="tab" role="tab" aria-selected="false">demo</button><button type="button" class="tab" role="tab" aria-selected="false">pr-412</button><button type="button" class="tab" role="tab" aria-selected="false">pr-415</button><button type="button" class="tab" role="tab" aria-selected="false">pr-418</button><button type="button" class="tab" role="tab" aria-selected="false">pr-421</button><button type="button" class="tab" role="tab" aria-selected="false">pr-424</button><button type="button" class="tab" role="tab" aria-selected="false">pr-430</button><button type="button" class="tab" role="tab" aria-selected="false">pr-433</button><button type="button" class="tab" role="tab" aria-selected="false">hotfix-1109</button><button type="button" class="tab" role="tab" aria-selected="false">load-test</button><button type="button" class="tab" role="tab" aria-selected="false">tim-sandbox</button><button type="button" class="tab" role="tab" aria-selected="false">ann-sandbox</button><span class="tabs-end"><button type="button" class="tab" aria-haspopup="listbox" aria-label="全部 15 個環境，開啟清單">全部 15 個' + U.icon("down", 14) + '</button><button type="button" class="tab" aria-label="新增環境">＋ 環境</button></span></div>'
+    def tab(name, on=False):
+        return f'<button type="button" class="tab{" on" if on else ""}" role="tab" aria-selected="{"true" if on else "false"}">{name}</button>'
+    tabs = ('<div class="panel"><div class="tabs" role="tablist"><span class="lbl">環境</span>'
+            + tab("production", True) + tab("staging") + tab("qa") + tab("demo")
+            + '<span class="tabs-end"><button type="button" class="tab" aria-haspopup="listbox">PR 預覽 · 7' + U.icon("down", 14) + '</button>'
+            + '<button type="button" class="tab" aria-label="新增環境">＋ 環境</button></span></div>'
             f'<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr)); gap: 10px 16px; padding: 12px 14px; font-size: 13px">'
-            f'{kv("來源", "github.com/hazelnut/shop · main")}{kv("最近部署", "a3f9c1e · 02:57 · 成功 · Webhook")}{kv("部署單元", "3 個 · 2 台主機 · 1 個叢集")}{kv("web 單元", "hazel-tw-01")}{kv("入口", "shop.example.tw · 憑證 11 天後到期")}{kv("自動部署", PAUSE_LINK)}</div>' + U.res_strip("HazelminX", "正式", "03:42:06", drift="shop-redis 映像 redis:7.2 → redis:7.4（主機上手動改）") + '</div>')
+            f'{kv("最近部署", "a3f9c1e · 02:57 · 成功")}{kv("入口", "shop.example.tw")}{kv("自動部署", "push 到 main")}{kv("待批准", PLAN_LINK)}</div></div>')
+    def unit(name, kind, target, st, svcs, ver):
+        return (f'<a class="ncard" href="UnitDetail.dc.html" style="text-decoration:none">'
+                f'<div class="nh"><span class="n mono" style="font-weight:600">{name}</span><span class="note">{kind}</span><span style="margin-left:auto">{st}</span></div>'
+                f'<div style="display:flex;flex-direction:column;gap:4px;font-size:13px"><span class="mono">{target}</span><span class="note">{svcs} · <span class="mono">{ver}</span></span></div></a>')
+    units = f"""
+    <section class="panel" aria-labelledby="h-units">
+      <div class="ph"><h2 id="h-units">單元 · 3</h2></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(260px,100%),1fr));gap:12px;padding:12px 14px">
+        {unit("web", "Compose", "hazel-tw-01", U.status("ok", "執行中"), "4 個服務", "a3f9c1e")}
+        {unit("worker", "Compose", "hazel-jp-02", U.status("warn", "主機沒有回應"), "2 個服務", "a3f9c1e")}
+        {unit("search", "K8s 模板", "lab-k3s · shop", U.status("ok", "3／3 就緒"), "1 個服務", "chart 1.4.2")}
+      </div>
+    </section>"""
+    def dep(no, commit, unit_name, trig, st):
+        return f'<div class="row"><span class="mono">#{no}</span><span class="mono">{commit}</span><span class="mono">{unit_name}</span><span class="c3">{trig}</span><span>{st}</span></div>'
+    recent = f"""
+    <section class="panel" aria-labelledby="h-rec">
+      <div class="ph"><h2 id="h-rec">最近部署</h2><a class="more" href="WorkCenter.dc.html">全部 →</a></div>
+      <div class="row hd"><span>部署</span><span>commit</span><span>單元</span><span class="c3">觸發</span><span>結果</span></div>
+      {dep(403, "a3f9c1e", "web、worker", "Webhook", U.status("ok", "成功"))}
+      {dep(402, "88b1d02", "web", "手動 · tim", U.status("warn", "已回滾"))}
+      {dep(401, "4e7a9c0", "web、worker", "Webhook", U.status("ok", "成功"))}
+    </section>"""
+    main = head + tabs + units + recent
+    return U.shell("projects", main)
+
+
+def unit_detail() -> str:
+    """單元頁：一個 Compose 單元的服務、指標、拓撲、部署歷史。"""
+    head = _form_head([("專案與服務", "Projects.dc.html"), ("shop", "ProjectDetail.dc.html"), ("production", "ProjectDetail.dc.html")], "單元 web",
+                      '<a class="btn" href="UnitConfig.dc.html">設定</a><button type="button" class="btn pri">部署</button>' + U.actions(["more"]))
+    strip = (f'<div class="panel"><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr)); gap: 10px 16px; padding: 12px 14px; font-size: 13px">'
+             f'{kv("狀態", U.status("ok", "執行中"))}{kv("主機", "hazel-tw-01 · Docker")}{kv("版本", "a3f9c1e · 02:57")}{kv("來源", "deploy/compose.yaml")}</div>'
+             + U.res_strip("HazelminX", "正式", "03:42:06", drift="shop-redis 映像 redis:7.2 → redis:7.4（主機上手動改）") + '</div>')
     svc_topo = U.topology([
         ("入口", [("dom", "shop.example.tw", "Zentinel · 憑證 11 天", "warn")]),
         ("服務", [("api", "shop-api", "8080 · 2 副本", "ok"), ("wrk", "shop-worker", "無對外 Port", "ok")]),
@@ -463,7 +502,7 @@ def projects() -> str:
     rq_card = U.ts_card("shop-api · 請求／秒", rq, HOURS, unit="", fmt_val=lambda v: f"{v:.0f}", markers=[(22, "#403")], foot="來源：Zentinel 存取日誌 · 完整度 99.1%")
     er_card = U.ts_card("shop-api · 錯誤率（5xx）", er, HOURS, unit="%", vmax=2.5, fmt_val=lambda v: f"{v:.1f}%", markers=[(22, "#403")], foot="門檻 1% 告警 · 02:57 部署期間 1.9%，持續 4 分鐘")
     lat_card = U.ts_card("shop-api · 延遲", lat, HOURS, unit=" ms", wide=True, fmt_val=lambda v: f"{v:.0f}", foot="單位 ms · p50 與 p95 同一軸；p99 在表格檢視")
-    main = head + tabs + units_panel() + connection_panel() + topo_panel + services + f'<div class="cg">{rq_card}{er_card}</div>{lat_card}' + deploys
+    main = head + strip + services + f'<div class="cg">{rq_card}{er_card}</div>{lat_card}' + topo_panel + deploys
     return U.shell("projects", main)
 
 
@@ -4317,63 +4356,6 @@ def updates() -> str:
 
 
 # ---------- 專案：部署單元 ----------
-def units_panel() -> str:
-    topo = U.topology([
-        ("對外", [("dom", "shop.example.tw", "Zentinel · HTTPS", "ok")]),
-        ("部署單元", [("web", "web", "Compose · tw-01 Docker", "ok"), ("wrk", "worker", "Compose · jp-02 Docker", "warn")]),
-        ("被引用", [("srch", "search", "Helm · lab-k3s / shop", "ok")]),
-    ], [("dom", "web", .8, ""), ("web", "srch", .5, ""), ("wrk", "srch", .3, ""), ("wrk", "web", .2, "dim")])
-    topo_m = U.flowlist([("shop.example.tw", "web", "對外"), ("web", "search", "SEARCH_URL"), ("worker", "search", "SEARCH_URL"), ("worker", "web", "API_URL")])
-    def u(name, kind, target, st, ver, swap, acts):
-        return (f'<div class="row"><span class="name"><span class="n mono">{name}</span><span class="d">{kind}</span></span><span>{st}</span><span class="mono c3">{target}</span>'
-                f'<span class="mono c4">{ver}</span><span>{swap}</span><span class="wrap" style="justify-content:flex-end;flex-wrap:nowrap">{acts}</span></div>')
-    cfg = '<a class="btn sm" href="UnitConfig.dc.html">設定</a>'
-    return f"""
-    <section class="panel" aria-labelledby="h-units">
-      <div class="ph"><h2 id="h-units">部署單元 · 3</h2><div class="wrap" style="margin-left:auto"><button type="button" class="btn sm">＋ 單元</button><button type="button" class="btn sm pri">部署全部</button></div></div>
-      <div style="padding:10px 14px 6px"><div class="ch-d">{topo}</div><div class="ch-m">{topo_m}</div></div>
-      <div class="row hd"><span>單元</span><span>狀態</span><span class="c3">部署到</span><span class="c4">版本</span><span>替換方式</span><span></span></div>
-      {u("web", "Compose · deploy/compose.yaml", "tw-01 · Docker（root）", U.status("ok", "執行中"), "a3f9c1e", U.status("ok", "無縫替換"), cfg)}
-      {u("worker", "Compose · worker/compose.yaml", "jp-02 · Docker（root）", U.status("warn", "主機沒有回應"), "a3f9c1e", U.status("ok", "無縫替換"), cfg)}
-      {u("search", "Helm · charts/search", "lab-k3s · namespace shop", U.status("ok", "3／3 就緒"), "chart 1.4.2", U.status("ok", "無縫替換"), cfg)}
-    </section>"""
-
-
-def connection_panel() -> str:
-    eye = f'<button type="button" class="ib" aria-label="複製">{U.icon("copy")}</button>'
-    def pub(k, v, share, refs):
-        return f'<div class="row"><span class="mono">{k}</span><span class="wr"><span class="mono" style="overflow-wrap:anywhere;white-space:normal">{v}</span></span><span class="c3">{refs}</span><span>{share}</span></div>'
-    def ref(k, expr, val, st):
-        return f'<div class="row"><span class="mono">{k}</span><span class="wr"><span class="mono" style="overflow-wrap:anywhere;white-space:normal">{expr}</span></span><span class="wr"><span class="mono" style="overflow-wrap:anywhere;white-space:normal">{val}</span></span><span>{st}</span></div>'
-    return f"""
-    <div class="lvl"><div class="lvl-h"><div class="panel"><div class="tabs" role="tablist"><span class="lbl">部署單元</span><button type="button" class="tab" role="tab" aria-selected="false">web</button><button type="button" class="tab" role="tab" aria-selected="false">worker</button><button type="button" class="tab on" role="tab" aria-selected="true">search</button></div></div></div><div class="lvl-b">
-    <section class="panel" aria-labelledby="h-conn">
-      <div class="ph"><h2 id="h-conn">連線</h2></div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:12px 20px;padding:12px 14px;font-size:13px">
-        {kv("內部位址", '<span class="wrap"><span class="mono" style="overflow-wrap:anywhere">search.production.shop.internal</span>' + eye + '</span><div style="margin-top:4px;font-size:12px;color:var(--muted)">其他服務用這個名字連 search。改名、搬主機都不會變</div>')}
-        {kv("容器內的 Port", '<span class="mono">http 9200 · transport 9300</span><div style="margin-top:4px;font-size:12px;color:var(--muted)">服務在容器裡聽的 Port。用內部位址連的時候接這個號碼</div>')}
-        {kv("宿主機 Port", '<span class="note">沒有開</span><div style="margin-top:4px;font-size:12px;color:var(--muted)">宿主機上連不到，只有內部位址連得到</div>')}
-        {kv("對外網址", '<span class="note">未設定</span>')}
-        {kv("從其他主機連入", "tw-01：私有網路 · jp-02：加密轉送，只開 9200")}
-      </div>
-    </section>
-    <section class="panel" aria-labelledby="h-vars">
-      <div class="ph"><h2 id="h-vars">變數</h2></div>
-      <div style="padding:8px 14px;font-size:12px;color:var(--muted)">同專案的其他服務可以直接引用這些變數，不用設定。只有機密要先勾「讓其他服務使用」</div>
-      <div class="row hd"><span>變數</span><span>值</span><span class="c3">誰在用</span><span></span></div>
-      {pub("SEARCH_URL", "http://${search.HZX_HOST}:${search.HZX_PORT_HTTP}", "", "web、worker")}
-      {pub("SEARCH_ADMIN_TOKEN", "••••••••（機密）", '<label class="wrap" style="flex-wrap:nowrap"><input type="checkbox" aria-label="讓同專案的其他服務使用 SEARCH_ADMIN_TOKEN">讓其他服務使用</label>', "沒有人")}
-    </section>
-    <section class="panel" aria-labelledby="h-refs">
-      <div class="ph"><h2 id="h-refs">被誰引用</h2></div>
-      <div class="row hd"><span>誰的哪個變數</span><span>寫法</span><span>解析結果</span><span>檢查</span></div>
-      {ref("web · SEARCH_URL", "${search.SEARCH_URL}", "http://search.production.shop.internal:9200", U.status("ok", "連得到"))}
-      {ref("worker · ADMIN_TOKEN", "${search.SEARCH_ADMIN_TOKEN}", "—", U.status("dng", "這是機密，search 沒有分享"))}
-    </section>
-    </div></div>"""
-
-
-# ---------- 單元設定 ----------
 def unit_config() -> str:
     head = _form_head([("專案與服務", "Projects.dc.html"), ("shop", "ProjectDetail.dc.html"), ("production", "ProjectDetail.dc.html")], "單元 web · 設定", '<span class="note" tabindex="0" data-tip="在主機上用 docker compose -p 這個名字操作；容器、網路、儲存卷都以它開頭">Compose 專案 <span class="mono">shop-production-web</span></span><button type="button" class="ib" aria-label="複製 Compose 專案名稱">' + U.icon("copy", 14) + '</button><a class="btn" href="ProjectDetail.dc.html">取消</a><button type="button" class="btn pri">儲存</button>')
     def f(path, on, order, src, note, ok=True, ok_tip="隨主檔一起載入，不能單獨取消"):
@@ -4902,6 +4884,7 @@ SCREENS = {
     "ProjectEnv": ("專案 shop › 環境變數（變數組）", env_groups_page, 1440, 1100),
     "EnvUpload": ("上傳 env 檔", env_upload, 1440, 1100),
     "UnitConfig": ("單元 web › 設定", unit_config, 1440, 1400),
+    "UnitDetail": ("單元 web", unit_detail, 1440, 2400),
     "UserInvite": ("邀請同事", user_invite, 1440, 1100),
     "Setup": ("第一次啟動", setup, 1440, 900),
     "Updates": ("跨主機安全更新", updates, 1440, 800),
