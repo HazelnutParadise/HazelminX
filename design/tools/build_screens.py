@@ -3465,7 +3465,7 @@ def app_install() -> str:
     def cv(item, orig, ours):
         return f'<div class="row"><span>{item}</span><span class="mono">{orig}</span><span class="mono">{ours}</span></div>'
     advanced = f"""
-    <section class="panel"><div class="ph"><h2>範本轉換</h2><span class="sub">只寫在平台的覆寫層，商店原始範本不改</span><div class="wrap" style="margin-left:auto"><span class="chip on">對照</span><span class="chip">編輯 compose 原始檔</span></div></div>
+    <section class="panel"><div class="ph"><h2>範本轉換</h2><span class="sub">只存在平台，商店原始範本不改</span><div class="wrap" style="margin-left:auto"><span class="chip on">對照</span><span class="chip">編輯 compose 原始檔</span></div></div>
       <div class="row hd"><span>項目</span><span>範本原本</span><span>平台調整</span></div>
       {cv("網路", "1panel-network（外部）", "nextcloud_default")}
       {cv("容器名稱", "${CONTAINER_NAME}", "nextcloud")}
@@ -3497,7 +3497,7 @@ def app_settings() -> str:
       {net("nextcloud_default", "bridge", "172.21.0.0/16", "nextcloud-db、nextcloud-redis（專用）", "應用自己的網路", False)}
       {net("hzx-ollama", "bridge", "172.24.0.0/16", "ollama", "Nextcloud Assistant 連 Ollama")}
       <div class="wrap" style="padding:10px 14px 12px"><span style="flex:1;min-width:min(220px,100%)">{_dd("加入網路：選擇或新建")}</span><button type="button" class="btn">加入</button></div>
-      <div class="wrap" style="padding:0 14px 12px">{U.status("info", "加入與移出不必重建容器")}<span tabindex="0" data-tip="平台用 docker network connect 立即生效，並寫進覆寫層，下次部署或更新也保留">{U.icon("info", 14)}</span></div>""")
+      <div class="wrap" style="padding:0 14px 12px">{U.status("info", "加入與移出不必重建容器")}<span tabindex="0" data-tip="立即生效，平台會記住，下次部署或更新也保留">{U.icon("info", 14)}</span></div>""")
     def mnt(inside, where, disk, size, kind):
         return (f'<div class="row"><span class="mono">{inside}</span><span class="name"><span class="n mono">{where}</span><span class="d">{kind}</span></span>'
                 f'<span>{disk}</span><span class="mono">{size}</span><span><button type="button" class="btn sm">改位置</button></span></div>')
@@ -4207,7 +4207,7 @@ def compose_editor() -> str:
     marks = {12: "dng", 14: "warn"}
     ed = "".join(f'<div class="ln{" " + marks[i] if i in marks else ""}"><span class="no">{i + 1}</span><span class="code">{l}</span></div>' for i, l in enumerate(lines))
     gitsrc = (f'<div class="banner" style="display:flex;flex-direction:column;gap:8px;align-items:flex-start">{U.status("info", "這個檔案在 GitHub 上")}'
-              f'<span>在這裡改不會寫回 repo。存的時候選一種：</span>{_seg(["存成平台覆寫層 · 之後 push 也保留", "開 PR 到 hazelnut/shop", "建立 commit 到新分支"], 0, "存到哪裡")}'
+              f'<span>在這裡改不會寫回 repo。存的時候選一種：</span>{_seg(["存在平台", "開 PR 到 hazelnut/shop", "建立 commit 到新分支"], 0, "存到哪裡")}'
               f'<span style="color:var(--muted);font-size:12.5px">和 repo 不一致時，專案頁會標示</span></div>')
     editor = f'<section class="panel" aria-label="編輯器">{gitsrc}<div class="editor mono">{ed}</div></section>'
     issues = _fp("檢查 · 1 高風險、1 警告", f"""
@@ -4582,7 +4582,7 @@ def env_groups_page(upload: bool = False) -> str:
       {g("web/app.env", 2, "蓋過 production/app.env 的同名變數")}
       {g("build.env", 3, "建置時", note=U.status("info", "建置時"))}
       <div class="ph"><span class="note">服務覆寫 · shop-api</span></div>
-      {g("（覆寫層 environment）", 1, "只給 shop-api")}
+      {g("（平台設定）", 1, "只給 shop-api")}
     </section>"""
     eye = f'<button type="button" class="ib" aria-label="顯示值">{U.icon("eye")}</button>'
     def v(k, val, secret=False):
@@ -4602,7 +4602,7 @@ def env_groups_page(upload: bool = False) -> str:
     </section>"""
     rename = _fp("改名 app.env → web.env 會影響", f"""
       <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">
-        {_chk("ok", "覆寫層 · worker 的 env_file", "一起改成 web.env", "自動更新")}
+        {_chk("ok", "平台設定 · worker 的 env_file", "一起改成 web.env", "自動更新")}
         {_chk("warn", "Git · deploy/compose.yaml:12  env_file: app.env", "平台改不到 Git；app.env 保留為別名，標「Git 仍使用舊名稱」", "保留別名")}
         <div class="wrap"><button type="button" class="btn pri sm">改名</button><button type="button" class="btn sm">取消</button></div>
       </div>""")
