@@ -1,0 +1,6354 @@
+{
+ "meta": {
+  "source": "1Panel-dev/1Panel",
+  "tag": "v2.4.1",
+  "commit": "f9f9169a4d8cba736b0761e828b3df574e242918",
+  "generator": "scripts/baseline/extract_1panel_routes.py"
+ },
+ "routes": [
+  {
+   "process": "core",
+   "file": "core/router/command.go",
+   "group": "commands",
+   "method": "POST",
+   "path": "/commands/list",
+   "handler": "baseApi.ListCommand"
+  },
+  {
+   "process": "core",
+   "file": "core/router/command.go",
+   "group": "commands",
+   "method": "POST",
+   "path": "/commands",
+   "handler": "baseApi.CreateCommand"
+  },
+  {
+   "process": "core",
+   "file": "core/router/command.go",
+   "group": "commands",
+   "method": "POST",
+   "path": "/commands/del",
+   "handler": "baseApi.DeleteCommand"
+  },
+  {
+   "process": "core",
+   "file": "core/router/command.go",
+   "group": "commands",
+   "method": "POST",
+   "path": "/commands/search",
+   "handler": "baseApi.SearchCommand"
+  },
+  {
+   "process": "core",
+   "file": "core/router/command.go",
+   "group": "commands",
+   "method": "POST",
+   "path": "/commands/tree",
+   "handler": "baseApi.SearchCommandTree"
+  },
+  {
+   "process": "core",
+   "file": "core/router/command.go",
+   "group": "commands",
+   "method": "POST",
+   "path": "/commands/update",
+   "handler": "baseApi.UpdateCommand"
+  },
+  {
+   "process": "core",
+   "file": "core/router/command.go",
+   "group": "commands",
+   "method": "POST",
+   "path": "/commands/export",
+   "handler": "baseApi.ExportCommands"
+  },
+  {
+   "process": "core",
+   "file": "core/router/command.go",
+   "group": "commands",
+   "method": "POST",
+   "path": "/commands/upload",
+   "handler": "baseApi.UploadCommandCsv"
+  },
+  {
+   "process": "core",
+   "file": "core/router/command.go",
+   "group": "commands",
+   "method": "POST",
+   "path": "/commands/import",
+   "handler": "baseApi.ImportCommands"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_backup.go",
+   "group": "backups",
+   "method": "GET",
+   "path": "/backups/client/:clientType",
+   "handler": "baseApi.LoadBackupClientInfo"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_backup.go",
+   "group": "backups",
+   "method": "POST",
+   "path": "/backups/refresh/token",
+   "handler": "baseApi.RefreshToken"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_backup.go",
+   "group": "backups",
+   "method": "POST",
+   "path": "/backups",
+   "handler": "baseApi.CreateBackup"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_backup.go",
+   "group": "backups",
+   "method": "POST",
+   "path": "/backups/del",
+   "handler": "baseApi.DeleteBackup"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_backup.go",
+   "group": "backups",
+   "method": "POST",
+   "path": "/backups/update",
+   "handler": "baseApi.UpdateBackup"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_base.go",
+   "group": "auth",
+   "method": "GET",
+   "path": "/auth/captcha",
+   "handler": "baseApi.Captcha"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_base.go",
+   "group": "auth",
+   "method": "POST",
+   "path": "/auth/passkey/begin",
+   "handler": "baseApi.PasskeyBeginLogin"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_base.go",
+   "group": "auth",
+   "method": "POST",
+   "path": "/auth/passkey/finish",
+   "handler": "baseApi.PasskeyFinishLogin"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_base.go",
+   "group": "auth",
+   "method": "POST",
+   "path": "/auth/mfalogin",
+   "handler": "baseApi.MFALogin"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_base.go",
+   "group": "auth",
+   "method": "POST",
+   "path": "/auth/login",
+   "handler": "baseApi.Login"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_base.go",
+   "group": "auth",
+   "method": "POST",
+   "path": "/auth/logout",
+   "handler": "baseApi.LogOut"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_base.go",
+   "group": "auth",
+   "method": "GET",
+   "path": "/auth/setting",
+   "handler": "baseApi.GetLoginSetting"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_base.go",
+   "group": "auth",
+   "method": "GET",
+   "path": "/auth/welcome",
+   "handler": "baseApi.GetWelcomePage"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_base.go",
+   "group": "auth",
+   "method": "POST",
+   "path": "/auth/mfa",
+   "handler": "baseApi.LoadMFA"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_base.go",
+   "group": "auth",
+   "method": "POST",
+   "path": "/auth/mfa/bind",
+   "handler": "baseApi.MFABind"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_base.go",
+   "group": "auth",
+   "method": "POST",
+   "path": "/auth/mfa/close",
+   "handler": "baseApi.MFAClose"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_base.go",
+   "group": "auth",
+   "method": "POST",
+   "path": "/auth/passkey/register/begin",
+   "handler": "baseApi.PasskeyRegisterBegin"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_base.go",
+   "group": "auth",
+   "method": "POST",
+   "path": "/auth/passkey/register/finish",
+   "handler": "baseApi.PasskeyRegisterFinish"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_base.go",
+   "group": "auth",
+   "method": "GET",
+   "path": "/auth/passkey/list",
+   "handler": "baseApi.PasskeyList"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_base.go",
+   "group": "auth",
+   "method": "POST",
+   "path": "/auth/passkey/del",
+   "handler": "baseApi.PasskeyDelete"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_base.go",
+   "group": "auth",
+   "method": "POST",
+   "path": "/auth/api/generate",
+   "handler": "baseApi.GenerateApiKey"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_base.go",
+   "group": "auth",
+   "method": "POST",
+   "path": "/auth/api/update",
+   "handler": "baseApi.UpdateApiConfig"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_base.go",
+   "group": "auth",
+   "method": "POST",
+   "path": "/auth/api/keys/search",
+   "handler": "baseApi.SearchAPIKeys"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_base.go",
+   "group": "auth",
+   "method": "POST",
+   "path": "/auth/api/keys/create",
+   "handler": "baseApi.CreateAPIKey"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_base.go",
+   "group": "auth",
+   "method": "POST",
+   "path": "/auth/api/keys/update",
+   "handler": "baseApi.UpdateAPIKey"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_base.go",
+   "group": "auth",
+   "method": "POST",
+   "path": "/auth/api/keys/status",
+   "handler": "baseApi.SetAPIKeyStatus"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_base.go",
+   "group": "auth",
+   "method": "POST",
+   "path": "/auth/api/keys/revoke",
+   "handler": "baseApi.RevokeAPIKey"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_base.go",
+   "group": "auth",
+   "method": "GET",
+   "path": "/auth/current",
+   "handler": "baseApi.GetCurrentUser"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_base.go",
+   "group": "auth",
+   "method": "POST",
+   "path": "/auth/current/update",
+   "handler": "baseApi.UpdateCurrentUser"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_base.go",
+   "group": "auth",
+   "method": "POST",
+   "path": "/auth/expired/reset",
+   "handler": "baseApi.ResetPassword"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_group.go",
+   "group": "groups",
+   "method": "POST",
+   "path": "/groups",
+   "handler": "baseApi.CreateGroup"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_group.go",
+   "group": "groups",
+   "method": "POST",
+   "path": "/groups/del",
+   "handler": "baseApi.DeleteGroup"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_group.go",
+   "group": "groups",
+   "method": "POST",
+   "path": "/groups/update",
+   "handler": "baseApi.UpdateGroup"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_group.go",
+   "group": "groups",
+   "method": "POST",
+   "path": "/groups/search",
+   "handler": "baseApi.ListGroup"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_log.go",
+   "group": "logs",
+   "method": "POST",
+   "path": "/logs/login",
+   "handler": "baseApi.GetLoginLogs"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_log.go",
+   "group": "logs",
+   "method": "POST",
+   "path": "/logs/operation",
+   "handler": "baseApi.GetOperationLogs"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_log.go",
+   "group": "logs",
+   "method": "POST",
+   "path": "/logs/clean",
+   "handler": "baseApi.CleanLogs"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_runtime_diagnostics.go",
+   "group": "hosts/diagnostics",
+   "method": "GET",
+   "path": "/hosts/diagnostics/summary",
+   "handler": "baseApi.LoadRuntimeDiagnosticsSummary"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_runtime_diagnostics.go",
+   "group": "hosts/diagnostics",
+   "method": "GET",
+   "path": "/hosts/diagnostics/goroutines",
+   "handler": "baseApi.LoadRuntimeGoroutines"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_runtime_diagnostics.go",
+   "group": "hosts/diagnostics",
+   "method": "POST",
+   "path": "/hosts/diagnostics/profiles",
+   "handler": "baseApi.CreateRuntimeProfile"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_script_library.go",
+   "group": "script",
+   "method": "POST",
+   "path": "/script",
+   "handler": "baseApi.CreateScript"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_script_library.go",
+   "group": "script",
+   "method": "POST",
+   "path": "/script/search",
+   "handler": "baseApi.SearchScript"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_script_library.go",
+   "group": "script",
+   "method": "POST",
+   "path": "/script/del",
+   "handler": "baseApi.DeleteScript"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_script_library.go",
+   "group": "script",
+   "method": "POST",
+   "path": "/script/update",
+   "handler": "baseApi.UpdateScript"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_script_library.go",
+   "group": "script",
+   "method": "POST",
+   "path": "/script/sync",
+   "handler": "baseApi.SyncScript"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_script_library.go",
+   "group": "script",
+   "method": "GET",
+   "path": "/script/run",
+   "handler": "baseApi.RunScript"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/search/base",
+   "handler": "baseApi.GetSettingBaseInfo"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/search",
+   "handler": "baseApi.GetSettingInfo"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_setting.go",
+   "group": "settings",
+   "method": "GET",
+   "path": "/settings/file/download",
+   "handler": "baseApi.GetFileDownloadPreference"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/file/download",
+   "handler": "baseApi.UpdateFileDownloadPreference"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/terminal/search",
+   "handler": "baseApi.GetTerminalSettingInfo"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_setting.go",
+   "group": "settings",
+   "method": "GET",
+   "path": "/settings/search/available",
+   "handler": "baseApi.GetSystemAvailable"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/update",
+   "handler": "baseApi.UpdateSetting"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/terminal/update",
+   "handler": "baseApi.UpdateTerminalSetting"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_setting.go",
+   "group": "settings",
+   "method": "GET",
+   "path": "/settings/interface",
+   "handler": "baseApi.LoadInterfaceAddr"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/menu/update",
+   "handler": "baseApi.UpdateMenu"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/menu/default",
+   "handler": "baseApi.DefaultMenu"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/proxy/update",
+   "handler": "baseApi.UpdateProxy"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/bind/update",
+   "handler": "baseApi.UpdateBindInfo"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/port/update",
+   "handler": "baseApi.UpdatePort"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/ssl/update",
+   "handler": "baseApi.UpdateSSL"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_setting.go",
+   "group": "settings",
+   "method": "GET",
+   "path": "/settings/ssl/info",
+   "handler": "baseApi.LoadFromCert"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/ssl/download",
+   "handler": "baseApi.DownloadSSL"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/upgrade",
+   "handler": "baseApi.Upgrade"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/upgrade/notes",
+   "handler": "baseApi.GetNotesByVersion"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_setting.go",
+   "group": "settings",
+   "method": "GET",
+   "path": "/settings/upgrade/releases",
+   "handler": "baseApi.LoadRelease"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_setting.go",
+   "group": "settings",
+   "method": "GET",
+   "path": "/settings/upgrade",
+   "handler": "baseApi.GetUpgradeInfo"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/apps/store/update",
+   "handler": "baseApi.UpdateAppstoreConfig"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_setting.go",
+   "group": "settings",
+   "method": "GET",
+   "path": "/settings/apps/store/config",
+   "handler": "baseApi.GetAppstoreConfig"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_setting.go",
+   "group": "settings",
+   "method": "GET",
+   "path": "/settings/memo",
+   "handler": "baseApi.GetMemo"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/memo",
+   "handler": "baseApi.UpdateMemo"
+  },
+  {
+   "process": "core",
+   "file": "core/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/ssl/reload",
+   "handler": "baseApi.ReloadSSL"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/backup.go",
+   "group": "backups",
+   "method": "GET",
+   "path": "/backups/check/:name",
+   "handler": "baseApi.CheckBackupUsed"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/backup.go",
+   "group": "backups",
+   "method": "GET",
+   "path": "/backups/options",
+   "handler": "baseApi.LoadBackupOptions"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/backup.go",
+   "group": "backups",
+   "method": "POST",
+   "path": "/backups/search",
+   "handler": "baseApi.SearchBackup"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/backup.go",
+   "group": "backups",
+   "method": "GET",
+   "path": "/backups/local",
+   "handler": "baseApi.GetLocalDir"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/backup.go",
+   "group": "backups",
+   "method": "POST",
+   "path": "/backups/refresh/token",
+   "handler": "baseApi.RefreshToken"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/backup.go",
+   "group": "backups",
+   "method": "POST",
+   "path": "/backups/buckets",
+   "handler": "baseApi.ListBuckets"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/backup.go",
+   "group": "backups",
+   "method": "POST",
+   "path": "/backups",
+   "handler": "baseApi.CreateBackup"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/backup.go",
+   "group": "backups",
+   "method": "POST",
+   "path": "/backups/conn/check",
+   "handler": "baseApi.CheckBackup"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/backup.go",
+   "group": "backups",
+   "method": "POST",
+   "path": "/backups/del",
+   "handler": "baseApi.DeleteBackup"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/backup.go",
+   "group": "backups",
+   "method": "POST",
+   "path": "/backups/update",
+   "handler": "baseApi.UpdateBackup"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/backup.go",
+   "group": "backups",
+   "method": "POST",
+   "path": "/backups/backup",
+   "handler": "baseApi.Backup"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/backup.go",
+   "group": "backups",
+   "method": "POST",
+   "path": "/backups/recover",
+   "handler": "baseApi.Recover"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/backup.go",
+   "group": "backups",
+   "method": "POST",
+   "path": "/backups/upload",
+   "handler": "baseApi.UploadForRecover"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/backup.go",
+   "group": "backups",
+   "method": "POST",
+   "path": "/backups/recover/byupload",
+   "handler": "baseApi.RecoverByUpload"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/backup.go",
+   "group": "backups",
+   "method": "POST",
+   "path": "/backups/search/files",
+   "handler": "baseApi.LoadFilesFromBackup"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/backup.go",
+   "group": "backups",
+   "method": "POST",
+   "path": "/backups/record/search",
+   "handler": "baseApi.SearchBackupRecords"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/backup.go",
+   "group": "backups",
+   "method": "POST",
+   "path": "/backups/record/size",
+   "handler": "baseApi.LoadBackupRecordSize"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/backup.go",
+   "group": "backups",
+   "method": "POST",
+   "path": "/backups/record/search/bycronjob",
+   "handler": "baseApi.SearchBackupRecordsByCronjob"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/backup.go",
+   "group": "backups",
+   "method": "POST",
+   "path": "/backups/record/download",
+   "handler": "baseApi.DownloadRecord"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/backup.go",
+   "group": "backups",
+   "method": "POST",
+   "path": "/backups/record/del",
+   "handler": "baseApi.DeleteBackupRecord"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/backup.go",
+   "group": "backups",
+   "method": "POST",
+   "path": "/backups/record/description/update",
+   "handler": "baseApi.UpdateRecordDescription"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "GET",
+   "path": "/ai/benchmark/sources",
+   "handler": "baseApi.AIBenchmarkSources"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/ollama/close",
+   "handler": "baseApi.CloseOllamaModel"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/ollama/model",
+   "handler": "baseApi.CreateOllamaModel"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/ollama/model/recreate",
+   "handler": "baseApi.RecreateOllamaModel"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/ollama/model/search",
+   "handler": "baseApi.SearchOllamaModel"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/ollama/model/sync",
+   "handler": "baseApi.SyncOllamaModel"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/ollama/model/load",
+   "handler": "baseApi.LoadOllamaModelDetail"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/ollama/model/del",
+   "handler": "baseApi.DeleteOllamaModel"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/domain/bind",
+   "handler": "baseApi.BindDomain"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/domain/get",
+   "handler": "baseApi.GetBindDomain"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/domain/update",
+   "handler": "baseApi.UpdateBindDomain"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "GET",
+   "path": "/ai/gpu/load",
+   "handler": "baseApi.LoadGpuInfo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/gpu/search",
+   "handler": "baseApi.LoadGPUMonitor"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "GET",
+   "path": "/ai/gpu/options",
+   "handler": "baseApi.GetCPUOptions"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/vllm/monitor/search",
+   "handler": "baseApi.LoadVLLMMonitor"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/vllm/monitor/current",
+   "handler": "baseApi.LoadVLLMCurrent"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/vllm/monitor/clean",
+   "handler": "baseApi.CleanVLLMMonitor"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/mcp/search",
+   "handler": "baseApi.PageMcpServers"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/mcp/server/detail",
+   "handler": "baseApi.LoadMcpServerDetail"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/mcp/server",
+   "handler": "baseApi.CreateMcpServer"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/mcp/server/update",
+   "handler": "baseApi.UpdateMcpServer"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/mcp/server/del",
+   "handler": "baseApi.DeleteMcpServer"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/mcp/server/op",
+   "handler": "baseApi.OperateMcpServer"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/mcp/server/status/sync",
+   "handler": "baseApi.SyncMcpServerStatus"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/mcp/server/connection/test",
+   "handler": "baseApi.TestMcpServerConnection"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/mcp/domain/bind",
+   "handler": "baseApi.BindMcpDomain"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "GET",
+   "path": "/ai/mcp/domain/get",
+   "handler": "baseApi.GetMcpBindDomain"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/mcp/domain/update",
+   "handler": "baseApi.UpdateMcpBindDomain"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/tensorrt/search",
+   "handler": "baseApi.PageTensorRTLLMs"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/tensorrt/create",
+   "handler": "baseApi.CreateTensorRTLLM"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/tensorrt/update",
+   "handler": "baseApi.UpdateTensorRTLLM"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/tensorrt/delete",
+   "handler": "baseApi.DeleteTensorRTLLM"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/tensorrt/operate",
+   "handler": "baseApi.OperateTensorRTLLM"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "GET",
+   "path": "/ai/accounts/providers",
+   "handler": "baseApi.GetAgentProviders"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/accounts",
+   "handler": "baseApi.CreateAgentAccount"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/accounts/update",
+   "handler": "baseApi.UpdateAgentAccount"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/accounts/search",
+   "handler": "baseApi.PageAgentAccounts"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/accounts/counts",
+   "handler": "baseApi.CountAgentAccountsByProviders"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/accounts/models",
+   "handler": "baseApi.GetAgentAccountModels"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/accounts/models/discover",
+   "handler": "baseApi.DiscoverAgentAccountModels"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/accounts/models/create",
+   "handler": "baseApi.CreateAgentAccountModel"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/accounts/models/update",
+   "handler": "baseApi.UpdateAgentAccountModel"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/accounts/models/delete",
+   "handler": "baseApi.DeleteAgentAccountModel"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/accounts/verify",
+   "handler": "baseApi.VerifyAgentAccount"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/accounts/delete",
+   "handler": "baseApi.DeleteAgentAccount"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents",
+   "handler": "baseApi.CreateAgent"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/batch/install",
+   "handler": "baseApi.BatchInstallAgent"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/batch/upgrade",
+   "handler": "baseApi.BatchUpgradeAgent"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/batch/skill/install",
+   "handler": "baseApi.BatchInstallAgentSkill"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/batch/operate",
+   "handler": "baseApi.BatchOperateAgent"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/search",
+   "handler": "baseApi.PageAgents"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/delete/check",
+   "handler": "baseApi.DeleteCheckAgent"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/delete",
+   "handler": "baseApi.DeleteAgent"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/token/reset",
+   "handler": "baseApi.ResetAgentToken"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/remark",
+   "handler": "baseApi.UpdateAgentRemark"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/website/bind",
+   "handler": "baseApi.BindAgentWebsite"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/website/unbind",
+   "handler": "baseApi.UnbindAgentWebsite"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/model/get",
+   "handler": "baseApi.GetAgentModelConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/model/update",
+   "handler": "baseApi.UpdateAgentModelConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/hermes/chat/sessions",
+   "handler": "baseApi.GetHermesChatSessions"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/hermes/chat/sessions/rename",
+   "handler": "baseApi.RenameHermesChatSession"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/hermes/chat/sessions/delete",
+   "handler": "baseApi.DeleteHermesChatSession"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/overview",
+   "handler": "baseApi.GetAgentOverview"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/agent/create",
+   "handler": "baseApi.CreateAgentRole"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/agent/delete",
+   "handler": "baseApi.DeleteAgentRole"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/agent/bind",
+   "handler": "baseApi.BindAgentRole"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/agent/unbind",
+   "handler": "baseApi.UnbindAgentRole"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/agent/list",
+   "handler": "baseApi.GetConfiguredAgentRoles"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/agent/channels",
+   "handler": "baseApi.GetAgentRoleChannels"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/agent/md/list",
+   "handler": "baseApi.GetAgentRoleMarkdownFiles"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/agent/md/update",
+   "handler": "baseApi.UpdateAgentRoleMarkdownFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/channel/feishu/get",
+   "handler": "baseApi.GetAgentFeishuConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/channel/feishu/update",
+   "handler": "baseApi.UpdateAgentFeishuConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/channel/telegram/get",
+   "handler": "baseApi.GetAgentTelegramConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/channel/telegram/update",
+   "handler": "baseApi.UpdateAgentTelegramConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/channel/discord/get",
+   "handler": "baseApi.GetAgentDiscordConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/channel/discord/update",
+   "handler": "baseApi.UpdateAgentDiscordConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/channel/wecom/get",
+   "handler": "baseApi.GetAgentWecomConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/channel/wecom/update",
+   "handler": "baseApi.UpdateAgentWecomConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/channel/dingtalk/get",
+   "handler": "baseApi.GetAgentDingTalkConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/channel/dingtalk/update",
+   "handler": "baseApi.UpdateAgentDingTalkConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/channel/weixin/get",
+   "handler": "baseApi.GetAgentWeixinConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/channel/weixin/login",
+   "handler": "baseApi.LoginAgentWeixinChannel"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/channel/qqbot/get",
+   "handler": "baseApi.GetAgentQQBotConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/channel/qqbot/update",
+   "handler": "baseApi.UpdateAgentQQBotConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/channel/delete",
+   "handler": "baseApi.DeleteAgentChannelConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/plugin/install",
+   "handler": "baseApi.InstallAgentPlugin"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/plugin/upgrade",
+   "handler": "baseApi.UpgradeAgentPlugin"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/plugin/uninstall",
+   "handler": "baseApi.UninstallAgentPlugin"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/plugin/check",
+   "handler": "baseApi.CheckAgentPlugin"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/plugins/list",
+   "handler": "baseApi.ListAgentPlugins"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/plugins/search",
+   "handler": "baseApi.SearchAgentPlugins"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/plugins/install",
+   "handler": "baseApi.InstallAgentMarketPlugin"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/plugins/operate",
+   "handler": "baseApi.OperateAgentPlugin"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/security/get",
+   "handler": "baseApi.GetAgentSecurityConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/security/update",
+   "handler": "baseApi.UpdateAgentSecurityConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/other/get",
+   "handler": "baseApi.GetAgentOtherConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/other/update",
+   "handler": "baseApi.UpdateAgentOtherConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/config-file/get",
+   "handler": "baseApi.GetAgentConfigFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/config-file/update",
+   "handler": "baseApi.UpdateAgentConfigFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/skills/list",
+   "handler": "baseApi.ListAgentSkills"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/skills/search",
+   "handler": "baseApi.SearchAgentSkills"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/skills/update",
+   "handler": "baseApi.UpdateAgentSkill"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/skills/install",
+   "handler": "baseApi.InstallAgentSkill"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/skills/uninstall",
+   "handler": "baseApi.UninstallAgentSkill"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_ai.go",
+   "group": "ai",
+   "method": "POST",
+   "path": "/ai/agents/channel/pairing/approve",
+   "handler": "baseApi.ApproveAgentChannelPairing"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_alert.go",
+   "group": "alert",
+   "method": "POST",
+   "path": "/alert",
+   "handler": "baseApi.CreateAlert"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_alert.go",
+   "group": "alert",
+   "method": "POST",
+   "path": "/alert/update",
+   "handler": "baseApi.UpdateAlert"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_alert.go",
+   "group": "alert",
+   "method": "POST",
+   "path": "/alert/search",
+   "handler": "baseApi.PageAlert"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_alert.go",
+   "group": "alert",
+   "method": "POST",
+   "path": "/alert/status",
+   "handler": "baseApi.UpdateAlertStatus"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_alert.go",
+   "group": "alert",
+   "method": "POST",
+   "path": "/alert/del",
+   "handler": "baseApi.DeleteAlert"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_alert.go",
+   "group": "alert",
+   "method": "GET",
+   "path": "/alert/disks/list",
+   "handler": "baseApi.GetDisks"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_alert.go",
+   "group": "alert",
+   "method": "POST",
+   "path": "/alert/logs/search",
+   "handler": "baseApi.PageAlertLogs"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_alert.go",
+   "group": "alert",
+   "method": "POST",
+   "path": "/alert/logs/clean",
+   "handler": "baseApi.CleanAlertLogs"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_alert.go",
+   "group": "alert",
+   "method": "GET",
+   "path": "/alert/clams/list",
+   "handler": "baseApi.GetClams"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_alert.go",
+   "group": "alert",
+   "method": "POST",
+   "path": "/alert/cronjob/list",
+   "handler": "baseApi.GetCronJobs"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_alert.go",
+   "group": "alert",
+   "method": "POST",
+   "path": "/alert/config/update",
+   "handler": "baseApi.UpdateAlertConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_alert.go",
+   "group": "alert",
+   "method": "POST",
+   "path": "/alert/config/status",
+   "handler": "baseApi.UpdateAlertConfigStatus"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_alert.go",
+   "group": "alert",
+   "method": "POST",
+   "path": "/alert/config/info",
+   "handler": "baseApi.GetAlertConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_alert.go",
+   "group": "alert",
+   "method": "POST",
+   "path": "/alert/config/search",
+   "handler": "baseApi.PageAlertConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_alert.go",
+   "group": "alert",
+   "method": "POST",
+   "path": "/alert/config/del",
+   "handler": "baseApi.DeleteAlertConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_alert.go",
+   "group": "alert",
+   "method": "POST",
+   "path": "/alert/config/test",
+   "handler": "baseApi.TestAlertConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "POST",
+   "path": "/apps/sync/remote",
+   "handler": "baseApi.SyncApp"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "POST",
+   "path": "/apps/sync/local",
+   "handler": "baseApi.SyncLocalApp"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "GET",
+   "path": "/apps/checkupdate",
+   "handler": "baseApi.GetAppListUpdate"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "POST",
+   "path": "/apps/search",
+   "handler": "baseApi.SearchApp"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "GET",
+   "path": "/apps/:key",
+   "handler": "baseApi.GetApp"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "GET",
+   "path": "/apps/detail/:appId/:version/:type",
+   "handler": "baseApi.GetAppDetail"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "GET",
+   "path": "/apps/detail/node/:appKey/:version",
+   "handler": "baseApi.GetAppDetailForNode"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "GET",
+   "path": "/apps/details/:id",
+   "handler": "baseApi.GetAppDetailByID"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "POST",
+   "path": "/apps/install",
+   "handler": "baseApi.InstallApp"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "GET",
+   "path": "/apps/tags",
+   "handler": "baseApi.GetAppTags"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "GET",
+   "path": "/apps/icon/:key",
+   "handler": "baseApi.GetAppIcon"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "POST",
+   "path": "/apps/installed/check",
+   "handler": "baseApi.CheckAppInstalled"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "POST",
+   "path": "/apps/installed/loadport",
+   "handler": "baseApi.LoadPort"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "POST",
+   "path": "/apps/installed/conninfo",
+   "handler": "baseApi.LoadConnInfo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "GET",
+   "path": "/apps/installed/delete/check/:appInstallId",
+   "handler": "baseApi.DeleteCheck"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "POST",
+   "path": "/apps/installed/search",
+   "handler": "baseApi.SearchAppInstalled"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "GET",
+   "path": "/apps/installed/list",
+   "handler": "baseApi.ListAppInstalled"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "POST",
+   "path": "/apps/installed/op",
+   "handler": "baseApi.OperateInstalled"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "POST",
+   "path": "/apps/installed/sync",
+   "handler": "baseApi.SyncInstalled"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "POST",
+   "path": "/apps/installed/port/change",
+   "handler": "baseApi.ChangeAppPort"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "GET",
+   "path": "/apps/services/:key",
+   "handler": "baseApi.GetServices"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "POST",
+   "path": "/apps/installed/conf",
+   "handler": "baseApi.GetDefaultConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "GET",
+   "path": "/apps/installed/params/:appInstallId",
+   "handler": "baseApi.GetParams"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "POST",
+   "path": "/apps/installed/params/update",
+   "handler": "baseApi.UpdateInstalled"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "POST",
+   "path": "/apps/installed/update/versions",
+   "handler": "baseApi.GetUpdateVersions"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "POST",
+   "path": "/apps/installed/config/update",
+   "handler": "baseApi.UpdateAppConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "POST",
+   "path": "/apps/installed/sort/update",
+   "handler": "baseApi.UpdateAppInstallSort"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "GET",
+   "path": "/apps/installed/info/:appInstallId",
+   "handler": "baseApi.GetAppInstallInfo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "POST",
+   "path": "/apps/installed/ignore",
+   "handler": "baseApi.IgnoreAppUpgrade"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "GET",
+   "path": "/apps/ignored/detail",
+   "handler": "baseApi.ListAppIgnored"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_app.go",
+   "group": "apps",
+   "method": "POST",
+   "path": "/apps/ignored/cancel",
+   "handler": "baseApi.CancelIgnoreAppUpgrade"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "GET",
+   "path": "/containers/stats/:id",
+   "handler": "baseApi.ContainerStats"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers",
+   "handler": "baseApi.ContainerCreate"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/update",
+   "handler": "baseApi.ContainerUpdate"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/upgrade",
+   "handler": "baseApi.ContainerUpgrade"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/info",
+   "handler": "baseApi.ContainerInfo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/search",
+   "handler": "baseApi.SearchContainer"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/list",
+   "handler": "baseApi.ListContainer"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/list/byimage",
+   "handler": "baseApi.ListContainerByImage"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "GET",
+   "path": "/containers/status",
+   "handler": "baseApi.LoadContainerStatus"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "GET",
+   "path": "/containers/list/stats",
+   "handler": "baseApi.ContainerListStats"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/item/stats",
+   "handler": "baseApi.ContainerItemStats"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "GET",
+   "path": "/containers/search/log",
+   "handler": "baseApi.ContainerStreamLogs"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/download/log",
+   "handler": "baseApi.DownloadContainerLogs"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "GET",
+   "path": "/containers/limit",
+   "handler": "baseApi.LoadResourceLimit"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/clean/log",
+   "handler": "baseApi.CleanContainerLog"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/inspect",
+   "handler": "baseApi.Inspect"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/rename",
+   "handler": "baseApi.ContainerRename"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/commit",
+   "handler": "baseApi.ContainerCommit"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/operate",
+   "handler": "baseApi.ContainerOperation"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/prune",
+   "handler": "baseApi.ContainerPrune"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/users",
+   "handler": "baseApi.LoadContainerUsers"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/files/search",
+   "handler": "baseApi.ListContainerFiles"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/files/upload",
+   "handler": "baseApi.UploadContainerFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/files/content",
+   "handler": "baseApi.GetContainerFileContent"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/files/size",
+   "handler": "baseApi.GetContainerFileSize"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/files/del",
+   "handler": "baseApi.DeleteContainerFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/files/download",
+   "handler": "baseApi.DownloadContainerFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "GET",
+   "path": "/containers/repo",
+   "handler": "baseApi.ListRepo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/repo/status",
+   "handler": "baseApi.CheckRepoStatus"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/repo/search",
+   "handler": "baseApi.SearchRepo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/repo/update",
+   "handler": "baseApi.UpdateRepo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/repo",
+   "handler": "baseApi.CreateRepo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/repo/del",
+   "handler": "baseApi.DeleteRepo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/compose/search",
+   "handler": "baseApi.SearchCompose"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/compose",
+   "handler": "baseApi.CreateCompose"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/compose/env",
+   "handler": "baseApi.LoadComposeEnv"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/compose/test",
+   "handler": "baseApi.TestCompose"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/compose/operate",
+   "handler": "baseApi.OperatorCompose"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/compose/clean/log",
+   "handler": "baseApi.CleanComposeLog"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/compose/update",
+   "handler": "baseApi.ComposeUpdate"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/compose/pin",
+   "handler": "baseApi.ComposePin"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "GET",
+   "path": "/containers/template",
+   "handler": "baseApi.ListComposeTemplate"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/template/search",
+   "handler": "baseApi.SearchComposeTemplate"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/template/update",
+   "handler": "baseApi.UpdateComposeTemplate"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/template/batch",
+   "handler": "baseApi.BatchComposeTemplate"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/template",
+   "handler": "baseApi.CreateComposeTemplate"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/template/del",
+   "handler": "baseApi.DeleteComposeTemplate"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "GET",
+   "path": "/containers/image",
+   "handler": "baseApi.ListImage"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "GET",
+   "path": "/containers/image/all",
+   "handler": "baseApi.ListAllImage"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/image/search",
+   "handler": "baseApi.SearchImage"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/image/pull",
+   "handler": "baseApi.ImagePull"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/image/push",
+   "handler": "baseApi.ImagePush"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/image/save",
+   "handler": "baseApi.ImageSave"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/image/load",
+   "handler": "baseApi.ImageLoad"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/image/remove",
+   "handler": "baseApi.ImageRemove"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/image/tag",
+   "handler": "baseApi.ImageTag"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/image/build",
+   "handler": "baseApi.ImageBuild"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "GET",
+   "path": "/containers/network",
+   "handler": "baseApi.ListNetwork"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/network/del",
+   "handler": "baseApi.DeleteNetwork"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/network/search",
+   "handler": "baseApi.SearchNetwork"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/network",
+   "handler": "baseApi.CreateNetwork"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "GET",
+   "path": "/containers/volume",
+   "handler": "baseApi.ListVolume"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/volume/del",
+   "handler": "baseApi.DeleteVolume"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/volume/search",
+   "handler": "baseApi.SearchVolume"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/volume",
+   "handler": "baseApi.CreateVolume"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "GET",
+   "path": "/containers/daemonjson",
+   "handler": "baseApi.LoadDaemonJson"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "GET",
+   "path": "/containers/daemonjson/file",
+   "handler": "baseApi.LoadDaemonJsonFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "GET",
+   "path": "/containers/docker/status",
+   "handler": "baseApi.LoadDockerStatus"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/docker/operate",
+   "handler": "baseApi.OperateDocker"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/daemonjson/update",
+   "handler": "baseApi.UpdateDaemonJson"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/logoption/update",
+   "handler": "baseApi.UpdateLogOption"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/ipv6option/update",
+   "handler": "baseApi.UpdateIpv6Option"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_container.go",
+   "group": "containers",
+   "method": "POST",
+   "path": "/containers/daemonjson/update/byfile",
+   "handler": "baseApi.UpdateDaemonJsonByFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_cronjob.go",
+   "group": "cronjobs",
+   "method": "POST",
+   "path": "/cronjobs",
+   "handler": "baseApi.CreateCronjob"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_cronjob.go",
+   "group": "cronjobs",
+   "method": "POST",
+   "path": "/cronjobs/next",
+   "handler": "baseApi.LoadNextHandle"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_cronjob.go",
+   "group": "cronjobs",
+   "method": "POST",
+   "path": "/cronjobs/import",
+   "handler": "baseApi.ImportCronjob"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_cronjob.go",
+   "group": "cronjobs",
+   "method": "POST",
+   "path": "/cronjobs/export",
+   "handler": "baseApi.ExportCronjob"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_cronjob.go",
+   "group": "cronjobs",
+   "method": "POST",
+   "path": "/cronjobs/load/info",
+   "handler": "baseApi.LoadCronjobInfo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_cronjob.go",
+   "group": "cronjobs",
+   "method": "GET",
+   "path": "/cronjobs/script/options",
+   "handler": "baseApi.LoadScriptOptions"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_cronjob.go",
+   "group": "cronjobs",
+   "method": "POST",
+   "path": "/cronjobs/del",
+   "handler": "baseApi.DeleteCronjob"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_cronjob.go",
+   "group": "cronjobs",
+   "method": "POST",
+   "path": "/cronjobs/stop",
+   "handler": "baseApi.StopCronJob"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_cronjob.go",
+   "group": "cronjobs",
+   "method": "POST",
+   "path": "/cronjobs/update",
+   "handler": "baseApi.UpdateCronjob"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_cronjob.go",
+   "group": "cronjobs",
+   "method": "POST",
+   "path": "/cronjobs/group/update",
+   "handler": "baseApi.UpdateCronjobGroup"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_cronjob.go",
+   "group": "cronjobs",
+   "method": "POST",
+   "path": "/cronjobs/status",
+   "handler": "baseApi.UpdateCronjobStatus"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_cronjob.go",
+   "group": "cronjobs",
+   "method": "POST",
+   "path": "/cronjobs/handle",
+   "handler": "baseApi.HandleOnce"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_cronjob.go",
+   "group": "cronjobs",
+   "method": "POST",
+   "path": "/cronjobs/search",
+   "handler": "baseApi.SearchCronjob"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_cronjob.go",
+   "group": "cronjobs",
+   "method": "POST",
+   "path": "/cronjobs/search/records",
+   "handler": "baseApi.SearchJobRecords"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_cronjob.go",
+   "group": "cronjobs",
+   "method": "POST",
+   "path": "/cronjobs/records/log",
+   "handler": "baseApi.LoadRecordLog"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_cronjob.go",
+   "group": "cronjobs",
+   "method": "POST",
+   "path": "/cronjobs/records/clean",
+   "handler": "baseApi.CleanRecord"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_dashboard.go",
+   "group": "dashboard",
+   "method": "GET",
+   "path": "/dashboard/base/os",
+   "handler": "baseApi.LoadDashboardOsInfo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_dashboard.go",
+   "group": "dashboard",
+   "method": "GET",
+   "path": "/dashboard/quick/option",
+   "handler": "baseApi.LoadQuickOption"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_dashboard.go",
+   "group": "dashboard",
+   "method": "POST",
+   "path": "/dashboard/quick/change",
+   "handler": "baseApi.UpdateQuickJump"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_dashboard.go",
+   "group": "dashboard",
+   "method": "GET",
+   "path": "/dashboard/quick/directory",
+   "handler": "baseApi.ListQuickDirectories"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_dashboard.go",
+   "group": "dashboard",
+   "method": "POST",
+   "path": "/dashboard/quick/directory",
+   "handler": "baseApi.CreateQuickDirectory"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_dashboard.go",
+   "group": "dashboard",
+   "method": "POST",
+   "path": "/dashboard/quick/directory/update",
+   "handler": "baseApi.UpdateQuickDirectory"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_dashboard.go",
+   "group": "dashboard",
+   "method": "POST",
+   "path": "/dashboard/quick/directory/del",
+   "handler": "baseApi.DeleteQuickDirectory"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_dashboard.go",
+   "group": "dashboard",
+   "method": "GET",
+   "path": "/dashboard/app/launcher",
+   "handler": "baseApi.LoadAppLauncher"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_dashboard.go",
+   "group": "dashboard",
+   "method": "POST",
+   "path": "/dashboard/app/launcher/show",
+   "handler": "baseApi.UpdateAppLauncher"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_dashboard.go",
+   "group": "dashboard",
+   "method": "POST",
+   "path": "/dashboard/app/launcher/option",
+   "handler": "baseApi.LoadAppLauncherOption"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_dashboard.go",
+   "group": "dashboard",
+   "method": "GET",
+   "path": "/dashboard/base/:ioOption/:netOption",
+   "handler": "baseApi.LoadDashboardBaseInfo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_dashboard.go",
+   "group": "dashboard",
+   "method": "GET",
+   "path": "/dashboard/current/node",
+   "handler": "baseApi.LoadCurrentInfoForNode"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_dashboard.go",
+   "group": "dashboard",
+   "method": "GET",
+   "path": "/dashboard/current/:ioOption/:netOption",
+   "handler": "baseApi.LoadDashboardCurrentInfo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_dashboard.go",
+   "group": "dashboard",
+   "method": "GET",
+   "path": "/dashboard/current/top/cpu",
+   "handler": "baseApi.LoadDashboardTopCPU"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_dashboard.go",
+   "group": "dashboard",
+   "method": "GET",
+   "path": "/dashboard/current/top/mem",
+   "handler": "baseApi.LoadDashboardTopMem"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_dashboard.go",
+   "group": "dashboard",
+   "method": "POST",
+   "path": "/dashboard/system/restart/:operation",
+   "handler": "baseApi.SystemRestart"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/common/info",
+   "handler": "baseApi.LoadDBBaseInfo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/common/load/file",
+   "handler": "baseApi.LoadDBFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/common/update/conf",
+   "handler": "baseApi.UpdateDBConfByFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases",
+   "handler": "baseApi.CreateMysql"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/users/search",
+   "handler": "baseApi.ListMysqlUsers"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/users",
+   "handler": "baseApi.CreateMysqlUser"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/users/update",
+   "handler": "baseApi.UpdateMysqlUser"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/users/password",
+   "handler": "baseApi.ChangeMysqlUserPassword"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/users/password/save",
+   "handler": "baseApi.SaveMysqlUserPassword"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/users/del",
+   "handler": "baseApi.DeleteMysqlUser"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/grants/search",
+   "handler": "baseApi.ListMysqlGrants"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/grants/summary",
+   "handler": "baseApi.ListMysqlGrantSummary"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/grants",
+   "handler": "baseApi.GrantMysqlUser"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/grants/del",
+   "handler": "baseApi.RevokeMysqlGrant"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/load",
+   "handler": "baseApi.LoadDBFromRemote"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/change/access",
+   "handler": "baseApi.ChangeMysqlAccess"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/change/password",
+   "handler": "baseApi.ChangeMysqlPassword"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/del/check",
+   "handler": "baseApi.DeleteCheckMysql"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/del",
+   "handler": "baseApi.DeleteMysql"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/description/update",
+   "handler": "baseApi.UpdateMysqlDescription"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/variables/update",
+   "handler": "baseApi.UpdateMysqlVariables"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/search",
+   "handler": "baseApi.SearchMysql"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/variables",
+   "handler": "baseApi.LoadVariables"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/status",
+   "handler": "baseApi.LoadStatus"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/remote",
+   "handler": "baseApi.LoadRemoteAccess"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/format/options",
+   "handler": "baseApi.ListDBFormatCollationOptions"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/redis/persistence/conf",
+   "handler": "baseApi.LoadPersistenceConf"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/redis/status",
+   "handler": "baseApi.LoadRedisStatus"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/redis/conf",
+   "handler": "baseApi.LoadRedisConf"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "GET",
+   "path": "/databases/redis/check",
+   "handler": "baseApi.CheckHasCli"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/redis/install/cli",
+   "handler": "baseApi.InstallCli"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/redis/password",
+   "handler": "baseApi.ChangeRedisPassword"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/redis/conf/update",
+   "handler": "baseApi.UpdateRedisConf"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/redis/persistence/update",
+   "handler": "baseApi.UpdateRedisPersistenceConf"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/db/check",
+   "handler": "baseApi.CheckDatabase"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/db",
+   "handler": "baseApi.CreateDatabase"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "GET",
+   "path": "/databases/db/:name",
+   "handler": "baseApi.GetDatabase"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "GET",
+   "path": "/databases/db/list/:type",
+   "handler": "baseApi.ListDatabase"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "GET",
+   "path": "/databases/db/item/:type",
+   "handler": "baseApi.LoadDatabaseItems"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/db/update",
+   "handler": "baseApi.UpdateDatabase"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/db/search",
+   "handler": "baseApi.SearchDatabase"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/db/del/check",
+   "handler": "baseApi.DeleteCheckDatabase"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/db/del",
+   "handler": "baseApi.DeleteDatabase"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/pg",
+   "handler": "baseApi.CreatePostgresql"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/pg/search",
+   "handler": "baseApi.SearchPostgresql"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/pg/:database/load",
+   "handler": "baseApi.LoadPostgresqlDBFromRemote"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/pg/bind",
+   "handler": "baseApi.BindPostgresqlUser"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/pg/del/check",
+   "handler": "baseApi.DeleteCheckPostgresql"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/pg/del",
+   "handler": "baseApi.DeletePostgresql"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/pg/privileges",
+   "handler": "baseApi.ChangePostgresqlPrivileges"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/pg/password",
+   "handler": "baseApi.ChangePostgresqlPassword"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/pg/description",
+   "handler": "baseApi.UpdatePostgresqlDescription"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/mongodb",
+   "handler": "baseApi.CreateMongodb"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/mongodb/search",
+   "handler": "baseApi.SearchMongodb"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/mongodb/description",
+   "handler": "baseApi.UpdateMongodbDescription"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/mongodb/load",
+   "handler": "baseApi.LoadMongodbFromRemote"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/mongodb/bind",
+   "handler": "baseApi.BindMongodbUser"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/mongodb/password",
+   "handler": "baseApi.ChangeMongodbPassword"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/mongodb/root/password",
+   "handler": "baseApi.ChangeMongodbRootPassword"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/mongodb/privileges",
+   "handler": "baseApi.LoadMongodbPrivileges"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/mongodb/privileges/change",
+   "handler": "baseApi.ChangeMongodbPrivileges"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/mongodb/del/check",
+   "handler": "baseApi.DeleteCheckMongodb"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_database.go",
+   "group": "databases",
+   "method": "POST",
+   "path": "/databases/mongodb/del",
+   "handler": "baseApi.DeleteMongodb"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/search",
+   "handler": "baseApi.ListFiles"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/ai-search",
+   "handler": "baseApi.FileAISearch"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/upload/search",
+   "handler": "baseApi.SearchUploadWithPage"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/tree",
+   "handler": "baseApi.GetFileTree"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files",
+   "handler": "baseApi.CreateFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/del",
+   "handler": "baseApi.DeleteFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/batch/del",
+   "handler": "baseApi.BatchDeleteFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/mode",
+   "handler": "baseApi.ChangeFileMode"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/owner",
+   "handler": "baseApi.ChangeFileOwner"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/compress",
+   "handler": "baseApi.CompressFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/compress/stop",
+   "handler": "baseApi.StopCompressFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/decompress",
+   "handler": "baseApi.DeCompressFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/decompress/stop",
+   "handler": "baseApi.StopDeCompressFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/content",
+   "handler": "baseApi.GetContent"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/preview",
+   "handler": "baseApi.PreviewContent"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/save",
+   "handler": "baseApi.SaveContent"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/history/search",
+   "handler": "baseApi.SearchFileHistory"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/history/content",
+   "handler": "baseApi.GetFileHistoryContent"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/history/del",
+   "handler": "baseApi.DeleteFileHistory"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/history/restore",
+   "handler": "baseApi.RestoreFileHistory"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/remarks",
+   "handler": "baseApi.BatchGetFileRemarks"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/remark",
+   "handler": "baseApi.SetFileRemark"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/check",
+   "handler": "baseApi.CheckFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/batch/check",
+   "handler": "baseApi.BatchCheckFiles"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/upload",
+   "handler": "baseApi.UploadFiles"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/chunkupload",
+   "handler": "baseApi.UploadChunkFiles"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/chunkupload/stop",
+   "handler": "baseApi.StopChunkUpload"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/rename",
+   "handler": "baseApi.ChangeFileName"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/wget",
+   "handler": "baseApi.WgetFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/wget/stop",
+   "handler": "baseApi.StopWget"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/wget/process/remove",
+   "handler": "baseApi.RemoveWgetRecords"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/move",
+   "handler": "baseApi.MoveFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/move/stop",
+   "handler": "baseApi.StopMoveFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "GET",
+   "path": "/files/download",
+   "handler": "baseApi.Download"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/share/search",
+   "handler": "baseApi.SearchFileShare"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/share/detail",
+   "handler": "baseApi.GetFileShareDetail"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/share/create",
+   "handler": "baseApi.CreateFileShare"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/share/del",
+   "handler": "baseApi.DeleteFileShare"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "GET",
+   "path": "/files/share/qrcode",
+   "handler": "baseApi.GetFileShareQRCode"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/chunkdownload",
+   "handler": "baseApi.DownloadChunkFiles"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/size",
+   "handler": "baseApi.Size"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/depth/size",
+   "handler": "baseApi.DepthDirSize"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "GET",
+   "path": "/files/wget/process",
+   "handler": "baseApi.WgetProcess"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "GET",
+   "path": "/files/wget/process/keys",
+   "handler": "baseApi.ProcessKeys"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/read/:type",
+   "handler": "baseApi.ReadFileByLine"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/batch/role",
+   "handler": "baseApi.BatchChangeModeAndOwner"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/recycle/search",
+   "handler": "baseApi.SearchRecycleBinFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/recycle/reduce",
+   "handler": "baseApi.ReduceRecycleBinFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/recycle/clear",
+   "handler": "baseApi.ClearRecycleBinFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "GET",
+   "path": "/files/recycle/status",
+   "handler": "baseApi.GetRecycleStatus"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/favorite/search",
+   "handler": "baseApi.SearchFavorite"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/favorite",
+   "handler": "baseApi.CreateFavorite"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/favorite/del",
+   "handler": "baseApi.DeleteFavorite"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/mount",
+   "handler": "baseApi.GetHostMount"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/user/group",
+   "handler": "baseApi.GetUsersAndGroups"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/convert",
+   "handler": "baseApi.ConvertFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "files",
+   "method": "POST",
+   "path": "/files/convert/log",
+   "handler": "baseApi.ConvertLog"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "/share",
+   "method": "GET",
+   "path": "/share/info",
+   "handler": "baseApi.GetPublicFileShareInfo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "/share",
+   "method": "GET",
+   "path": "/share/check",
+   "handler": "baseApi.CheckFileShare"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_file.go",
+   "group": "/share",
+   "method": "GET",
+   "path": "/share/download",
+   "handler": "baseApi.DownloadFileShare"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_group.go",
+   "group": "groups",
+   "method": "POST",
+   "path": "/groups",
+   "handler": "baseApi.CreateGroup"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_group.go",
+   "group": "groups",
+   "method": "POST",
+   "path": "/groups/del",
+   "handler": "baseApi.DeleteGroup"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_group.go",
+   "group": "groups",
+   "method": "POST",
+   "path": "/groups/update",
+   "handler": "baseApi.UpdateGroup"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_group.go",
+   "group": "groups",
+   "method": "POST",
+   "path": "/groups/search",
+   "handler": "baseApi.ListGroup"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "",
+   "method": "POST",
+   "path": "/internal/terminal/sessions/revoke",
+   "handler": "baseApi.RevokeTerminalSessions"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "",
+   "method": "GET",
+   "path": "/internal/terminal/capabilities",
+   "handler": "baseApi.TerminalCapabilities"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts",
+   "handler": "baseApi.CreateHost"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/info",
+   "handler": "baseApi.GetHostByID"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/del",
+   "handler": "baseApi.DeleteHost"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/update",
+   "handler": "baseApi.UpdateHost"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/update/group",
+   "handler": "baseApi.UpdateHostGroup"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/search",
+   "handler": "baseApi.SearchHost"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/tree",
+   "handler": "baseApi.HostTree"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/test/byinfo",
+   "handler": "baseApi.TestByInfo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/test/byid",
+   "handler": "baseApi.TestByID"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/firewall/base",
+   "handler": "baseApi.LoadFirewallBaseInfo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/firewall/operate",
+   "handler": "baseApi.OperateFirewall"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/firewall/port",
+   "handler": "baseApi.UpdatePanelFirewallPort"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "GET",
+   "path": "/hosts/firewall/settings",
+   "handler": "baseApi.LoadFirewallSettings"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/firewall/settings/operate",
+   "handler": "baseApi.OperateFirewallBackend"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/firewall/family/operate",
+   "handler": "baseApi.OperateFirewallFamily"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/firewall/settings/ipv6",
+   "handler": "baseApi.OperateFirewallIPv6"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/firewall/settings/whitelist",
+   "handler": "baseApi.CreateFirewallPortWhitelist"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/firewall/settings/whitelist/update",
+   "handler": "baseApi.UpdateFirewallPortWhitelist"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/firewall/settings/whitelist/delete",
+   "handler": "baseApi.DeleteFirewallPortWhitelist"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/firewall/forward/base",
+   "handler": "baseApi.LoadForwardingBaseInfo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/firewall/forward/search",
+   "handler": "baseApi.SearchForwardingRules"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/firewall/forward/operate",
+   "handler": "baseApi.OperateForwardingRules"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/firewall/forward/enable",
+   "handler": "baseApi.EnableForwarding"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/firewall/rules/search",
+   "handler": "baseApi.SearchFirewallRules"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "GET",
+   "path": "/hosts/firewall/rules/backups",
+   "handler": "baseApi.ListFirewallRuleBackups"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/firewall/rules/reset",
+   "handler": "baseApi.ResetFirewallRules"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/firewall/rules/native/detail",
+   "handler": "baseApi.LoadFirewallNativeDetail"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/firewall/rules",
+   "handler": "baseApi.CreateFirewallRules"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/firewall/rules/update",
+   "handler": "baseApi.UpdateFirewallRule"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/firewall/rules/delete",
+   "handler": "baseApi.DeleteFirewallRules"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/firewall/rules/reorder",
+   "handler": "baseApi.ReorderFirewallRule"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/firewall/filter/operate",
+   "handler": "baseApi.OperateFilterChain"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "GET",
+   "path": "/hosts/firewall/docker/ports",
+   "handler": "baseApi.ListDockerPortGuard"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "GET",
+   "path": "/hosts/firewall/docker/endpoints",
+   "handler": "baseApi.ListDockerPublishedPorts"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/firewall/docker/operate",
+   "handler": "baseApi.OperateDockerPortGuard"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/firewall/docker/policies/batch",
+   "handler": "baseApi.UpsertDockerPortGuardPolicies"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/firewall/docker/policies/delete/batch",
+   "handler": "baseApi.DeleteDockerPortGuardPolicies"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/monitor/search",
+   "handler": "baseApi.LoadMonitor"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/monitor/clean",
+   "handler": "baseApi.CleanMonitor"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "GET",
+   "path": "/hosts/monitor/netoptions",
+   "handler": "baseApi.GetNetworkOptions"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "GET",
+   "path": "/hosts/monitor/iooptions",
+   "handler": "baseApi.GetIOOptions"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "GET",
+   "path": "/hosts/monitor/setting",
+   "handler": "baseApi.LoadMonitorSetting"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/monitor/setting/update",
+   "handler": "baseApi.UpdateMonitorSetting"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/ssh/search",
+   "handler": "baseApi.GetSSHInfo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/ssh/update",
+   "handler": "baseApi.UpdateSSH"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/ssh/log",
+   "handler": "baseApi.LoadSSHLogs"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/ssh/log/export",
+   "handler": "baseApi.ExportSSHLogs"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/ssh/log/clean",
+   "handler": "baseApi.CleanSSHLogs"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/ssh/operate",
+   "handler": "baseApi.OperateSSH"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/ssh/file",
+   "handler": "baseApi.LoadSSHFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/ssh/file/update",
+   "handler": "baseApi.UpdateSSHByFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/ssh/cert",
+   "handler": "baseApi.CreateRootCert"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/ssh/cert/update",
+   "handler": "baseApi.EditRootCert"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/ssh/cert/sync",
+   "handler": "baseApi.SyncRootCert"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/ssh/cert/search",
+   "handler": "baseApi.SearchRootCert"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/ssh/cert/delete",
+   "handler": "baseApi.DeleteRootCert"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/tool/status",
+   "handler": "baseApi.GetToolStatus"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/tool/init",
+   "handler": "baseApi.InitToolConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/tool/operate",
+   "handler": "baseApi.OperateTool"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/tool/config/get",
+   "handler": "baseApi.GetToolConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/tool/config/set",
+   "handler": "baseApi.UpdateToolConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/tool/supervisor/process",
+   "handler": "baseApi.OperateProcess"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "GET",
+   "path": "/hosts/tool/supervisor/process",
+   "handler": "baseApi.GetProcess"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/tool/supervisor/process/file/get",
+   "handler": "baseApi.GetProcessFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/tool/supervisor/process/file",
+   "handler": "baseApi.OperateProcessFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "GET",
+   "path": "/hosts/terminal/local",
+   "handler": "baseApi.WsLocalTerminal"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "GET",
+   "path": "/hosts/terminal/ssh",
+   "handler": "baseApi.WsHostSSH"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "GET",
+   "path": "/hosts/terminal/container",
+   "handler": "baseApi.WsContainerTerminal"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/terminal/sessions/search",
+   "handler": "baseApi.SearchTerminalSessions"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/terminal/sessions/close",
+   "handler": "baseApi.CloseTerminalSession"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/terminal/sessions/closeAll",
+   "handler": "baseApi.CloseAllTerminalSessions"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "GET",
+   "path": "/hosts/disks",
+   "handler": "baseApi.GetCompleteDiskInfo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/disks/partition",
+   "handler": "baseApi.PartitionDisk"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/disks/mount",
+   "handler": "baseApi.MountDisk"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "POST",
+   "path": "/hosts/disks/unmount",
+   "handler": "baseApi.UnmountDisk"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_host.go",
+   "group": "hosts",
+   "method": "GET",
+   "path": "/hosts/components/:name",
+   "handler": "baseApi.CheckComponentExistence"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_log.go",
+   "group": "logs",
+   "method": "GET",
+   "path": "/logs/system/files",
+   "handler": "baseApi.GetSystemFiles"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_log.go",
+   "group": "logs",
+   "method": "GET",
+   "path": "/logs/system/status",
+   "handler": "baseApi.GetSystemLogStatus"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_log.go",
+   "group": "logs",
+   "method": "POST",
+   "path": "/logs/system/read",
+   "handler": "baseApi.ReadSystemLog"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_log.go",
+   "group": "logs",
+   "method": "GET",
+   "path": "/logs/system/services",
+   "handler": "baseApi.ListRunningServices"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_log.go",
+   "group": "logs",
+   "method": "POST",
+   "path": "/logs/tasks/search",
+   "handler": "baseApi.PageTasks"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_log.go",
+   "group": "logs",
+   "method": "POST",
+   "path": "/logs/tasks/read",
+   "handler": "baseApi.ReadTaskLogByLine"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_log.go",
+   "group": "logs",
+   "method": "GET",
+   "path": "/logs/tasks/executing/count",
+   "handler": "baseApi.CountExecutingTasks"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_nginx.go",
+   "group": "openresty",
+   "method": "GET",
+   "path": "/openresty",
+   "handler": "baseApi.GetNginx"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_nginx.go",
+   "group": "openresty",
+   "method": "POST",
+   "path": "/openresty/scope",
+   "handler": "baseApi.GetNginxConfigByScope"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_nginx.go",
+   "group": "openresty",
+   "method": "POST",
+   "path": "/openresty/update",
+   "handler": "baseApi.UpdateNginxConfigByScope"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_nginx.go",
+   "group": "openresty",
+   "method": "GET",
+   "path": "/openresty/status",
+   "handler": "baseApi.GetNginxStatus"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_nginx.go",
+   "group": "openresty",
+   "method": "POST",
+   "path": "/openresty/file",
+   "handler": "baseApi.UpdateNginxFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_nginx.go",
+   "group": "openresty",
+   "method": "POST",
+   "path": "/openresty/build",
+   "handler": "baseApi.BuildNginx"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_nginx.go",
+   "group": "openresty",
+   "method": "POST",
+   "path": "/openresty/modules/update",
+   "handler": "baseApi.UpdateNginxModule"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_nginx.go",
+   "group": "openresty",
+   "method": "GET",
+   "path": "/openresty/modules",
+   "handler": "baseApi.GetNginxModules"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_nginx.go",
+   "group": "openresty",
+   "method": "POST",
+   "path": "/openresty/https",
+   "handler": "baseApi.OperateDefaultHTTPs"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_nginx.go",
+   "group": "openresty",
+   "method": "GET",
+   "path": "/openresty/https",
+   "handler": "baseApi.GetDefaultHTTPsStatus"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_process.go",
+   "group": "process",
+   "method": "GET",
+   "path": "/process/ws",
+   "handler": "baseApi.ProcessWs"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_process.go",
+   "group": "process",
+   "method": "POST",
+   "path": "/process/stop",
+   "handler": "baseApi.StopProcess"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_process.go",
+   "group": "process",
+   "method": "POST",
+   "path": "/process/listening",
+   "handler": "baseApi.GetListeningProcess"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_process.go",
+   "group": "process",
+   "method": "GET",
+   "path": "/process/:pid",
+   "handler": "baseApi.GetProcessInfoByPID"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "GET",
+   "path": "/runtimes/installed/delete/check/:id",
+   "handler": "baseApi.DeleteRuntimeCheck"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "POST",
+   "path": "/runtimes/search",
+   "handler": "baseApi.SearchRuntimes"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "POST",
+   "path": "/runtimes",
+   "handler": "baseApi.CreateRuntime"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "POST",
+   "path": "/runtimes/del",
+   "handler": "baseApi.DeleteRuntime"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "POST",
+   "path": "/runtimes/update",
+   "handler": "baseApi.UpdateRuntime"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "GET",
+   "path": "/runtimes/:id",
+   "handler": "baseApi.GetRuntime"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "POST",
+   "path": "/runtimes/sync",
+   "handler": "baseApi.SyncStatus"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "POST",
+   "path": "/runtimes/node/package",
+   "handler": "baseApi.GetNodePackageRunScript"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "POST",
+   "path": "/runtimes/operate",
+   "handler": "baseApi.OperateRuntime"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "POST",
+   "path": "/runtimes/node/modules",
+   "handler": "baseApi.GetNodeModules"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "POST",
+   "path": "/runtimes/node/modules/operate",
+   "handler": "baseApi.OperateNodeModules"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "POST",
+   "path": "/runtimes/php/extensions/search",
+   "handler": "baseApi.PagePHPExtensions"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "POST",
+   "path": "/runtimes/php/extensions",
+   "handler": "baseApi.CreatePHPExtensions"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "POST",
+   "path": "/runtimes/php/extensions/update",
+   "handler": "baseApi.UpdatePHPExtensions"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "POST",
+   "path": "/runtimes/php/extensions/del",
+   "handler": "baseApi.DeletePHPExtensions"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "GET",
+   "path": "/runtimes/php/:id/extensions",
+   "handler": "baseApi.GetRuntimeExtension"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "POST",
+   "path": "/runtimes/php/extensions/install",
+   "handler": "baseApi.InstallPHPExtension"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "POST",
+   "path": "/runtimes/php/extensions/uninstall",
+   "handler": "baseApi.UnInstallPHPExtension"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "GET",
+   "path": "/runtimes/php/config/:id",
+   "handler": "baseApi.GetPHPConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "POST",
+   "path": "/runtimes/php/config",
+   "handler": "baseApi.UpdatePHPConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "POST",
+   "path": "/runtimes/php/update",
+   "handler": "baseApi.UpdatePHPFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "POST",
+   "path": "/runtimes/php/file",
+   "handler": "baseApi.GetPHPConfigFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "POST",
+   "path": "/runtimes/php/fpm/config",
+   "handler": "baseApi.UpdateFPMConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "GET",
+   "path": "/runtimes/php/fpm/config/:id",
+   "handler": "baseApi.GetFPMConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "GET",
+   "path": "/runtimes/php/fpm/status/:id",
+   "handler": "baseApi.GetFPMStatus"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "POST",
+   "path": "/runtimes/php/container/update",
+   "handler": "baseApi.UpdatePHPContainer"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "GET",
+   "path": "/runtimes/php/container/:id",
+   "handler": "baseApi.GetPHPContainerConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "GET",
+   "path": "/runtimes/supervisor/process/:id",
+   "handler": "baseApi.GetSupervisorProcess"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "POST",
+   "path": "/runtimes/supervisor/process",
+   "handler": "baseApi.OperateSupervisorProcess"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "POST",
+   "path": "/runtimes/supervisor/process/file",
+   "handler": "baseApi.OperateSupervisorProcessFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime.go",
+   "group": "runtimes",
+   "method": "POST",
+   "path": "/runtimes/remark",
+   "handler": "baseApi.UpdateRuntimeRemark"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime_diagnostics.go",
+   "group": "hosts/diagnostics",
+   "method": "GET",
+   "path": "/hosts/diagnostics/summary",
+   "handler": "baseApi.LoadRuntimeDiagnosticsSummary"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime_diagnostics.go",
+   "group": "hosts/diagnostics",
+   "method": "GET",
+   "path": "/hosts/diagnostics/goroutines",
+   "handler": "baseApi.LoadRuntimeGoroutines"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_runtime_diagnostics.go",
+   "group": "hosts/diagnostics",
+   "method": "POST",
+   "path": "/hosts/diagnostics/profiles",
+   "handler": "baseApi.CreateRuntimeProfile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/search",
+   "handler": "baseApi.GetSettingInfo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/terminal/ai/search",
+   "handler": "baseApi.GetTerminalAISettingInfo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/files/ai/search",
+   "handler": "baseApi.GetFileManageAISettingInfo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/file-history/search",
+   "handler": "baseApi.GetFileHistorySettingInfo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_setting.go",
+   "group": "settings",
+   "method": "GET",
+   "path": "/settings/website/dir",
+   "handler": "baseApi.LoadWebsiteDir"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_setting.go",
+   "group": "settings",
+   "method": "GET",
+   "path": "/settings/search/available",
+   "handler": "baseApi.GetSystemAvailable"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/update",
+   "handler": "baseApi.UpdateSetting"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/terminal/ai/update",
+   "handler": "baseApi.UpdateTerminalAISetting"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/files/ai/update",
+   "handler": "baseApi.UpdateFileManageAISetting"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/file-history/update",
+   "handler": "baseApi.UpdateFileHistorySetting"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/description/save",
+   "handler": "baseApi.SaveDescription"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_setting.go",
+   "group": "settings",
+   "method": "GET",
+   "path": "/settings/snapshot/load",
+   "handler": "baseApi.LoadSnapshotData"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/snapshot",
+   "handler": "baseApi.CreateSnapshot"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/snapshot/recreate",
+   "handler": "baseApi.RecreateSnapshot"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/snapshot/search",
+   "handler": "baseApi.SearchSnapshot"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/snapshot/import",
+   "handler": "baseApi.ImportSnapshot"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/snapshot/del",
+   "handler": "baseApi.DeleteSnapshot"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/snapshot/recover",
+   "handler": "baseApi.RecoverSnapshot"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/snapshot/rollback",
+   "handler": "baseApi.RollbackSnapshot"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/snapshot/description/update",
+   "handler": "baseApi.UpdateSnapDescription"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_setting.go",
+   "group": "settings",
+   "method": "GET",
+   "path": "/settings/basedir",
+   "handler": "baseApi.LoadBaseDir"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/ssh/check",
+   "handler": "baseApi.CheckLocalConn"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_setting.go",
+   "group": "settings",
+   "method": "GET",
+   "path": "/settings/ssh/conn",
+   "handler": "baseApi.LoadLocalConn"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/ssh/default",
+   "handler": "baseApi.SetDefaultIsConn"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/ssh",
+   "handler": "baseApi.SaveLocalConn"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_setting.go",
+   "group": "settings",
+   "method": "POST",
+   "path": "/settings/ssh/check/info",
+   "handler": "baseApi.CheckLocalConnByInfo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/device/base",
+   "handler": "baseApi.LoadDeviceBaseInfo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "GET",
+   "path": "/toolbox/device/users",
+   "handler": "baseApi.LoadUsers"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "GET",
+   "path": "/toolbox/device/zone/options",
+   "handler": "baseApi.LoadTimeOption"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/device/update/conf",
+   "handler": "baseApi.UpdateDeviceConf"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/device/update/host",
+   "handler": "baseApi.UpdateDeviceHost"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/device/update/passwd",
+   "handler": "baseApi.UpdateDevicePasswd"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/device/update/swap",
+   "handler": "baseApi.UpdateDeviceSwap"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/device/update/byconf",
+   "handler": "baseApi.UpdateDeviceByFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/device/check/dns",
+   "handler": "baseApi.CheckDNS"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/device/conf",
+   "handler": "baseApi.LoadDeviceConf"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/scan",
+   "handler": "baseApi.ScanSystem"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/clean",
+   "handler": "baseApi.SystemClean"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "GET",
+   "path": "/toolbox/fail2ban/base",
+   "handler": "baseApi.LoadFail2BanBaseInfo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "GET",
+   "path": "/toolbox/fail2ban/load/conf",
+   "handler": "baseApi.LoadFail2BanConf"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/fail2ban/search",
+   "handler": "baseApi.SearchFail2Ban"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/fail2ban/operate",
+   "handler": "baseApi.OperateFail2Ban"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/fail2ban/operate/sshd",
+   "handler": "baseApi.OperateSSHD"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/fail2ban/update",
+   "handler": "baseApi.UpdateFail2BanConf"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/fail2ban/update/byconf",
+   "handler": "baseApi.UpdateFail2BanConfByFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "GET",
+   "path": "/toolbox/ftp/base",
+   "handler": "baseApi.LoadFtpBaseInfo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/ftp/log/search",
+   "handler": "baseApi.LoadFtpLogInfo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/ftp/operate",
+   "handler": "baseApi.OperateFtp"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/ftp/search",
+   "handler": "baseApi.SearchFtp"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/ftp",
+   "handler": "baseApi.CreateFtp"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/ftp/update",
+   "handler": "baseApi.UpdateFtp"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/ftp/del",
+   "handler": "baseApi.DeleteFtp"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/ftp/sync",
+   "handler": "baseApi.SyncFtp"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/clam/search",
+   "handler": "baseApi.SearchClam"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/clam/record/search",
+   "handler": "baseApi.SearchClamRecord"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/clam/record/clean",
+   "handler": "baseApi.CleanClamRecord"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/clam/file/search",
+   "handler": "baseApi.SearchClamFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/clam/file/update",
+   "handler": "baseApi.UpdateFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/clam",
+   "handler": "baseApi.CreateClam"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/clam/base",
+   "handler": "baseApi.LoadClamBaseInfo"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/clam/operate",
+   "handler": "baseApi.OperateClam"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/clam/update",
+   "handler": "baseApi.UpdateClam"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/clam/status/update",
+   "handler": "baseApi.UpdateClamStatus"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/clam/del",
+   "handler": "baseApi.DeleteClam"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_toolbox.go",
+   "group": "toolbox",
+   "method": "POST",
+   "path": "/toolbox/clam/handle",
+   "handler": "baseApi.HandleClamScan"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/search",
+   "handler": "baseApi.PageWebsite"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "GET",
+   "path": "/websites/list",
+   "handler": "baseApi.GetWebsites"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites",
+   "handler": "baseApi.CreateWebsite"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/operate",
+   "handler": "baseApi.OpWebsite"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/log/search",
+   "handler": "baseApi.GetWebsiteLog"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/log/operate",
+   "handler": "baseApi.OpWebsiteLog"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/check",
+   "handler": "baseApi.CreateWebsiteCheck"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/options",
+   "handler": "baseApi.GetWebsiteOptions"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/update",
+   "handler": "baseApi.UpdateWebsite"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "GET",
+   "path": "/websites/:id",
+   "handler": "baseApi.GetWebsite"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/del",
+   "handler": "baseApi.DeleteWebsite"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/default/server",
+   "handler": "baseApi.ChangeDefaultServer"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/group/change",
+   "handler": "baseApi.ChangeWebsiteGroup"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/batch/operate",
+   "handler": "baseApi.BatchOpWebsites"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/batch/group",
+   "handler": "baseApi.BatchSetWebsiteGroup"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/batch/ssl",
+   "handler": "baseApi.BatchSetHttps"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "GET",
+   "path": "/websites/domains/:websiteId",
+   "handler": "baseApi.GetWebDomains"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/domains/del",
+   "handler": "baseApi.DeleteWebDomain"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/domains",
+   "handler": "baseApi.CreateWebDomain"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/domains/update",
+   "handler": "baseApi.UpdateWebDomain"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "GET",
+   "path": "/websites/:id/config/:type",
+   "handler": "baseApi.GetWebsiteNginx"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/config",
+   "handler": "baseApi.GetNginxConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/config/update",
+   "handler": "baseApi.UpdateNginxConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/nginx/update",
+   "handler": "baseApi.UpdateWebsiteNginxConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "GET",
+   "path": "/websites/:id/https",
+   "handler": "baseApi.GetHTTPSConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/:id/https",
+   "handler": "baseApi.UpdateHTTPSConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/rewrite",
+   "handler": "baseApi.GetRewriteConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/rewrite/update",
+   "handler": "baseApi.UpdateRewriteConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/rewrite/custom",
+   "handler": "baseApi.OperateCustomRewrite"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "GET",
+   "path": "/websites/rewrite/custom",
+   "handler": "baseApi.ListCustomRewrite"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/dir/update",
+   "handler": "baseApi.UpdateSiteDir"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/dir/permission",
+   "handler": "baseApi.UpdateSiteDirPermission"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/dir",
+   "handler": "baseApi.GetDirConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/proxies",
+   "handler": "baseApi.GetProxyConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/proxies/update",
+   "handler": "baseApi.UpdateProxyConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/proxies/delete",
+   "handler": "baseApi.DeleteProxyConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/proxies/status",
+   "handler": "baseApi.UpdateProxyConfigStatus"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/proxies/file",
+   "handler": "baseApi.UpdateProxyConfigFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/proxy/config",
+   "handler": "baseApi.UpdateProxyCache"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "GET",
+   "path": "/websites/proxy/config/:id",
+   "handler": "baseApi.GetProxyCache"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/proxy/clear",
+   "handler": "baseApi.ClearProxyCache"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/auths",
+   "handler": "baseApi.GetAuthConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/auths/update",
+   "handler": "baseApi.UpdateAuthConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/auths/path",
+   "handler": "baseApi.GetPathAuthConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/auths/path/update",
+   "handler": "baseApi.UpdatePathAuthConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "GET",
+   "path": "/websites/cors/:id",
+   "handler": "baseApi.GetCORSConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/cors/update",
+   "handler": "baseApi.UpdateCORSConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/leech",
+   "handler": "baseApi.GetAntiLeech"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/leech/update",
+   "handler": "baseApi.UpdateAntiLeech"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/redirect/update",
+   "handler": "baseApi.UpdateRedirectConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/redirect",
+   "handler": "baseApi.GetRedirectConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/redirect/file",
+   "handler": "baseApi.UpdateRedirectConfigFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "GET",
+   "path": "/websites/default/html/:type",
+   "handler": "baseApi.GetDefaultHtml"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/default/html/update",
+   "handler": "baseApi.UpdateDefaultHtml"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "GET",
+   "path": "/websites/:id/lbs",
+   "handler": "baseApi.GetLoadBalances"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/lbs/create",
+   "handler": "baseApi.CreateLoadBalance"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/lbs/del",
+   "handler": "baseApi.DeleteLoadBalance"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/lbs/update",
+   "handler": "baseApi.UpdateLoadBalance"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/lbs/file",
+   "handler": "baseApi.UpdateLoadBalanceFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/php/version",
+   "handler": "baseApi.ChangePHPVersion"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/realip/config",
+   "handler": "baseApi.SetRealIPConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "GET",
+   "path": "/websites/realip/config/:id",
+   "handler": "baseApi.GetRealIPConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "GET",
+   "path": "/websites/resource/:id",
+   "handler": "baseApi.GetWebsiteResource"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "GET",
+   "path": "/websites/databases",
+   "handler": "baseApi.GetWebsiteDatabase"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/databases",
+   "handler": "baseApi.ChangeWebsiteDatabase"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/crosssite",
+   "handler": "baseApi.OperateCrossSiteAccess"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/exec/composer",
+   "handler": "baseApi.ExecComposer"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website.go",
+   "group": "websites",
+   "method": "POST",
+   "path": "/websites/stream/update",
+   "handler": "baseApi.UpdateStreamConfig"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_acme_account.go",
+   "group": "websites/acme",
+   "method": "POST",
+   "path": "/websites/acme/search",
+   "handler": "baseApi.PageWebsiteAcmeAccount"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_acme_account.go",
+   "group": "websites/acme",
+   "method": "POST",
+   "path": "/websites/acme",
+   "handler": "baseApi.CreateWebsiteAcmeAccount"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_acme_account.go",
+   "group": "websites/acme",
+   "method": "POST",
+   "path": "/websites/acme/del",
+   "handler": "baseApi.DeleteWebsiteAcmeAccount"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_acme_account.go",
+   "group": "websites/acme",
+   "method": "POST",
+   "path": "/websites/acme/update",
+   "handler": "baseApi.UpdateWebsiteAcmeAccount"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_ca.go",
+   "group": "websites/ca",
+   "method": "POST",
+   "path": "/websites/ca/search",
+   "handler": "baseApi.PageWebsiteCA"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_ca.go",
+   "group": "websites/ca",
+   "method": "POST",
+   "path": "/websites/ca",
+   "handler": "baseApi.CreateWebsiteCA"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_ca.go",
+   "group": "websites/ca",
+   "method": "POST",
+   "path": "/websites/ca/del",
+   "handler": "baseApi.DeleteWebsiteCA"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_ca.go",
+   "group": "websites/ca",
+   "method": "POST",
+   "path": "/websites/ca/obtain",
+   "handler": "baseApi.ObtainWebsiteCA"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_ca.go",
+   "group": "websites/ca",
+   "method": "POST",
+   "path": "/websites/ca/renew",
+   "handler": "baseApi.RenewWebsiteCA"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_ca.go",
+   "group": "websites/ca",
+   "method": "GET",
+   "path": "/websites/ca/:id",
+   "handler": "baseApi.GetWebsiteCA"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_ca.go",
+   "group": "websites/ca",
+   "method": "POST",
+   "path": "/websites/ca/download",
+   "handler": "baseApi.DownloadCAFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_dns_account.go",
+   "group": "websites/dns",
+   "method": "POST",
+   "path": "/websites/dns/search",
+   "handler": "baseApi.PageWebsiteDnsAccount"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_dns_account.go",
+   "group": "websites/dns",
+   "method": "POST",
+   "path": "/websites/dns",
+   "handler": "baseApi.CreateWebsiteDnsAccount"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_dns_account.go",
+   "group": "websites/dns",
+   "method": "POST",
+   "path": "/websites/dns/update",
+   "handler": "baseApi.UpdateWebsiteDnsAccount"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_dns_account.go",
+   "group": "websites/dns",
+   "method": "POST",
+   "path": "/websites/dns/del",
+   "handler": "baseApi.DeleteWebsiteDnsAccount"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_ssl.go",
+   "group": "websites/ssl",
+   "method": "POST",
+   "path": "/websites/ssl/search",
+   "handler": "baseApi.PageWebsiteSSL"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_ssl.go",
+   "group": "websites/ssl",
+   "method": "POST",
+   "path": "/websites/ssl/list",
+   "handler": "baseApi.ListWebsiteSSL"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_ssl.go",
+   "group": "websites/ssl",
+   "method": "POST",
+   "path": "/websites/ssl",
+   "handler": "baseApi.CreateWebsiteSSL"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_ssl.go",
+   "group": "websites/ssl",
+   "method": "POST",
+   "path": "/websites/ssl/resolve",
+   "handler": "baseApi.GetDNSResolve"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_ssl.go",
+   "group": "websites/ssl",
+   "method": "POST",
+   "path": "/websites/ssl/del",
+   "handler": "baseApi.DeleteWebsiteSSL"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_ssl.go",
+   "group": "websites/ssl",
+   "method": "GET",
+   "path": "/websites/ssl/website/:websiteId",
+   "handler": "baseApi.GetWebsiteSSLByWebsiteId"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_ssl.go",
+   "group": "websites/ssl",
+   "method": "GET",
+   "path": "/websites/ssl/:id",
+   "handler": "baseApi.GetWebsiteSSLById"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_ssl.go",
+   "group": "websites/ssl",
+   "method": "POST",
+   "path": "/websites/ssl/update",
+   "handler": "baseApi.UpdateWebsiteSSL"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_ssl.go",
+   "group": "websites/ssl",
+   "method": "POST",
+   "path": "/websites/ssl/push",
+   "handler": "baseApi.PushWebsiteSSLToNode"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_ssl.go",
+   "group": "websites/ssl",
+   "method": "POST",
+   "path": "/websites/ssl/upload",
+   "handler": "baseApi.UploadWebsiteSSL"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_ssl.go",
+   "group": "websites/ssl",
+   "method": "POST",
+   "path": "/websites/ssl/obtain",
+   "handler": "baseApi.ApplyWebsiteSSL"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_ssl.go",
+   "group": "websites/ssl",
+   "method": "POST",
+   "path": "/websites/ssl/download",
+   "handler": "baseApi.DownloadWebsiteSSL"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_ssl.go",
+   "group": "websites/ssl",
+   "method": "POST",
+   "path": "/websites/ssl/import",
+   "handler": "baseApi.ImportMasterSSL"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_ssl.go",
+   "group": "websites/ssl",
+   "method": "POST",
+   "path": "/websites/ssl/upload/file",
+   "handler": "baseApi.UploadSSLFile"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_template.go",
+   "group": "websites/templates",
+   "method": "POST",
+   "path": "/websites/templates/search",
+   "handler": "baseApi.PageWebsiteTemplate"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_template.go",
+   "group": "websites/templates",
+   "method": "POST",
+   "path": "/websites/templates",
+   "handler": "baseApi.CreateWebsiteTemplate"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_template.go",
+   "group": "websites/templates",
+   "method": "POST",
+   "path": "/websites/templates/update",
+   "handler": "baseApi.UpdateWebsiteTemplate"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_template.go",
+   "group": "websites/templates",
+   "method": "POST",
+   "path": "/websites/templates/del",
+   "handler": "baseApi.DeleteWebsiteTemplate"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_template.go",
+   "group": "websites/templates",
+   "method": "POST",
+   "path": "/websites/templates/get",
+   "handler": "baseApi.GetWebsiteTemplate"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_template.go",
+   "group": "websites/templates",
+   "method": "POST",
+   "path": "/websites/templates/upload",
+   "handler": "baseApi.UploadTemplateZip"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_template.go",
+   "group": "websites/templates",
+   "method": "POST",
+   "path": "/websites/templates/preview",
+   "handler": "baseApi.PreviewWebsiteTemplate"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_template.go",
+   "group": "websites/templates",
+   "method": "POST",
+   "path": "/websites/templates/outputs/search",
+   "handler": "baseApi.PageWebsiteTemplateOutput"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_template.go",
+   "group": "websites/templates",
+   "method": "POST",
+   "path": "/websites/templates/outputs",
+   "handler": "baseApi.CreateWebsiteTemplateOutput"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_template.go",
+   "group": "websites/templates",
+   "method": "POST",
+   "path": "/websites/templates/outputs/del",
+   "handler": "baseApi.DeleteWebsiteTemplateOutput"
+  },
+  {
+   "process": "agent",
+   "file": "agent/router/ro_website_template.go",
+   "group": "websites/templates",
+   "method": "POST",
+   "path": "/websites/templates/outputs/get",
+   "handler": "baseApi.GetWebsiteTemplateOutput"
+  }
+ ]
+}

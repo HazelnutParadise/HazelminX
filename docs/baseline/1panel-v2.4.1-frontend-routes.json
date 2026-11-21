@@ -1,0 +1,766 @@
+{
+ "meta": {
+  "source": "1Panel-dev/1Panel",
+  "tag": "v2.4.1",
+  "commit": "f9f9169a4d8cba736b0761e828b3df574e242918",
+  "generator": "scripts/baseline/extract_1panel_routes.py"
+ },
+ "routes": [
+  {
+   "file": "frontend/src/routers/router.ts",
+   "path": "/",
+   "name": "Home-Menu",
+   "component": "",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/router.ts",
+   "path": "/",
+   "name": "home",
+   "component": "@/views/home/index.vue",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/router.ts",
+   "path": "/login",
+   "name": "login",
+   "component": "@/views/login/index.vue",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/router.ts",
+   "path": "/enterprise/license-required",
+   "name": "EnterpriseLicenseRequired",
+   "component": "@/views/setting/license-required/index.vue",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/router.ts",
+   "path": "/s/:code",
+   "name": "file-share",
+   "component": "@/views/share/index.vue",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/router.ts",
+   "path": "/:code?",
+   "name": "entrance",
+   "component": "@/views/login/index.vue",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/router.ts",
+   "path": "/:pathMatch(.*)",
+   "name": "404",
+   "component": "",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/ai.ts",
+   "path": "/ai",
+   "name": "AI-Menu",
+   "component": "",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/ai.ts",
+   "path": "/ai/agents/agent",
+   "name": "Agents",
+   "component": "@/views/ai/agents/agent/index.vue",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/ai.ts",
+   "path": "/ai/model/account",
+   "name": "AIModel",
+   "component": "@/views/ai/model/index.vue",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/ai.ts",
+   "path": "/ai/model/local",
+   "name": "LocalModel",
+   "component": "@/views/ai/model/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/ai.ts",
+   "path": "/ai/mcp",
+   "name": "MCPServer",
+   "component": "@/views/ai/mcp/server/index.vue",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/ai.ts",
+   "path": "/ai/gpu/current",
+   "name": "GPU",
+   "component": "@/views/ai/gpu/current/index.vue",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/ai.ts",
+   "path": "/ai/gpu/history",
+   "name": "GPUHistory",
+   "component": "@/views/ai/gpu/history/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/app-store.ts",
+   "path": "/apps",
+   "name": "App-Menu",
+   "component": "",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/app-store.ts",
+   "path": "/apps",
+   "name": "App",
+   "component": "@/views/app-store/index.vue",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/app-store.ts",
+   "path": "all",
+   "name": "AppAll",
+   "component": "@/views/app-store/apps/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/app-store.ts",
+   "path": "installed",
+   "name": "AppInstalled",
+   "component": "@/views/app-store/installed/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/app-store.ts",
+   "path": "upgrade",
+   "name": "AppUpgrade",
+   "component": "@/views/app-store/installed/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/app-store.ts",
+   "path": "setting",
+   "name": "AppStoreSetting",
+   "component": "@/views/app-store/setting/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/container.ts",
+   "path": "/containers",
+   "name": "Container-Menu",
+   "component": "",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/container.ts",
+   "path": "/containers",
+   "name": "Container",
+   "component": "@/views/container/index.vue",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/container.ts",
+   "path": "dashboard",
+   "name": "ContainerDashboard",
+   "component": "@/views/container/dashboard/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/container.ts",
+   "path": "container",
+   "name": "ContainerItem",
+   "component": "@/views/container/container/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/container.ts",
+   "path": "container/operate",
+   "name": "ContainerCreate",
+   "component": "@/views/container/container/operate/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/container.ts",
+   "path": "image",
+   "name": "Image",
+   "component": "@/views/container/image/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/container.ts",
+   "path": "network",
+   "name": "Network",
+   "component": "@/views/container/network/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/container.ts",
+   "path": "volume",
+   "name": "Volume",
+   "component": "@/views/container/volume/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/container.ts",
+   "path": "repo",
+   "name": "Repo",
+   "component": "@/views/container/repo/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/container.ts",
+   "path": "compose",
+   "name": "Compose",
+   "component": "@/views/container/compose/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/container.ts",
+   "path": "template",
+   "name": "ComposeTemplate",
+   "component": "@/views/container/template/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/container.ts",
+   "path": "setting",
+   "name": "ContainerSetting",
+   "component": "@/views/container/setting/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/cronjob.ts",
+   "path": "/cronjobs",
+   "name": "Cronjob-Menu",
+   "component": "",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/cronjob.ts",
+   "path": "/cronjobs",
+   "name": "Cronjob",
+   "component": "@/views/cronjob/index.vue",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/cronjob.ts",
+   "path": "cronjob",
+   "name": "CronjobItem",
+   "component": "@/views/cronjob/cronjob/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/cronjob.ts",
+   "path": "cronjob/operate",
+   "name": "CronjobOperate",
+   "component": "@/views/cronjob/cronjob/operate/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/cronjob.ts",
+   "path": "library",
+   "name": "Library",
+   "component": "@/views/cronjob/library/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/database.ts",
+   "path": "/databases",
+   "name": "Database-Menu",
+   "component": "",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/database.ts",
+   "path": "/databases",
+   "name": "Database",
+   "component": "@/views/database/index.vue",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/database.ts",
+   "path": "mysql",
+   "name": "MySQL",
+   "component": "@/views/database/mysql/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/database.ts",
+   "path": "mysql/setting/:type/:database",
+   "name": "MySQL-Setting",
+   "component": "@/views/database/mysql/setting/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/database.ts",
+   "path": "mysql/remote",
+   "name": "MySQL-Remote",
+   "component": "@/views/database/mysql/remote/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/database.ts",
+   "path": "postgresql",
+   "name": "PostgreSQL",
+   "component": "@/views/database/postgresql/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/database.ts",
+   "path": "postgresql/remote",
+   "name": "PostgreSQL-Remote",
+   "component": "@/views/database/postgresql/remote/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/database.ts",
+   "path": "postgresql/setting/:type/:database",
+   "name": "PostgreSQL-Setting",
+   "component": "@/views/database/postgresql/setting/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/database.ts",
+   "path": "redis",
+   "name": "Redis",
+   "component": "@/views/database/redis/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/database.ts",
+   "path": "redis/remote",
+   "name": "Redis-Remote",
+   "component": "@/views/database/redis/remote/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/database.ts",
+   "path": "mongodb",
+   "name": "MongoDB",
+   "component": "@/views/database/mongodb/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/database.ts",
+   "path": "mongodb/remote",
+   "name": "MongoDB-Remote",
+   "component": "@/views/database/mongodb/remote/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/error.ts",
+   "path": "/error",
+   "name": "",
+   "component": "",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/error.ts",
+   "path": "404",
+   "name": "404",
+   "component": "@/components/error-message/404.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/host.ts",
+   "path": "/hosts",
+   "name": "System-Menu",
+   "component": "",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/host.ts",
+   "path": "/hosts/files",
+   "name": "File",
+   "component": "@/views/host/file-management/index.vue",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/host.ts",
+   "path": "/hosts/monitor/monitor",
+   "name": "Monitorx",
+   "component": "@/views/host/monitor/monitor/index.vue",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/host.ts",
+   "path": "/hosts/monitor/export",
+   "name": "HostMonitorExport",
+   "component": "@/views/host/monitor/export/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/host.ts",
+   "path": "/hosts/monitor/setting",
+   "name": "HostMonitorSetting",
+   "component": "@/views/host/monitor/setting/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/host.ts",
+   "path": "/hosts/firewall/rules",
+   "name": "FirewallPort",
+   "component": "@/views/host/firewall/rule/index.vue",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/host.ts",
+   "path": "/hosts/firewall/docker",
+   "name": "FirewallDockerGuard",
+   "component": "@/views/host/firewall/docker/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/host.ts",
+   "path": "/hosts/firewall/forward",
+   "name": "FirewallForward",
+   "component": "@/views/host/firewall/forward/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/host.ts",
+   "path": "/hosts/firewall/setting",
+   "name": "FirewallSetting",
+   "component": "@/views/host/firewall/setting/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/host.ts",
+   "path": "/hosts/disk",
+   "name": "Disk",
+   "component": "@/views/host/disk-management/disk/index.vue",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/host.ts",
+   "path": "/hosts/process/process",
+   "name": "Process",
+   "component": "@/views/host/process/process/index.vue",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/host.ts",
+   "path": "/hosts/process/network",
+   "name": "ProcessNetwork",
+   "component": "@/views/host/process/network/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/host.ts",
+   "path": "/hosts/ssh/ssh",
+   "name": "SSH",
+   "component": "@/views/host/ssh/ssh/index.vue",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/host.ts",
+   "path": "/hosts/ssh/log",
+   "name": "SSHLog",
+   "component": "@/views/host/ssh/log/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/host.ts",
+   "path": "/hosts/ssh/session",
+   "name": "SSHSession",
+   "component": "@/views/host/ssh/session/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/log.ts",
+   "path": "/logs",
+   "name": "Log-Menu",
+   "component": "",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/log.ts",
+   "path": "/logs",
+   "name": "Log",
+   "component": "@/views/log/index.vue",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/log.ts",
+   "path": "operation",
+   "name": "OperationLog",
+   "component": "@/views/log/operation/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/log.ts",
+   "path": "login",
+   "name": "LoginLog",
+   "component": "@/views/log/login/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/log.ts",
+   "path": "website",
+   "name": "WebsiteLog",
+   "component": "@/views/log/website/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/log.ts",
+   "path": "system",
+   "name": "SystemLog",
+   "component": "@/views/log/system/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/log.ts",
+   "path": "host",
+   "name": "HostSystemLog",
+   "component": "@/views/log/host-system/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/log.ts",
+   "path": "ssh",
+   "name": "SSHLog2",
+   "component": "@/views/host/ssh/log/log.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/log.ts",
+   "path": "task",
+   "name": "Task",
+   "component": "@/views/log/task/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/setting.ts",
+   "path": "/settings",
+   "name": "Setting-Menu",
+   "component": "",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/setting.ts",
+   "path": "/settings",
+   "name": "Setting",
+   "component": "@/views/setting/index.vue",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/setting.ts",
+   "path": "apikeys",
+   "name": "APIKeys",
+   "component": "@/views/setting/api-keys/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/setting.ts",
+   "path": "panel",
+   "name": "Panel",
+   "component": "@/views/setting/panel/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/setting.ts",
+   "path": "alert",
+   "name": "Alert",
+   "component": "@/views/setting/alert/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/setting.ts",
+   "path": "backupaccount",
+   "name": "BackupAccount",
+   "component": "@/views/setting/backup-account/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/setting.ts",
+   "path": "license",
+   "name": "License",
+   "component": "@/views/setting/license/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/setting.ts",
+   "path": "about",
+   "name": "About",
+   "component": "@/views/setting/about/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/setting.ts",
+   "path": "safe",
+   "name": "Safe",
+   "component": "@/views/setting/safe/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/setting.ts",
+   "path": "snapshot",
+   "name": "Snapshot",
+   "component": "@/views/setting/snapshot/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/setting.ts",
+   "path": "expired",
+   "name": "Expired",
+   "component": "@/views/setting/expired.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/terminal.ts",
+   "path": "/terminal",
+   "name": "Terminal-Menu",
+   "component": "",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/terminal.ts",
+   "path": "/terminal",
+   "name": "Terminal",
+   "component": "@/views/terminal/index.vue",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/toolbox.ts",
+   "path": "/toolbox",
+   "name": "Toolbox-Menu",
+   "component": "",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/toolbox.ts",
+   "path": "/toolbox",
+   "name": "Toolbox",
+   "component": "@/views/toolbox/index.vue",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/toolbox.ts",
+   "path": "device",
+   "name": "Device",
+   "component": "@/views/toolbox/device/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/toolbox.ts",
+   "path": "supervisor",
+   "name": "Supervisor",
+   "component": "@/views/toolbox/supervisor/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/toolbox.ts",
+   "path": "clam",
+   "name": "Clam",
+   "component": "@/views/toolbox/clam/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/toolbox.ts",
+   "path": "clam/setting",
+   "name": "Clam-Setting",
+   "component": "@/views/toolbox/clam/setting/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/toolbox.ts",
+   "path": "ftp",
+   "name": "FTP",
+   "component": "@/views/toolbox/ftp/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/toolbox.ts",
+   "path": "fail2ban",
+   "name": "Fail2ban",
+   "component": "@/views/toolbox/fail2ban/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/toolbox.ts",
+   "path": "clean",
+   "name": "Clean",
+   "component": "@/views/toolbox/clean/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/website.ts",
+   "path": "/websites",
+   "name": "Website-Menu",
+   "component": "",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/website.ts",
+   "path": "/websites",
+   "name": "Website",
+   "component": "@/views/website/website/index.vue",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/website.ts",
+   "path": "/websites/:id/config/:tab",
+   "name": "WebsiteConfig",
+   "component": "@/views/website/website/config/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/website.ts",
+   "path": "/websites/ssl",
+   "name": "SSL",
+   "component": "@/views/website/ssl/index.vue",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/website.ts",
+   "path": "/websites/templates",
+   "name": "WebsiteTemplate",
+   "component": "@/views/website/template/index.vue",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/website.ts",
+   "path": "/websites/runtimes/php",
+   "name": "PHP",
+   "component": "@/views/website/runtime/php/index.vue",
+   "hidden": false
+  },
+  {
+   "file": "frontend/src/routers/modules/website.ts",
+   "path": "/websites/runtimes/node",
+   "name": "node",
+   "component": "@/views/website/runtime/node/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/website.ts",
+   "path": "/websites/runtimes/java",
+   "name": "java",
+   "component": "@/views/website/runtime/java/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/website.ts",
+   "path": "/websites/runtimes/go",
+   "name": "go",
+   "component": "@/views/website/runtime/go/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/website.ts",
+   "path": "/websites/runtimes/python",
+   "name": "python",
+   "component": "@/views/website/runtime/python/index.vue",
+   "hidden": true
+  },
+  {
+   "file": "frontend/src/routers/modules/website.ts",
+   "path": "/websites/runtimes/dotnet",
+   "name": "dotNet",
+   "component": "@/views/website/runtime/dotnet/index.vue",
+   "hidden": true
+  }
+ ]
+}
