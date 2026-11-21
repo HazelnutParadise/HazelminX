@@ -4500,7 +4500,7 @@
     {
       "id": "T-032",
       "chapter": "42",
-      "scenario": "舊控制中心恢復並送舊工作。",
+      "scenario": "舊 HazelminX 伺服器恢復並送舊工作。",
       "expected": "控制世代驗證拒絕。",
       "status": "not_executed",
       "scope_status": "specified_scope"

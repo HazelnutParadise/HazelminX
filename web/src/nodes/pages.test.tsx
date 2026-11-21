@@ -501,7 +501,7 @@ describe("host actions", () => {
     ]) {
       const r = within(dialog).getByRole("radio", { name: new RegExp(`^${mode}`) });
       expect(r).toBeDisabled();
-      expect(r).toHaveAccessibleDescription(`目前做不到：控制中心還沒有這項動作，由票 ${ticket} 提供。`);
+      expect(r).toHaveAccessibleDescription(`目前做不到：HazelminX 伺服器還沒有這項動作，由票 ${ticket} 提供。`);
     }
     expect(within(dialog).getByText(/主機本身、Agent 與上面的應用都不會被動到/)).toBeInTheDocument();
     await u.click(within(dialog).getByRole("button", { name: "不再管理 hazel-tw-01" }));

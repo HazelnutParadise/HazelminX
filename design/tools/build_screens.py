@@ -119,7 +119,7 @@ def overview() -> str:
       <div class="ph"><h2 id="h-nodes">主機 · 4 台</h2><span class="note">有問題的排前面</span>{U.legend(RING_LEGEND)}<a class="more" href="Nodes.dc.html">全部主機 →</a></div>
       <div class="fleet">
         {U.node_card("hazel-jp-02", "Debian 12 · Docker · 4 核 · 資料碟未綁定", U.status("dng", "沒有回應"), 64, (13.9, 15.5), (870, 931), CPU_JP[-12:], "03:41:18", (3, 3), stale=True)}
-        {U.node_card("hazel-tw-01", "Ubuntu 24.04 · 控制中心 · Docker · 8 核 · L4 GPU", U.status("ok", "連線中"), 37, (11.2, 31.3), (412, 931), CPU_TW[-12:], "2 秒前", (9, 10))}
+        {U.node_card("hazel-tw-01", "Ubuntu 24.04 · HazelminX 伺服器 · Docker · 8 核 · L4 GPU", U.status("ok", "連線中"), 37, (11.2, 31.3), (412, 931), CPU_TW[-12:], "2 秒前", (9, 10))}
         {U.node_card("lab-mini", "Debian 13 · Podman rootless · 4 核", U.status("info", "維護中"), 3, (1.1, 7.6), (38, 118), CPU_LAB[-12:], "5 秒前", (0, 2))}
       </div>      <div class="row hd"><span>其他主機 · 1</span><span>狀態</span><span>CPU</span><span>記憶體</span><span></span></div>
       <a class="row" href="Nodes.dc.html"><span class="name"><span class="n mono">old-nas</span><span class="d">Agent 0.0.9 · 協定 v0</span></span><span>{U.status("dng", "協定不相容")}</span><span class="mono">—</span><span class="mono">—</span><span class="acts"><span class="btn sm">升級 Agent</span></span></a>
@@ -273,7 +273,7 @@ def node_detail() -> str:
     </div>"""
     spec = f"""
     <div class="panel"><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); gap: 10px 16px; padding: 12px 14px; font-size: 13px">
-      {kv("作業系統", "Ubuntu 24.04.2 LTS")}{kv("核心", "6.8.0-45-generic")}{kv("CPU", "8 核 · AMD EPYC 7B13")}{kv("記憶體", "31.3 GiB")}{kv("執行階段", "Docker 27.3.1")}{kv("Agent", "hazelminx-agent 0.1.0 · mTLS")}{kv("角色", "控制中心 · 資料主機")}{kv("GPU", "NVIDIA L4 · 24 GiB · 驅動 550.90 · NVML")}
+      {kv("作業系統", "Ubuntu 24.04.2 LTS")}{kv("核心", "6.8.0-45-generic")}{kv("CPU", "8 核 · AMD EPYC 7B13")}{kv("記憶體", "31.3 GiB")}{kv("執行階段", "Docker 27.3.1")}{kv("Agent", "hazelminx-agent 0.1.0 · mTLS")}{kv("角色", "HazelminX 伺服器 · 資料主機")}{kv("GPU", "NVIDIA L4 · 24 GiB · 驅動 550.90 · NVML")}
     </div></div>"""
     hw = (f'<section class="panel" aria-labelledby="h-hw"><div class="ph"><h2 id="h-hw">硬體</h2><span class="note">03:42:06</span></div><div class="hwg">'
           + U.hw_group("CPU", [("8 核", 37, "37%", "")], "EPYC 7B13 · 3.5 GHz · 負載 2.1")
@@ -871,7 +871,7 @@ def login() -> str:
     down = f"""
       <section style="{card}" aria-labelledby="h-dn">
         {brand}
-        <h1 id="h-dn" style="font-size:20px">連不上控制中心</h1>
+        <h1 id="h-dn" style="font-size:20px">連不上 HazelminX 伺服器</h1>
         <div class="wrap">{U.status("dng", "panel.example.tw 沒有回應")}</div>
         <div class="term">GET /management/v1/auth/session
 net::ERR_CONNECTION_REFUSED</div>
@@ -1060,8 +1060,8 @@ def states() -> str:
     empty = f"""
     <section class="chart" aria-label="空資料範例"><div class="ph"><h2>還沒有主機</h2></div>
       <div class="body" style="display:flex;flex-direction:column;gap:10px;padding:20px 14px;align-items:flex-start">
-        <p style="font-size:14px">HazelminX 目前只管理這台控制中心本身。加入第一台主機後，這裡會顯示它的狀態、資源與工作。</p>
-        <p class="note">主機需要能主動連到控制中心的 8443 Port；不需要開放任何入站 Port。</p>
+        <p style="font-size:14px">目前只管理這台 HazelminX 伺服器本身。加入第一台主機後，這裡會顯示它的狀態、資源與工作。</p>
+        <p class="note">主機需要能主動連到 HazelminX 伺服器的 8443 Port；不需要開放任何入站 Port。</p>
         <div class="wrap"><button type="button" class="btn pri">新增主機</button><a class="btn" href="#docs">看安裝步驟</a></div>
       </div></section>"""
     error = f"""
@@ -1080,9 +1080,9 @@ def states() -> str:
         <div class="tiles" style="padding:12px 14px">{U.stat_tile("各主機 CPU", "32", '%<b class="star">*</b>', "2 主機即時 + 1 上次觀測", None)}{U.stat_tile("資料完整度", "92.3", "%", "流量分析取樣 7.7%", False)}</div>
       </div></section>"""
     offline = f"""
-    <section class="chart" aria-label="離線範例"><div class="ph"><h2>與控制中心失去連線</h2><span class="sub">保留上一次畫面並降低不透明度，不閃骨架</span></div>
+    <section class="chart" aria-label="離線範例"><div class="ph"><h2>與 HazelminX 伺服器失去連線</h2><span class="sub">保留上一次畫面並降低不透明度，不閃骨架</span></div>
       <div class="body" style="padding:0">
-        <div class="banner" style="border-radius:0;border-left:0;border-right:0;border-top:0">{U.status("off", "離線 · 12 秒")}<span>最後更新 03:41:54 · 工作在控制中心上繼續執行</span><button type="button" class="btn sm" style="margin-left:auto">重試連線</button></div>
+        <div class="banner" style="border-radius:0;border-left:0;border-right:0;border-top:0">{U.status("off", "離線 · 12 秒")}<span>最後更新 03:41:54 · 工作在 HazelminX 伺服器上繼續執行</span><button type="button" class="btn sm" style="margin-left:auto">重試連線</button></div>
         <div class="dim" style="padding:12px 14px" aria-hidden="true">{U.timeseries([U.Series("CPU", CPU_TW[-12:], "var(--hazel)", kind="area")], HOURS[-12:], unit="%", vmax=100, w=440, h=120)}</div>
       </div></section>"""
     nodata = f"""
@@ -1361,9 +1361,9 @@ def nodes(part: str | None = None) -> str:
       <div class="ph"><h2 id="h-fl">主機 · 4</h2><div class="wrap" style="margin-left:auto"><label class="inp" style="min-width:200px"><span class="note">搜尋</span><input placeholder="名稱、標籤、IP" style="background:transparent;border:0;flex:1;min-width:0"></label><span class="chip on">全部 4</span><span class="chip">production 2</span><span class="chip">lab 1</span><span class="chip">有問題 2</span><span class="range" role="group" aria-label="檢視方式"><button type="button" class="btn" aria-pressed="false">卡片</button><button type="button" class="btn on" aria-pressed="true">表格</button></span></div></div>
       <div class="row hd"><span>主機</span><span>狀態</span><span>CPU</span><span>記憶體</span><span class="c3">資料碟</span><span class="c5">CPU 1 小時</span><span class="c4">容器</span><span class="c6">最後聯絡</span><span></span></div>
       {nrow("hazel-jp-02", "Debian 12 · Docker 27.1 · 4 核", U.status("dng", "沒有回應 · 48 秒"), 64, (13.9, 15.5), (870, 931), CPU_JP[-12:], "3/3", "03:41:18", stale=True, href="NodeOffline.dc.html")}
-      {nrow("hazel-tw-01", "Ubuntu 24.04 · 控制中心 · 8 核 · L4", U.status("ok", "連線中"), 37, (11.2, 31.3), (412, 931), CPU_TW[-12:], "9/10", "2 秒前")}
+      {nrow("hazel-tw-01", "Ubuntu 24.04 · HazelminX 伺服器 · 8 核 · L4", U.status("ok", "連線中"), 37, (11.2, 31.3), (412, 931), CPU_TW[-12:], "9/10", "2 秒前")}
       {nrow("lab-mini", "Debian 13 · Podman 5.2 · K3s · 4 核", U.status("info", "維護中"), 3, (1.1, 7.6), (38, 118), CPU_LAB[-12:], "0/2", "5 秒前")}
-      <div class="row"><span class="name"><span class="n mono">old-nas</span><span class="d">Agent 0.0.9 · 協定 v0</span></span><span><span tabindex="0" data-tip="控制中心使用協定 v1，這台的 Agent 只支援 v0；平台不送任何命令給它">{U.status("dng", "協定不相容")}</span></span><span class="note">—</span><span class="note">—</span><span class="c3 note">—</span><span class="c5 note">—</span><span class="mono c4">—</span><span class="mono c6">03:40:02</span><span class="acts"><button type="button" class="btn sm">升級 Agent</button></span></div>
+      <div class="row"><span class="name"><span class="n mono">old-nas</span><span class="d">Agent 0.0.9 · 協定 v0</span></span><span><span tabindex="0" data-tip="HazelminX 伺服器使用協定 v1，這台的 Agent 只支援 v0；平台不送任何命令給它">{U.status("dng", "協定不相容")}</span></span><span class="note">—</span><span class="note">—</span><span class="c3 note">—</span><span class="c5 note">—</span><span class="mono c4">—</span><span class="mono c6">03:40:02</span><span class="acts"><button type="button" class="btn sm">升級 Agent</button></span></div>
     </section>"""
     cross = f"""
     <section class="panel" aria-labelledby="h-cross">
@@ -1934,7 +1934,7 @@ def node_ledger() -> str:
     head = node_head("hazel-tw-01", U.status("ok", "連線中"), "最後聯絡 2 秒前", '<button type="button" class="btn">匯出帳本</button>') + node_tabs("變更帳本")
     state = _fp("帳本狀態", _grid(
         _fld("本機帳本", U.status("ok", "完整 · 1,284 筆 · 最後驗證 03:40")),
-        _fld("控制中心副本", U.status("ok", "已同步到第 1,284 筆")),
+        _fld("HazelminX 伺服器副本", U.status("ok", "已同步到第 1,284 筆")),
         _fld("安裝前快照", U.status("ok", "11/02 02:14 · 已保存"), "移除時拿來比對"),
         _fld("使用者後來改過", U.status("warn", "2 個檔案"), "平台寫過、之後被手動改過")))
     def le(t, obj, how, before, after, own, job):
@@ -1982,11 +1982,11 @@ def node_ledger_broken() -> str:
     bar = ('<div class="cdown" role="alert"><span class="t"><strong>這台主機的變更帳本無法使用 · 03:40 起</strong>'
            f'<span>{U.status("dng", "完整性檢查失敗 · 第 1,281 筆的雜湊與下一筆的紀錄不符")}</span>'
            '<span style="color:var(--muted);font-size:12.5px">修好之前，這台主機的所有變更都會被拒絕；讀取、監控、日誌與終端機照常可用</span></span>'
-           '<span class="acts2"><button type="button" class="btn pri">從 控制中心副本修復</button><button type="button" class="btn">看檢查結果</button></span></div>')
+           '<span class="acts2"><button type="button" class="btn pri">從伺服器副本修復</button><button type="button" class="btn">看檢查結果</button></span></div>')
     main = head + bar + _fp("修復方式", f"""
       <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">
-        {_chk("ok", "控制中心副本完整", "控制中心有到第 1,284 筆的完整副本，可以用來重建本機帳本", "這次用這個")}
-        {_chk("info", "控制中心副本落後時", "差的筆數會列出來，需要你確認那些變更是否真的發生過", "這次不適用")}
+        {_chk("ok", "HazelminX 伺服器副本完整", "HazelminX 伺服器有到第 1,284 筆的完整副本，可以用來重建本機帳本", "這次用這個")}
+        {_chk("info", "HazelminX 伺服器副本落後時", "差的筆數會列出來，需要你確認那些變更是否真的發生過", "這次不適用")}
         {_chk("info", "沒有可用副本時", "以目前主機狀態重新建立帳本；之前的變更標成「來源不明」，完全移除時不會自動處理", "這次不適用")}
       </div>""")
     return U.shell("nodes", main)
@@ -2489,7 +2489,7 @@ def shell_states() -> str:
                  '<a class="btn pri" href="GitHubSource.dc.html">從 GitHub 匯入</a><a class="btn" href="AppStore.dc.html">應用商店</a>')
     nf = page("404 · 找不到頁面", '<strong>找不到這個頁面</strong><span class="mono note">/projects/shop-old</span>',
               '<a class="btn pri" href="Overview.dc.html">回總覽</a><a class="btn" href="CommandPalette.dc.html">搜尋</a>')
-    err = page("頁面載入失敗", f'<strong>這一頁沒有載入成功</strong>{U.status("dng", "控制中心回應 502 · 追蹤碼 tr_91c0aa")}',
+    err = page("頁面載入失敗", f'<strong>這一頁沒有載入成功</strong>{U.status("dng", "HazelminX 伺服器回應 502 · 追蹤碼 tr_91c0aa")}',
                '<button type="button" class="btn pri">重新載入</button><button type="button" class="btn">複製追蹤碼</button>')
     loading = box("第一次載入", '<div style="display:flex;flex-direction:column;gap:8px">'
                   + "".join(f'<span style="height:{h}px;border-radius:6px;background:var(--line);opacity:.6;width:{w}%"></span>' for h, w in ((20, 40), (12, 90), (12, 75), (12, 82)))
@@ -4116,7 +4116,7 @@ def add_node() -> str:
         <div class="term">curl -fsSL https://panel.example.tw/install-agent.sh | sudo sh -s -- \\
   --core https://panel.example.tw --code HZX-7Q4M-2KD9-PX81</div>
         <div class="wrap"><button type="button" class="btn sm">{U.icon("copy", 14)}複製指令</button><button type="button" class="btn sm">看安裝腳本內容</button><button type="button" class="btn sm">下載離線安裝包</button></div>
-        <span class="note">用 SSH 登入那台主機後貼上執行。Agent 會主動連回控制中心，不用開任何入站 Port；沒有 Docker 也可以，之後在容器頁安裝。</span>
+        <span class="note">用 SSH 登入那台主機後貼上執行。Agent 會主動連回 HazelminX 伺服器，不用開任何入站 Port；沒有 Docker 也可以，之後在容器頁安裝。</span>
       </div>""")
     verify = _fp("3 · 核對主機", f"""
       <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
@@ -4131,7 +4131,7 @@ def add_node() -> str:
       <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">
         <div class="wrap">{U.status("info", "等待主機連線…")}<span class="note">指令跑完後通常 10 秒內會出現在這裡</span></div>
         {_chk("warn", "指令報錯", "看主機終端機最後幾行；常見是沒有 sudo 權限或系統不支援", "<a href='AddNode.dc.html'>支援的系統</a>")}
-        {_chk("warn", "連不回控制中心", "在那台主機跑 curl -fsS https://panel.example.tw/healthz，不通就是出站 443 被擋", "")}
+        {_chk("warn", "連不回 HazelminX 伺服器", "在那台主機跑 curl -fsS https://panel.example.tw/healthz，不通就是出站 443 被擋", "")}
         {_chk("warn", "註冊碼過期", "超過 10 分鐘或已經用過", '<button type="button" class="btn sm">重新產生</button>')}
       </div>""")
     done = _fp("4 · 完成後", '<div class="wrap" style="padding:12px 16px"><a class="btn pri" href="NodeDetail.dc.html">看這台主機</a><a class="btn" href="GitHubSource.dc.html">部署專案到這台</a><a class="btn" href="Storage.dc.html">設定資料碟</a></div>')
@@ -4357,7 +4357,7 @@ def node_disks() -> str:
 
 # ---------- 主機沒有回應（事故頁） ----------
 def node_offline() -> str:
-    head = node_head("hazel-jp-02", U.status("dng", "沒有回應 · 48 秒"), "最後心跳 03:41:18 · 以下是上次觀測", '<span tabindex="0" data-tip="TCP 22 逾時，從控制中心也連不到 SSH"><button type="button" class="btn" disabled>SSH 連線</button></span><button type="button" class="btn">標記為維護中</button>') + node_tabs("概況", 3, offline=True)
+    head = node_head("hazel-jp-02", U.status("dng", "沒有回應 · 48 秒"), "最後心跳 03:41:18 · 以下是上次觀測", '<span tabindex="0" data-tip="TCP 22 逾時，從 HazelminX 伺服器也連不到 SSH"><button type="button" class="btn" disabled>SSH 連線</button></span><button type="button" class="btn">標記為維護中</button>') + node_tabs("概況", 3, offline=True)
     impact = _fp("影響", f"""
       <div class="row hd"><span>對象</span><span>現在</span><span>依據</span></div>
       <div class="row"><span class="name"><span class="n">wiki.example.tw</span><span class="d">網站</span></span><span>{U.status("ok", "仍可連")}</span><span class="note">外部探測 03:42:01 · 200 · 212 ms</span></div>
@@ -4368,10 +4368,10 @@ def node_offline() -> str:
       <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">
         {_chk("warn", "03:38:50 · tim 在這台套用 openssl 更新", "這個更新會重啟 sshd、zentinel · 工作狀態不明（apt 進行到一半）", '<a href="WorkCenter.dc.html">工作</a>')}
         {_chk("dng", "03:41:12 · 核心訊息 eth0: NETDEV WATCHDOG: transmit queue 0 timed out", "網卡傳送卡住，之後 Agent 心跳送不出去", '<a href="NodeLogs.dc.html">日誌</a>')}
-        {_chk("dng", "03:41:18 · 最後一次心跳", "之後連到控制中心 203.0.113.22:8443 逾時", "")}
+        {_chk("dng", "03:41:18 · 最後一次心跳", "之後連到 HazelminX 伺服器 203.0.113.22:8443 逾時", "")}
         {_chk("ok", "03:42:01 · 外部探測 wiki.example.tw", "從外部連得到，回應 200", "")}
       </div>""")
-    probes = _fp("從控制中心檢查", f"""
+    probes = _fp("從 HazelminX 伺服器檢查", f"""
       <div class="row hd"><span>檢查</span><span>結果</span><span></span></div>
       <div class="row"><span>ping 198.51.100.35</span><span>{U.status("dng", "無回應 · 3 次")}</span><span><button type="button" class="btn sm">再測一次</button></span></div>
       <div class="row"><span>TCP 22（SSH）</span><span>{U.status("dng", "逾時")}</span><span><button type="button" class="btn sm">再測一次</button></span></div>

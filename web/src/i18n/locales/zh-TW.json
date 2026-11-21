@@ -510,8 +510,8 @@
         "remove-cluster-node": "移除叢集節點",
         "delete-workloads": "刪除工作負載"
       },
-      "unmanageEffect": "控制中心不再信任這台主機。主機本身、Agent 與上面的應用都不會被動到。",
-      "unavailable": "目前做不到：控制中心還沒有這項動作，由票 {{ticket}} 提供。"
+      "unmanageEffect": "HazelminX 伺服器不再信任這台主機。主機本身、Agent 與上面的應用都不會被動到。",
+      "unavailable": "目前做不到：HazelminX 伺服器還沒有這項動作，由票 {{ticket}} 提供。"
     },
     "errors": {
       "versionMismatch": "這台主機在你開啟後被別人改過。載入目前的值後再改一次。",
@@ -598,7 +598,7 @@
       "groupHint": "填了的話，主機註冊時也要帶同一個群組",
       "ttl": "註冊碼有效時間",
       "minutes": "{{count}} 分鐘",
-      "coreUrl": "Agent 連控制中心的位址",
+      "coreUrl": "Agent 連 HazelminX 伺服器的位址",
       "coreUrlHint": "主機要能連到這個位址。預設是這個網頁的主機名稱加上 Agent 連接埠 {{port}}，經代理或不同網域時請改掉。",
       "create": "產生註冊碼",
       "runTitle": "2 · 在主機上執行",
@@ -640,7 +640,7 @@
       "rejectEffectCode": "這個註冊碼已經用掉，不能再用。",
       "rejectConfirm": "拒絕 {{host}}",
       "approvedTitle": "{{name}} 已加入",
-      "approvedDetail": "主機拿到憑證後會自己連上控制中心。",
+      "approvedDetail": "主機拿到憑證後會自己連上 HazelminX 伺服器。",
       "openHost": "查看這台主機",
       "addAnother": "再新增一台",
       "notFound": "找不到這個註冊碼",
@@ -686,7 +686,7 @@
     },
     "componentSource": {
       "handshake": "最近一次連線時 Agent 回報",
-      "registry": "控制中心的主機名冊"
+      "registry": "HazelminX 伺服器的主機名冊"
     },
     "monitor": {
       "tabs": {
@@ -698,7 +698,7 @@
       },
       "facts": "主機資訊",
       "collected": "收集於 {{time}}",
-      "noFacts": "這台主機還沒回報主機資訊。agent 連上控制中心後會自動送出。",
+      "noFacts": "這台主機還沒回報主機資訊。agent 連上 HazelminX 伺服器後會自動送出。",
       "notProvided": "未提供",
       "os": "作業系統",
       "kernel": "核心",
@@ -810,7 +810,7 @@
       "loading": "正在讀取磁碟…",
       "loadFailed": "讀不到這台主機的磁碟資料。",
       "refreshFailed": "更新失敗，下面是上一次讀到的資料。",
-      "notReported": "這台主機還沒回報磁碟清單。agent 連上控制中心後會自動送出。",
+      "notReported": "這台主機還沒回報磁碟清單。agent 連上 HazelminX 伺服器後會自動送出。",
       "unreadable": "agent 讀不到 {{list}}，清單可能少列項目。",
       "justNow": "剛剛",
       "collected": "磁碟清單更新於 {{time}}",

@@ -523,8 +523,8 @@
         "remove-cluster-node": "Remove the cluster node",
         "delete-workloads": "Delete workloads"
       },
-      "unmanageEffect": "The control center stops trusting this host. The host, the agent and its applications are left untouched.",
-      "unavailable": "Not possible yet: the control center does not have this action; ticket {{ticket}} brings it."
+      "unmanageEffect": "The HazelminX server stops trusting this host. The host, the agent and its applications are left untouched.",
+      "unavailable": "Not possible yet: the HazelminX server does not have this action; ticket {{ticket}} brings it."
     },
     "errors": {
       "versionMismatch": "Someone changed this host after you opened it. Load the current values and change it again.",
@@ -615,7 +615,7 @@
       "ttl": "Code valid for",
       "minutes_one": "{{count}} minute",
       "minutes_other": "{{count}} minutes",
-      "coreUrl": "Address agents use to reach the control center",
+      "coreUrl": "Address agents use to reach the HazelminX server",
       "coreUrlHint": "The host must reach this address. The default is this page's host name with agent port {{port}}; change it behind a proxy or another domain.",
       "create": "Create enrollment code",
       "runTitle": "2 · Run on the host",
@@ -657,7 +657,7 @@
       "rejectEffectCode": "The code is spent and cannot be used again.",
       "rejectConfirm": "Reject {{host}}",
       "approvedTitle": "{{name}} was added",
-      "approvedDetail": "Once the host has its certificate it connects to the control center by itself.",
+      "approvedDetail": "Once the host has its certificate it connects to the HazelminX server by itself.",
       "openHost": "Open this host",
       "addAnother": "Add another host",
       "notFound": "No such enrollment code",
@@ -703,7 +703,7 @@
     },
     "componentSource": {
       "handshake": "Reported by the agent at its latest connection",
-      "registry": "The control center's host registry"
+      "registry": "The HazelminX server's host registry"
     },
     "monitor": {
       "tabs": {
@@ -715,7 +715,7 @@
       },
       "facts": "Host facts",
       "collected": "Collected {{time}}",
-      "noFacts": "This host has not reported its facts yet. The agent sends them once it connects to the control center.",
+      "noFacts": "This host has not reported its facts yet. The agent sends them once it connects to the HazelminX server.",
       "notProvided": "Not provided",
       "os": "Operating system",
       "kernel": "Kernel",

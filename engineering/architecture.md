@@ -129,7 +129,7 @@ scripts/   CI 與發布腳本（簽署清單、依賴檢查）
 | 契約 | Core↔Agent 樣本、OpenAPI 與伺服器一致、infra-manager 相容 | 高 |
 | 整合 | 真實 Docker／Podman／systemd／Zentinel／SQLite 斷電 | 高 |
 | 端到端 | 安裝→重開機→登入；GitHub 部署→push→保留設定；備份→異地還原；Core 重啟不影響網站 | 高 |
-| 故障注入 | 斷線、磁碟滿、憑證過期、時鐘跳動、舊控制中心 | 中 |
+| 故障注入 | 斷線、磁碟滿、憑證過期、時鐘跳動、舊 HazelminX 伺服器 | 中 |
 | 效能 | 38 章情境 | 發布前 |
 
 CI 必跑：`go test ./... && go vet`、`cargo test --workspace && cargo clippy -D warnings`、`vp check && vp test`、契約測試、Compose 設定驗證。
@@ -144,7 +144,7 @@ CI 必跑：`go test ./... && go vet`、`cargo test --workspace && cargo clippy 
 
 ## Hidden assumptions
 
-- SQLite 單一 Core 可承載 38.1 的擴充控制中心規模 — 風險：壓測未過時需換儲存，但不得引入必須登入平台才能啟動的容器（45.2）。
+- SQLite 單一 Core 可承載 38.1 的擴充 HazelminX 伺服器規模 — 風險：壓測未過時需換儲存，但不得引入必須登入平台才能啟動的容器（45.2）。
 - Komodo Periphery（`v2.3.3`，commit `780ac68`）的 docker／stats／terminal 模組與 `lib/command` 可在新連線模型中重用 — 以原始碼移植並改寫型別，不相依任何 Komodo 或 `mogh_*` crate，因為這些模組都綁著 `komodo_client` 型別；逐 crate 的保留／替換／捨棄與授權見 `agent/UPSTREAM.md`。風險：移植時要一併改寫型別與介面，成本落在票 007、020、027、040～044；Periphery 無 GPU 採集、無通用檔案 API、無 Windows 條件編譯，這些都要新寫。
 - 1Panel OSS 的 core 幾乎把整個 `/api/v2` 代理給 agent（約 691 條路由在 agent、72 條在 core）— 風險：「保留 Go 業務邏輯」的範圍比名稱上的 core 大得多，票 092 的基線盤點必須以 agent 路由為主；1Panel 無 Podman／K8s 支援，這兩塊是純新作。
 - Zentinel agent filter 能承載 WAF 與可信 IP 判定且延遲可接受 — 風險：WAF 引擎候選均未經本案測試（45.2）。
