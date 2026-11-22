@@ -1071,16 +1071,8 @@ def states() -> str:
         <p style="font-size:14px;font-weight:500">步驟 migrate 結束碼 1 · lab-mini · 03:12:40</p>
         <p class="note" style="color:var(--muted)">服務中版本：c0ffee1（自動回滾）· 影響範圍：staging.shop.example.tw</p>
         <p class="note"><span class="mono">migrate: relation "orders_v2" already exists (0004_orders.sql:12)</span></p>
-        <div class="wrap"><button type="button" class="btn pri sm" style="color:var(--hazelink)" aria-expanded="true" aria-controls="st-log">收起日誌</button><button type="button" class="btn sm" data-tip="用同一個 commit c91e0d7 再部署一次；資料庫狀態修好後再按">重試</button><button type="button" class="btn sm" data-tip="把錯誤、日誌、設定摘要整理成一段文字，貼給別人看">複製診斷</button></div>
-        <div id="st-log" style="display:flex;flex-direction:column;gap:6px;margin-top:4px">
-          <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)"><span>步驟 migrate · 最後 6 行</span><span class="wrap" style="margin-left:auto"><button type="button" class="btn sm" data-tip="複製這一步的完整日誌">複製</button><a class="btn sm" href="#WorkCenter" data-tip="在部署紀錄看全部步驟的日誌">全部步驟</a></span></div>
-          <div class="term">03:12:38 套用 0003_carts.sql · 已套用，略過
-03:12:39 套用 0004_orders.sql
-03:12:40 <span style="color:var(--danger)">ERROR</span> relation "orders_v2" already exists
-03:12:40   位置 0004_orders.sql:12
-03:12:40 交易已撤回，資料庫沒有變動
-03:12:40 結束碼 1</div>
-        </div>
+        <div class="wrap"><button type="button" class="btn pri sm" style="color:var(--hazelink)" aria-expanded="{{{{logExpanded}}}}" aria-controls="deploy-log" onClick="{{{{toggleLog}}}}">{{{{logLabel}}}}</button><button type="button" class="btn sm" data-tip="用同一個 commit c91e0d7 再部署一次；資料庫狀態修好後再按">重試</button><button type="button" class="btn sm" data-tip="把錯誤、日誌、設定摘要整理成一段文字，貼給別人看">複製診斷</button></div>
+        <sc-if value="{{{{showLog}}}}" hint-placeholder-val="{{{{ false }}}}"><div id="deploy-log" style="display:flex;flex-direction:column;gap:8px;margin-top:4px"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:12px;font-weight:600">部署日誌 · shop staging #71</span><span class="note">步驟 migrate 前後 9 行 · 錯誤行標紅</span></div><div class="term" style="white-space:normal;max-height:220px"><div style="white-space:pre;"><span style="color:var(--faint)">03:12:31</span>  <span style="color:var(--muted)">[build]</span> 使用映像 shop:c91e0d7</div><div style="white-space:pre;"><span style="color:var(--faint)">03:12:34</span>  <span style="color:var(--muted)">[deploy]</span> 在 lab-mini 啟動 migrate 容器</div><div style="white-space:pre;"><span style="color:var(--faint)">03:12:38</span>  <span style="color:var(--muted)">[migrate]</span> 0003_users.sql 已套用過，略過</div><div style="white-space:pre;"><span style="color:var(--faint)">03:12:39</span>  <span style="color:var(--muted)">[migrate]</span> 套用 0004_orders.sql</div><div style="white-space:pre;color:var(--danger)"><span style="color:var(--faint)">03:12:40</span>  <span style="color:var(--muted)">[migrate]</span> ERROR: relation "orders_v2" already exists</div><div style="white-space:pre;color:var(--danger)"><span style="color:var(--faint)">03:12:40</span>  <span style="color:var(--muted)">[migrate]</span>   at 0004_orders.sql:12  CREATE TABLE orders_v2 (</div><div style="white-space:pre;color:var(--danger)"><span style="color:var(--faint)">03:12:40</span>  <span style="color:var(--muted)">[migrate]</span> 結束碼 1</div><div style="white-space:pre;color:var(--warn)"><span style="color:var(--faint)">03:12:41</span>  <span style="color:var(--muted)">[deploy]</span> 部署中止，回滾到 c0ffee1</div><div style="white-space:pre;"><span style="color:var(--faint)">03:12:44</span>  <span style="color:var(--muted)">[deploy]</span> staging.shop.example.tw 健康檢查通過（c0ffee1）</div></div><p class="note">多半是 orders_v2 已經手動建過，或上一次部署跑到一半留下的表。先到資料庫確認這張表，再按重試。</p><div class="wrap"><a class="btn sm" href="Logs.dc.html">開啟完整日誌</a><button type="button" class="btn sm" onClick="{{{{copyLog}}}}">{{{{copyLabel}}}}</button><button type="button" class="btn sm" onClick="{{{{toggleLog}}}}">收起</button></div></div></sc-if>
       </article></div></section>"""
     partial = f"""
     <section class="chart" aria-label="部分結果範例"><div class="ph"><h2>部分結果</h2><span class="sub">能拿到的先顯示，缺的說清楚</span></div>
@@ -5427,6 +5419,19 @@ def declutter(html: str) -> str:
 BANNED = ["同上", "同左", "如上", "見上", "同前", "上述", "下一步", "建議", "可能", "若不是", "不假裝", "無關", "暖機", "別手動", "先別", "才算", "不能取消的原因", "不等於", "就在這", "一眼"]
 
 
+# 有互動的畫板：(renderVals 裡的 JS, 本機預覽用的固定值)
+LOGIC = {
+    "States": ("""    const showLog = !!(this.state && this.state.showLog);
+    const copied = !!(this.state && this.state.copied);
+    const extra = {
+      showLog, logExpanded: showLog ? 'true' : 'false', logLabel: showLog ? '收起日誌' : '看日誌',
+      copyLabel: copied ? '已複製' : '複製這段',
+      toggleLog: () => this.setState({ showLog: !showLog, copied: false }),
+      copyLog: () => { this.setState({ copied: true }); setTimeout(() => this.setState({ copied: false }), 1600); }
+    };""", {"logExpanded": "true", "logLabel": "收起日誌", "copyLabel": "複製這段"}),
+}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=os.path.join(os.path.dirname(__file__), "..", "screens"))
@@ -5442,11 +5447,11 @@ def main():
             for m in re.finditer(bad, re.sub(r"<[^>]+>", " ", body)):
                 print(f"  ! {name}: 「{bad}」 … {re.sub(r'<[^>]+>', ' ', body)[max(0, m.start() - 20):m.end() + 20].strip()}")
         with open(os.path.join(args.out, f"{name}.dc.html"), "w", encoding="utf-8") as f:
-            f.write(U.dc_wrap(f"HazelminX {title}", body, w, h))
+            f.write(U.dc_wrap(f"HazelminX {title}", body, w, h, **({"logic": LOGIC[name][0]} if name in LOGIC else {})))
         if args.render_dir:
             for theme in ("dark", "light"):
                 with open(os.path.join(args.render_dir, f"{name}-{theme}.html"), "w", encoding="utf-8") as f:
-                    f.write(U.plain_html(f"HazelminX {title}", body, theme))
+                    f.write(U.plain_html(f"HazelminX {title}", body, theme, LOGIC[name][1] if name in LOGIC else None))
     print("built", len(SCREENS), "screens →", os.path.abspath(args.out))
 
 

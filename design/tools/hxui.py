@@ -1271,7 +1271,8 @@ def legend(items: list) -> str:
     return '<div class="lg" role="list">' + "".join(out) + "</div>"
 
 
-def dc_wrap(title: str, body: str, width: int, height: int, lang="zh-Hant-TW") -> str:
+def dc_wrap(title: str, body: str, width: int, height: int, lang="zh-Hant-TW", logic: str = "") -> str:
+    """logic：額外的 renderVals 內容（JS），要定義 `const extra = {...}`，裡面的鍵會一起回傳。"""
     return f"""<!doctype html>
 <html lang="{lang}">
 <head>
@@ -1291,7 +1292,7 @@ def dc_wrap(title: str, body: str, width: int, height: int, lang="zh-Hant-TW") -
 class Component extends DCLogic {{
   renderVals() {{
     const light = this.props.light ?? false;
-    return {{ theme: light ? 'light' : 'dark', themeLabel: light ? '深色' : '淺色' }};
+{logic + chr(10) if logic else ''}    return {{ theme: light ? 'light' : 'dark', themeLabel: light ? '深色' : '淺色'{', ...extra' if logic else ''} }};
   }}
 }}
 </script>
@@ -1300,7 +1301,12 @@ class Component extends DCLogic {{
 """
 
 
-def plain_html(title: str, body: str, theme: str, lang="zh-Hant-TW") -> str:
+def plain_html(title: str, body: str, theme: str, lang="zh-Hant-TW", static: dict | None = None) -> str:
+    """static：本機預覽用，把互動用的 {{鍵}} 換成固定值，並拿掉 onClick 與 sc-if 外殼。"""
+    for k, v in (static or {}).items():
+        body = body.replace("{{" + k + "}}", v)
+    body = re.sub(r' onClick="\{\{\w+\}\}"', "", body)
+    body = re.sub(r"</?sc-if[^>]*>", "", body)
     body = body.replace("{{theme}}", theme).replace("{{themeLabel}}", "深色" if theme == "light" else "淺色")
     return f"""<!doctype html>
 <html lang="{lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{title}</title>
